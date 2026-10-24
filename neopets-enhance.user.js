@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      3.1
+// @version      3.2
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Shop Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -370,7 +370,7 @@
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false,
     scopes: true, search: false, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: false, oldLookups: false, qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true,
-    dailyBtn: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, nm2: true, nmPopup: true, stocks: true, stockSell: 60, fillAll: true, dailyFill: true, questGo: true,
+    dailyBtn: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, nm2: true, nmPopup: true, stocks: true, stockSell: 60, fillAll: true, dailyFill: true, questGo: true,
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,
@@ -1315,6 +1315,8 @@
   const snowCheck = (start, end) => () => { const r = dlog().snowager; return Date.now() < end && !(r && r.at >= start) && !SNOW_PAGE.test(location.pathname); };   // (still asleep, not been yet, and you aren't on its page already)
   const SVG_GEAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M4.2 6l2.1 2.1M17.7 15.9l2.1 2.1M2.5 12h3M18.5 12h3M4.2 18l2.1-2.1M17.7 8.1 19.8 6"/></svg>';
   const SVG_REFRESH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>';
+  const SVG_TAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12.2V4.6a1.1 1.1 0 0 1 1.1-1.1h7.6l8.3 8.3a1.6 1.6 0 0 1 0 2.2l-6.1 6.1a1.6 1.6 0 0 1-2.2 0z"/><circle cx="8.2" cy="8.2" r="1.5" fill="currentColor" stroke="none"/></svg>';
+  const SVG_FOOD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3v6a2.5 2.5 0 0 0 5 0V3"/><path d="M7.5 3v18"/><path d="M18.5 3c-2.4 1.6-3.5 4.4-3.5 7.5V13h3.5v8"/></svg>';
   const SVG_DICE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.4" fill="currentColor" stroke="none"/></svg>';
   function nstAtDay(dayOffset, mins, now) {   // (a time of day in NST, some days from today; the clocks changing is allowed for)
     let t = nstDayStart(now) + dayOffset * DAY_MS + mins * 60000;
@@ -2655,7 +2657,7 @@
     html.bnp-nb { --nb-acc: #fed123; --nb-ink: #363636; --nb-pat: none; --nb-patsz: 121px 58px; --nb-patpos: 50% -10px; --nb-frame: #faa819; --nb-panel: #fffacd; --nb-pink: #363636; --nb-rule: #faa819; --nb-pop: #faa819;
       --nb-band: var(--nb-pat) var(--nb-patpos) / var(--nb-patsz), var(--nb-acc);
       --nb-tint: color-mix(in srgb, var(--nb-acc) 10%, #fff); --nb-tint2: color-mix(in srgb, var(--nb-acc) 22%, #fff); --nb-line: color-mix(in srgb, var(--nb-frame) 30%, #fff);
-      --nb-bar: #2e72c0; --nb-bar-ink: #fff; --nb-blink: #2e72c0; --nb-bar-edge: color-mix(in srgb, var(--nb-bar) 68%, #000); --nb-link: var(--nb-blink); --nb-by: color-mix(in srgb, var(--nb-panel) 32%, #fff); --nb-hover: color-mix(in srgb, var(--nb-bar) 22%, #fff); --nb-muted: #5f5a4a; --nb-text: #262626; --nb-good: #2f9e2a; --nb-bycol: 214px;
+      --nb-bar: #2e72c0; --nb-bar-ink: #fff; --nb-blink: #2e72c0; --nb-bar-edge: color-mix(in srgb, var(--nb-bar) 68%, #000); --nb-link: var(--nb-blink); --nb-by: color-mix(in srgb, var(--nb-panel) 32%, #fff); --nb-hover: color-mix(in srgb, var(--nb-bar) 16%, #fff); --nb-alt: color-mix(in srgb, var(--nb-bar) 8%, #fff); --nb-muted: #5f5a4a; --nb-text: #262626; --nb-good: #2f9e2a; --nb-bycol: 214px;
       --nb-head: "Palanquin", "Arial Bold", sans-serif; --nb-cafe: "Cafeteria", "Arial Bold", sans-serif; --nb-ui: "MuseoSansRounded700", Arial, sans-serif; --nb-txt: "MuseoSansRounded500", Arial, sans-serif; }
     html.bnp-nb #boardIndex, html.bnp-nb #boardList, html.bnp-nb #boardTopic, html.bnp-nb #boardCreateTopic { width: min(1120px, calc(100% - 24px)) !important; margin: 14px auto 30px !important; border: 0 !important; border-radius: 0 !important; overflow: visible !important; box-sizing: border-box; color: var(--nb-text); }
     /* Neopets' own parts, the beta's way: a frame in your theme's menu colour with a hard shadow under it, patterned bands, Cafeteria */
@@ -2789,7 +2791,7 @@
     html.bnp-nb #boardIndex > ul > li.bnp-nb-hero::before { content: ""; grid-area: 1 / 1 / 2 / -1; align-self: stretch; border-bottom: 2px solid var(--nb-frame); background: var(--nb-band); }
     html.bnp-nb .bnp-nb-hero .boardTitle { grid-area: title; position: relative; z-index: 1; display: flex !important; align-items: center; justify-content: center; min-height: 70px; padding: 10px 252px 12px 16px; }   /* (the title in the middle of the room left of its buttons) */
     html.bnp-nb .bnp-nb-hero .boardTitle h1 { margin: 0 !important; color: var(--nb-ink) !important; font: 31pt/1 var(--nb-cafe) !important; letter-spacing: .6pt; text-align: center; }   /* (Neopets' own display letters, as its menus have; the user's trial: Palanquin 25.5pt before) */
-    html.bnp-nb .bnp-nbhero-ic { flex: none; width: 50px; height: 50px; margin: -4px 8px 0 0; background: center / 50px 50px no-repeat; }   /* (its own size: a sharp picture) */
+    html.bnp-nb .bnp-nbhero-ic { flex: none; width: 50px; height: 50px; margin: -4px 14px 0 0; background: center / 50px 50px no-repeat; }   /* (its own size: a sharp picture) */
     html.bnp-nb .bnp-nb-hero .chatRulesLabel { position: absolute; top: 50%; right: 154px; margin: -15px 0 0 !important; padding: 0 12px; border: 2px solid var(--nb-frame); border-radius: 10px; background: #fff; color: #333 !important; box-shadow: 0 2px 0 var(--nb-frame); font: 12px/26px var(--nb-ui) !important; }
     html.bnp-nb .bnp-nb-hero .q-button-neoboards { position: absolute !important; top: 50%; right: 108px; margin: -18px 0 0 !important; }
     html.bnp-nb .bnp-nblookbtn { position: absolute; top: 50%; right: 62px; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin: -18px 0 0; padding: 0; border: 2px solid var(--nb-frame); border-radius: 10px; background: #fff; box-shadow: 0 2px 0 var(--nb-frame); box-sizing: border-box; cursor: pointer; transition: margin .1s, box-shadow .1s; }
@@ -2878,7 +2880,7 @@
     html.bnp-nb .bnp-nbcols span:nth-child(4) { text-align: right; }
     html.bnp-nb #boardList ul li:not(.boardNavTop) { position: relative; display: grid !important; grid-template-columns: minmax(0, 1fr) 160px 84px 140px; align-items: center; gap: 12px; padding: 10px 18px !important; border-top: 2px solid var(--nb-line); background: #fff !important; transition: background .1s; }
     html.bnp-nb #boardList ul .bnp-nbcols + li:not(.boardNavTop) { border-top: 0; }
-    html.bnp-nb #boardList ul li.bnp-nbrow.is-alt { background: var(--nb-by) !important; }
+    html.bnp-nb #boardList ul li.bnp-nbrow.is-alt { background: var(--nb-alt) !important; }
     html.bnp-nb #boardList ul li:not(.boardNavTop):hover { background: var(--nb-hover) !important; box-shadow: inset 4px 0 0 var(--nb-bar); }   /* (a light shade of the theme's bar colour, with its edge: never mistaken for either stripe, never white) */
     html.bnp-nb #boardList ul li:not(.boardNavTop)::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 4px; border-radius: 0 4px 4px 0; background: transparent; }
     html.bnp-nb #boardList ul li.bnp-nb-hasnew::before { background: #d42326; }
@@ -2954,6 +2956,7 @@
     html.bnp-nb #boardTopic ul .topicNavTop .topicTitle > a { min-width: 0; text-decoration: none !important; }
     html.bnp-nb #boardTopic ul .topicTitleIcon { flex: none; box-sizing: content-box !important; width: 50px !important; height: 50px !important; margin: 0 !important; padding: 4px; border: 2px solid var(--nb-pop); border-radius: 12px; background-color: #fff; background-size: 50px 50px !important; background-repeat: no-repeat !important; background-position: center !important; background-origin: content-box; background-clip: padding-box; box-shadow: 0 3px 0 var(--nb-pop); }
     html.bnp-nb #boardTopic h1 { width: auto !important; margin: 0 !important; color: var(--nb-ink) !important; font: 17.5pt/1.12 var(--nb-head) !important; letter-spacing: .4pt; overflow-wrap: anywhere; }
+    html.bnp-nb #boardTopic .topicNavTop h1 { display: inline-block; flex: 0 1 auto; justify-self: start; width: fit-content !important; max-width: 100%; box-sizing: border-box; padding: 5px 16px 7px !important; border: 2px solid color-mix(in srgb, var(--nb-acc) 72%, #000); border-radius: 14px; background: var(--nb-acc); box-shadow: 0 2px 0 color-mix(in srgb, var(--nb-acc) 60%, #000), 0 4px 12px rgba(0, 0, 0, .12); }   /* (the topic's name on a pill of the band's own colour, not floating on its pattern) */
     html.bnp-nb #boardTopic h1 img { vertical-align: -2px; }
     html.bnp-nb #boardTopic ul .topicNavTop .topicStats { grid-area: stats; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 7px; margin: 0 !important; padding: 12px 18px; color: var(--nb-text) !important; font: 13px var(--nb-txt) !important; text-align: left !important; }
     html.bnp-nb #boardTopic ul .topicNavTop .topicSubPreface-neoboards, html.bnp-nb #boardTopic ul .topicNavTop .topicDate { color: var(--nb-muted) !important; font: inherit !important; }
@@ -2982,14 +2985,14 @@
     html.bnp-nb #boardTopic li.bnp-nbpost .postPet { display: grid !important; grid-template-columns: 62px minmax(0, 1fr); align-items: center; gap: 0 10px; margin: 12px 0 0; padding: 11px 0 0; border-top: 2px dashed var(--nb-line); }
     html.bnp-nb #boardTopic li.bnp-nbpost .postAuthorPetIcon { box-sizing: content-box !important; width: fit-content !important; height: auto !important; min-height: 0 !important; padding: 4px; border: 2px solid var(--nb-pop); border-radius: 12px; background: #fff; box-shadow: 0 3px 0 var(--nb-pop); line-height: 0; }
     html.bnp-nb #boardTopic li.bnp-nbpost .postAuthorPetIcon a { display: block; }
-    html.bnp-nb #boardTopic li.bnp-nbpost .postAuthorPetIcon img { display: block; box-sizing: content-box; width: 50px; height: 50px; margin: 0; border: 0 !important; border-radius: 3px; background: none; box-shadow: none; }   /* (pets: barely rounded) */
+    html.bnp-nb #boardTopic li.bnp-nbpost .postAuthorPetIcon img { display: block; box-sizing: content-box; width: 50px; height: 50px; margin: 0; border: 0 !important; border-radius: 8px; background: none; box-shadow: none; }   /* (pets: rounded to follow their frame) */
     html.bnp-nb #boardTopic li.bnp-nbpost .postPetInfo { min-width: 0; }
     html.bnp-nb #boardTopic li.bnp-nbpost .postPetInfo h4 { margin: 0 0 2px !important; font-size: 11.5pt !important; font-weight: bold !important; line-height: 1.15 !important; overflow-wrap: anywhere; }
     html.bnp-nb #boardTopic li.bnp-nbpost .postPetInfo h4 a { font-weight: bold !important; }
     html.bnp-nb.bnp-nb-pet80 #boardTopic li.bnp-nbpost .postPet, html.bnp-nb.bnp-nb-pet150 #boardTopic li.bnp-nbpost .postPet { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 8px; text-align: center; }
-    html.bnp-nb.bnp-nb-pet80 #boardTopic li.bnp-nbpost .postAuthorPetIcon img { width: 80px; height: 80px; }
+    html.bnp-nb.bnp-nb-pet80 #boardTopic li.bnp-nbpost .postAuthorPetIcon img { width: 80px; height: 80px; border-radius: 10px; }
     html.bnp-nb.bnp-nb-pet80 #boardTopic li.bnp-nbpost .postAuthorPetIcon { border-radius: 14px; }
-    html.bnp-nb.bnp-nb-pet150 #boardTopic li.bnp-nbpost .postAuthorPetIcon img { width: 150px; height: 150px; }
+    html.bnp-nb.bnp-nb-pet150 #boardTopic li.bnp-nbpost .postAuthorPetIcon img { width: 150px; height: 150px; border-radius: 13px; }
     html.bnp-nb.bnp-nb-pet150 #boardTopic li.bnp-nbpost .postAuthorPetIcon { padding: 5px; border-radius: 18px; }
     html.bnp-nb #boardTopic li.bnp-nbpost > .boardPost { position: relative; display: grid !important; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "date meta" "msg msg" "acts report"; grid-template-rows: auto 1fr auto; align-self: stretch; min-width: 0; min-height: 100%; padding: 0 !important; border: 2px solid var(--nb-frame); border-radius: 15px; background: #fff; box-shadow: 0 3px 0 var(--nb-frame); box-sizing: border-box; }
     html.bnp-nb #boardTopic li.bnp-nbpost > .boardPost::before { content: ""; position: absolute; top: 24px; left: -9px; width: 14px; height: 14px; border-bottom: 2px solid var(--nb-frame); border-left: 2px solid var(--nb-frame); background: inherit; transform: rotate(45deg); }
@@ -3727,7 +3730,7 @@
     nbCount();
     nbFltPaint();
     const bottom = ul.querySelector(':scope > .boardNavBottom');
-    if (bottom && [...bottom.querySelectorAll('a.boardPageButton')].some((a) => /next/i.test(a.textContent))) {
+    if (bottom && !ul.querySelector('[data-bnp="nbmore"]') && [...bottom.querySelectorAll('a.boardPageButton')].some((a) => /next/i.test(a.textContent))) {   // (one Show more: 20 a page may have put it in already)
       const m = document.createElement('div');
       m.className = 'bnp-nbmore';
       m.setAttribute('data-bnp', 'nbmore');
@@ -5361,7 +5364,7 @@
         <div class="bnp-f"><span>New posts</span>${seg('live', [[0, 'When you reload'], [30, '30 sec'], [60, '1 min'], [120, '2 min'], [300, '5 min'], [600, '10 min'], [900, '15 min'], [1800, '30 min']])}</div>
         <p class="bnp-note">About how often a topic’s last page looks for new posts while you’re on it (never on the dot: each wait is a little longer or shorter). They come in under the others. Back on the tab after longer than that, it looks at once.</p>
         ${sw('acts', 'Things to do under each post', 'Quote, Reply (@their name), and the poster’s own buttons: Neomail, their trades, auctions, shop and gallery; ⋯ to follow, mute or tag them.')}
-        <div class="bnp-f"><span>The poster’s own buttons</span>${seg('who', [['all', 'Always'], ['hover', 'When you point at a post'], ['click', 'Behind their name']])}</div>
+        <div class="bnp-f"><span>Poster’s buttons</span>${seg('who', [['all', 'Always'], ['hover', 'When you point at a post'], ['click', 'Behind their name']])}</div>
         <p class="bnp-note">Behind their name: a little button with their name opens them, just for that post (on a phone or tablet, pointing works the same way).</p>
         ${sw('links', 'Neopets addresses you can click', 'The address of a Neopets page in a post becomes a link.')}
         <div class="bnp-f"><span>Pictures in posts</span>${seg('pics', [['np', 'Neopets’ pictures'], ['all', 'Any picture'], ['off', 'Just the address']])}</div>
@@ -5449,7 +5452,7 @@
     { k: 'line', g: 'frames', l: 'Thin lines', w: 'Between topics, and in posts above the pet and the buttons', v: '--nb-line' },
     { k: 'pop', g: 'frames', l: 'Picture frames', w: 'Round avatars, pets and board pictures', v: '--nb-pop' },
     { k: 'card', g: 'posts', l: 'Posts and lists', w: 'Behind every post, topic list and box', b: '#fff' },
-    { k: 'by', g: 'posts', l: 'Poster’s side', w: 'Behind each poster’s avatar, name and pet; quotes; every other topic in a list', v: '--nb-by' },
+    { k: 'by', g: 'posts', l: 'Poster’s side', w: 'Behind each poster’s avatar, name and pet, and quotes', v: '--nb-by' },
     { k: 'mine', g: 'posts', l: 'Your own posts', w: 'A tint behind what you wrote, to find it at a glance', b: 'var(--nb-tint)', sw: 'mineTint' },
     { k: 'fol', g: 'posts', l: 'People you follow', w: 'The frame round their posts, and the mark by their topics', b: '#f0b429' },
     { k: 'msg', g: 'posts', l: 'Posts’ writing', w: 'The words of every post (colours people choose in theirs still show)', b: '#222', on: 'card' },
@@ -5458,6 +5461,7 @@
     { k: 'muted', g: 'posts', l: 'Quiet writing', w: 'Dates, last posts, page numbers, Report this message', v: '--nb-muted', on: 'card', min: 2.2 },
     { k: 'link', g: 'lists', l: 'Topic names and links', v: '--nb-blink', on: 'card' },
     { k: 'text', g: 'lists', l: 'Lists’ writing', w: 'Who started a topic, reply counts, the boards’ descriptions', v: '--nb-text', on: 'card' },
+    { k: 'alt', g: 'lists', l: 'Every other topic', w: 'The light stripe down a board’s list of topics', v: '--nb-alt' },
     { k: 'hover', g: 'lists', l: 'Under the pointer', w: 'A topic or menu row you point at', v: '--nb-hover' },
     { k: 'panel', g: 'panels', l: 'Soft panels', w: 'The Neoboards bar, the foot of lists, reply counts, the box you type in', v: '--nb-panel' },
     { k: 'pink', g: 'panels', l: 'Writing on soft panels', v: '--nb-pink', on: 'panel' },
@@ -5499,7 +5503,8 @@
     if (nbcOwn()) S.nb = { ...(S.nb || {}), colsBy: { ...nbcBy(), [k]: cols } };
     else S.nb = { ...(S.nb || {}), cols };
   }
-  const nbcSnap = () => ({ cols: { ...((S.nb && S.nb.cols) || {}) }, by: JSON.parse(JSON.stringify(nbcBy())), tint: nbOpt().mineTint !== false });
+  const nbcPresets = () => (Array.isArray(S.nb && S.nb.colsPresets) ? S.nb.colsPresets.filter((p) => p && p.cols && typeof p.cols === 'object') : []);   // (your saved looks: [{ id, name, cols, at }], to put on any time)
+  const nbcSnap = () => ({ cols: { ...((S.nb && S.nb.cols) || {}) }, by: JSON.parse(JSON.stringify(nbcBy())), presets: JSON.parse(JSON.stringify(nbcPresets())), tint: nbOpt().mineTint !== false });
   const nbcVar = (p) => p.v || `--nbc-${p.k}`;   // (the one name each colour goes by: the page's rules and the preview read it, so a colour being chosen changes only that)
   function nbcCss() {
     const cols = nbcCols(), vars = [], page = [];
@@ -5565,7 +5570,7 @@
       <div class="bnp-pv-box" data-p="card frame">
         <div class="bnp-pv-band" data-p="acc pat"><b data-p="ink">Pets</b></div>
         <div class="bnp-pv-row" data-p="card line"><i class="bnp-pv-mk is-new" data-p="mkNew"></i><span class="bnp-pv-tt"><a data-p="link">Show off your pets!</a><small data-p="text">by a friend · 12 replies</small></span><span class="bnp-pv-new" data-p="mkNew">3 new</span><small class="bnp-pv-last" data-p="muted"><i data-p="mkHot"></i>2 min</small></div>
-        <div class="bnp-pv-row is-alt" data-p="by line"><i class="bnp-pv-mk is-fol" data-p="fol"></i><span class="bnp-pv-tt"><a data-p="link">Name ideas, please</a><small data-p="text">by someone you follow · 40 replies</small></span><small class="bnp-pv-last" data-p="muted">1 hr</small></div>
+        <div class="bnp-pv-row is-alt" data-p="alt line"><i class="bnp-pv-mk is-fol" data-p="fol"></i><span class="bnp-pv-tt"><a data-p="link">Name ideas, please</a><small data-p="text">by someone you follow · 40 replies</small></span><small class="bnp-pv-last" data-p="muted">1 hr</small></div>
         <div class="bnp-pv-row is-hover" data-p="hover line"><span class="bnp-pv-tt"><a data-p="link">The one you point at</a><small data-p="text">by someone · 5 replies</small></span><small class="bnp-pv-last" data-p="muted">3 hrs</small></div>
       </div>
       <div class="bnp-pv-post is-fol">
@@ -5633,15 +5638,25 @@
         nbcPickOpen(r.querySelector('[data-nbc-pick]'));
         return;
       }
-      const b = t.closest('[data-nbc], [data-nbc-del]');
+      const b = t.closest('[data-nbc], [data-nbc-del], [data-nbc-preset], [data-nbc-pdel]');
       if (!b) return;
       if (b.dataset.nbc === 'x') nbcClose();
       else if (b.dataset.nbc === 'theme') { nbcSetCols({}); nbcApply(); nbcPaint(); save(); }
-      else if (b.dataset.nbc === 'back') { const s = JSON.parse(w.was); S.nb = { ...(S.nb || {}), cols: s.cols, colsBy: s.by, mineTint: s.tint }; nbcApply(); nbcPaint(); save(); }
+      else if (b.dataset.nbc === 'back') {   // (the colours as they were, and any preset deleted since; one saved since stays)
+        const s = JSON.parse(w.was), now = nbcPresets(), gone = (s.presets || []).filter((p) => !now.some((x) => x.id === p.id));
+        S.nb = { ...(S.nb || {}), cols: s.cols, colsBy: s.by, colsPresets: [...now, ...gone], mineTint: s.tint };
+        w.was = JSON.stringify(nbcSnap());
+        nbcApply(); nbcPaint(); save();
+      }
       else if (b.dataset.nbc === 'all' || b.dataset.nbc === 'own') nbcScope(b.dataset.nbc === 'own');
       else if (b.dataset.nbcDel) nbcDelete(b.dataset.nbcDel);
+      else if (b.dataset.nbcPdel) nbcPresetDel(b.dataset.nbcPdel);
+      else if (b.dataset.nbcPreset) nbcPresetUse(b.dataset.nbcPreset);
+      else if (b.dataset.nbc === 'pnew') { nbc.naming = true; nbcScopePaint(); const i = nbc.win.querySelector('[data-nbc-pname]'); if (i) i.focus(); }
+      else if (b.dataset.nbc === 'pkeep') nbcPresetSave();
+      else if (b.dataset.nbc === 'pno') { nbc.naming = false; nbcScopePaint(); }
     });
-    win.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (cp) { const a = cp.anchor; nbcPickClose(); a.focus(); } else nbcClose(); } else if (e.key === 'Enter' && e.target.dataset && e.target.dataset.nbcHex) e.target.blur(); });
+    win.addEventListener('keydown', (e) => { if (e.target.dataset && 'nbcPname' in e.target.dataset && (e.key === 'Enter' || e.key === 'Escape')) { e.preventDefault(); e.stopPropagation(); if (e.key === 'Enter') nbcPresetSave(); else { nbc.naming = false; nbcScopePaint(); } return; } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (cp) { const a = cp.anchor; nbcPickClose(); a.focus(); } else nbcClose(); } else if (e.key === 'Enter' && e.target.dataset && e.target.dataset.nbcHex) e.target.blur(); });
     w.head.addEventListener('pointerdown', (e) => {   // (moved by its header; kept where you leave it)
       if (e.button !== 0 || (e.target instanceof Element && e.target.closest('a, button'))) return;
       e.preventDefault();
@@ -5714,17 +5729,47 @@
     nbc.back.disabled = JSON.stringify(nbcSnap()) === nbc.was;
     nbcScopePaint();
   }
-  function nbcScopePaint() {   // (who these colours are for: every theme, or only the one you're in; and every saved set, each with its ×)
+  function nbcScopePaint() {   // (who these colours are for: every theme, or only the one you're in; what's on, where, each with its ×; and your presets, to put on any time)
     const box = nbc && nbc.win.querySelector('[data-nbc-scope]');
     if (!box) return;
-    const k = nbcTheme(), name = k ? nbcThemeName(k) : '', own = nbcOwn(), by = nbcBy(), all = (S.nb && S.nb.cols) || {};
-    const n = (c) => Object.keys(c || {}).filter((x) => x === 'pat' ? c[x] === 'off' : !!nbHex(c[x])).length;
-    const chip = (key, label, c, here) => `<span class="bnp-nbc-set${here ? ' is-here' : ''}" title="${here ? 'In use here' : 'Saved'}">${c && Object.values(c).some((v) => nbHex(v)) ? `<span class="bnp-nbc-strip">${Object.values(c).map((v) => nbHex(v)).filter(Boolean).slice(0, 5).map((v) => `<i style="background:${v}"></i>`).join('')}</span>` : ''}<b>${esc(label)}</b><small>${n(c) ? `${n(c)} colour${n(c) === 1 ? '' : 's'}` : 'none yet'}</small><button type="button" class="bnp-nbc-del" data-nbc-del="${esc(key)}" title="Delete it: ${key === '*' ? 'every theme wears its own colours again (a theme with a set of its own keeps it)' : `${esc(label)} wears the colours for every theme again`}" aria-label="Delete ${esc(label)}">×</button></span>`;
-    const sets = [n(all) ? chip('*', 'Every theme', all, !own) : '', ...Object.keys(by).sort((a, b) => nbcThemeName(a).localeCompare(nbcThemeName(b))).map((t) => chip(t, nbcThemeName(t), by[t], t === k))].filter(Boolean);
+    const k = nbcTheme(), name = k ? nbcThemeName(k) : '', own = nbcOwn(), by = nbcBy(), all = (S.nb && S.nb.cols) || {}, presets = nbcPresets();
+    const n = (c) => Object.keys(c || {}).filter((x) => (x === 'pat' ? c[x] === 'off' : !!nbHex(c[x]))).length;
+    const strip = (c) => (c && Object.values(c).some((v) => nbHex(v)) ? `<span class="bnp-nbc-strip">${Object.values(c).map((v) => nbHex(v)).filter(Boolean).slice(0, 5).map((v) => `<i style="background:${v}"></i>`).join('')}</span>` : '');
+    const count = (c) => `<small>${n(c) ? `${n(c)} colour${n(c) === 1 ? '' : 's'}` : 'none yet'}</small>`;
+    const chip = (key, label, c, here) => `<span class="bnp-nbc-set${here ? ' is-here' : ''}" title="${here ? 'In use here' : 'On for these'}">${strip(c)}<b>${esc(label)}</b>${count(c)}<button type="button" class="bnp-nbc-del" data-nbc-del="${esc(key)}" title="Take it off: ${key === '*' ? 'every theme wears its own colours again (a theme with a set of its own keeps it)' : `${esc(label)} wears the colours for every theme again`}" aria-label="Take off ${esc(label)}">×</button></span>`;
+    const sets = [n(all) ? chip('*', 'Every theme', all, !own) : '', ...Object.keys(by).sort((x, y) => nbcThemeName(x).localeCompare(nbcThemeName(y))).map((t) => chip(t, nbcThemeName(t), by[t], t === k))].filter(Boolean);
+    const here = own ? `only ${esc(name)}` : 'every theme';
+    const pre = presets.map((p) => `<span class="bnp-nbc-set is-preset"><button type="button" class="bnp-nbc-pon" data-nbc-preset="${esc(p.id)}" title="Put it on (for ${here}); Back to how they were undoes it">${strip(p.cols)}<b>${esc(p.name)}</b>${count(p.cols)}</button><button type="button" class="bnp-nbc-del" data-nbc-pdel="${esc(p.id)}" title="Delete this preset" aria-label="Delete ${esc(p.name)}">×</button></span>`);
+    const naming = nbc.naming ? `<span class="bnp-nbc-pform"><input type="text" class="bnp-nbc-pname" data-nbc-pname maxlength="30" placeholder="A name for them" aria-label="A name for these colours" spellcheck="false"><button type="button" class="bnp-nbc-pbtn" data-nbc="pkeep">Save</button><button type="button" class="bnp-nbc-lb" data-nbc="pno">Cancel</button></span>` : `<button type="button" class="bnp-nbc-padd" data-nbc="pnew" title="Keep the colours on now under a name, to put back on any time">＋ Save these as a preset</button>`;
     const html = `<div class="bnp-nbc-for"><span>These colours are for</span><span class="bnp-nbc-seg" role="group"><button type="button" data-nbc="all" aria-pressed="${!own}">Every theme</button>${k ? `<button type="button" data-nbc="own" aria-pressed="${own}">Only ${esc(name)}</button>` : ''}</span></div>
-      ${sets.length ? `<div class="bnp-nbc-saved"><span class="bnp-nbc-savedh">Saved</span>${sets.join('')}</div>` : ''}`;
+      ${sets.length ? `<div class="bnp-nbc-saved"><span class="bnp-nbc-savedh">On now</span>${sets.join('')}</div>` : ''}
+      <div class="bnp-nbc-saved"><span class="bnp-nbc-savedh">Your presets</span>${pre.join('')}${naming}</div>`;
     if (box.dataset.html !== html) { box.dataset.html = html; box.innerHTML = html; }   // (only when it's changed: a button being clicked is never swapped out from under the click)
   }
+  function nbcPresetSave() {   // (the colours on now, kept under a name: the same name again replaces it)
+    const inp = nbc && nbc.win.querySelector('[data-nbc-pname]'), list = nbcPresets(), cols = { ...nbcCols() };
+    const nm = (inp && inp.value.trim().slice(0, 30)) || `My colours ${list.length + 1}`;
+    const was = list.find((p) => p.name.toLowerCase() === nm.toLowerCase());
+    const next = was ? list.map((p) => (p === was ? { ...p, cols, at: Date.now() } : p)) : [...list, { id: uid(), name: nm, cols, at: Date.now() }];
+    S.nb = { ...(S.nb || {}), colsPresets: next };
+    nbc.naming = false;
+    nbcPaint();
+    save();
+  }
+  function nbcPresetUse(id) {   // (a preset put on: for the set in use here, every theme's or this theme's own)
+    const p = nbcPresets().find((x) => x.id === id);
+    if (!p) return;
+    nbcSetCols({ ...p.cols });
+    nbcApply();
+    nbcPaint();
+    save();
+  }
+  function nbcPresetDel(id) {
+    S.nb = { ...(S.nb || {}), colsPresets: nbcPresets().filter((p) => p.id !== id) };
+    nbcPaint();
+    save();
+  }
+
   function nbcScope(own) {   // (this theme: its own set, starting from what it wears now; or back to the one for every theme, its own set gone)
     const k = nbcTheme();
     if (!k || own === nbcOwn()) return;
@@ -5968,7 +6013,7 @@
     html.bnp-st #neoboard_preview .postPet { display: grid !important; grid-template-columns: 62px minmax(0, 1fr) !important; align-items: center; gap: 0 10px !important; margin: 12px 0 0; padding: 11px 0 0; border-top: 2px dashed var(--nb-line); }
     html.bnp-st #neoboard_preview .postAuthorPetIcon { box-sizing: content-box !important; width: fit-content !important; height: auto !important; min-height: 0 !important; padding: 4px; border: 2px solid var(--nb-pop); border-radius: 12px; background: #fff; box-shadow: 0 3px 0 var(--nb-pop); line-height: 0; }
     html.bnp-st #neoboard_preview .postAuthorPetIcon a { display: block; }
-    html.bnp-st #neoboard_preview .postAuthorPetIcon img { display: block; width: 50px !important; height: 50px !important; margin: 0; border: 0 !important; border-radius: 3px; }
+    html.bnp-st #neoboard_preview .postAuthorPetIcon img { display: block; width: 50px !important; height: 50px !important; margin: 0; border: 0 !important; border-radius: 8px; }
     html.bnp-st #neoboard_preview .postPetInfo { min-width: 0; }
     html.bnp-st #neoboard_preview .postPetInfo h4 { margin: 0 0 2px !important; font-size: 11.5pt !important; line-height: 1.15 !important; overflow-wrap: anywhere; }
     html.bnp-st #neoboard_preview .boardPost { position: relative; align-self: stretch; min-width: 0; min-height: 100%; margin: 0 !important; padding: 0 !important; border: 2px solid var(--nb-frame); border-radius: 15px; background: #fff; box-shadow: 0 3px 0 var(--nb-frame); box-sizing: border-box; }
@@ -6247,7 +6292,7 @@
     html.bnp-nm { --nb-acc: #fed123; --nb-ink: #363636; --nb-pat: none; --nb-patsz: 121px 58px; --nb-patpos: 50% -10px; --nb-frame: #faa819; --nb-panel: #fffacd; --nb-pink: #363636; --nb-rule: #faa819; --nb-pop: #faa819;
       --nb-band: var(--nb-pat) var(--nb-patpos) / var(--nb-patsz), var(--nb-acc); --nb-tint: color-mix(in srgb, var(--nb-acc) 10%, #fff); --nb-tint2: color-mix(in srgb, var(--nb-acc) 22%, #fff); --nb-line: color-mix(in srgb, var(--nb-frame) 30%, #fff);
       --nb-bar: #2e72c0; --nb-bar-ink: #fff; --nb-blink: #2e72c0; --nb-bar-edge: color-mix(in srgb, var(--nb-bar) 68%, #000); --nb-muted: #5f5a4a; --nb-text: #262626;
-      --nb-link: var(--nb-blink); --nb-by: color-mix(in srgb, var(--nb-panel) 32%, #fff); --nb-hover: color-mix(in srgb, var(--nb-bar) 22%, #fff);
+      --nb-link: var(--nb-blink); --nb-by: color-mix(in srgb, var(--nb-panel) 32%, #fff); --nb-hover: color-mix(in srgb, var(--nb-bar) 16%, #fff); --nb-alt: color-mix(in srgb, var(--nb-bar) 8%, #fff);
       --nb-head: "Palanquin", "Arial Bold", sans-serif; --nb-ui: "MuseoSansRounded700", Arial, sans-serif; --nb-txt: "MuseoSansRounded500", Arial, sans-serif; }
     html.bnp-nm td.content { color: var(--nb-text); font-family: var(--nb-txt); }
     html.bnp-nm-cloak td.content { visibility: hidden !important; }
@@ -6309,7 +6354,7 @@
     html.bnp-nm tr.bnp-nmcols { padding-top: 8px; padding-bottom: 9px; background: var(--nb-bar); color: var(--nb-bar-ink); }
     html.bnp-nm td.content tr.bnp-nmcols > td { width: auto !important; min-width: 0; padding: 0 !important; border: 0 !important; background: none !important; color: inherit !important; font: 11pt/1 var(--nb-head) !important; letter-spacing: .3pt; white-space: nowrap; }   /* (td.content: over the cards' own header rule, whose padding pushed "Date Sent" under Status) */
     html.bnp-nm tr.bnp-nmrow { position: relative; padding-top: 10px; padding-bottom: 10px; border-top: 2px solid var(--nb-line); background: #fff; transition: background .1s; }
-    html.bnp-nm tr.bnp-nmrow.is-alt { background: var(--nb-by); }
+    html.bnp-nm tr.bnp-nmrow.is-alt { background: var(--nb-alt); }
     html.bnp-nm tr.bnp-nmrow:hover { background: var(--nb-hover); box-shadow: inset 4px 0 0 var(--nb-bar); }
     html.bnp-nm tr.bnp-nmrow.is-picked { background: color-mix(in srgb, var(--nb-bar) 14%, #fff); }
     html.bnp-nm tr.bnp-nmrow > td { width: auto !important; min-width: 0; padding: 0 !important; border: 0 !important; background: none !important; }
@@ -7659,7 +7704,7 @@
       const name = decodeURIComponent(path.startsWith('/~') ? path.slice(2).split('/')[0] : q.get('pet'));
       return { title: name, icon: `https://pets.neopets.com/cpn/${encodeURIComponent(name)}/1/1.png`, from: 'pet' };
     }
-    if (path === '/userlookup.phtml' && q.get('user')) return { title: q.get('user'), icon: petPic() || tabIconOf(['side:/settings/profile/', 'side:/home/']), from: 'lookup' };
+    if (path === '/userlookup.phtml' && q.get('user')) return { title: q.get('user'), icon: lookupIcon(q.get('user')) || tabIconOf(['side:/settings/profile/', 'side:/home/']), from: 'lookup' };
     if (path === '/browseshop.phtml') return { title: said || `${q.get('owner') || ''}'s Shop`, icon: petPic() || tabIconOf(['nat:shop-usershop-icon']), from: 'usershop' };
     if (/^\/gallery\/(index\.phtml)?$/.test(path) && q.get('gu')) return { title: `${q.get('gu')}'s Gallery`, icon: tabIconOf(LINKS.gallery.icon), from: 'gallery' };
     if (path === '/neoboards/topic.phtml') {   // (a topic: its own title, and its board's icon)
@@ -8004,6 +8049,30 @@
       img.src = src;
     }
     return '';
+  }
+  // A user lookup's tab picture, as Settings › Tab icons has it: Neopets' own icon, one of their pets, their avatar or their age shield.
+  // Chosen once on the page (a random pet stays that pet), and never one of the pet slider's copies, which come in a moment later
+  let lookupPick = null;
+  const LOOKUP_ICONS = [['star', 'Neopets’ own icon', 'The same little picture for every lookup.'], ['pet', 'One of their Neopets', 'A different one of their pets each time you look, its face.'], ['avatar', 'Their avatar', 'The one they wear, if you’ve seen it (a Neofriend’s, from a post or a Neomail); otherwise the one on their lookup, their newest secret avatar.'], ['shield', 'Their age shield', 'The shield on their lookup for how long they’ve played.']];
+  function lookupIcon(user) {
+    const how = S.features.tabLookup || 'pet';
+    if (how === 'star') return '';
+    if (lookupPick && lookupPick.how === how) return lookupPick.u;
+    const src = (img) => (img ? fullUrl(img.getAttribute('src')) : '');
+    let u = '';
+    if (how === 'pet') {
+      const pets = $$('#userneopets img[src*="pets.neopets.com/cp"]').filter((i) => !i.closest('.bx-clone'));
+      const one = pets[Math.floor(Math.random() * pets.length)];
+      u = src(one).replace(/\/(\d+)\/(\d+)\.png$/, '/$1/1.png');   // (its face)
+    } else if (how === 'avatar') {
+      u = nfData().av[String(user).toLowerCase()] || '';
+      if (!u) u = $$('#usercollections img[src*="/neoboards/avatars/"], #userinfo img[src*="/neoboards/avatars/"]').map(src).find((x) => !/\/default\.gif$/i.test(x)) || '';
+    } else if (how === 'shield') {
+      const imgs = $$('#userinfo img').filter((i) => !/ul_(trades|auctions|wishlist|neomail|neofriend)|\/neoboards\/avatars\//i.test(i.getAttribute('src') || ''));
+      u = src(imgs.find((i) => /shield/i.test(i.getAttribute('src') || '')) || imgs[0]);
+    }
+    if (u) lookupPick = { how, u };
+    return u;
   }
   function iconForKey(k) {   // a page's picture, from whatever already links to it (Neopets' menus, the side menu, a daily, a land, a board)
     const n = natNow().get(k);
@@ -9020,14 +9089,14 @@
     const hungry = (h) => /dying|starving|famished|very hungry/i.test(h || '');
     const showInfo = !!S.features.petsInfo, showHunger = S.features.petsHunger !== false;   // (your choice, in the header: the name and picture always; colour, species and level, and hunger, if you want them)
     const head = themeHead();   // (the header: your theme's own pop-up band, its buttons as the Shop Dock has them)
-    petsPanel.innerHTML = `<div class="popup-header__2020 bnp-pets-head"${head ? ` style="--bnp-pets-ink:${esc(head.ink)}"` : ''}><h3>Switch Pet</h3><span class="bnp-pets-btns"><button type="button" class="bnp-pets-tg" data-pets-tg="petsInfo" aria-pressed="${showInfo}" title="Show each pet’s colour, species and level">Species &amp; level</button><button type="button" class="bnp-pets-tg" data-pets-tg="petsHunger" aria-pressed="${showHunger}" title="Show which pets are hungry">Hunger</button>${sorted.length > 1 ? `<button type="button" class="button-default__2020 button-yellow__2020 bnp-pets-b" data-pets-random title="A pet picked at random as your active pet" aria-label="A random pet as your active pet">${SVG_DICE}</button>` : ''}<button type="button" class="button-default__2020 button-yellow__2020 bnp-pets-b bnp-pets-rf${petsLoading ? ' is-busy' : ''}" data-bnp-reload title="${petsLoading ? 'Looking at your pets…' : 'Read your pets again from My Pets'}" aria-label="Refresh your pets">${SVG_REFRESH}</button><button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-pets-xb" data-bnp-close title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button></span><div class="popup-header-pattern__2020"></div></div>`
+    petsPanel.innerHTML = `<div class="popup-header__2020 bnp-pets-head"${head ? ` style="--bnp-pets-ink:${esc(head.ink)}"` : ''}><h3>Switch Pet</h3><span class="bnp-pets-btns"><button type="button" class="button-default__2020 button-yellow__2020 bnp-pets-b bnp-pets-tg" data-pets-tg="petsInfo" aria-pressed="${showInfo}" title="Each pet’s colour, species and level: ${showInfo ? 'shown (click to hide)' : 'hidden (click to show)'}" aria-label="Each pet’s colour, species and level">${SVG_TAG}</button><button type="button" class="button-default__2020 button-yellow__2020 bnp-pets-b bnp-pets-tg" data-pets-tg="petsHunger" aria-pressed="${showHunger}" title="Which pets are hungry: ${showHunger ? 'shown (click to hide)' : 'hidden (click to show)'}" aria-label="Which pets are hungry">${SVG_FOOD}</button>${sorted.length > 1 ? `<button type="button" class="button-default__2020 button-yellow__2020 bnp-pets-b" data-pets-random title="A pet picked at random as your active pet" aria-label="A random pet as your active pet">${SVG_DICE}</button>` : ''}<button type="button" class="button-default__2020 button-yellow__2020 bnp-pets-b bnp-pets-rf${petsLoading ? ' is-busy' : ''}" data-bnp-reload title="${petsLoading ? 'Looking at your pets…' : 'Read your pets again from My Pets'}" aria-label="Refresh your pets">${SVG_REFRESH}</button><button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-pets-xb" data-bnp-close title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button></span><div class="popup-header-pattern__2020"></div></div>`
       + (note ? `<p class="bnp-pets-note">${esc(note)}</p>` : '')
       + (sorted.length ? `<div class="bnp-pets-grid">${sorted.map((p) => {
         const is = p.name === actName;
         const kind = [p.color, p.species].filter(Boolean).join(' '), lv = p.level ? `Lv ${p.level}` : '', what = [kind, lv].filter(Boolean).join(' · ');
         const byName = `https://pets.neopets.com/cpn/${encodeURIComponent(p.name)}/1/2.png`;   // (Neopets' picture of a pet by its name: when the one My Pets gave is missing or won't load)
         return `<button type="button" class="bnp-pet${is ? ' is-active' : ''}" data-pet="${esc(p.name)}" title="${esc(`${is ? `${p.name} is your active pet` : `Make ${p.name} your active pet`}${what && !showInfo ? `\n${what}` : ''}`)}">`
-          + `<img src="${esc(picOf(p.image) || byName)}" data-alt="${esc(byName)}" alt="" loading="lazy"><b>${esc(p.name)}</b>${showInfo && what ? `<small>${kind ? `<span class="bnp-pet-kind">${esc(kind)}</span>` : ''}${lv ? `<span class="bnp-pet-lv">${kind ? ' · ' : ''}${esc(lv)}</span>` : ''}</small>` : ''}`
+          + `<img src="${esc(picOf(p.image) || byName)}" data-alt="${esc(byName)}" alt="" loading="lazy"><b>${esc(p.name)}</b>${showInfo && what ? `${kind ? `<small class="bnp-pet-kind">${esc(kind)}</small>` : ''}${lv ? `<small class="bnp-pet-lv">${esc(lv)}</small>` : ''}` : ''}`
           + (is ? '<i class="bnp-tag">Active</i>' : showHunger && hungry(p.hunger) ? `<i class="bnp-tag is-hungry" title="${esc(p.name)} is ${esc(p.hunger)}">${esc(cap(p.hunger))}</i>` : '') + '</button>';
       }).join('')}</div>`
         : `<p class="bnp-pets-note">${petsLoading ? 'Looking at your pets…' : 'Your pets show here once My Pets has been looked at: Refresh does it now.'}</p>`);
@@ -9300,29 +9369,30 @@
       <div class="bqr-bar">
         <div class="bqr-sum">${chip('all', 'All', pets.length)}${n.hungry ? chip('hungry', 'Hungry', n.hungry, true) : ''}${n.sick ? chip('sick', 'Sick', n.sick, true) : ''}${n.lodge ? chip('lodge', 'Neolodge', n.lodge) : ''}</div>
         <div class="bqr-tools">
-          <label class="bqr-sortl">Sort <select data-qs aria-label="Sort" title="${prefs.sort === 'custom' ? 'My order: drag the cards, or the pets in the strip' : ''}">${[['active', 'Active first'], ['name', 'Name'], ['level', 'Level'], ['age', 'Age'], ['hunger', 'Hungriest'], ['custom', 'My order']].map(([v, l]) => `<option value="${v}"${prefs.sort === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+          <label class="bqr-sortl">Sort <select data-qs aria-label="Sort" title="${prefs.sort === 'custom' ? 'My order: drag the cards, or the pets in Pets at a glance' : ''}">${[['active', 'Active first'], ['name', 'Name'], ['level', 'Level'], ['age', 'Age'], ['hunger', 'Hungriest'], ['custom', 'My order']].map(([v, l]) => `<option value="${v}"${prefs.sort === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
           <span class="bqr-views" role="group" aria-label="View"><button type="button" data-qv="cards" aria-pressed="${prefs.view !== 'rows'}">Cards</button><button type="button" data-qv="rows" aria-pressed="${prefs.view === 'rows'}">Rows</button></span>
-          <button type="button" class="bqr-tintbtn bqr-stripbtn" data-qp aria-pressed="${prefs.strip !== false}" title="Every pet small at the top, with what needs doing: click one to go to its card">Pet strip</button>
+          <button type="button" class="bqr-tintbtn bqr-stripbtn" data-qp aria-pressed="${prefs.strip !== false}" title="Every pet small at the top, with what needs doing: click one to go to its card">Pets at a glance</button>
           <button type="button" class="bqr-tintbtn" data-qt aria-pressed="${!!prefs.tint}" title="Each card in its pet’s own colour">Pet colours</button>
         </div>
       </div>
       ${strip ? qrStrip(shown) : ''}
       ${prefs.view === 'rows' ? qrRows(shown) : `<div class="bqr-cards${prefs.sort === 'custom' ? ' is-sortable' : ''}">${shown.map(qrCard).join('')}</div>`}
       ${shown.length ? '' : '<p class="bqr-none">None of your pets right now. <button type="button" class="bnp-linkbtn" data-qf="all">Show them all</button></p>'}
-      ${strip ? '<button type="button" class="bqr-up" data-qu hidden title="Back up to the pet strip"><i></i><span>Your pets</span></button>' : ''}`;
+      ${strip ? '<button type="button" class="bqr-up" data-qu hidden title="Back up to Pets at a glance"><i></i><span>Your pets</span></button>' : ''}`;
     qrWatchStrip();
   }
+  const QR_PENCIL = IM('themes/020_ppl_3c22d/events/battle_accept.png');   // (Neopets' own pencil, for writing about a pet: the one place to change it)
   function qrActList(p) {   // (every action for a pet: [label, link, the theme's picture for it, a drawn mark if it has none, tooltip])
     const N = encodeURIComponent(p.name);
     const acts = [
       ['Customise', `/customise/?view=${N}`, ['side:/customise/']],
       ['Lookup', `/petlookup.phtml?pet=${N}`, ['side:/settings/profile/']],
       ['Pet page', `/~${N}`, ['side:/home/'], 'home'],
-      ['Abilities', `/abilities.phtml?pet_name=${N}`, null, 'spark'],
+      ['Abilities', `/abilities.phtml?pet_name=${N}`, [IM('bd2/h5/barracks/images/barracks_abilities.png')], 'spark'],   // (the Battledome's own picture for them)
       ['Equip', `/dome/neopets.phtml?pet=${N}`, ['nat:battledome-icon']],
       ['Books read', p.books, ['side:/bookshelf/archive-bookshelf.phtml']],
-      ['Description', `/neopet_desc.phtml?edit_petname=${N}`, null, 'pen'],
-      ['Homepage', `/editpage.phtml?pet_name=${N}`, null, 'pen'],
+      ['Description', `/neopet_desc.phtml?edit_petname=${N}`, [QR_PENCIL], 'pen'],
+      ['Homepage', `/editpage.phtml?pet_name=${N}`, [QR_PENCIL], 'pen'],
       ['Photo', `/sendyourpet.phtml?selected=${N}`, ['side:/gallery/']],
     ];
     if (!inLodge(p)) acts.push(['Neolodge', `/book_neolodge.phtml?pet_name=${N}&hotel_rate=5&nights=28`, null, 'moon', 'Book 28 nights at the Neolodge, the cheapest rate (140 NP)']);
@@ -10177,7 +10247,7 @@
     const rail = RAIL.map(([h, keys]) => `<h5>${esc(h)}</h5>${keys.map((k) => (RAIL_KIND[k] ? `<button type="button" data-kind="${RAIL_KIND[k][0]}">${esc(RAIL_KIND[k][1])}</button>` : `<button type="button" data-page="${k}">${esc((PAGES.find((p) => p[0] === k) || [k, k])[1])}</button>`)).join('')}`).join('');
     win.innerHTML = `
       <div class="popup-header__2020 bnp-hub-head">
-        <h3>Settings</h3>
+        <h3><i class="bnp-hub-gear" data-g="hubgear" aria-hidden="true" hidden></i>Settings</h3>
         <button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button>
         <div class="popup-header-pattern__2020"></div>
       </div>
@@ -10222,7 +10292,11 @@
     dragSetup(hub.main);
     winDrag(win);   // (the header drags the window)
   }
-  const themeHub = () => themeWin(hub.win);
+  function themeHub() {   // (your theme on the window; the gear by its name, the same picture as the one in the top bar)
+    themeWin(hub.win);
+    const g = hub.win.querySelector('[data-g="hubgear"]'), u = iconOf(['side:/settings/', 'el:#navprofiledropdown__2020 .nav-settings-icon']);
+    if (g) { g.hidden = !u; if (u) g.style.backgroundImage = `url("${cssUrl(u)}")`; }
+  }
   function themeWin(win) {   // (a window wears your theme: its pop-up outline, and its header colour for what's chosen)
     const site = $('.togglePopup__2020');
     if (site) {
@@ -10378,7 +10452,7 @@
   function qrPage() {
     return `<div class="bnp-mhead"><h2>QuickRef</h2><span class="bnp-note">Quick Ref, better and in the beta look.</span></div>
       <div class="bnp-card">
-        <label class="bnp-switch"><input type="checkbox" data-feat="qr"${S.features.qr ? ' checked' : ''}><span>QuickRef<small>Every pet on one page: picture, level, age, health, hunger, mood and stats; what each one needs (food, a cure, Neolodge nights left) with where to go for it; every action; Make active; sorting or your own order; a pet strip at the top that takes you to any pet; cards in each pet’s own colour; and a compact Rows view (the strip, the colours and the view are switched on the page itself). Off: Neopets’ own Quick Ref.</small></span></label>
+        <label class="bnp-switch"><input type="checkbox" data-feat="qr"${S.features.qr ? ' checked' : ''}><span>QuickRef<small>Every pet on one page: picture, level, age, health, hunger, mood and stats; what each one needs (food, a cure, Neolodge nights left) with where to go for it; every action; Make active; sorting or your own order; Pets at a glance at the top, which takes you to any pet; cards in each pet’s own colour; and a compact Rows view (Pets at a glance, the colours and the view are switched on the page itself). Off: Neopets’ own Quick Ref.</small></span></label>
         <a class="button-default__2020 button-yellow__2020 bnp-small" href="/quickref.phtml">Open Quick Ref</a>
       </div>`;
   }
@@ -11209,6 +11283,11 @@
         ${sw('tabCaps', 'Shop names in capitals', 'FRESH FOODS: shop tabs stand out when you have lots open.', !f.tabs)}
       </div>
       <div${f.tabs ? '' : ' hidden'}>
+      <h5>User lookups <span class="bnp-note">Someone’s lookup: its tab’s picture</span></h5>
+      <div class="bnp-card">
+        <div class="bnp-f"><span>Their tab shows</span><span class="bnp-seg" role="group">${LOOKUP_ICONS.map(([k, l]) => `<button type="button" data-tablk="${k}" aria-pressed="${(f.tabLookup || 'pet') === k}">${l}</button>`).join('')}</span></div>
+        <p class="bnp-note">${esc((LOOKUP_ICONS.find((x) => x[0] === (f.tabLookup || 'pet')) || LOOKUP_ICONS[1])[2])}</p>
+      </div>
       <h5>Your own <span class="bnp-note">First match wins; * stands for anything</span></h5>
       <div class="bnp-card">
         ${rules || '<p class="bnp-note">None yet. The pages you change are kept here.</p>'}
@@ -12267,9 +12346,10 @@
   }
   document.addEventListener('click', (e) => {   // (the hub's other buttons: folder shortcuts, chips, backup)
     if (!hub || !(e.target instanceof Element) || !hub.win.contains(e.target)) return;
-    const t = e.target.closest('[data-dset], [data-bk], [data-unchip], [data-dcdel], [data-rset], [data-rcdel], button[data-re], [data-rek], [data-redel], button[data-tb], [data-avs], [data-avo], [data-avv], [data-avk], [data-avx], button[data-av], [data-avdo], button[data-game], button[data-itk], button[data-its], button[data-ittest], button[data-itnc], button[data-nbh], button[data-nbov]');
+    const t = e.target.closest('[data-dset], [data-bk], [data-unchip], [data-dcdel], [data-rset], [data-rcdel], button[data-re], [data-rek], [data-redel], button[data-tb], [data-avs], [data-avo], [data-avv], [data-avk], [data-avx], button[data-av], [data-avdo], button[data-game], button[data-itk], button[data-its], button[data-ittest], button[data-itnc], button[data-nbh], button[data-nbov], [data-tablk]');
     if (!t) return;
     if (t.dataset.nbh || t.dataset.nbov) { nbHubClick(t); return; }
+    if (t.dataset.tablk) { S.features.tabLookup = t.dataset.tablk; lookupPick = null; changed(); tabsApply(true); return; }   // (a lookup's tab picture: this one, from now on)
     if (t.dataset.itk || t.dataset.its || t.dataset.itnc || 'ittest' in t.dataset) { itemsHubClick(t); return; }
     if (t.dataset.game) { const on = gameToggle(t.dataset.game); changed(`${gameName(t.dataset.game)} is ${on ? 'in My Games' : 'out of My Games'}`); return; }
     if (t.dataset.tb) { tabsClick(t); return; }
@@ -12823,10 +12903,10 @@
     .bnp-pets-x { width: 26px; height: 26px; margin: 0; padding: 0; border: 0; border-radius: 6px; background: none; color: inherit; font: 20px/1 Arial, sans-serif; cursor: pointer; opacity: .7; }
     .bnp-pets-rf.is-busy { cursor: default; }
     .bnp-pets-rf.is-busy svg { animation: bnp-turn .8s linear infinite; }
-    .bnp-pets-tg { height: 24px; margin: 0; padding: 0 9px; border: 1.5px solid color-mix(in srgb, currentColor 40%, transparent); border-radius: 999px; background: none; color: var(--bnp-pets-ink, inherit); font: 11.5px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; cursor: pointer; opacity: .8; }
-    .bnp-pets-tg:hover { opacity: 1; }
-    .bnp-pets-tg[aria-pressed="true"] { border-color: transparent; background: color-mix(in srgb, currentColor 18%, transparent); opacity: 1; }
-    .bnp-pets-tg[aria-pressed="true"]::before { content: "✓ "; }
+    .bnp-pets .bnp-pets-tg { position: relative; }
+    .bnp-pets .bnp-pets-tg[aria-pressed="false"] { opacity: .5; filter: grayscale(.6); }   /* (off: faded) */
+    .bnp-pets .bnp-pets-tg[aria-pressed="false"]:hover { opacity: .8; }
+    .bnp-pets .bnp-pets-tg[aria-pressed="true"]::after { content: ""; position: absolute; top: -3px; right: -3px; width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; background: #3bc92e url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M3 6.2 5 8.2 9 4' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / 12px no-repeat; box-shadow: 0 1px 2px rgba(0, 0, 0, .3); }   /* (on: a green tick in its corner) */
     .bnp-pets-x:hover { opacity: 1; background: color-mix(in srgb, currentColor 12%, transparent); }
     .bnp-pets-note { margin: 4px 2px 8px; font: 13px "MuseoSansRounded500", Arial, sans-serif; opacity: .85; }
     .bnp-pets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
@@ -12837,8 +12917,8 @@
     .bnp-pet img { width: 84px; height: 84px; object-fit: contain; }
     .bnp-pet b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 12.5pt "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
     .bnp-pet small { display: flex; justify-content: center; max-width: 100%; white-space: nowrap; font: 11px "MuseoSansRounded500", Arial, sans-serif; opacity: .8; }
-    .bnp-pet small .bnp-pet-kind { min-width: 0; overflow: hidden; text-overflow: ellipsis; }   /* (a long colour and species shortens; the level always shows whole) */
-    .bnp-pet small .bnp-pet-lv { flex: none; white-space: pre; }
+    .bnp-pet small.bnp-pet-kind { display: block; overflow: hidden; text-overflow: ellipsis; }   /* (its colour and species; the level on the line under it) */
+    .bnp-pet small.bnp-pet-lv { display: block; margin-top: -1px; }
     .bnp-pet .bnp-tag { position: absolute; top: 5px; right: 5px; padding: 1px 6px; border-radius: 999px; background: color-mix(in srgb, currentColor 16%, transparent); font: 10px "MuseoSansRounded700", Arial, sans-serif; font-style: normal; }
     .bnp-pet .bnp-tag.is-hungry { background: #c0392b; color: #fff; }
     /* QuickRef: cards in the theme's pop-up colours */
@@ -12858,9 +12938,11 @@
     .bqr-tools { display: flex; align-items: center; gap: 8px; }
     .bqr-sortl { display: inline-flex; align-items: center; gap: 6px; color: #6f6a58; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
     .bqr-sortl select { height: 30px; padding: 2px 8px; border: 1px solid #cfcbbd; border-radius: 8px; background: #fff; color: #363636; font: 13px "MuseoSansRounded500", Arial, sans-serif; cursor: pointer; }
-    .bqr-views { display: inline-flex; border: 2px solid var(--bqr-line); border-radius: 999px; overflow: hidden; }
-    .bqr-views button { margin: 0; padding: 4px 12px; border: 0; background: #fff; color: #363636; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
-    .bqr-views button[aria-pressed="true"] { background: var(--bqr-head); color: var(--bqr-headink); }
+    .bqr-views { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid #e3dfd2; border-radius: 12px; background: #f3f0e6; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06); }
+    .bqr-views button { margin: 0; padding: 4px 12px 5px; border: 0; border-radius: 9px; background: none; color: #4a4536; font: 13px/1.2 "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; transition: background-color .12s, color .12s, box-shadow .12s; }
+    .bqr-views button:hover:not([aria-pressed="true"]) { background: rgba(255, 255, 255, .8); color: #2a2a2a; }
+    .bqr-views button[aria-pressed="true"] { background: var(--bqr-head); color: var(--bqr-headink); box-shadow: 0 2px 0 color-mix(in srgb, var(--bqr-head) 65%, #000), 0 1px 5px rgba(0, 0, 0, .12); }
+    .bqr-views button:focus-visible { outline: 2px solid color-mix(in srgb, var(--bqr-head) 70%, #000 15%); outline-offset: 1px; }
     .bqr-tintbtn { margin: 0; padding: 4px 12px; border: 2px solid var(--bqr-line); border-radius: 999px; background: #fff; color: #363636; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
     .bqr-tintbtn[aria-pressed="true"] { background: linear-gradient(90deg, #f7b2b2, #f9e29a, #b4e6b1, #a9d4f5, #d6b8f2); }
     .bqr-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 16px; }
@@ -13008,7 +13090,9 @@
     .bnp-hub *, .bnp-hub *::before, .bnp-hub *::after { box-sizing: border-box; }
     .bnp-hub .bnp-hub-head { flex: none; position: relative; padding: 10px 0; border-radius: 0; text-align: center; cursor: grab; user-select: none; touch-action: none; }
     .bnp-hub .bnp-hub-head.is-drag { cursor: grabbing; }
-    .bnp-hub .bnp-hub-head h3 { margin: 0 auto; font-size: 20pt; line-height: 1.25; }
+    .bnp-hub .bnp-hub-head h3 { display: inline-flex; align-items: center; gap: 9px; margin: 0 auto; font-size: 20pt; line-height: 1.25; }
+    .bnp-hub .bnp-hub-gear { flex: none; width: 30px; height: 30px; background: center / contain no-repeat; }
+    .bnp-hub .bnp-hub-gear[hidden] { display: none; }
     .bnp-hub .bnp-hub-head .popup-header-pattern__2020, .bnp-hub .bnp-hub-foot .popup-footer-pattern__2020 { border-radius: 0; }
     .bnp-hub .bnp-x { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 40px; height: 35px; padding: 0; display: flex; align-items: center; justify-content: center; }
     .bnp-hub .bnp-x .popup-exit-icon { width: 18px; height: 20px; margin: 0; }
@@ -13086,7 +13170,7 @@
     .bnp-hub .bnp-empty { padding: 8px 10px; border: 1px dashed #d9d3bf; border-radius: 8px; color: #8a8571; font-size: 12.5px; list-style: none; }
     .bnp-hub .bnp-editp { padding: 6px 12px 10px 34px; border-top: 1px solid #efeadb; }
     .bnp-hub .bnp-f { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0; }
-    .bnp-hub .bnp-f > span:first-child { width: 74px; flex: none; color: #6b6b6b; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-f > span:first-child { width: 130px; flex: none; color: #6b6b6b; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-hub .bnp-f-check { font-size: 13px; cursor: pointer; }
     .bnp-hub .bnp-f-check input { accent-color: #2b8a27; margin: 0; }
     .bnp-hub .bnp-f input[type="text"], .bnp-hub .bnp-f select { min-width: 0; flex: 1 1 200px; max-width: 360px; height: 32px; margin: 0; padding: 4px 9px; border: 1px solid #cfcbbd; border-radius: 8px; background: #fff; color: #363636; font: 13.5px "MuseoSansRounded500", Arial, sans-serif; }
@@ -13197,10 +13281,11 @@
     .bnp-hub .bnp-research { flex: 0 1 190px; min-width: 120px; height: 30px; margin: 0; padding: 3px 12px; border: 1px solid #cfcbbd; border-radius: 999px; background: #fff; color: #363636; font: 13px "MuseoSansRounded500", Arial, sans-serif; }
     .bnp-hub .bnp-research:focus { outline: none; border-color: #9a9581; box-shadow: 0 0 0 3px rgba(254, 209, 35, .45); }
     /* avatars: your collection, every one there is by kind; yours in colour, the rest faded until you point at them */
-    .bnp-hub .bnp-seg { display: inline-flex; overflow: hidden; border: 1px solid #d8d3c2; border-radius: 999px; background: #fff; }
-    .bnp-hub .bnp-seg button { margin: 0; padding: 3px 11px; border: 0; background: #fff; color: #5c5845; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
-    .bnp-hub .bnp-seg button + button { border-left: 1px solid #e6e1cf; }
-    .bnp-hub .bnp-seg button[aria-pressed="true"] { background: var(--bnp-accent); color: var(--bnp-accent-text); }
+    .bnp-hub .bnp-seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid #e3dfd2; border-radius: 12px; background: #f3f0e6; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06); }
+    .bnp-hub .bnp-seg button { margin: 0; padding: 4px 12px 5px; border: 0; border-radius: 9px; background: none; color: #5c5845; font: 12.5px/1.25 "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; transition: background-color .12s, color .12s, box-shadow .12s; }
+    .bnp-hub .bnp-seg button:hover:not([aria-pressed="true"]) { background: rgba(255, 255, 255, .8); color: #2a2a2a; }
+    .bnp-hub .bnp-seg button[aria-pressed="true"] { background: var(--bnp-accent); color: var(--bnp-accent-text); box-shadow: 0 2px 0 color-mix(in srgb, var(--bnp-accent) 65%, #000), 0 1px 5px rgba(0, 0, 0, .12); }
+    .bnp-hub .bnp-seg button:focus-visible { outline: 2px solid color-mix(in srgb, var(--bnp-accent) 70%, #000 15%); outline-offset: 1px; }
     .bnp-hub .bnp-avsum { display: flex; align-items: center; gap: 16px; margin: 0 0 10px; padding: 12px 16px; border: 1px solid #e3dfd2; border-radius: 12px; background: #faf9f5; }
     .bnp-hub .bnp-avsum-big { flex: none; display: flex; align-items: baseline; gap: 6px; }
     .bnp-hub .bnp-avsum-big b { color: #2a2a2a; font: 26pt/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .5pt; }
@@ -13711,7 +13796,7 @@
     /* its preview: the boards' own colours (your theme's as the boards last had them, then yours), drawn small */
     .bnp-nbc-prev { --nb-acc: #fed123; --nb-ink: #363636; --nb-pat: none; --nb-patsz: 121px 58px; --nb-patpos: 50% -10px; --nb-frame: #faa819; --nb-panel: #fffacd; --nb-pink: #363636; --nb-rule: #faa819; --nb-pop: #faa819;
       --nb-band: var(--nb-pat) var(--nb-patpos) / var(--nb-patsz), var(--nb-acc); --nb-tint: color-mix(in srgb, var(--nb-acc) 10%, #fff); --nb-tint2: color-mix(in srgb, var(--nb-acc) 22%, #fff); --nb-line: color-mix(in srgb, var(--nb-frame) 30%, #fff);
-      --nb-bar: #2e72c0; --nb-bar-ink: #fff; --nb-blink: #2e72c0; --nb-bar-edge: color-mix(in srgb, var(--nb-bar) 68%, #000); --nb-link: var(--nb-blink); --nb-by: color-mix(in srgb, var(--nb-panel) 32%, #fff); --nb-hover: color-mix(in srgb, var(--nb-bar) 22%, #fff); --nb-muted: #5f5a4a; --nb-text: #262626;
+      --nb-bar: #2e72c0; --nb-bar-ink: #fff; --nb-blink: #2e72c0; --nb-bar-edge: color-mix(in srgb, var(--nb-bar) 68%, #000); --nb-link: var(--nb-blink); --nb-by: color-mix(in srgb, var(--nb-panel) 32%, #fff); --nb-hover: color-mix(in srgb, var(--nb-bar) 16%, #fff); --nb-alt: color-mix(in srgb, var(--nb-bar) 8%, #fff); --nb-muted: #5f5a4a; --nb-text: #262626;
       --nb-head: "Palanquin", "Arial Bold", sans-serif; --nb-cafe: "Cafeteria", "Arial Bold", sans-serif; --nb-ui: "MuseoSansRounded700", Arial, sans-serif; --nb-txt: "MuseoSansRounded500", Arial, sans-serif;
       display: grid; gap: 10px; color: var(--nb-text); font: 12px/1.35 var(--nb-txt); user-select: none; }
     .bnp-nbc-prev [data-p] { cursor: pointer; }
@@ -13724,7 +13809,7 @@
     .bnp-pv-box { overflow: hidden; border: 2px solid var(--nb-frame); border-radius: 12px; background: var(--nbc-card, #fff); box-shadow: 0 2px 0 var(--nb-frame); }
     .bnp-pv-band { padding: 9px 10px 10px; background: var(--nb-band); color: var(--nb-ink); font: 19px/1 var(--nb-cafe); text-align: center; }
     .bnp-pv-row { position: relative; display: flex; align-items: center; gap: 7px; padding: 6px 9px 6px 14px; border-top: 1px solid var(--nb-line); }
-    .bnp-pv-row.is-alt { background: var(--nb-by); }
+    .bnp-pv-row.is-alt { background: var(--nb-alt); }
     .bnp-pv-row.is-hover { background: var(--nb-hover); }
     .bnp-pv-mk { position: absolute; left: 0; top: 7px; bottom: 7px; width: 4px; border-radius: 0 4px 4px 0; }
     .bnp-pv-mk.is-new { background: var(--nbc-mkNew, #d42326); }
@@ -13754,16 +13839,26 @@
     .bnp-pv-type { display: block; margin: 9px 10px 11px; padding: 7px 9px; border: 2px solid var(--nb-frame); border-radius: 10px; background: #fff; box-shadow: 0 0 0 3px var(--nb-tint2); color: #a39e8a; font-size: 11.5px; }
     .bnp-nbc-scope { margin: 10px 2px 2px; padding: 10px 12px; border: 1px solid #e3dfd2; border-radius: 12px; background: #faf9f5; }
     .bnp-nbc-for { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; color: #4a4536; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
-    .bnp-nbc-seg { display: inline-flex; overflow: hidden; border: 2px solid #d8d3c2; border-radius: 999px; background: #fff; }
-    .bnp-nbc-seg button { margin: 0; padding: 4px 14px 5px; border: 0; background: none; color: #5c5845; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
-    .bnp-nbc-seg button + button { border-left: 2px solid #d8d3c2; }
-    .bnp-nbc-seg button[aria-pressed="true"] { background: var(--bnp-accent); color: var(--bnp-accent-text); }
+    .bnp-nbc-seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid #e3dfd2; border-radius: 12px; background: #f3f0e6; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06); }
+    .bnp-nbc-seg button { margin: 0; padding: 4px 13px 5px; border: 0; border-radius: 9px; background: none; color: #5c5845; font: 12.5px/1.25 "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; transition: background-color .12s, color .12s, box-shadow .12s; }
+    .bnp-nbc-seg button:hover:not([aria-pressed="true"]) { background: rgba(255, 255, 255, .8); color: #2a2a2a; }
+    .bnp-nbc-seg button[aria-pressed="true"] { background: var(--bnp-accent); color: var(--bnp-accent-text); box-shadow: 0 2px 0 color-mix(in srgb, var(--bnp-accent) 65%, #000), 0 1px 5px rgba(0, 0, 0, .12); }
+    .bnp-nbc-seg button:focus-visible { outline: 2px solid color-mix(in srgb, var(--bnp-accent) 70%, #000 15%); outline-offset: 1px; }
     .bnp-nbc-saved { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 9px; }
     .bnp-nbc-savedh { margin-right: 2px; color: #8a8571; font: 10.5px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
     .bnp-nbc-set { display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px 3px 8px; border: 1px solid #e3dfd2; border-radius: 999px; background: #fff; color: #4a4536; font: 12px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-nbc-set.is-here { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #000 15%); box-shadow: 0 0 0 2px color-mix(in srgb, var(--bnp-accent) 40%, transparent); }
     .bnp-nbc-set small { color: #8a8571; font: 11px "MuseoSansRounded500", Arial, sans-serif; }
     .bnp-nbc-set .bnp-nbc-strip i { width: 10px; height: 10px; border-radius: 3px; }
+    .bnp-nbc-set.is-preset { padding-left: 3px; }
+    .bnp-nbc-pon { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 0 0 0 5px; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+    .bnp-nbc-set.is-preset:hover { border-color: #a39e8a; }
+    .bnp-nbc-padd { margin: 0; padding: 3px 10px 4px; border: 1px dashed #c9c3ae; border-radius: 999px; background: none; color: #5c5845; font: 12px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
+    .bnp-nbc-padd:hover { border-color: #8a8571; background: #fff; color: #000; }
+    .bnp-nbc-pform { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .bnp-nbc-pname { width: 160px; height: 28px; margin: 0; padding: 0 9px; border: 2px solid #d8d3c2; border-radius: 8px; background: #fff; color: #333; font: 12.5px "MuseoSansRounded500", Arial, sans-serif; outline: none; }
+    .bnp-nbc-pname:focus { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #000 12%); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bnp-accent) 45%, transparent); }
+    .bnp-nbc-pbtn { margin: 0; padding: 4px 14px 5px; border: 2px solid color-mix(in srgb, var(--bnp-accent) 70%, #000 15%); border-radius: 9px; background: var(--bnp-accent); color: var(--bnp-accent-text); font: 12.5px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
     .bnp-nbc-del { display: grid; place-items: center; width: 20px; height: 20px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: none; color: #a39e8a; font: 15px/1 Arial, sans-serif; cursor: pointer; }
     .bnp-nbc-del:hover, .bnp-nbc-del:focus-visible { background: #fde8e8; color: #b03a2e; outline: none; }
     .bnp-nbc-strip { display: inline-flex; flex-wrap: wrap; gap: 3px; }
@@ -13858,6 +13953,11 @@
     .bnp-hub a.bnp-chip:hover { border-color: #c9a227; background: #fff8db; }
     .bnp-hub a.bnp-small { text-decoration: none; }
     .bnp-hub .bnp-card { margin: 0 0 16px; padding: 12px 14px; border: 1px solid #d9d3c1; border-radius: 12px; background: #faf9f5; box-shadow: 0 2px 0 #ebe6d6; }
+    /* a section's name over its card (a card without a title of its own): a tab of your theme's colour joined to it, so each section reads as one, apart from the next */
+    .bnp-hub .bnp-main h5:not(.bnp-card h5):has(+ .bnp-card:not([hidden])) { margin: 28px 0 0; padding: 8px 14px 7px; border: 1px solid #d9d3c1; border-bottom: 1px solid #e3ddca; border-radius: 12px 12px 0 0; background: color-mix(in srgb, var(--bnp-accent) 16%, #fff); color: #3a3628; }
+    .bnp-hub .bnp-main h5:not(.bnp-card h5):has(+ .bnp-card > h4:first-child) { margin: 28px 0 8px; padding: 0; border: 0; border-radius: 0; background: none; }   /* (its card has a title strip of its own: the name stays a label over it, never two strips) */
+    .bnp-hub .bnp-main h5:not(.bnp-card h5) + .bnp-card:not(:has(> h4:first-child)) { margin-top: 0; border-top: 0; border-radius: 0 0 12px 12px; }
+    .bnp-hub .bnp-main > .bnp-mhead + h5, .bnp-hub .bnp-main > .bnp-jumps + h5, .bnp-hub .bnp-main > .bnp-subtabs + h5 { margin-top: 10px !important; }
     .bnp-hub .bnp-card > h4:first-child { margin: -12px -14px 10px; padding: 8px 14px 7px; border-bottom: 1px solid #e3ddca; border-radius: 11px 11px 0 0; background: color-mix(in srgb, var(--bnp-accent) 16%, #fff); }   /* (each card's name on a strip of your theme's colour: where one ends and the next starts, at a glance) */
     .bnp-hub .bnp-switch { display: flex; align-items: flex-start; gap: 10px; margin: 6px 0 10px; cursor: pointer; font: 14px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-hub .bnp-switch input { flex: none; accent-color: #2b8a27; width: 17px; height: 17px; margin: 1px 0 0; }
