@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      3.2
+// @version      3.3
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Shop Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -370,7 +370,7 @@
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false,
     scopes: true, search: false, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: false, oldLookups: false, qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true,
-    dailyBtn: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, nm2: true, nmPopup: true, stocks: true, stockSell: 60, fillAll: true, dailyFill: true, questGo: true,
+    dailyBtn: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, avIcon: 'worn', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, nm2: true, nmPopup: true, stocks: true, stockSell: 60, fillAll: true, dailyFill: true, questGo: true,
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,
@@ -412,7 +412,10 @@
     if (!s.tabs.shops || typeof s.tabs.shops !== 'object') s.tabs.shops = {};
     if (!Array.isArray(s.added)) s.added = [];
     s.guild = s.guild && typeof s.guild === 'object' ? s.guild : { label: '' };
-    if (!s.nb || typeof s.nb !== 'object' || Array.isArray(s.nb)) s.nb = {};   // (Neoboards 2: only what you've changed from how it starts)
+    if (!s.nb || typeof s.nb !== 'object' || Array.isArray(s.nb)) s.nb = {};
+    if (!s.looks || typeof s.looks !== 'object' || Array.isArray(s.looks)) s.looks = {};
+    s.myThemes = Array.isArray(s.myThemes) ? s.myThemes.filter((t) => t && typeof t === 'object' && /^t[a-z0-9]+$/.test(t.id || '') && /^[a-z]+$/.test(t.base || '')).map((t) => ({ id: t.id, name: String(t.name || 'My theme').slice(0, 40), base: t.base, v: t.v && typeof t.v === 'object' ? t.v : {} })) : [];   // (Themes: yours)
+    if (typeof s.wear !== 'string') s.wear = '';   // (the theme of yours you wear: '' for your Neopets one)   // (Themes: who stands where, by theme; only what you've changed)   // (Neoboards 2: only what you've changed from how it starts)
     return s;
   }
   function addNewDefaults() {   // (a layout from before a default was added gets it once, under the item it belongs under)
@@ -3192,6 +3195,8 @@
     html.bnp-nb .bnp-nbsm-tabs button { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 34px; margin: 0; padding: 0; border: 2px solid transparent; border-radius: 9px; background: none; cursor: pointer; }
     html.bnp-nb .bnp-nbsm-tabs button[aria-pressed="true"], html.bnp-nb .bnp-nbsm-tabs button:hover { border-color: var(--nb-frame); background: #fff; }
     html.bnp-nb .bnp-nbsm-tabs img { max-width: 24px; max-height: 24px; }
+    html.bnp-nb .bnp-nbpop .bnp-nbsm-tabs { position: sticky; top: 0; z-index: 1; }   /* (all at once: the tabs stay while you scroll) */
+    html.bnp-nb .bnp-nbsm-tabs .bnp-nbsm-all { width: auto; min-width: 38px; padding: 0 10px; color: var(--nb-text); font: 10pt var(--nb-head); letter-spacing: .3pt; }
     html.bnp-nb .bnp-nbsm-name { margin: 8px 12px 4px; color: var(--nb-muted); font: 9.5pt var(--nb-head); }
     html.bnp-nb .bnp-nbsm-grid { display: grid; grid-template-columns: repeat(auto-fill, 38px); gap: 2px; width: min(390px, calc(100vw - 44px)); padding: 0 10px 10px; }
     html.bnp-nb .bnp-nbsm-grid button { position: relative; top: 0; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 36px; margin: 0; padding: 0; border: 0; border-radius: 9px; background: none; cursor: pointer; transition: top .1s, background .1s, box-shadow .1s; }
@@ -3300,12 +3305,23 @@
     try { const t = JSON.parse(localStorage.getItem('bnp-nbtheme') || 'null'); if (t && t.bar === bar && t.barInk && t.inkSure) return { ink: t.barInk, sure: true }; } catch (_) { /* */ }
     return { ink: inkOn(bar), sure: false };
   }
+  function lumOf(c) {   // (a colour's brightness, as contrast is measured: rgb() or #hex; null for anything else)
+    let m = /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/.exec(c || ''), v;
+    if (m) v = [m[1], m[2], m[3]].map(Number);
+    else if ((m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(c || '').trim()))) { const h = m[1].length === 3 ? m[1].replace(/./g, '$&$&') : m[1]; v = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)); }
+    else return null;
+    const [r, g, b] = v.map((n) => { const x = n / 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
   function inkOn(c) {   // (white or near-black on a colour: the one with more contrast)
-    const m = /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/.exec(c || '');
-    if (!m) return '#fff';
-    const [r, g, b] = [m[1], m[2], m[3]].map((v) => { const x = Number(v) / 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; });
-    const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    const L = lumOf(c);
+    if (L == null) return '#fff';
     return 1.05 / (L + 0.05) >= (L + 0.05) / 0.0685 ? '#fff' : '#262626';
+  }
+  function inkReads(ink, on) {   // (this writing on that colour: kept when it reads, else white or dark)
+    const a = lumOf(ink), b = lumOf(on);
+    if (a == null || b == null) return ink || inkOn(on);
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) >= 3 ? ink : inkOn(on);
   }
   function nbRetheme() {   // (a new site theme, put on from the Profile menu: the boards' colours and the theme's pictures, again)
     if (document.documentElement.classList.contains('bnp-st')) { nbTheme(); stEnhance(); return; }   // (a Settings page: its colours, its helpers)
@@ -4487,7 +4503,7 @@
     const name = m ? decodeURIComponent(m[1]) : reClean((li.querySelector('.postAuthorName') || {}).textContent);
     li.dataset.author = name.toLowerCase();
     li.dataset.name = name;
-    if (m) { const icon = li.querySelector('.authorIcon'); nfSee(name, (/url\(["']?([^"')]+)/.exec((icon && icon.getAttribute('style')) || '') || [])[1]); }   // (a Neofriend's avatar, for their card)
+    if (m) { const icon = li.querySelector('.authorIcon'), pic = (/url\(["']?([^"')]+)/.exec((icon && icon.getAttribute('style')) || '') || [])[1]; nfSee(name, pic); if (name.toLowerCase() === nbMe()) avSeeMine(pic); }   // (a Neofriend's avatar, for their card; yours, for your menus)
     if (post) {
       const meta = document.createElement('div');
       meta.className = 'bnp-nbpm';
@@ -4710,7 +4726,7 @@
     ['Holidays', 'web', 'aishadow angrynegg bauble bballoon brownleaf candle candycane creepyspyder eekeek fence festivalnegg fishnegg flower gballoon ghost happynegg heart holly jackolantern leafleft leafright luckydraik mistletoe negg paperlantern present pumpkin rballoon redleaf rednose roses santa shamrock snowflake snowman tombstone web witch=witchhat xmastree yballoon yellowleaf'],
     ['Lands and more', 'moon', 'altador brightvale dacardia darigan faerieland haunted kikolake krawkisland kreludor lostdesert maraqua meridell mystery moltara rooisland shenkuu terror tyrannia virtupets air dark earth fire light physical water 0.o.0 carrot catfish cloud rainbow coffee dung genie indubitably kqdoor kqkey map moneybag monocle moon raincloud star sun tea tophat yarn'],
   ];
-  let NB_SM = null, NB_SMMAP = null, NB_SMRE = null, nbSmCat = 0;
+  let NB_SM = null, NB_SMMAP = null, NB_SMRE = null, nbSmCat = null;   // (nbSmCat −1: every group at once)
   function nbSmilies() {   // ([[name, tab, [[code, file], …]], …], built once when first wanted)
     if (NB_SM) return NB_SM;
     NB_SM = NB_SM_RAW.map(([cat, tab, s]) => [cat, tab, s.includes('|') ? s.split('|').map((x) => { const i = x.lastIndexOf(' '); return [x.slice(0, i), x.slice(i + 1)]; }) : s.split(' ').map((w) => { const [n, f] = w.split('='); return [`*${n}*`, f || n]; })]);
@@ -4725,8 +4741,10 @@
   }
   function nbSmUsed(code) { const r = nbJson('bnp-nbsmr', []).filter((c) => c !== code); r.unshift(code); nbJsonSet('bnp-nbsmr', r.slice(0, 24)); }
   function nbSmHtml() {
-    const all = nbSmCats(), [cat, , list] = all[nbSmCat] || all[0];
-    return `<div class="bnp-nbsm-tabs">${all.map(([c, tab], i) => `<button type="button" data-nbsmcat="${i}" aria-pressed="${i === nbSmCat}" title="${esc(c)}"><img src="${esc(nbSmPic(tab))}" alt="${esc(c)}"></button>`).join('')}</div><div class="bnp-nbsm-name">${esc(cat)}</div><div class="bnp-nbsm-grid">${list.map(([code, f]) => `<button type="button" data-nbsm="${esc(code)}" title="${esc(code)}"><img src="${esc(nbSmPic(f))}" alt="${esc(code)}"></button>`).join('')}</div>`;
+    if (nbSmCat === null) nbSmCat = nbJson('bnp-nbsmall', 0) ? -1 : 0;   // (every group at once, if that's how you left it)
+    const all = nbSmCats(), every = nbSmCat === -1;
+    const grid = ([cat, , list]) => `<div class="bnp-nbsm-name">${esc(cat)}</div><div class="bnp-nbsm-grid">${list.map(([code, f]) => `<button type="button" data-nbsm="${esc(code)}" title="${esc(code)}"><img src="${esc(nbSmPic(f))}" alt="${esc(code)}" loading="lazy"></button>`).join('')}</div>`;
+    return `<div class="bnp-nbsm-tabs">${all.map(([c, tab], i) => `<button type="button" data-nbsmcat="${i}" aria-pressed="${i === nbSmCat}" title="${esc(c)}"><img src="${esc(nbSmPic(tab))}" alt="${esc(c)}"></button>`).join('')}<button type="button" class="bnp-nbsm-all" data-nbsmcat="-1" aria-pressed="${every}" title="Every smilie at once">All</button></div>${every ? all.map(grid).join('') : grid(all[nbSmCat] || all[0])}`;
   }
   // A post as Neopets makes it (worked out from its own Neoboard Settings preview, 2026-10-23): your NeoHTML is a pattern, its word
   // "neoHTML" standing for your words; a signature comes after three line breaks, read as one with the rest (so [center] in the NeoHTML
@@ -5031,6 +5049,7 @@
       const src = /src=["']([^"']+)["']/.exec(f.avatar_preview || '');
       const d = { av: src ? fullUrl(src[1]) : f.avatar ? `${NPI}neoboards/avatars/${f.avatar}.gif` : '', title, html: String(f.neohtml || ''), sig: String(f.neosignature || ''), name: reClean(f.pen_name || ''), who: nbWhoRead(f.neoboard_preview), at: Date.now() };
       nbJsonSet(key, d);
+      if (String(v) === '0' && d.av) avSeeMine(d.av);   // (your main pen: the avatar you wear)
       return d;
     } catch (e) { if (kept) return kept; throw e; }
   }
@@ -5191,7 +5210,7 @@
     if (!t) return;
     const d = t.dataset, name = nbPopCtx.name || '';
     if (d.nbsm) { nbSmilieIn(d.nbsm); nbSmUsed(d.nbsm); return; }
-    if (d.nbsmcat) { nbSmCat = Number(d.nbsmcat); nbPopEl.innerHTML = nbSmHtml(); nbPopPlace(); return; }
+    if (d.nbsmcat) { nbSmCat = Number(d.nbsmcat); nbJsonSet('bnp-nbsmall', nbSmCat === -1 ? 1 : 0); nbPopEl.innerHTML = nbSmHtml(); nbPopPlace(); return; }
     if (d.nbfc || d.nbfs || d.nbff) { if (d.nbfc) nbFontPick.c = d.nbfc; if (d.nbfs) nbFontPick.s = Number(d.nbfs); if (d.nbff) nbFontPick.f = d.nbff; nbPopEl.innerHTML = nbFontHtml(); return; }
     if ('nbfgo' in d) { nbPop(null); nbWrap(`[font c=${nbFontPick.c} s=${nbFontPick.s} f=${nbFontPick.f}]`, '[/font]'); return; }
     if (d.nbm === 'fol' || d.nbm === 'mute') {
@@ -5485,11 +5504,16 @@
   };
   const NBC_POS = 'bnp-nbcpos';
   // Your colours for every theme (S.nb.cols), or a theme's own (S.nb.colsBy: its folder → colours) that it wears instead
-  function nbcTheme() {   // (the theme you're in, by its folder: from the page, or the last one seen while the page hasn't said yet)
-    const l = themeLinks().pop(), k = themeOfUrl(l && l.href);
+  function nbcTheme() {   // (the theme you're in, by its folder: from the page, or the last one seen while the page hasn't said yet; a theme of yours: my:its id)
+    if (myPreviewOf) return `my:${myPreviewOf}`;
+    const w = S.wear ? myWorn() : null;
+    if (w) return `my:${w.id}`;
+    const l = themeLinks().pop(), k = themeOfUrl(l && (l.getAttribute('data-bnp-was') || l.href));
     try { if (k) { if (localStorage.getItem('bnp-themenow') !== k) localStorage.setItem('bnp-themenow', k); return k; } return localStorage.getItem('bnp-themenow') || ''; } catch (_) { return k; }
   }
   function nbcThemeName(k) {
+    const m = myKey(k);
+    if (m) return m.name;
     const t = THEMES.find((x) => x[1] === k);
     if (t) return t[2];
     const id = Object.entries(themeData().css).find(([, u]) => themeOfUrl(u) === k), n = id && themeList().find((x) => String(x[0]) === id[0]);
@@ -7754,7 +7778,7 @@
       if (Object.keys(seen).some((id) => !had[id] || had[id].u !== seen[id].u || had[id].n !== seen[id].n)) set('gthumbs', { ...had, ...seen });
     }
     const next = {};
-    for (const [, , spec] of TAB_PAGES) for (const s of spec) if (/^(nat|side|el):/.test(s) && !(s in next)) { const u = iconOf(s); if (u) next[s] = u; }
+    for (const [, , spec] of TAB_PAGES) for (const s of spec) if (/^(nat|side|el):/.test(s) && !(s in next)) { const u = iconOf(s); if (u && !/^(blob|data):/.test(u)) next[s] = u; }   // (a theme of yours: its recoloured icons are this page's alone, never kept)
     if (Object.keys(next).length < 8) return;   // (the theme isn't in yet)
     const kept = get('ticons', null) || {};
     if (Object.keys(next).some((s) => kept[s] !== next[s]) || Object.keys(kept).length !== Object.keys(next).length) set('ticons', next);
@@ -8509,11 +8533,270 @@
     return { list: null, css: {}, js: {}, sw: {} };
   }
   const themeDataSet = (d) => { try { localStorage.setItem('bnp-themes', JSON.stringify(d)); } catch (_) { /* (the site's storage is full: learnt again) */ } };
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Your own themes. One starts from a Neopets theme (its own sheet, put on in this browser only, never on your account) and draws its
+  // changes over it: the top bar, menus, pop-ups, the page, the foot of the page, the boards, and icons (another theme's, recoloured).
+  // The Void Within comes with Neopets Enhance; yours are made in Settings › Themes. The one you wear: S.wear (its id)
+  // ═══════════════════════════════════════════════════════════════════════════
+  const MY_PICS = {   // (pictures a theme can name: Neopets' own art, crisp at the sizes used)
+    'tvw:void': `${NPI}plots/tvw/home/images/void-pattern.png`,
+    'tvw:council': `${NPI}plots/tvw/home/images/locations/bg/altador.png`,   // (Altador's council chamber, the void at its windows: 1080 × 600)
+  };
+  const tvwActor = ([file, n, t = 0]) => ({ p: file.includes('/') ? file : `~t/${file}.png`, n, t, c: 0 });
+  const TVW_CAST = {   // (The Void Within's own, from its story's pictures: big enough to stay crisp anywhere)
+    luxinia: ['luxinia_default_left_d478bf71ig', 'Luxinia'], baelia: ['baelia_happy_left_4097e353e3', 'Baelia'], ozzy: ['ozzy_unarmor_happy_left_b87caa68b4', 'Ozzy'],
+    nyx: ['nyx_default_left_057jm7613j', 'Nyx'], juni: ['juni_default_left_a38ml4lgi8', 'Juni'], tavi: ['tavi_default_left_hb4efjaf59', 'Tavi'], iridesia: ['iridesia_happy_left_56e271d6b6', 'Iridesia'],
+    drakara: ['drakara_default_left_284e9f1a37', 'Drakara'], malevolent: ['malevolentsmug_left_5126cf5943', 'the Malevolent Being'], vira: ['vira_dress_happy_left_63c7d222cb', 'Vira'],
+    orion: ['OrionHalfPossessedDefaultLeft_4904e6b09c', 'Orion'], vocivus: ['vocivus_default_right_0ccdf37617', 'Vocivus', 1],
+    voidwyrm: ['bd2/npcs/00698_a163c2ee8b_tvw/698.png', 'the Void Wyrm', 1], voiddragon: ['bd2/npcs/00705_6b3dcd28d0_tvw/705.png', 'the void dragon', 1],
+    wisp: ['bd2/npcs/00700_142d71cbf3_tvw/700.png', 'a Wretched Wisp', 1], sefira: ['bd2/npcs/00703_af802f25a5_tvw/703.png', 'Sefira', 1], blighthound: ['bd2/npcs/00704_c205b8a54b_tvw/704.png', 'the Blighthound', 1],
+    viraArmed: ['bd2/npcs/00706_979c440649_tvw/706.png', 'Vira', 1], malevolentArmed: ['bd2/npcs/00707_a17df43501_tvw/707.png', 'the Malevolent Being', 1], acolytes: ['bd2/npcs/00708_0e14a97d37_tvw/708.png', 'the Acolytes', 1],
+    trueDrakara: ['bd2/npcs/00709_c7ab4d091f_tvw/709.png', 'True Drakara', 1], reach: ['bd2/npcs/00711_a9afad85dd_tvw/711.png', 'the void’s reach', 1],
+  };
+  const tvwCast = (...ks) => ks.map((k) => tvwActor(TVW_CAST[k]));
+  const MY_BUILT = [{
+    id: 'tvw', name: 'The Void Within', base: 'constellations', built: true, wip: true,
+    v: {
+      link: { hover: '#c13cff' },
+      bar: { top: '#090124', mid: '#170847', bottom: '#3a1170', line: '#c13cff', glow: '#ff46ff', text: '#f6cbff', pat: 'tvw:void', size: 150, show: 55, clock: '#1d0b5c', clockLine: '#7a3fd9', clockText: '#f6cbff' },
+      logo: { from: 'constellations', hue: 25, sat: 115, light: 100 },
+      icons: { from: 'constellations', hue: 296, keep: 30, sat: 110, grey: 65, light: 3 },
+      page: { colour: '#0e0134', pat: 'tvw:void', size: 150 },
+      menu: { bg: '#1d0b5c', text: '#f6cbff', line: '#2e1478', hover: '#3a1c8c', border: '#7a3fd9' },
+      prof: { top: '#2a1673', bottom: '#090124', item: '#f6cbff', small: '#c9a8ff', link: '#ff6cf6', box: '#2e1478', boxLine: '#ff46ff' },
+      news: { bg: '#1d0b5c', panel: '#2a1673', line: '#120438', head: '#f6cbff', text: '#e6d2ff', link: '#ff6cf6', visited: '#c9a8ff' },
+      pop: { top: '#090124', bottom: '#2a1673', pat: 'tvw:void', size: 150, title: '#ffd0ff', glow: '#ff46ff' },
+      foot: { top: '#3a1170', bottom: '#150640', pat: 'tvw:void', size: 150, show: 35, line: '#c13cff', glow: '#ff46ff', text: '#f6cbff' },
+      boards: { bar: '#2a1673', link: '#6a2fd0', hover: '#c41fc8', button: '#c13cff' },
+      home: { scene: 'tvw:council', w: 1080, h: 600, around: '#0b0128', pat: 'tvw:void', size: 150, plate: '#1d0b5c', plateLine: '#c13cff', plateText: '#f6cbff' },
+    },
+    looks: {   // (the story's heroes on the left; on the right, the void and those it took, Vocivus, its last foe, among them; a different one each page)
+      left: tvwCast('luxinia', 'baelia', 'ozzy', 'nyx', 'juni', 'tavi', 'iridesia'),
+      right: tvwCast('vocivus', 'voidwyrm', 'voiddragon', 'blighthound', 'sefira', 'wisp', 'trueDrakara', 'drakara', 'malevolentArmed', 'malevolent', 'viraArmed', 'vira', 'acolytes', 'reach', 'orion'),
+      corner: tvwCast('nyx', 'juni', 'tavi', 'luxinia', 'baelia', 'ozzy', 'iridesia'),
+    },
+  }];
+  const myAll = () => [...MY_BUILT, ...(Array.isArray(S.myThemes) ? S.myThemes : [])];
+  const myOf = (id) => myAll().find((t) => t.id === id) || null;
+  const myWorn = () => (S.wear ? myOf(S.wear) : null);
+  const myKey = (k) => (String(k || '').startsWith('my:') ? myOf(String(k).slice(3)) : null);
+  function myPic(p) {   // (a picture named in a theme: one of the art above, a Neopets path, an address; none for anything else)
+    if (!p) return '';
+    if (MY_PICS[p]) return MY_PICS[p];
+    if (/^https:\/\/[^\s"'()]+$/.test(p)) return p;
+    if (/^[\w./-]+\.(png|gif|svg|webp|jpe?g)$/i.test(p)) return NPI + p;
+    return '';
+  }
+  const myRoot = (sel) => sel.split(',').map((s) => `:root ${s.trim()}`).join(', ');   // (a step stronger than the base theme's own rule for it)
+  function myCss(t) {   // (the theme's own look, over its base's)
+    const v = (t && t.v) || {}, out = [];
+    const rule = (sel, ...decls) => { const d = decls.filter((x) => x && !/undefined|null|NaN/.test(x)); if (d.length) out.push(`${myRoot(sel)} { ${d.join('; ')}; }`); };
+    const has = (...xs) => xs.every((x) => x != null && x !== '');
+    const pic = (p) => { const u = myPic(p); return u ? `url("${cssUrl(u)}")` : ''; };
+    const px = (n, d) => `${Math.max(8, Math.round(Number(n) || d))}px`;
+    const grad = (deg, a, b, c) => (has(a, b) ? `linear-gradient(${deg}, ${a} 0%, ${c ? `${c} 45%, ` : ''}${b} 100%)` : '');
+    const { link = {}, bar = {}, logo = {}, page = {}, menu = {}, prof = {}, news = {}, pop = {}, foot = {}, boards = {}, home = {} } = v;
+    out.push(`html.bnp-my-wait .nav-top__2020 [class*="-icon__2020"], html.bnp-my-wait .nav-bottom__2020 [class*="-icon__2020"], html.bnp-my-wait .nav-dropdown-arrow__2020, html.bnp-my-wait .nav-search-icon__2020 { visibility: hidden !important; }`);   // (its icons out of sight the moment before they're recoloured)
+    if (has(link.hover)) rule('a:hover', `color: ${link.hover}`);
+    // the top bar
+    if (has(bar.top, bar.bottom)) rule('.nav-top__2020', `background: ${grad('180deg', bar.top, bar.bottom, bar.mid)}`, has(bar.line) && `border-bottom: 3px solid ${bar.line}`, has(bar.glow) && `box-shadow: 0 2px 10px color-mix(in srgb, ${bar.glow} 32%, transparent)`);
+    if (has(bar.pat)) rule('.nav-top-pattern__2020', `background: ${pic(bar.pat)} center / ${px(bar.size, 150)} repeat`, 'top: 0', 'height: 100% !important', `opacity: ${Math.min(1, Math.max(0, (bar.show == null ? 100 : Number(bar.show)) / 100))}`, 'mix-blend-mode: screen');
+    if (has(bar.text)) rule('.nav-text__2020, .nav-text-bottom__2020', `color: ${bar.text}`);
+    if (has(bar.top, bar.bottom)) rule('.nav-bottom__2020', `background: ${grad('0deg', bar.top, bar.bottom, bar.mid)}`, has(bar.line) && `border-top: 3px solid ${bar.line}`);
+    if (has(bar.pat)) rule('.nav-bottom-pattern__2020', `background: ${pic(bar.pat)} center / ${px(bar.size, 150)} repeat`, `opacity: ${Math.min(1, Math.max(0, (bar.show == null ? 100 : Number(bar.show)) / 100))}`, 'mix-blend-mode: screen');
+    if (has(bar.clock)) rule('.nav-top__2020 .nav-top-nst', `background-color: ${bar.clock}`, has(bar.clockLine) && `border-color: ${bar.clockLine}`, has(bar.clockText) && `color: ${bar.clockText}`);
+    // the logo: a theme's own, its colours turned a little if you like
+    const logoUrl = logo.pic ? myPic(logo.pic) : logo.from ? myLogoOf(logo.from) : '';
+    const logoFilter = [logo.hue ? `hue-rotate(${Number(logo.hue)}deg)` : '', logo.sat != null && Number(logo.sat) !== 100 ? `saturate(${Number(logo.sat) / 100})` : '', logo.light != null && Number(logo.light) !== 100 ? `brightness(${Number(logo.light) / 100})` : ''].filter(Boolean).join(' ');
+    if (logoUrl || logoFilter) rule('.nav-logo__2020, .footer-logo__2020', logoUrl && `background-image: url("${cssUrl(logoUrl)}")`, logoFilter && `filter: ${logoFilter}`);
+    // the page
+    if (has(page.colour) || has(page.pat)) rule('body', has(page.colour) && `background-color: ${page.colour}`, has(page.pat) && `background-image: ${pic(page.pat)}`, has(page.pat) && `background-size: ${px(page.size, 150)} auto`);
+    // the menus
+    if (has(menu.bg)) {
+      rule('.nav-dropdown__2020', `background-color: ${menu.bg}`, has(menu.text) && `color: ${menu.text}`, has(menu.border) && `border: 2px solid ${menu.border}`);
+      rule('.dropdown-triangle-up__2020', `border-bottom-color: ${menu.border || menu.bg}`);
+      rule('.nav-dropdown__2020.shop-dropdown h3', `color: ${menu.bg}`);
+      rule('.nav-dropdown__2020.shop-dropdown .shopdropdown-tab-active', `background-color: ${menu.bg}`);
+    }
+    if (has(menu.line)) {
+      rule('.nav-dropdown__2020 ul li, .nav-dropdown__2020.community-dropdown .neofriendsOnline, .nav-profile-dropdown__2020 ul li, .nav-profile-dropdown-clock__2020', `border-bottom: 2px solid ${menu.line}`);
+      rule('.nav-dropdown__2020.shop-dropdown .shopdropdown-tabs', `background-color: ${menu.line}`);
+    }
+    if (has(menu.hover)) rule('.nav-dropdown__2020 ul li:hover, .nav-profile-dropdown__2020 .profile-dropdown-subsection', `background-color: ${menu.hover}`);
+    if (has(menu.text)) rule('.nav-dropdown__2020 a, .nav-dropdown__2020 a:visited, .nav-dropdown__2020.shop-dropdown .shopdropdown-tab-active h3', `color: ${menu.text}`);
+    // the profile menu
+    if (has(prof.top, prof.bottom)) { rule('.nav-profile-dropdown__2020', `background: ${grad('360deg', prof.bottom, prof.top)}`); rule('#navProfilePetExpandIcon__2020', `background-color: ${prof.bottom}`); }
+    if (has(prof.box)) rule('.nav-profile-pet-box-lg__2020, .nav-profile-pet-sm__2020, .nav-pet-menu-icon__2020', `background-color: ${prof.box}`);
+    if (has(prof.boxLine)) rule('.nav-profile-pet-box-sm__2020', `border: 2px solid ${prof.boxLine}`, `box-shadow: 0 3px 0 0 ${prof.boxLine}`);
+    if (has(prof.small)) rule('.nav-profile-dropdown-text', `color: ${prof.small}`);
+    if (has(prof.link)) rule('.nav-profile-dropdown-text a', `color: ${prof.link}`);
+    if (has(prof.item)) rule('.nav-profile-dropdown__2020 ul li, .nav-profile-dropdown__2020 ul a', `color: ${prof.item}`);
+    // news, alerts and quests
+    if (has(news.bg)) rule('#navnewsdropdown__2020', `background: ${news.bg}`);
+    if (has(news.panel)) rule('#alertstab__2020, #newstab__2020, #queststab__2020, #navquestsdropdown__2023, .tabActive__2020', `background: ${grad('180deg', news.panel, news.bg || news.panel)}`);
+    if (has(news.line)) { rule('#newstab__2020 ul li', `border-bottom: 2px solid ${news.line}`); rule('#alertstab__2020 ul li', `border: 2px solid ${news.line}`, `box-shadow: 0 3px 0 0 ${news.line}`); }
+    if (has(news.head)) rule('#newstab__2020 ul li h4, .tabActive__2020 .news-dropdown-text__2020, .news-tab-select__2020 .news-dropdown-text__2020, .alerts-tab-select__2020 .news-dropdown-text__2020, .quests-tab-title__2020 .quests-dropdown-text__2020', `color: ${news.head}`);
+    if (has(news.text)) rule('.news-tab-content__2020 p, .alerts-none__2020', `color: ${news.text}`);
+    if (has(news.link)) rule('#newstab__2020 ul li a, .alerts-tab-viewclick__2020 .news-dropdown-text__2020, .news-tab-viewclick__2020 .news-dropdown-text__2020, .quests-tab-viewclick__2020 .quests-dropdown-text__2020', `color: ${news.link}`);
+    if (has(news.visited)) rule('#newstab__2020 ul li a:visited', `color: ${news.visited}`);
+    // pop-ups (and every window of Neopets Enhance's, which wears them)
+    if (has(pop.glow)) rule('.togglePopup__2020', `box-shadow: 0 0 5px 3px ${pop.glow}`);
+    if (has(pop.top, pop.bottom)) { rule('.popup-header__2020', `background: ${grad('180deg', pop.top, pop.bottom)} ${pop.bottom}`); rule('.popup-footer__2020', `background: ${grad('0deg', pop.top, pop.bottom)} ${pop.bottom}`); }
+    if (has(pop.pat)) rule('.popup-header-pattern__2020, .popup-footer-pattern__2020', `background-color: transparent`, `background-image: ${pic(pop.pat)}`, `background-size: ${px(pop.size, 150)} auto`, 'background-position: center');
+    if (has(pop.title)) rule('.popup-header__2020 h3', `color: ${pop.title}`);
+    // the foot of the page
+    if (has(foot.top, foot.bottom) || has(foot.colour)) rule('.footer__2020', `background: ${has(foot.top, foot.bottom) ? `${grad('180deg', foot.top, foot.bottom)} ${foot.bottom}` : foot.colour}`, has(foot.line) && `border-top: 3px solid ${foot.line}`, has(foot.glow) && `box-shadow: 0 -2px 12px color-mix(in srgb, ${foot.glow} 30%, transparent)`);
+    if (has(foot.pat)) rule('.footer-pattern__2020', `background: ${pic(foot.pat)} center 0 / ${px(foot.size, 150)} auto repeat`, foot.show != null && `opacity: ${Math.min(1, Math.max(0, Number(foot.show) / 100))}`, foot.show != null && 'mix-blend-mode: screen');
+    if (has(foot.text)) rule('.footer-copyright__2020, .footer-link__2020, .footer__2020 a', `color: ${foot.text}`);
+    // the boards
+    const B_BAR = '#boardIndex h3, #boardList ul .boardNavBottom .createTopicButton a, #boardList ul .boardNavTop .createTopicButton a, #boardCreateTopic h1, #boardTopic .topicReplyContainer .topicReplySubmit, #boardCreateTopic .topicCreateContainer .topicCreateSubmit, #boardTopic ul .topicNavTop .replyTopicButton-top, #boardList ul .pageNav .boardPageButton-active, #boardTopic .pageNav .boardPageButton-active, #boardList ul .pageNav .boardPageButton:hover, #boardTopic .pageNav .boardPageButton:hover, #boardTopic ul .topicReplyContainer .topicReplyTitle';
+    const B_LINK = '#boardIndex ul li h4, #boardIndex ul li p a, #boardList .breadcrumbs a, #boardTopic .breadcrumbs a, #boardList ul li .last a, #boardList ul li .last-mobile a, #boardList ul li .author-mobile a, #boardList ul .pageNav .boardPageButton, #boardTopic .pageNav .boardPageButton, #boardTopic ul li .boardPostByline a, #boardTopic ul .topicNavTop .topicCreator, .neoboardPenTitle, .boardPostMessage a, #boardList ul li .boardTopicTitle, #boardIndex ul li .premiumBoardButton a';
+    const B_BTN = '#boardList ul .boardNavBottom .createTopicButton a:hover, #boardList ul .boardNavTop .createTopicButton a:hover, #boardTopic .topicReplyContainer .topicReplySubmit:hover, #boardCreateTopic .topicCreateContainer .topicCreateSubmit:hover, #boardTopic ul .topicNavTop .replyTopicButton-top:hover';
+    if (has(boards.bar)) { rule(B_BAR, `background-color: ${boards.bar} !important`); rule('#boardList ul .pageNav .boardPageButton:hover, #boardTopic .pageNav .boardPageButton:hover', `border: 1px solid ${boards.bar} !important`); }
+    if (has(boards.link)) rule(B_LINK, `color: ${boards.link} !important`);
+    if (has(boards.button)) rule(B_BTN, `background-color: ${boards.button} !important`);
+    if (has(boards.hover)) rule(B_LINK.split(',').map((s) => `${s.trim()}:hover`).join(', '), `color: ${boards.hover} !important`);
+    // the home page: a scene at its own size (never stretched), fading into what's around it
+    if (has(home.around) || has(home.pat)) rule('.hp-bg-grid__2020', has(home.around) && `background-color: ${home.around}`, has(home.pat) && `background-image: ${pic(home.pat)}`, has(home.pat) && `background-size: ${px(home.size, 150)} auto`);
+    if (has(home.scene)) {
+      const w = Math.round(Number(home.w) || 1080), h = Math.round(Number(home.h) || 600), at = `center top / ${w}px ${h}px no-repeat`;
+      const fade = `linear-gradient(to right, transparent 0, #000 110px, #000 calc(100% - 110px), transparent 100%) ${at}, linear-gradient(to bottom, #000 72%, transparent 100%) ${at}`;   // (its edges fade away: each layer the scene's own size, where the scene is)
+      rule('.hp-bg-top__2020', `background: ${pic(home.scene)} center top / ${w}px ${h}px no-repeat !important`, `height: ${h}px !important`, 'width: 100% !important', 'margin: 0 !important', 'top: 0 !important', `-webkit-mask: ${fade}`, `mask: ${fade}`, '-webkit-mask-composite: source-in', 'mask-composite: intersect');
+      rule('.hp-bg-mid__2020, .hp-bg-bottom__2020, .hp-bg-obj__2020', 'background-image: none !important');
+    }
+    if (has(home.plate)) rule('.hp-carousel-nameplate', 'border-image: none !important', `background: ${home.plate} !important`, has(home.plateLine) && `border: 3px solid ${home.plateLine} !important`, 'border-radius: 12px !important', has(home.plateLine) && `box-shadow: 0 3px 0 color-mix(in srgb, ${home.plateLine} 60%, #000)`, has(home.plateText) && `color: ${home.plateText} !important`);   // (each pet's name: drawn, so crisp)
+    return out.join('\n');
+  }
+  function myLogoOf(f) {   // (a theme's own logo: read from its sheet once, or where most themes keep it)
+    const sw = themeData().sw[f];
+    if (sw && sw.pics && sw.pics.logo) return fullUrl(sw.pics.logo);
+    return { constellations: `${NPI}themes/h5/constellations/images/np-logo-R.png`, hauntedwoods: `${NPI}themes/h5/hauntedwoods/images/np-logo-R2.png`, basic: `${NPI}themes/h5/basic/images/v3/np-logo-R.svg` }[f] || `${NPI}themes/h5/${f}/images/np-logo-R.png`;
+  }
+  // icons: another theme's, each colour turned toward yours (its lightness kept, white kept white), so they stay crisp at any size
+  const MY_ICON_PARTS = [
+    ['community-icon', '.nav-top__2020 .nav-community-icon__2020, .nav-bottom__2020 .nav-community-icon__2020'],
+    ['games-icon', '.nav-top__2020 .nav-games-icon__2020, .nav-bottom__2020 .nav-games-icon__2020'],
+    ['explore-icon', '.nav-top__2020 .nav-explore-icon__2020, .nav-bottom__2020 .nav-explore-icon__2020'],
+    ['shop-icon', '.nav-top__2020 .nav-shop-icon__2020, .nav-bottom__2020 .nav-shop-icon__2020'],
+    ['premium-icon', '.nav-top__2020 .nav-premium-icon__2020, .nav-bottom__2020 .nav-premium-icon__2020'],
+    ['search-icon', '.nav-search-icon__2020'],
+    ['quests-icon', '.nav-quest-icon__2020, .quests-tab-icon__2020'],
+    ['bell-icon', '.nav-bell-icon__2020, .alerts-tab-icon__2020'],
+    ['calendar-icon', '.nav-calendar-icon__2020'],
+    ['dropdown-arrow', '.nav-top__2020 .nav-dropdown-arrow__2020, .nav-profile-dropdown__2020 .profile-dropdown-arrow'],
+    ['compress', '.nav-profile-pet-contract__2020'], ['expand', '.nav-profile-pet-expand__2020'],
+    ['carouselarrow-left', '.hp-slick__2020 .slick-prev'], ['carouselarrow-right', '.hp-slick__2020 .slick-next'],
+    ...[['profile', 'profile'], ['neopass', 'neopass'], ['mypets', 'petcentral'], ['customise', 'customise'], ['chamber', 'stylingchamber'], ['createpet', 'createpet'], ['adoptpet', 'adopt'],
+      ['inventory', 'inventory'], ['safetydeposit', 'sdb'], ['quickstock', 'quickstock'], ['transferlog', 'transferlog'], ['myalbums', 'albums'], ['bookshelf', 'bookshelf'], ['closet', 'closet'],
+      ['gallery', 'gallery'], ['stamps', 'stamps'], ['tradingcards', 'tcg'], ['ncalbum', 'ncalbum'], ['settings', 'settings'], ['signout', 'signout']].map(([file, cls]) => [`${file}-icon`, `.nav-profile-dropdown__2020 .nav-${cls}-icon`]),
+  ];
+  const MY_ICON_KEYS = MY_ICON_PARTS.map(([file, sel]) => [file, `.${sel.split(',')[0].trim().split(' ').pop().replace(/^\./, '')}`]);   // ([its name, the class a theme's sheet sets it on])
+  const myIconUrl = (f, file) => { const sw = themeData().sw[f], u = sw && sw.pics && sw.pics.icons && sw.pics.icons[file]; return u || `${NPI}themes/h5/${f}/images/${file}.svg`; };
+  function hexUnit(h) { h = String(h).replace('#', ''); if (h.length === 3) h = h.replace(/./g, '$&$&'); return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255); }   // (#rrggbb → [r, g, b] from 0 to 1)
+  function rgbHsl([r, g, b]) {
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+    if (!d) return [0, 0, l];
+    const s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+    const h = mx === r ? ((g - b) / d + (g < b ? 6 : 0)) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return [h * 60, s, l];
+  }
+  function hslHex(h, s, l) {
+    const f = (n) => { const k = (n + h / 30) % 12, a = s * Math.min(l, 1 - l); return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))); };
+    return `#${[f(0), f(8), f(4)].map((x) => x.toString(16).padStart(2, '0')).join('')}`;
+  }
+  function svgTint(svg, o, ref) {   // (o: hue it turns to, keep: how much of each part's difference it keeps, sat, grey: how coloured the greys become, light)
+    const hue = Number(o.hue) || 0, keep = (o.keep == null ? 30 : Number(o.keep)) / 100, sat = (o.sat == null ? 100 : Number(o.sat)) / 100, grey = (o.grey == null ? 55 : Number(o.grey)) / 100, light = (Number(o.light) || 0) / 100;
+    const turn = (rgb) => {
+      const [h, s, l] = rgbHsl(rgb);
+      if (l > 0.97) return null;   // (white stays white)
+      if (s < 0.12) return hslHex(hue, grey, Math.min(1, Math.max(0, l + light)));
+      const d = ((h - ref + 540) % 360) - 180;
+      return hslHex((hue + d * keep + 360) % 360, Math.min(1, s * sat), Math.min(1, Math.max(0, l + light)));
+    };
+    return svg.replace(/#([0-9a-f]{6}|[0-9a-f]{3})\b/gi, (m, h) => turn(hexUnit(h)) || m)
+      .replace(/rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/gi, (m, r, g, b) => { const x = turn([r / 255, g / 255, b / 255]); return x ? `rgb(${hexUnit(x).map((c) => Math.round(c * 255)).join(',')}` : m; });
+  }
+  function svgHue(svgs) {   // (a set of icons' own main colour: where their coloured parts mostly are)
+    let x = 0, y = 0;
+    for (const svg of svgs) for (const m of svg.matchAll(/#([0-9a-f]{6}|[0-9a-f]{3})\b/gi)) { const [h, s, l] = rgbHsl(hexUnit(m[1])); if (s < 0.12 || l > 0.95 || l < 0.05) continue; x += Math.cos(h * Math.PI / 180) * s; y += Math.sin(h * Math.PI / 180) * s; }
+    return (x || y) ? (Math.atan2(y, x) * 180 / Math.PI + 360) % 360 : 220;
+  }
+  let myIconsAsk = 0;
+  async function myIcons(t) {   // (its icons: fetched from Neopets' image server, as the browser keeps them, and recoloured)
+    const o = t && t.v && t.v.icons, ask = ++myIconsAsk, root = document.documentElement;
+    const done = () => { if (ask === myIconsAsk) root.classList.remove('bnp-my-wait'); };
+    if (!o || !o.from) { const st = document.getElementById('bnp-my-icons'); if (st) st.remove(); done(); return; }
+    root.classList.add('bnp-my-wait');
+    const safety = setTimeout(done, 1500);   // (never out of sight for long, whatever happens)
+    try {
+      const got = await Promise.all(MY_ICON_PARTS.map(async ([file]) => {
+        const u = myIconUrl(o.from, file);
+        if (!/\.svg(\?|$)/i.test(u)) return { pic: u };
+        try { const r = await fetch(u); if (!r.ok) return ''; const svg = await r.text(); return /<svg[\s>]/i.test(svg) ? svg : ''; } catch (_) { return ''; }
+      }));
+      if (ask !== myIconsAsk) return;
+      const ref = svgHue(got.filter((x) => typeof x === 'string' && x)), css = [], urls = [];
+      got.forEach((svg, i) => {   // (each one a picture of this page's own: the sheet stays small)
+        if (svg && svg.pic) { css.push(`${myRoot(MY_ICON_PARTS[i][1])} { background-image: url("${cssUrl(svg.pic)}") !important; }`); return; }
+        if (!svg) return;
+        const u = URL.createObjectURL(new Blob([o.as === 'own' ? svg : svgTint(svg, o, ref)], { type: 'image/svg+xml' }));
+        urls.push(u);
+        css.push(`${myRoot(MY_ICON_PARTS[i][1])} { background-image: url("${u}") !important; }`);
+      });
+      let st = document.getElementById('bnp-my-icons');
+      if (!st) { st = document.createElement('style'); st.id = 'bnp-my-icons'; (document.head || root).append(st); }
+      st.textContent = css.join('\n');
+      const old = myIcons.urls || [];
+      myIcons.urls = urls;
+      setTimeout(() => old.forEach((u) => URL.revokeObjectURL(u)), 4000);   // (the last ones, once nothing shows them)
+    } catch (e) { report(e); } finally { clearTimeout(safety); done(); }
+  }
+  const myBaseHref = (f) => { const t = THEMES.find((x) => x[1] === f); return (t && themeData().css[t[0]]) || `${NPI}themes/h5/${f}/theme-${f}.css`; };
+  function myOn(t, early) {   // (a theme of yours on this page: its base's sheet in place of your account's, its own look over it, its icons)
+    const root = document.documentElement;
+    root.classList.add('bnp-my');
+    root.setAttribute('data-bnp-my', t.id);
+    let st = document.getElementById('bnp-my-style');
+    if (!st) { st = document.createElement('style'); st.id = 'bnp-my-style'; (document.head || root).append(st); }
+    st.textContent = myCss(t);
+    const want = myBaseHref(t.base);
+    const fix = (l) => { if (!l.hasAttribute('data-bnp-was')) l.setAttribute('data-bnp-was', l.href); if (themeOfUrl(l.href) !== t.base) l.href = want; };
+    if (early && document.readyState === 'loading') {   // (the page's own sheet, swapped as it comes: before anything is drawn)
+      themeLinks().forEach(fix);
+      const o = new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeName === 'LINK' && THEME_RE.test(n.href || '')) fix(n); });
+      o.observe(root, { childList: true, subtree: true });
+      document.addEventListener('DOMContentLoaded', () => { o.disconnect(); themeLinks().forEach(fix); }, { once: true });
+    } else {
+      const at = themeLinks().pop(), was = at && (at.getAttribute('data-bnp-was') || at.href);
+      if (at && themeOfUrl(at.href) !== t.base) themeSwap(want).then(() => { const l = themeLinks().pop(); if (l && was) l.setAttribute('data-bnp-was', was); themeChanged(); }).catch(report);
+      else if (at && was) at.setAttribute('data-bnp-was', was);
+    }
+    myIcons(t);
+  }
+  function myOff(back = true) {   // (back to your account's own theme on this page; back: its own sheet too)
+    const root = document.documentElement;
+    root.classList.remove('bnp-my', 'bnp-my-wait');
+    root.removeAttribute('data-bnp-my');
+    myIconsAsk++;
+    for (const id of ['bnp-my-style', 'bnp-my-icons']) { const el = document.getElementById(id); if (el) el.remove(); }
+    if (!back) return;
+    const at = themeLinks().pop(), was = at && at.getAttribute('data-bnp-was');
+    if (at) at.removeAttribute('data-bnp-was');
+    if (was && was !== at.href) themeSwap(was).then(themeChanged).catch(report);
+  }
+  function myEarly() { const t = myWorn(); if (t) myOn(t, true); }
+  function myWear(id) {   // (put one on, or take yours off: '' is your account's Neopets theme again)
+    const was = myWorn(), t = id ? myOf(id) : null;
+    S.wear = t ? t.id : '';
+    saveNow();
+    if (t) myOn(t, false); else if (was) myOff();
+    themeChanged();
+  }
   const themeLinks = () => $$('link[rel~="stylesheet"]').filter((l) => THEME_RE.test(l.href));
   const themeList = () => { const d = themeData(); return d.list && d.list.length ? d.list : THEMES.map(([id, , n]) => [id, n]); };
   function themeFolder(id) { const u = themeData().css[id]; if (u) return themeOfUrl(u); const t = THEMES.find((x) => x[0] === id); return t ? t[1] : ''; }
   function themeNowId() {
-    const l = themeLinks().pop(), f = themeOfUrl(l && l.href);
+    const l = themeLinks().pop(), f = themeOfUrl(l && (l.getAttribute('data-bnp-was') || l.href));   // (your account's, under a theme of yours)
     if (!f) return 0;
     for (const [id, u] of Object.entries(themeData().css)) if (themeOfUrl(u) === f) return Number(id);
     const t = THEMES.find((x) => x[1] === f);
@@ -8538,6 +8821,7 @@
     const sheet = new CSSStyleSheet();
     sheet.replaceSync(String(text || '').replace(/@import[^;]*;/gi, ''));
     let bg = '', pbg = '', pat = '', grad = '';
+    const pics = {};   // (its logo and patterns: for themes of your own to borrow)
     const real = (c) => !!c && !/^(initial|inherit|unset|revert|transparent|none|currentcolor)$/i.test(c) && !/rgba\([^)]*,\s*0\)/.test(c);
     const look = (rules) => {
       for (const r of rules) {
@@ -8546,6 +8830,13 @@
         const sels = r.selectorText.split(',').map((s) => s.trim());
         if (sels.includes('.popup-header__2020') && real(r.style.backgroundColor)) bg = r.style.backgroundColor;
         if (sels.includes('.popup-header__2020') && /gradient\(/.test(r.style.backgroundImage || '')) grad = r.style.backgroundImage;   // (a header in a gradient, as Altadorian Constellations has: night blue into plum)
+        for (const [sel, k] of [['.nav-logo__2020', 'logo'], ['.nav-top-pattern__2020', 'bar'], ['body', 'page'], ['.footer-pattern__2020', 'foot']]) {
+          if (!sels.includes(sel)) continue;
+          const u = /url\(["']?([^"')]+)/.exec(r.style.backgroundImage || '');
+          if (u) pics[k] = new URL(u[1], base).href;
+        }
+        const iu = /url\(["']?([^"')]+)/.exec(r.style.backgroundImage || r.style.borderImageSource || '');
+        if (iu) for (const [file, tok] of MY_ICON_KEYS) if (!(pics.icons && pics.icons[file]) && sels.some((x) => x.includes(tok) && !x.includes('.nav-bottom__2020'))) (pics.icons = pics.icons || {})[file] = new URL(iu[1], base).href;   // (the top bar's, never the phone bar's own)
         if (sels.includes('.popup-header-pattern__2020')) {   // (some themes colour the pattern's own layer instead: Mystery Island, the Neopian Times…)
           if (real(r.style.backgroundColor)) pbg = r.style.backgroundColor;
           const u = /url\(["']?([^"')]+)/.exec(r.style.backgroundImage || '');
@@ -8555,21 +8846,21 @@
     };
     look(sheet.cssRules);
     if (!bg && grad) bg = (/rgba?\([^)]*\)|#[0-9a-f]{3,8}\b/i.exec(grad) || [])[0] || '';   // (its first colour, where only one colour will do)
-    return bg || pbg || pat || grad ? { bg: bg || pbg || '', pat, grad } : null;
+    return bg || pbg || pat || grad ? { bg: bg || pbg || '', pat, grad, pics } : null;
   }
   let themeSwBusy = false;
   async function themeSwatches() {   // (each theme's colours, read once from its own sheet and kept a fortnight; the menu shows them as they come)
     if (themeSwBusy) return;
     const now = Date.now(), d0 = themeData();
-    const want = themeList().map(([id]) => [id, themeFolder(id)]).filter(([, f]) => f && !(d0.sw[f] && d0.sw[f].v === 3 && now - (d0.sw[f].at || 0) < 14 * DAY_MS));   // (v3: read the way that knows headers coloured on their pattern, drawn as a picture, or in a gradient)
+    const want = themeList().map(([id]) => [id, themeFolder(id)]).filter(([, f]) => f && !(d0.sw[f] && d0.sw[f].v === 5 && now - (d0.sw[f].at || 0) < 14 * DAY_MS));   // (v3: read the way that knows headers coloured on their pattern, drawn as a picture, or in a gradient)
     if (!want.length) return;
     themeSwBusy = true;
     const got = {};
     try {
       await Promise.all(want.map(async ([id, f]) => {
-        try { const url = themeCssOf(id), r = await fetch(url); if (!r.ok) return; const sw = themeSheetRead(await r.text(), url); if (sw) got[f] = { ...sw, at: now, v: 3 }; } catch (_) { /* (that one another time) */ }
+        try { const url = themeCssOf(id), r = await fetch(url); if (!r.ok) return; const sw = themeSheetRead(await r.text(), url); if (sw) got[f] = { ...sw, at: now, v: 5 }; } catch (_) { /* (that one another time) */ }
       }));
-      if (Object.keys(got).length) { const d = themeData(); Object.assign(d.sw, got); themeDataSet(d); themeMenuPaint(); if (stOn()) stThemes(); }   // (General Settings' swatches too)
+      if (Object.keys(got).length) { const d = themeData(); Object.assign(d.sw, got); themeDataSet(d); themeMenuPaint(); if (stOn()) stThemes(); if (hub && hubPage === 'themes' && !lookAt && hub.win.classList.contains('open')) paintHub(); }   // (General Settings' swatches too)
     } finally { themeSwBusy = false; }
   }
   function themeMenuPaint() {   // (the theme rows as they are now: ✓ on yours, the one on its way, every colour known)
@@ -8584,10 +8875,18 @@
   }
   let themeBusy = 0;
   async function themePick(id) {   // (on at once; Neopets saves it meanwhile; if it doesn't, yours comes back)
+    if (S.wear || myPreviewOf) {   // (a theme of yours on: off first; your Neopets one is then simply yours again)
+      const acc = themeNowId();
+      myPreviewOf = '';
+      if (!id || id === acc) { myWear(''); return; }
+      S.wear = '';
+      saveNow();
+      myOff(false);
+    }
     if (themeBusy || !id || id === themeNowId()) return;
     themeBusy = id;
     themeMenuPaint();
-    const oldCss = (themeLinks().pop() || {}).href || '', oldJs = themeJsNow(), want = themeCssOf(id);
+    const at0 = themeLinks().pop(), oldCss = (at0 && (at0.getAttribute('data-bnp-was') || at0.href)) || '', oldJs = themeJsNow(), want = themeCssOf(id);
     const saving = themeSave(id);
     saving.catch(() => { /* (seen below) */ });
     try {
@@ -8693,8 +8992,10 @@
   function themeChanged() {   // (everything BetaNav Plus dresses in your theme, dressed again)
     themeHeadKept = null;
     themeBarKept = null;
+    themeFootKept = undefined;
     try { applyAll(); } catch (e) { report(e); }
     for (const h of $$('.bnp-hub-head')) { try { themeWin(h.parentElement); } catch (_) { /* */ } }
+    try { hubPal(); footPals(); } catch (e) { report(e); }   // (Settings' corner and the foot of the page: the new theme's Neopians)
     for (const b of $$('[data-bnp="rems"]')) remAccent(b);
     for (const b of $$('[data-bnp="run"]')) themeRun(b);
     for (const b of $$('.bnp-sr')) themeSr(b);
@@ -10196,6 +10497,7 @@
   let hub = null, hubPage = (() => { try { return localStorage.getItem('bnp-hubpage') || 'general'; } catch (_) { return 'general'; } })(), hubSel = null, toastT = 0;
   const PAGES = [
     ['general', 'General', 'other'],
+    ['themes', 'Themes', 'other'],
     ...MENUS.map(([k, n]) => [k, n, 'menu']),
     ['boards', 'My Boards', 'folder'], ['mygames', 'My Games', 'folder'], ['lands', 'Lands of Neopia', 'folder'], ['recent', 'Recently Visited', 'folder'],
     ['tabs', 'Tab icons', 'page'], ['clock', 'Clock', 'other'],
@@ -10206,6 +10508,7 @@
   const PAGE_WAS = { features: 'general', oldpages: 'otherpages', quickref: 'otherpages' };   // (pages that were, before they were shared out)
   const RAIL = [   // (the side list, in a few groups: Menus and Folders one line each, with their own tabs at the top of the page)
     ['The top bar', ['general', '*menu', '*folder', 'tabs', 'clock']],
+    ['Look', ['themes']],
     ['Neopets pages', ['neoboards', 'neomail', 'items', 'avatars', 'shops', 'dailies', 'otherpages']],
     ['Reminders', ['reminders', 'randomevents']],
     ['Your settings', ['backup']],
@@ -10227,6 +10530,12 @@
   }
   function closeHub() {
     if (!hub) return;
+    lookPick = null;
+    lookPickPaint();
+    myPick = null;
+    myPickPaint();
+    myColourClose();
+    myPreviewEnd();
     hub.win.classList.remove('open');
     hub.veil.classList.remove('open');
     const ic = hub.win.querySelector('.bnp-icons');
@@ -10296,6 +10605,7 @@
     themeWin(hub.win);
     const g = hub.win.querySelector('[data-g="hubgear"]'), u = iconOf(['side:/settings/', 'el:#navprofiledropdown__2020 .nav-settings-icon']);
     if (g) { g.hidden = !u; if (u) g.style.backgroundImage = `url("${cssUrl(u)}")`; }
+    hubPal(true);
   }
   function themeWin(win) {   // (a window wears your theme: its pop-up outline, and its header colour for what's chosen)
     const site = $('.togglePopup__2020');
@@ -10307,7 +10617,8 @@
     const bg = getComputedStyle(head).backgroundColor, fg = getComputedStyle(h3).color;
     if (bg && !/rgba\(0, 0, 0, 0\)|transparent/.test(bg)) { win.style.setProperty('--bnp-accent', bg); win.style.setProperty('--bnp-accent-text', fg); }
     const b = themeBar();
-    if (b) { win.style.setProperty('--bnp-bar', b.bar); win.style.setProperty('--bnp-bar-ink', b.ink); }
+    if (b) { win.style.setProperty('--bnp-bar', b.bar); win.style.setProperty('--bnp-bar-ink', inkReads(b.ink, b.bar)); }   // (never dark writing on a dark bar)
+    footLook(win);
   }
   let themeBarKept = null;
   function themeBar() {   // (your theme's own bar colour, as the boards' sections wear it, and its writing: from the boards' kept colours, or read here)
@@ -10322,6 +10633,910 @@
     try { const t = JSON.parse(localStorage.getItem('bnp-nbtheme') || 'null'); if (t && t.bar) return (themeBarKept = { bar: t.bar, ink: t.barInk || '#fff' }); } catch (_) { /* */ }
     return null;
   }
+  let themeFootKept;
+  function themeFoot() {   // (your theme's page footer: its colour, its top line and its pattern, read from the theme itself; none on a page without it)
+    if (themeFootKept !== undefined) return themeFootKept;
+    const box = document.createElement('div');
+    box.style.cssText = 'position:absolute;left:-9999px;top:0;width:300px;visibility:hidden;pointer-events:none';
+    box.innerHTML = '<div class="footer__2020"><div class="footer-pattern__2020"></div></div>';
+    (document.body || document.documentElement).append(box);
+    const fc = getComputedStyle(box.firstChild), pc = getComputedStyle(box.firstChild.firstChild);
+    themeFootKept = /url\(/.test(pc.backgroundImage) ? { bg: fc.backgroundColor, line: parseFloat(fc.borderTopWidth) > 0 ? `${fc.borderTopWidth} ${fc.borderTopStyle} ${fc.borderTopColor}` : '', img: pc.backgroundImage, size: pc.backgroundSize, pos: pc.backgroundPosition, rep: pc.backgroundRepeat } : null;
+    box.remove();
+    return themeFootKept;
+  }
+  function footLook(win) {   // (a window's footer: Neopets' pop-up pattern, or the one at the foot of your theme's pages)
+    const foot = win.querySelector('.popup-footer__2020');
+    if (!foot) return;
+    const t = S.features.hubFoot === 'page' ? themeFoot() : null;
+    foot.classList.toggle('bnp-pagefoot', !!t);
+    for (const [k, v] of Object.entries({ bg: t && t.bg, line: t && t.line, img: t && t.img, size: t && t.size, pos: t && t.pos, repeat: t && t.rep })) {
+      if (v) foot.style.setProperty(`--bnp-pf-${k}`, v); else foot.style.removeProperty(`--bnp-pf-${k}`);
+    }
+  }
+  // Settings' corner: a Neopian who belongs with your theme, the way Neopets' own footer has two (never one of those two: they're the theme's own)
+  const PAL_TVW = 'plots/tvw/story/dialogue/actors/';
+  const HUB_PALS = {   // your theme's folder → [who, the picture, its size, the figure in it (x, y, w, h), how much of the figure stands below the edge, turned to face in, its largest scale], or several taking turns. Chosen by the user (2026-10-23): a theme left out has no one yet
+    red: ['Nuria', 'faeriefestival/2026/np/characters/NuriaDefaultLeft_4dd6195ed2.png', [740, 740], [29, 34, 682, 706]],
+    constellations: [
+      ['King Altador', `${PAL_TVW}king_altador_default_left_meamglh953.png`, [740, 740], [2, 61, 729, 679]],
+      ['Jerdana', `${PAL_TVW}jerdana_default_left_bf806j0ec0.png`, [740, 740], [29, 8, 656, 732]],
+    ],
+    meridell: ['Jeran', 'dome/npcs/00072_4c88265724_jeran/default_72.png', [625, 625], [108, 315, 185, 179], 0.3, 0, 1],
+    hauntedwoods: [
+      ['Edna', 'dome/npcs/00005_41179b0c31_edna/large_5.png', [300, 400], [35, 87, 231, 226], 0.3, 1],
+      ['Sophie the Swamp Witch', 'neggfest/y24/characters/SophieNormalLeft.png', [740, 740], [89, 27, 509, 713]],
+      ['Count Von Roo', 'dome/npcs/00002_71c5326658_countvonroo/large_2.png', [300, 400], [56, 97, 166, 154], 0.3, 1],
+      ['Mr. Chuckles', 'dome/npcs/00158_f748fbc0d9_mrchuckles/large_158.png', [300, 400], [45, 80, 212, 279], 0.3, 1],
+      ['the Esophagor', 'dome/npcs/00008_cffc8ce3a7_theesophagor/large_8.png', [300, 400], [8, 60, 248, 249], 0.3, 1],
+      ['the Brain Tree', 'dome/npcs/00009_90790aba15_thebraintree/large_9.png', [300, 400], [15, 58, 270, 286], 0.3, 1],
+      ['Reginald', 'festivaloffears/images/reginald_default_left.png', [740, 740], [21, 111, 699, 629]],
+    ],
+    winterholiday: [
+      ['the Snowager', 'dome/npcs/00036_0da5978482_thesnowager/large_36.png', [300, 400], [12, 60, 273, 280], 0.25, 1],
+      ['Taelia the Snow Faerie', 'dome/npcs/00033_647acc8dd2_snowfaerie/large_33.png', [300, 400], [37, 42, 227, 316], 0.3, 1],
+      ['the Snow Beast', 'dome/npcs/00091_6037b9aa2a_snowbeast/large_91.png', [300, 400], [10, 69, 280, 262], 0.3, 1],
+      ['Lady Frostbite', 'dome/npcs/00178_ef200ba252_ladyfrostbite/large_178.png', [300, 400], [26, 28, 251, 344], 0.3, 1],
+    ],
+    neggs: ['Zaira', 'neggfest/y27/characters/ZairaHappyLeft.png', [740, 740], [154, 254, 370, 486]],
+    neggsneovia: ['Tippens', 'neggfest/y24/characters/TippensNormalRight.png', [740, 740], [201, 88, 443, 652], 0, 1],
+    grey: [
+      ['Kari, grey', 'neggfest/y26/characters/KariGreyHappyLeft.png', [740, 740], [24, 147, 683, 593]],
+      ['Fyora, grey', `${PAL_TVW}fyora_dethroned_grey_sad_right_f162a7d00f.png`, [740, 740], [70, 67, 655, 673], 0, 1],
+    ],
+    tyrannia: ['Grarrg', 'dome/npcs/00038_d186d5f2a8_grarrg/large_38.png', [300, 400], [14, 57, 264, 285], 0.3, 1],
+    newyears: ['Emperor Yun', `${PAL_TVW}emperor_yun_default_left_aak9ee3619.png`, [740, 740], [58, 38, 621, 702]],
+    mysteryisland: [
+      ['Tekkitu the Witch Doctor', 'dome/npcs/00061_e0a34e5abc_tekkituthewitchdoctor/large_61.png', [300, 400], [4, 59, 292, 282], 0.3, 1],
+      ['Tikitack Man', 'dome/npcs/00023_a4e168bd95_tikitackman/large_23.png', [300, 400], [78, 44, 166, 313], 0.3, 1],
+    ],
+  };
+  // Who stands where: each theme's Neopians at the foot of its pages (left and right, a different one on each page, as the old themes
+  // did) and in Settings' corner (the next one each time it opens). Chosen in Settings › Themes; until then Neopets' own at the foot and
+  // the first picks above in the corner. One of them: { p: its picture (a path on Neopets' image server, or an address), n: its name,
+  // t: turned to face right, c: how much of it stands below the edge, b: the figure in the picture, k: its largest scale }
+  const palSpec = (v) => { const [n, p, [W, H], [x, y, w, h], c = 0, t = 0, k] = v; return { p, n, t, c, b: [W, H, x, y, w, h], ...(k ? { k } : {}) }; };
+  const firstPals = (f) => { const v = HUB_PALS[f]; return !v ? [] : (Array.isArray(v[0]) ? v : [v]).map(palSpec); };
+  function lookStart(f) {   // (how a theme's lists start: Neopets' own two at the foot and the first picks in the corner; a theme of yours, as it was made)
+    const m = myKey(f);
+    if (m) return { left: (m.looks && m.looks.left) || [], right: (m.looks && m.looks.right) || [], corner: (m.looks && m.looks.corner) || [] };
+    return { left: ['own'], right: ['own'], corner: firstPals(f) };
+  }
+  function lookOf(f) {   // (a theme's three lists: yours, or as they start)
+    const mine = (S.looks && S.looks[f]) || {}, st = lookStart(f);
+    return { left: Array.isArray(mine.left) ? mine.left : st.left, right: Array.isArray(mine.right) ? mine.right : st.right, corner: Array.isArray(mine.corner) ? mine.corner : st.corner };
+  }
+  function lookSet(f, slot, list) {   // (one list changed and kept; as it starts again, nothing kept)
+    const all = { ...(S.looks || {}) }, mine = { ...(all[f] || {}) };
+    if (JSON.stringify(list) === JSON.stringify(lookStart(f)[slot])) delete mine[slot]; else mine[slot] = list;
+    if (Object.keys(mine).length) all[f] = mine; else delete all[f];
+    S.looks = all;
+  }
+  const LOOK_PRE = { '~t/': PAL_TVW, '~d/': 'dome/npcs/', '~n/': 'neggfest/', '~f/': 'faeriefestival/', '~h/': 'themes/h5/', '~o/': 'prehistoric/outskirts/' };
+  function lookUrl(p) {
+    if (/^https:\/\//.test(p)) return p;
+    for (const [a, b] of Object.entries(LOOK_PRE)) if (p.startsWith(a)) return NPI + b + p.slice(a.length);
+    return NPI + p;
+  }
+  let figKept = null;
+  const figKeep = () => { if (!figKept) { try { figKept = JSON.parse(localStorage.getItem('bnp-figs') || '{}') || {}; } catch (_) { figKept = {}; } } return figKept; };
+  function figBox(sp) {   // (where the figure is in its picture: known, kept, or read from the picture itself once)
+    if (sp.b) return Promise.resolve(sp.b);
+    const url = lookUrl(sp.p), kept = figKeep()[url];
+    if (kept) return Promise.resolve(kept);
+    return new Promise((done) => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.onload = () => {
+        const W = im.naturalWidth, H = im.naturalHeight;
+        let box = [W, H, 0, 0, W, H];
+        try {
+          const s = Math.min(1, 360 / Math.max(W, H)), w = Math.max(1, Math.round(W * s)), h = Math.max(1, Math.round(H * s)), cv = document.createElement('canvas');
+          cv.width = w;
+          cv.height = h;
+          const g = cv.getContext('2d', { willReadFrequently: true });
+          g.drawImage(im, 0, 0, w, h);
+          const d = g.getImageData(0, 0, w, h).data;
+          let x0 = w, y0 = h, x1 = -1, y1 = -1;
+          for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 200) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+          if (x1 >= 0) { const X = Math.max(0, Math.floor(x0 / s) - 1), Y = Math.max(0, Math.floor(y0 / s) - 1); box = [W, H, X, Y, Math.min(W - X, Math.ceil((x1 + 1) / s) + 1 - X), Math.min(H - Y, Math.ceil((y1 + 1) / s) + 1 - Y)]; }
+        } catch (_) { /* (a picture from somewhere that won't be read: all of it) */ }
+        const all = figKeep();
+        all[url] = box;
+        try { localStorage.setItem('bnp-figs', JSON.stringify(all)); } catch (_) { /* */ }
+        done(box);
+      };
+      im.onerror = () => done(null);
+      im.src = url;
+    });
+  }
+  function figEl(sp, box, side) {   // (the figure alone, standing on the bottom edge of what holds it; its height decides its size)
+    const [W, , x, y, w, h] = box, vis = Math.max(1, h * (1 - (sp.c || 0)));
+    const el = document.createElement('span');
+    el.className = 'bnp-fig';
+    el.setAttribute('aria-hidden', 'true');
+    el.style.aspectRatio = `${w} / ${vis}`;
+    if (side === 'right' ? !sp.t : !!sp.t) el.classList.add('is-turned');   // (facing in: right on the left, left on the right)
+    const img = document.createElement('img');
+    img.alt = '';
+    img.decoding = 'async';
+    Object.assign(img.style, { width: `${(W / w) * 100}%`, left: `${(-x / w) * 100}%`, top: `${(-y / vis) * 100}%` });
+    img.src = lookUrl(sp.p);
+    el.append(img);
+    return el;
+  }
+  function figFit(el, box, sp, maxW, maxH) {   // (a figure in a little box: as big as fits, never bigger than its picture)
+    const [, , , , w, h] = box, vis = Math.max(1, h * (1 - (sp.c || 0))), k = Math.min(maxH / vis, maxW / w, 1);
+    el.style.height = `${Math.round(vis * k)}px`;
+    return el;
+  }
+  function footPals() {   // (the foot of the page: one of this theme's Neopians on each side, a different one on each page)
+    const L = lookOf(nbcTheme()), used = new Set();
+    for (const side of ['left', 'right']) {
+      const slot = document.querySelector(`.footer-npcs__2020 .nav-npc-${side}__2020`);
+      if (!slot) continue;
+      for (const o of slot.querySelectorAll('.bnp-fig')) o.remove();
+      slot.classList.remove('bnp-footpal');
+      const list = L[side].filter((x) => x === 'own' || (x && x.p));
+      if (list.length === 1 && list[0] === 'own') continue;   // (Neopets' own, as it is)
+      if (!list.length) { slot.classList.add('bnp-footpal'); continue; }   // (no one on this side)
+      const free = list.filter((x) => x === 'own' || !used.has(x.p)), from = free.length ? free : list;
+      const sp = from[Math.floor(Math.random() * from.length)];
+      if (sp === 'own') continue;
+      used.add(sp.p);
+      slot.classList.add('bnp-footpal');   // (Neopets' own picture steps aside)
+      figBox(sp).then((box) => {
+        if (!slot.isConnected) return;
+        if (!box) { slot.classList.remove('bnp-footpal'); return; }
+        const el = figEl(sp, box, side), [W] = box, vis = box[5] * (1 - (sp.c || 0));
+        el.classList.add(`is-${side}`);
+        el.style.maxHeight = `${Math.round(vis * (sp.k || (W >= 700 ? 0.3 : 1)))}px`;   // (never bigger than its picture: never blurry)
+        el.firstChild.onerror = () => { el.remove(); slot.classList.remove('bnp-footpal'); };
+        slot.append(el);
+      }).catch(report);
+    }
+  }
+  function hubPal(next) {   // (standing on the footer, in the corner under the side list; with several, the next one each time Settings opens)
+    if (!hub) return;
+    const foot = hub.win.querySelector('.bnp-hub-foot'), t = nbcTheme(), all = S.features.hubPal ? lookOf(t).corner.filter((x) => x && x.p) : [];
+    const gone = () => { for (const o of foot.querySelectorAll('.bnp-pal')) o.remove(); hub.win.classList.remove('bnp-has-pal'); };
+    if (!all.length) { gone(); return; }
+    let i = 0;
+    if (all.length > 1) {
+      try { i = Number(localStorage.getItem(`bnp-pal-${t}`)) || 0; } catch (_) { /* */ }
+      if (next) { i = (i + 1) % all.length; try { localStorage.setItem(`bnp-pal-${t}`, String(i)); } catch (_) { /* */ } }
+    }
+    const sp = all[i % all.length], ask = (hubPal.ask = (hubPal.ask || 0) + 1);
+    figBox(sp).then((box) => {
+      if (ask !== hubPal.ask) return;   // (another one asked for meanwhile)
+      if (!box) { gone(); return; }
+      const [W, , , , w, h] = box, vis = h * (1 - (sp.c || 0)), most = sp.k || (W >= 700 ? 0.2 : 0.5);
+      const k = Math.min(132 / vis, 172 / w, 1, Math.max(most, 96 / vis));   // (96 to 132 px tall where the picture allows; the smaller pictures at half size at most: crisp, edges clean)
+      const el = figEl(sp, box, 'left'), img = el.firstChild;
+      el.classList.add('bnp-pal');
+      el.style.height = `${Math.round(vis * k)}px`;
+      img.style.visibility = 'hidden';
+      img.onload = () => { img.style.visibility = ''; for (const o of foot.querySelectorAll('.bnp-pal')) if (o !== el) o.remove(); };   // (the last one stays until this one's here)
+      img.onerror = () => { el.remove(); if (!foot.querySelector('.bnp-pal')) hub.win.classList.remove('bnp-has-pal'); };
+      foot.prepend(el);
+      hub.win.style.setProperty('--bnp-pal-w', `${Math.round(w * k)}px`);
+      hub.win.classList.add('bnp-has-pal');
+      requestAnimationFrame(() => hub.win.style.setProperty('--bnp-pal-rise', `${Math.max(0, Math.round(vis * k) - foot.offsetHeight)}px`));   // (the side list's last lines scroll up past them)
+    }).catch(report);
+  }
+  function palNote() {
+    const k = nbcTheme(), names = lookOf(k).corner.filter((x) => x && x.p).map((x) => x.n || 'someone');
+    const who = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}, taking turns` : names[0];
+    return `Someone who belongs with your theme, the way the foot of Neopets’ pages has two. ${who ? `For ${esc(nbcThemeName(k))}: ${esc(who)}.` : 'Your theme has no one yet.'} Choose them in Themes.`;
+  }
+
+  // ---- Settings › Themes: every site theme as a tile; one opened: who stands at the foot of its pages and in this window's corner ----
+  const LOOK_LIB = [   // [name, where from, [[look, picture, turned to face right, below the edge], …]]: Neopets' own art, big enough to stay crisp
+    ['the Void Wyrm', 'The Void Within', [['battle', 'bd2/npcs/00698_a163c2ee8b_tvw/698.png', 1, 0]]],
+    ['the void dragon', 'The Void Within', [['battle', 'bd2/npcs/00705_6b3dcd28d0_tvw/705.png', 1, 0]]],
+    ['the Blighthound', 'The Void Within', [['battle', 'bd2/npcs/00704_c205b8a54b_tvw/704.png', 1, 0]]],
+    ['Sefira', 'The Void Within', [['battle', 'bd2/npcs/00703_af802f25a5_tvw/703.png', 1, 0]]],
+    ['a Wretched Wisp', 'The Void Within', [['battle', 'bd2/npcs/00700_142d71cbf3_tvw/700.png', 1, 0]]],
+    ['the void blob', 'The Void Within', [['battle', 'bd2/npcs/00699_a1618177be_tvw/699.png', 1, 0]]],
+    ['a void imp', 'The Void Within', [['battle', 'bd2/npcs/00702_b203ceeab4_tvw/702.png', 1, 0], ['small', 'bd2/npcs/00701_9ce7b13c4f_tvw/701.png', 1, 0]]],
+    ['the Acolytes', 'The Void Within', [['battle', 'bd2/npcs/00708_0e14a97d37_tvw/708.png', 1, 0]]],
+    ['True Drakara', 'The Void Within', [['battle', 'bd2/npcs/00709_c7ab4d091f_tvw/709.png', 1, 0]]],
+    ['the void’s reach', 'The Void Within', [['battle', 'bd2/npcs/00711_a9afad85dd_tvw/711.png', 1, 0]]],
+    ['Baelia', 'The Void Within', [['happy', '~t/baelia_happy_left_4097e353e3.png'], ['almostcrying', '~t/baelia_almostcrying_left_05ikc6ld9l.png'], ['concerned', '~t/baelia_concerned_left_845d835533.png'], ['confused', '~t/baelia_confused_left_9ac442caeb.png'], ['crying', '~t/baelia_crying_left_30dbb7acca.png'], ['embarrassed', '~t/baelia_embarrassed_left_e3ccc1db2c.png'], ['inquisitive', '~t/baelia_inquisitive_left_jgae13ff0c.png'], ['lightsad', '~t/baelia_lightsad_left_7975111612.png'], ['sad', '~t/baelia_sad_left_b6nge7cb2g.png'], ['scared', '~t/baelia_scared_left_0ef867fb7d.png'], ['serious', '~t/baelia_serious_left_690eeed1d2.png'], ['slightsmile', '~t/baelia_slightsmile_left_3maemk4d65.png'], ['worried', '~t/baelia_worried_left_cj19726f7m.png']]],
+    ['Dr. Landelbrot', 'The Void Within', [['default', '~t/dr_landelbrot_default_left_cf727nnk2b.png']]],
+    ['Drakara', 'The Void Within', [['default', '~t/drakara_default_left_284e9f1a37.png'], ['angry', '~t/drakara_angry_left_7021ad1ff1.png'], ['smug', '~t/drakara_smug_left_50936e8022.png'], ['triumph', '~t/drakara_triumph_left_4627d0c47b.png']]],
+    ['Emperor Yun', 'The Void Within', [['default', '~t/emperor_yun_default_left_aak9ee3619.png']]],
+    ['Fyora', 'The Void Within', [['happy', '~t/fyora_happy_left_7a9embh9fi.png'], ['holohappy', '~t/fyora_holohappy_left_86d5adlhn7.png'], ['serious', '~t/fyora_serious_left_67c2ennhc5.png']]],
+    ['Fyora, dethroned', 'The Void Within', [['happy', '~t/fyora_dethroned_happy_left_481849d836.png'], ['neutral', '~t/fyora_dethroned_neutral_left_136d3efb49.png'], ['surprised', '~t/fyora_dethroned_surprised_left_7443f54a82.png'], ['worried', '~t/fyora_dethroned_worried_left_9a9ffa6ae3.png']]],
+    ['Fyora, grey', 'The Void Within', [['sad', '~t/fyora_dethroned_grey_sad_right_f162a7d00f.png', 1, 0]]],
+    ['Iridesia', 'The Void Within', [['happy', '~t/iridesia_happy_left_56e271d6b6.png'], ['neutral', '~t/iridesia_neutral_left_0d98b12170.png'], ['bashful', '~t/iridesia_bashful_left_cdea5d7c6c.png'], ['confused', '~t/iridesia_confused_left_9d7b7d4818.png'], ['curious', '~t/iridesia_curious_left_897f869aae.png'], ['empowered', '~t/iridesia_empowered_left_f3a927d0a7.png'], ['surprised', '~t/iridesia_surprised_left_d9b605e170.png']]],
+    ['Jerdana', 'The Void Within', [['default', '~t/jerdana_default_left_bf806j0ec0.png']]],
+    ['Juni', 'The Void Within', [['default', '~t/juni_default_left_a38ml4lgi8.png'], ['angry', '~t/juni_angry_left_73bc54f01c.png'], ['confused', '~t/juni_confused_left_64f38kh84b.png'], ['excited', '~t/juni_excited_left_5ham5le1l4.png'], ['excitedpower', '~t/juni_excitedpower_left_34accaa557.png'], ['injured', '~t/juni_injured_left_94m48gg6ch.png'], ['sad', '~t/juni_sad_left_6fb16df708.png'], ['scared', '~t/juni_scared_left_64408c5f04.png']]],
+    ['King Altador', 'The Void Within', [['default', '~t/king_altador_default_left_meamglh953.png']]],
+    ['King Hagan', 'The Void Within', [['default', '~t/king_hagan_default_left_m99472ac2l.png']]],
+    ['King Jazan', 'The Void Within', [['default', '~t/king_jazan_default_left_63l94lm9ci.png']]],
+    ['King Kelpbeard', 'The Void Within', [['default', '~t/king_kelpbeard_default_left_3afjanfcee.png']]],
+    ['King Roo', 'The Void Within', [['default', '~t/king_roo_default_left_122gg464ll.png']]],
+    ['King Skarl', 'The Void Within', [['default', '~t/king_skarl_default_left_18bj4153gc.png']]],
+    ['Leonard', 'The Void Within', [['default', '~t/leonard_default_left_1bef5e7d15.png']]],
+    ['Lord Darigan', 'The Void Within', [['default', '~t/lord_darigan_left_0dm2fbg1ci.png']]],
+    ['Luperus', 'The Void Within', [['default', '~t/luperus_default_left_8cac861596.png']]],
+    ['Luxinia', 'The Void Within', [['default', '~t/luxinia_default_left_d478bf71ig.png'], ['cyrstal', '~t/luxinia_cyrstal_left_6aaf3fa474.png'], ['hurtphysical', '~t/luxinia_hurtphysical_left_4466837466.png'], ['nervous', '~t/luxinia_nervous_left_hi5ie5g00m.png'], ['relieved', '~t/luxinia_relieved_left_2cgc989m9f.png'], ['sad', '~t/luxinia_sad_left_41ehmk1cja.png'], ['scared', '~t/luxinia_scared_left_ddbee32e35.png'], ['serious', '~t/luxinia_serious_left_5khke3fhee.png'], ['surprised', '~t/luxinia_surprised_left_dda27d248f.png'], ['thinking', '~t/luxinia_thinking_left_0c18cbj8b5.png'], ['upset', '~t/luxinia_upset_left_c7llg0j1g3.png']]],
+    ['the Malevolent Being', 'The Void Within', [['battle', 'bd2/npcs/00707_a17df43501_tvw/707.png', 1, 0], ['default', '~t/malevolentsmug_left_5126cf5943.png']]],
+    ['Naia', 'The Void Within', [['happy', '~t/naia_happy_left_af6246l2jl.png'], ['worried', '~t/naia_worried_left_d4e8mjei21.png']]],
+    ['Nyx', 'The Void Within', [['default', '~t/nyx_default_left_057jm7613j.png'], ['neutral', '~t/nyx_neutral_left_3df178d790.png'], ['angry', '~t/nyx_angry_left_a1dl3bmb10.png'], ['angryapologetic', '~t/nyx_angryapologetic_left_255ij45mga.png'], ['apologetic', '~t/nyx_apologetic_left_228eg5kghe.png'], ['apologetic', '~t/nyx_apologetic_left_bak7i25451.png'], ['confused', '~t/nyx_confused_left_hlbfbf1gnm.png'], ['determined', '~t/nyx_determined_left_2nml7n3a1g.png'], ['determined', '~t/nyx_determined_left_4e4ael093n.png'], ['embarassed', '~t/nyx_embarassed_left_65e70acf67.png'], ['fallingasleep', '~t/nyx_fallingasleep_left_11052b8i6g.png'], ['fastasleep', '~t/nyx_fastasleep_left_6j075mk62d.png'], ['holdingjuni', '~t/nyx_holdingjuni_left_3kdckm7hka.png'], ['hurt', '~t/nyx_hurt_left_adf3a9a942.png'], ['surprised', '~t/nyx_surprised_left_97c1jm5d6a.png'], ['surprised', '~t/nyx_surprised_left_409k8id46c.png'], ['surprisedinjured', '~t/nyx_surprisedinjured_left_gn997j0c1e.png'], ['thinking', '~t/nyx_thinking_left_f3cd583ae3.png'], ['thoughtful', '~t/nyx_thoughtful_left_282dfj9n7i.png'], ['upset', '~t/nyx_upset_left_bnf6ib38jk.png'], ['worried', '~t/nyx_worried_left_016ek59h1a.png']]],
+    ['Ozzy', 'The Void Within', [['happy', '~t/ozzy_unarmor_happy_left_b87caa68b4.png'], ['neutral', '~t/ozzy_unarmor_neutral_left_68a78b7c23.png'], ['sad', '~t/ozzy_unarmor_sad_left_82ffe94096.png'], ['scared', '~t/ozzy_unarmor_scared_left_649f5a39b5.png'], ['worried', '~t/ozzy_unarmor_worried_left_f857065532.png']]],
+    ['Ozzy, armoured', 'The Void Within', [['neutral', '~t/ozzy_armor_neutral_left_c71f64e346.png'], ['angry', '~t/ozzy_armor_angry_left_3e5e83e51d.png'], ['hopeful', '~t/ozzy_armor_hopeful_left_79f44b8fa5.png'], ['sad', '~t/ozzy_armor_sad_left_90d0035aa5.png'], ['scared', '~t/ozzy_armor_scared_left_6767a340dd.png'], ['upset', '~t/ozzy_armor_upset_left_e76785859d.png'], ['worried', '~t/ozzy_armor_worried_left_5e683bb889.png'], ['worriednomask', '~t/ozzy_armor_worriednomask_left_a277947fee.png']]],
+    ['Ozzy, teen', 'The Void Within', [['blushing', '~t/ozzy_teen_blushing_left_5e9f4305fa.png'], ['sad', '~t/ozzy_teen_sad_left_e4a3b27c9f.png'], ['surprised', '~t/ozzy_teen_surprised_left_df1b4bc40c.png'], ['worried', '~t/ozzy_teen_worried_left_cca999eca2.png']]],
+    ['Ozzy, young', 'The Void Within', [['sad', '~t/ozzy_child_sad_left_25ac12d58d.png']]],
+    ['Queen Amira', 'The Void Within', [['default', '~t/queen_amira_default_left_gha94d6889.png'], ['excited', '~t/queen_amira_excited_left_lalbkme321.png']]],
+    ['Queen Nabile', 'The Void Within', [['default', '~t/queen_nabile_default_left_bhdhhhb39i.png'], ['angry', '~t/queen_nabile_angry_left_7h179014fj.png'], ['thinking', '~t/queen_nabile_thinking_left_ndji2gfj7m.png']]],
+    ['Scintilly', 'The Void Within', [['default', '~t/scintilly_default_left_bmnb9h4763.png']]],
+    ['Styx', 'The Void Within', [['happy', '~t/styx_happy_left_34226c4a91.png'], ['injured', '~t/styx_injured_left_1r8ufavk7l.png'], ['sad', '~t/styx_sad_left_b1c2d32b62.png'], ['scared', '~t/styx_scared_left_0a6d2476b1.png'], ['worried', '~t/styx_worried_left_a44421967d.png']]],
+    ['Tavi', 'The Void Within', [['default', '~t/tavi_default_left_hb4efjaf59.png'], ['angry', '~t/tavi_angry_left_b14bcb07d7.png'], ['concerned', '~t/tavi_concerned_left_b2439491cl.png'], ['curious', '~t/tavi_curious_left_8b96a5ec4a.png'], ['determined', '~t/tavi_determined_left_fbce25f94c.png'], ['relieved', '~t/tavi_relieved_left_bb759c0915.png'], ['sad', '~t/tavi_sad_left_593gglm665.png'], ['scared', '~t/tavi_scared_left_9d3e9ba4ab.png'], ['surprised', '~t/tavi_surprised_left_8f075mh5ha.png'], ['upset', '~t/tavi_upset_left_babfec9263.png'], ['worried', '~t/tavi_worried_left_dabbc703f1.png']]],
+    ['Vira', 'The Void Within', [['happy', '~t/vira_dress_happy_left_63c7d222cb.png'], ['neutral', '~t/vira_dress_neutral_left_4ef7594a24.png'], ['angry', '~t/vira_dress_angry_left_9409233f3c.png'], ['annoyed', '~t/vira_dress_annoyed_left_d84977e6b1.png'], ['excited', '~t/vira_dress_excited_left_7d73aab4c1.png'], ['surprised', '~t/vira_dress_surprised_left_c451f491b0.png'], ['worried', '~t/vira_dress_worried_left_f8cea9ed47.png']]],
+    ['Vira, armoured', 'The Void Within', [['battle', 'bd2/npcs/00706_979c440649_tvw/706.png', 1, 0], ['happy', '~t/vira_armor_happy_left_25d302078f.png'], ['angry', '~t/vira_armor_angry_left_948591818a.png'], ['smug', '~t/vira_armor_smug_left_e1923923fe.png'], ['triumphant', '~t/vira_armor_triumphant_left_eb6ef4694f.png']]],
+    ['Walein', 'The Void Within', [['happy', '~t/walein_happy_left_hkal4ilj6g.png']]],
+    ['Adelita', 'Faerie Festival 2026', [['default', '~f/2026/np/characters/AdelitaDefaultLeft_dca082c4ba.png']]],
+    ['Aethia', 'Faerie Festival 2026', [['default', '~f/2026/np/characters/AethiaDefaultLeft_d6c5674279.png']]],
+    ['Balthazar', 'Faerie Festival 2023', [['blasted', '~f/2023/np/characters/BalthazarBlastedLeft.png'], ['snarling', '~f/2023/np/characters/BalthazarSnarlingLeft.png'], ['unconscious', '~f/2023/np/characters/BalthazarUnconsciousLeft.png']]],
+    ['Delina', 'Faerie Festival 2026', [['default', '~f/2026/np/characters/DelinaDefaultLeft_ca8bca427a.png']]],
+    ['Fyora', 'Faerie Festival 2023', [['happy', '~f/2023/np/characters/FyoraHappyLeft.png'], ['happy', 'winter/advent/2023/dialogue_r0c67gl903/actors/FyoraHappyLeft.png'], ['annoyed', '~f/2023/np/characters/FyoraAnnoyedLeft.png'], ['stern', '~f/2023/np/characters/FyoraSternLeft.png'], ['stern', 'winter/advent/2023/dialogue_r0c67gl903/actors/FyoraSternLeft.png'], ['worried', 'winter/advent/2023/dialogue_r0c67gl903/actors/FyoraWorriedLeft.png']]],
+    ['Illusen', 'Faerie Festival 2023', [['happy', '~f/2023/np/characters/IllusenHappyLeft.png'], ['happy', '~f/2024/np/characters/IllusenHappyLeft.png'], ['angry', '~f/2023/np/characters/IllusenAngryLeft.png'], ['angry', '~f/2024/np/characters/IllusenAngryLeft.png'], ['angry sing', '~f/2024/np/characters/IllusenAngrySingLeft_97m9b9niah.png'], ['happy sing', '~f/2024/np/characters/IllusenHappySingLeft_i9k2akmk7i.png'], ['nervous', '~f/2023/np/characters/IllusenNervousLeft.png'], ['nervous', '~f/2024/np/characters/IllusenNervousLeft.png'], ['nervous sing', '~f/2024/np/characters/IllusenNervousSingLeft_3a7n43kc52.png'], ['sad', '~f/2024/np/characters/IllusenSadLeft_fb8ngmajl6.png'], ['sad sing', '~f/2024/np/characters/IllusenSadSingRight_ffa9dfhn0m.png', 1, 0], ['scared in bottle', '~f/2023/np/characters/IllusenScaredInBottleLeft.png']]],
+    ['Jhudora', 'Faerie Festival 2023', [['happy', '~f/2023/np/characters/JhudoraHappyLeft.png'], ['happy', '~f/2024/np/characters/JhudoraHappyLeft.png'], ['angry', '~f/2023/np/characters/JhudoraAngryLeft.png'], ['angry', '~f/2024/np/characters/JhudoraAngryLeft.png'], ['angry sing', '~f/2024/np/characters/JhudoraAngrySingLeft_c7b03blanf.png'], ['blasting', '~f/2024/np/characters/JhudoraBlastingLeft.png'], ['blasting balthazar', '~f/2023/np/characters/JhudoraBlastingBalthazarLeft.png'], ['happy sing', '~f/2024/np/characters/JhudoraHappySingLeft_5l4hf9galj.png'], ['nervous', '~f/2023/np/characters/JhudoraNervousLeft.png'], ['sad sing', '~f/2024/np/characters/JhudoraSadSingLeft_ai1b4c7nkm.png'], ['smirking', '~f/2024/np/characters/JhudoraSmirkingLeft.png'], ['smirking sing', '~f/2024/np/characters/JhudoraSmirkingSingLeft_hjem2m6jb8.png']]],
+    ['Jhuidah', 'Faerie Festival 2026', [['default', '~f/2026/np/characters/JhuidahDefaultLeft_baf1101fce.png']]],
+    ['Kaia', 'Faerie Festival 2026', [['default', '~f/2026/np/characters/KaiaDefaultLeft_30e0ef4739.png']]],
+    ['Kair', 'Faerie Festival 2026', [['default', '~f/2026/np/characters/KairDefaultLeft_7d046a3075.png']]],
+    ['Malkus Vile', 'Faerie Festival 2023', [['vile captured', '~f/2023/np/characters/MalkusVileCapturedLeft.png'], ['vile gloating', '~f/2023/np/characters/MalkusVileGloatingLeft.png'], ['vile scared', '~f/2023/np/characters/MalkusVileScaredLeft.png']]],
+    ['Marina', 'Faerie Festival 2026', [['default', '~f/2026/np/characters/MarinaDefaultLeft_4e5871d55b.png']]],
+    ['Monty', 'Faerie Festival 2023', [['scared', '~f/2023/np/characters/MontyScaredLeft.png'], ['smug', '~f/2023/np/characters/MontySmugLeft.png']]],
+    ['Nuria', 'Faerie Festival 2026', [['default', '~f/2026/np/characters/NuriaDefaultLeft_4dd6195ed2.png']]],
+    ['Orion', 'Faerie Festival 2024', [['happy', '~n/y26/characters/OrionHappyLeft.png'], ['normal', '~n/y25/characters/OrionNormalLeft.png'], ['curious', '~n/y25/characters/OrionCuriousLeft.png'], ['possessed', '~f/2024/np/characters/OrionPossessedLeft_6bc5ccna52.png'], ['serious', 'winter/advent/2023/dialogue_r0c67gl903/actors/OrionSeriousLeft.png'], ['worried', '~n/y26/characters/OrionWorriedLeft.png'], ['worried', 'winter/advent/2023/dialogue_r0c67gl903/actors/OrionWorriedLeft.png']]],
+    ['Sabrena', 'Faerie Festival 2026', [['default', '~f/2026/np/characters/SabrenaDefaultLeft_fce5e291ce.png']]],
+    ['Seshatia', 'Faerie Festival 2024', [['happy', '~f/2024/np/characters/SeshatiaHappyLeft_hggifb5c50.png'], ['angry', '~f/2024/np/characters/SeshatiaAngryRight_c01h9blabb.png', 1, 0], ['angry sing', '~f/2024/np/characters/SeshatiaAngrySingRight_hb1jbji88e.png', 1, 0], ['happy sing', '~f/2024/np/characters/SeshatiaHappySingRight_alb0b29g4k.png', 1, 0], ['worried', '~f/2024/np/characters/SeshatiaWorriedLeft_e6f4ijjf1a.png'], ['worried sing', '~f/2024/np/characters/SeshatiaWorriedSingRight_07ncf26ia5.png', 1, 0]]],
+    ['the Crumpetmonger', 'Negg Festival 2024', [['worried', '~n/y24/characters/CrumpetmongerWorriedLeft.png']]],
+    ['Dr. Negg', 'Negg Festival 2023', [['default', '~n/y23/characters/DrNeggLeft.png'], ['gear', '~n/y23/characters/DrNeggGearLeft.png'], ['ray', '~n/y23/characters/DrNeggRayLeft.png'], ['shoot', '~n/y23/characters/DrNeggShootLeft.png']]],
+    ['Kari', 'Negg Festival 2023', [['default', '~n/y23/characters/KariLeft.png'], ['happy', '~n/y23/characters/KariHappyLeft.png'], ['happy', '~n/y24/characters/KariHappyLeft.png'], ['happy', '~n/y25/characters/KariHappyLeft.png'], ['normal', '~n/y24/characters/KariNormalLeft.png'], ['blushing', '~n/y25/characters/KariBlushingLeft.png'], ['curious', '~n/y24/characters/KariCuriousLeft.png'], ['curious', '~n/y25/characters/KariCuriousLeft.png'], ['frustrated', '~n/y24/characters/KariFrustratedLeft.png'], ['frustrated', '~n/y25/characters/KariFrustratedLeft.png'], ['holdingnegg', '~n/y24/characters/KariHoldingneggLeft.png'], ['pensive', '~n/y23/characters/KariPensiveLeft.png'], ['quest', '~n/y23/characters/KariQuestLeft.png'], ['quest', '~n/y24/characters/KariQuestRight.png', 1, 0], ['worried', '~n/y24/characters/KariWorriedLeft.png'], ['worried', '~n/y25/characters/KariWorriedLeft.png']]],
+    ['Kari, grey', 'Negg Festival 2023', [['default', '~n/y26/characters/KariGreyDefaultLeft.png'], ['happy', '~n/y26/characters/KariGreyHappyLeft.png']]],
+    ['Dr. Landelbrot', 'Negg Festival 2025', [['normal', '~n/y25/characters/LandelbrotNormalLeft.png']]],
+    ['Magon', 'Negg Festival 2025', [['curious', '~n/y25/characters/MagonCuriousLeft.png'], ['panick', '~n/y25/characters/MagonPanickLeft.png']]],
+    ['Mira', 'Negg Festival 2025', [['normal', '~n/y25/characters/MiraNormalLeft.png'], ['laughing', '~n/y25/characters/MiraLaughingLeft.png'], ['petpet', '~n/y25/characters/MiraPetpetLeft.png'], ['photo', '~n/y25/characters/MiraPhotoLeft.png']]],
+    ['the Professor', 'Negg Festival 2024', [['normal', '~n/y24/characters/ProfessorNormalRight.png', 1, 0], ['holdingnegg', '~n/y24/characters/ProfessorHoldingneggRight.png', 1, 0], ['nervous', '~n/y24/characters/ProfessorNervousRight.png', 1, 0]]],
+    ['the Neovian shopkeeper', 'Negg Festival 2024', [['gossiping', '~n/y24/characters/ShopkeeperGossipingLeft.png']]],
+    ['Sophie the Swamp Witch', 'Negg Festival 2024', [['normal', '~n/y24/characters/SophieNormalLeft.png'], ['tasting', '~n/y24/characters/SophieTastingRight.png', 1, 0]]],
+    ['the Space Faerie', 'Negg Festival 2023', [['back', '~n/y23/characters/SpaceFaerieBackLeft.png'], ['front', '~n/y23/characters/SpaceFaerieFrontLeft.png']]],
+    ['Tippens', 'Negg Festival 2024', [['normal', '~n/y24/characters/TippensNormalRight.png', 1, 0], ['grossedout', '~n/y24/characters/TippensGrossedoutRight.png', 1, 0]]],
+    ['Topsi', 'Negg Festival 2023', [['deactivated', '~n/y23/characters/TopsiDeactivatedLeft.png'], ['mech', '~n/y23/characters/TopsiMechLeft.png'], ['strange', '~n/y23/characters/TopsiStrangeLeft.png'], ['zap', '~n/y23/characters/TopsiZapLeft.png']]],
+    ['Zaira', 'Negg Festival 2027', [['happy', '~n/y27/characters/ZairaHappyLeft.png'], ['worried', '~n/y27/characters/ZairaWorriedLeft.png']]],
+    ['Reina', 'Advent Calendar 2023', [['happy', 'winter/advent/2023/dialogue_r0c67gl903/actors/ReinaHappyLeft.png'], ['concerned', 'winter/advent/2023/dialogue_r0c67gl903/actors/ReinaConcernedLeft.png'], ['worried', 'winter/advent/2023/dialogue_r0c67gl903/actors/ReinaWorriedLeft.png']]],
+    ['Reginald', 'Festival of Fears', [['default', 'festivaloffears/images/reginald_default_left.png']]],
+    ['The Awakened’s leader', 'Ancient Obelisk', [['default', '~o/awakened_w5hs8d40/leader_popup.png']]],
+    ['The Brute Squad’s leader', 'Ancient Obelisk', [['default', '~o/brute_squad_bu3h94d3/leader_popup.png']]],
+    ['The Order’s leader', 'Ancient Obelisk', [['default', '~o/the_order_q45yhu3c/leader_popup.png']]],
+    ['The Seekers’ leader', 'Ancient Obelisk', [['default', '~o/seekers_j3g7t298/leader_popup.png']]],
+    ['The Sway’s leader', 'Ancient Obelisk', [['default', '~o/the_sway_pry7g9ie/leader_popup.png']]],
+    ['The Thieves Guild’s leader', 'Ancient Obelisk', [['default', '~o/thieves_guild_t43jhi8d/leader_popup.png']]],
+    ['Advisor Broo', 'Battledome', [['large', '~d/00086_278ccb57ea_advisorbroo/large_86.png', 1, 0.3]]],
+    ['Balthazar', 'Battledome', [['large', '~d/00007_9f6d5cc6f1_balthazar/large_7.png', 1, 0.3]]],
+    ['Bennie the Jub', 'Battledome', [['default', '~d/00167_1b84e75438_benniethejub/default_167.png', 1, 0.3]]],
+    ['Benny', 'Battledome', [['default', '~d/00141_e398b13b06_benny/default_141.png', 1, 0.3]]],
+    ['Blackelm', 'Battledome', [['default', '~d/00163_2ee0261804_blackelm/default_163.png', 1, 0.3]]],
+    ['Boochi', 'Battledome', [['large', '~d/00090_672dafdaa3_boochi/large_90.png', 1, 0.3]]],
+    ['the Brain Tree', 'Battledome', [['large', '~d/00009_90790aba15_thebraintree/large_9.png', 1, 0.3]]],
+    ['the Cave Chia', 'Battledome', [['large', '~d/00037_445cfc1b7e_cavechia/large_37.png', 1, 0.3]]],
+    ['the Chia Clown', 'Battledome', [['large', '~d/00031_f5208f232a_chiaclown/large_31.png', 1, 0.3]]],
+    ['Chiazilla', 'Battledome', [['large', '~d/00024_ba6107cdea_chiazilla/large_24.png', 1, 0.3]]],
+    ['Commander Garoo', 'Battledome', [['large', '~d/00063_6e4c93ce04_commandergaroo/large_63.png', 1, 0.3]]],
+    ['Count Von Roo', 'Battledome', [['large', '~d/00002_71c5326658_countvonroo/large_2.png', 1, 0.3]]],
+    ['the Cybunny Scout', 'Battledome', [['large', '~d/00185_e2ee24c05b_cybunnyscout/large_185.png', 1, 0.3]]],
+    ['Donny', 'Battledome', [['large', '~d/00208_8dfb00e6a0_donny/large_208.png', 1, 0.3]]],
+    ['the Down For Maintenance Pteri', 'Battledome', [['large', '~d/00103_003e4b24fe_downformaintenancepteri/large_103.png', 1, 0.3]]],
+    ['Edna', 'Battledome', [['large', '~d/00005_41179b0c31_edna/large_5.png', 1, 0.3]]],
+    ['the Esophagor', 'Battledome', [['large', '~d/00008_cffc8ce3a7_theesophagor/large_8.png', 1, 0.3]]],
+    ['the Evil Sloth Clone', 'Battledome', [['large', '~d/00014_fb20e96642_evilslothclone/large_14.png', 1, 0.3]]],
+    ['the Evil Sloth Clone, armoured', 'Battledome', [['default', '~d/00254_4fab75e5a1_evilslothclonewar/default_254.png', 1, 0.3]]],
+    ['the Eyrie Guards', 'Battledome', [['default', '~d/00096_a5ad133049_eyrieguards/default_96.png', 1, 0.3]]],
+    ['Eyrieki', 'Battledome', [['large', '~d/00159_3273305658_eyrieki/large_159.png', 1, 0.3]]],
+    ['the Flaming Meerca', 'Battledome', [['large', '~d/00001_8cbfb9cf16_flamingmeerca/large_1.png', 1, 0.3]]],
+    ['Garin', 'Battledome', [['default', '~d/00133_ca40d39e9e_garin/default_133.png', 1, 0.3]]],
+    ['the Ghost Lupe', 'Battledome', [['large', '~d/00066_5ee23bbaae_ghostlupe/large_66.png', 1, 0.3]]],
+    ['the Giant Ghostkerchief', 'Battledome', [['large', '~d/00089_587057fc03_giantghostkerchief/large_89.png', 1, 0.3]]],
+    ['the Giant Hungry Malevolent Chomby', 'Battledome', [['large', '~d/00092_e0e92ae4a6_gianthungrymalevolentchomby/large_92.png', 1, 0.3]]],
+    ['the Giant Space Fungus', 'Battledome', [['large', '~d/00211_ea41c92694_giantspacefungus/large_211.png', 1, 0.3]]],
+    ['the Giant Spectral Mutant Walein', 'Battledome', [['large', '~d/00210_e6de64fe99_giantspectralmutantwalein/large_210.png', 1, 0.3]]],
+    ['the Giant Spyders', 'Battledome', [['large', '~d/00094_8a623c099e_giantspyders/large_94.png', 1, 0.3]]],
+    ['the Gigantic Angry Snow Beast', 'Battledome', [['default', '~d/00114_37697d41b5_giganticangrysnowbeast/default_114.png', 1, 0.3]]],
+    ['the Grand Commander', 'Battledome', [['default', '~d/00132_5fa581f9b2_grandcommander/default_132.png', 1, 0.3]]],
+    ['Grarrg', 'Battledome', [['large', '~d/00038_d186d5f2a8_grarrg/large_38.png', 1, 0.3]]],
+    ['the Greedy Kadoatie', 'Battledome', [['large', '~d/00157_b5b71afcbd_greedykadoatie/large_157.png', 1, 0.3]]],
+    ['the Green Knight', 'Battledome', [['default', '~d/00069_ecd0c4cb40_thegreenknight/default_69.png', 1, 0.3]]],
+    ['Harry the Mutant Moehog', 'Battledome', [['large', '~d/00003_b6e179eccb_harrythemutantmoehog/large_3.png', 1, 0.3]]],
+    ['the Highland Chia', 'Battledome', [['large', '~d/00027_73352cdf1a_highlandchia/large_27.png', 1, 0.3]]],
+    ['Inflatable Balthazar', 'Battledome', [['large', '~d/00020_11852fe3d4_inflatablebalthazar/large_20.png', 1, 0.3]]],
+    ['the Jelly Chia', 'Battledome', [['large', '~d/00028_65ffab466f_jellychia/large_28.png', 1, 0.3]]],
+    ['Jeran', 'Battledome', [['default', '~d/00072_4c88265724_jeran/default_72.png', 1, 0.3]]],
+    ['the Jetsam Ace', 'Battledome', [['large', '~d/00212_719eadcc38_jetsamace/large_212.png', 1, 0.3]]],
+    ['Kastraliss', 'Battledome', [['large', '~d/00105_4e47027b05_kastraliss/large_105.png', 1, 0.3]]],
+    ['Kasukilu', 'Battledome', [['large', '~d/00062_5e773cf087_kasukilu/large_62.png', 1, 0.3]]],
+    ['Kauvara', 'Battledome', [['large', '~d/00034_9ec0b5b951_kauvara/large_34.png', 1, 0.3]]],
+    ['King Skarl', 'Battledome', [['default', '~d/00073_495fe70660_kingskarl/default_73.png', 1, 0.3]]],
+    ['the Koi Warrior', 'Battledome', [['large', '~d/00026_aa83536006_koiwarrior/large_26.png', 1, 0.3]]],
+    ['the Lab Ray Scientist', 'Battledome', [['large', '~d/00104_53b6165d4b_labrayscientist/large_104.png', 1, 0.3]]],
+    ['Lady Frostbite', 'Battledome', [['large', '~d/00178_ef200ba252_ladyfrostbite/large_178.png', 1, 0.3]]],
+    ['the Lava Ghoul', 'Battledome', [['large', '~d/00013_c3cf2d0424_lavaghoul/large_13.png', 1, 0.3]]],
+    ['Magnus the Torch', 'Battledome', [['large', '~d/00017_b30b2b12ea_magnusthetorch/large_17.png', 1, 0.3]]],
+    ['the Maraquan Shieldmaiden', 'Battledome', [['default', '~d/00136_69e32c8adb_maraquanshieldmaiden/default_136.png', 1, 0.3]]],
+    ['the Mechanoid Warrior', 'Battledome', [['default', '~d/00054_29f611d307_mechanoidwarrior/default_54.png', 1, 0.3]]],
+    ['the Meerca Henchmen', 'Battledome', [['large', '~d/00088_1339065c3a_meercahenchmen/large_88.png', 1, 0.3]]],
+    ['Meuka', 'Battledome', [['large', '~d/00060_1a05a43772_meuka/large_60.png', 1, 0.3]]],
+    ['the Monstrous Moach', 'Battledome', [['default', '~d/00176_b7b427d24a_monstrousmoach/default_176.png', 1, 0.3]]],
+    ['the Mootix Warrior', 'Battledome', [['large', '~d/00102_da5f99a3b1_mootixwarrior/large_102.png', 1, 0.3]]],
+    ['Mr. Chuckles', 'Battledome', [['large', '~d/00158_f748fbc0d9_mrchuckles/large_158.png', 1, 0.3]]],
+    ['the Mummy', 'Battledome', [['large', '~d/00004_858f060505_mummy/large_4.png', 1, 0.3]]],
+    ['the Mutant Grundo Scouts', 'Battledome', [['default', '~d/00182_4f07dfc7d7_mutantgrundoscouts/default_182.png', 1, 0.3]]],
+    ['the Mutated Chia', 'Battledome', [['large', '~d/00010_3f4c4fa99d_mutatedchia/large_10.png', 1, 0.3]]],
+    ['the Neggbreaker', 'Battledome', [['large', '~d/00205_b12dd4480a_neggbreaker/large_205.png', 1, 0.3]]],
+    ['Neopets V2', 'Battledome', [['large', '~d/00207_a307e09e12_neopetsv2/large_207.png', 1, 0.3]]],
+    ['the Pant Devil', 'Battledome', [['large', '~d/00011_a95e91dd53_pantdevil/large_11.png', 1, 0.3]]],
+    ['Plumbeard', 'Battledome', [['large', '~d/00087_964fa5ead4_plumbeard/large_87.png', 1, 0.3]]],
+    ['the Primary Grundobot RZ', 'Battledome', [['default', '~d/00184_c6b9a1672e_primarygrundobotrz/default_184.png', 1, 0.3]]],
+    ['Punchbag Bob', 'Battledome', [['large', '~d/00055_830dbaa54e_punchbagbob/large_55.png', 1, 0.3], ['large', '~d/00057_e33b4579fc_punchbagbob/large_57.png', 1, 0.3]]],
+    ['the Qasalan Mummy', 'Battledome', [['large', '~d/00153_2dce8597ef_qasalanmummy/large_153.png', 1, 0.3]]],
+    ['the Quiggle Warlord', 'Battledome', [['large', '~d/00032_c7e5dc014e_quigglewarlord/large_32.png', 1, 0.3]]],
+    ['the Ravenous Monster', 'Battledome', [['default', '~d/00175_a4de3f6428_ravenousmonster/default_175.png', 1, 0.3]]],
+    ['the Robo Grarrl', 'Battledome', [['large', '~d/00019_929ada0249_robograrrl/large_19.png', 1, 0.3]]],
+    ['Ryshu the Nimmo', 'Battledome', [['large', '~d/00035_2c7969e6ea_ryshuthenimmo/large_35.png', 1, 0.3]]],
+    ['the S-750 Kreludan Defender Robot', 'Battledome', [['large', '~d/00206_77cb4f274c_s750kreludandefenderrobot/large_206.png', 1, 0.3]]],
+    ['Sabre-X', 'Battledome', [['large', '~d/00039_503cfd5784_sabrex/large_39.png', 1, 0.3]]],
+    ['Scordrax', 'Battledome', [['default', '~d/00155_4bdca8e62f_scordrax/default_155.png', 1, 0.3]]],
+    ['the Shadow Phantom Tormentor', 'Battledome', [['default', '~d/00203_2223feb933_shadowphantomtormentor/default_203.png', 1, 0.3]]],
+    ['the Shadow Spectre Zealot', 'Battledome', [['default', '~d/00194_b6bb34fd88_shadowspectrezealot/default_194.png', 1, 0.3]]],
+    ['the Shadow Usul', 'Battledome', [['large', '~d/00018_76cb4d4b41_shadowusul/large_18.png', 1, 0.3]]],
+    ['Sidney', 'Battledome', [['large', '~d/00085_7500c1136b_sidney/large_85.png', 1, 0.3]]],
+    ['the Skeletal Knight', 'Battledome', [['default', '~d/00108_6f2fed3ead_skeletalknight/default_108.png', 1, 0.3]]],
+    ['the Skeleton Warlord', 'Battledome', [['default', '~d/00124_21962b4c19_skeletonwarlord/default_124.png', 1, 0.3]]],
+    ['the Slug Monster', 'Battledome', [['large', '~d/00125_800484d1b9_slugmonster/large_125.png', 1, 0.3]]],
+    ['the Snow Beast', 'Battledome', [['large', '~d/00091_6037b9aa2a_snowbeast/large_91.png', 1, 0.3]]],
+    ['the Snowager', 'Battledome', [['large', '~d/00036_0da5978482_thesnowager/large_36.png', 1, 0.3]]],
+    ['the Space Faerie', 'Battledome', [['large', '~d/00012_a706773e08_spacefaerie/large_12.png', 1, 0.3]]],
+    ['the Spider Grundo', 'Battledome', [['large', '~d/00025_deb1adb67a_spidergrundo/large_25.png', 1, 0.3]]],
+    ['the Spirit of the Ruins', 'Battledome', [['default', '~d/00154_6b012afc81_spiritoftheruins/default_154.png', 1, 0.3]]],
+    ['Taelia the Snow Faerie', 'Battledome', [['large', '~d/00033_647acc8dd2_snowfaerie/large_33.png', 1, 0.3]]],
+    ['the Tax Beast', 'Battledome', [['large', '~d/00083_ef64e6b589_taxbeast/large_83.png', 1, 0.3]]],
+    ['Tekkitu the Witch Doctor', 'Battledome', [['large', '~d/00061_e0a34e5abc_tekkituthewitchdoctor/large_61.png', 1, 0.3]]],
+    ['the Black Pteri', 'Battledome', [['large', '~d/00030_f3c347bef6_theblackpteri/large_30.png', 1, 0.3]]],
+    ['the Drenched', 'Battledome', [['large', '~d/00152_47171f993c_thedrenched/large_152.png', 1, 0.3]]],
+    ['the Horde', 'Battledome', [['default', '~d/00078_9857cc6595_thehorde/default_78.png', 1, 0.3]]],
+    ['Tikitack Man', 'Battledome', [['large', '~d/00023_a4e168bd95_tikitackman/large_23.png', 1, 0.3]]],
+    ['the Turmaculus', 'Battledome', [['large', '~d/00093_577241235f_turmaculus/large_93.png', 1, 0.3]]],
+    ['Valin', 'Battledome', [['large', '~d/00209_40058d46f7_valin/large_209.png', 1, 0.3]]],
+    ['Vira', 'Battledome', [['large', '~d/00065_718dcab7f5_vira/large_65.png', 1, 0.3]]],
+    ['the Zafara Rogue', 'Battledome', [['large', '~d/00022_11ae0185a3_zafararogue/large_22.png', 1, 0.3]]],
+    ['the Zombified Peasants', 'Battledome', [['default', '~d/00099_6b8afad494_zombifiedpeasants/default_99.png', 1, 0.3]]],
+    ['Altador Cup, left', 'Site themes', [['left', '~h/altadorcup/images/npc-left.png']]],
+    ['Altador Cup, right', 'Site themes', [['right', '~h/altadorcup/images/npc-right.png', 1, 0]]],
+    ['Altadorian Constellations, left', 'Site themes', [['left', '~h/constellations/images/npc-left.png']]],
+    ['Altadorian Constellations, right', 'Site themes', [['right', '~h/constellations/images/npc-right.png', 1, 0]]],
+    ['Festival of Neggs, left', 'Site themes', [['left', '~h/neggs/images/npc-left.png']]],
+    ['Festival of Neggs, right', 'Site themes', [['right', '~h/neggs/images/npc-right.png', 1, 0]]],
+    ['Grey Day, left', 'Site themes', [['left', '~h/grey/images/npc-left.png']]],
+    ['Grey Day, right', 'Site themes', [['right', '~h/grey/images/npc-right.png', 1, 0]]],
+    ['Happy Birthday!, left', 'Site themes', [['left', '~h/birthday/images/npc-left.png']]],
+    ['Happy Birthday!, right', 'Site themes', [['right', '~h/birthday/images/npc-right.png', 1, 0]]],
+    ['Happy New Year!, left', 'Site themes', [['left', '~h/newyears/images/npc-left.png']]],
+    ['Happy New Year!, right', 'Site themes', [['right', '~h/newyears/images/npc-right.png', 1, 0]]],
+    ['Haunted Woods, left', 'Site themes', [['left', '~h/hauntedwoods/images/npc-left.png']]],
+    ['Haunted Woods, right', 'Site themes', [['right', '~h/hauntedwoods/images/npc-right.png', 1, 0]]],
+    ['Meridell, left', 'Site themes', [['left', '~h/meridell/images/npc-left.png']]],
+    ['Meridell, right', 'Site themes', [['right', '~h/meridell/images/npc-right.png', 1, 0]]],
+    ['Mystery Island, left', 'Site themes', [['left', '~h/mysteryisland/images/npc-left.png']]],
+    ['Mystery Island, right', 'Site themes', [['right', '~h/mysteryisland/images/npc-right.png', 1, 0]]],
+    ['Neopets Basic, left', 'Site themes', [['left', '~h/basic/images/npc-left.png']]],
+    ['Neopets Basic, right', 'Site themes', [['right', '~h/basic/images/npc-right.png', 1, 0]]],
+    ['Neopets Blue, left', 'Site themes', [['left', '~h/blue/images/npc-left.png']]],
+    ['Neopets Blue, right', 'Site themes', [['right', '~h/blue/images/npc-right.png', 1, 0]]],
+    ['Neopets Green, left', 'Site themes', [['left', '~h/green/images/npc-left.png']]],
+    ['Neopets Green, right', 'Site themes', [['right', '~h/green/images/npc-right.png', 1, 0]]],
+    ['Neopets Purple, left', 'Site themes', [['left', '~h/purple/images/npc-left.png']]],
+    ['Neopets Purple, right', 'Site themes', [['right', '~h/purple/images/npc-right.png', 1, 0]]],
+    ['Neopets Red, left', 'Site themes', [['left', '~h/red/images/npc-left.png']]],
+    ['Neopets Red, right', 'Site themes', [['right', '~h/red/images/npc-right.png', 1, 0]]],
+    ['Neopets Yellow, left', 'Site themes', [['left', '~h/yellow/images/npc-left.png']]],
+    ['Neopets Yellow, right', 'Site themes', [['right', '~h/yellow/images/npc-right.png', 1, 0]]],
+    ['Neopian Times, left', 'Site themes', [['left', '~h/neopiantimes/images/npc-left.png']]],
+    ['Neopian Times, right', 'Site themes', [['right', '~h/neopiantimes/images/npc-right.png', 1, 0]]],
+    ['Neovian Festival of Neggs, left', 'Site themes', [['left', '~h/neggsneovia/images/npc-left.png']]],
+    ['Neovian Festival of Neggs, right', 'Site themes', [['right', '~h/neggsneovia/images/npc-right.png', 1, 0]]],
+    ['Tis the Season, left', 'Site themes', [['left', '~h/tistheseason/images/npc-left.png']]],
+    ['Tis the Season, right', 'Site themes', [['right', '~h/tistheseason/images/npc-right.png', 1, 0]]],
+    ['Tyrannia, left', 'Site themes', [['left', '~h/tyrannia/images/npc-left.png']]],
+    ['Tyrannia, right', 'Site themes', [['right', '~h/tyrannia/images/npc-right.png', 1, 0]]],
+    ['Valentine’s Day, left', 'Site themes', [['left', '~h/valentines/images/npc-left.png']]],
+    ['Valentine’s Day, right', 'Site themes', [['right', '~h/valentines/images/npc-right.png', 1, 0]]],
+    ['Winter Holiday, left', 'Site themes', [['left', '~h/winterholiday/images/npc-left.png']]],
+    ['Winter Holiday, right', 'Site themes', [['right', '~h/winterholiday/images/npc-right.png', 1, 0]]],
+  ];
+  const LOOK_FROM = ['The Void Within', 'Faerie Festival', 'Negg Festival', 'Advent Calendar', 'Festival of Fears', 'Ancient Obelisk', 'Battledome', 'Site themes'];
+  const lookFrom = (c) => c[1].replace(/ \d{4}$/, '');
+  let lookAt = '', lookPick = null;   // (the theme open in Themes; the picker: { slot, q, from, char })
+  function lookThemes() {   // ([folder, name, its number] for every theme: yours as General Settings lists them, then the rest)
+    const seen = new Set(), out = [];
+    const put = (id, name) => { const f = themeFolder(id); if (f && !seen.has(f)) { seen.add(f); out.push([f, name, id]); } };
+    for (const [id, name] of themeList()) put(id, name);
+    for (const [id, f, name] of THEMES) if (f) put(id, name);
+    return out;
+  }
+  // ---- Themes of your own, made and changed in Settings › Themes: shown on the page as you change them ----
+  const MY_FIELDS = [   // [what it is, its part of the theme, [[key, name], …]]: every colour a theme has, by where it shows
+    ['The top bar', 'bar', [['top', 'Top'], ['mid', 'Middle'], ['bottom', 'Bottom'], ['line', 'Line under it'], ['glow', 'Glow under it'], ['text', 'Menu names'], ['clock', 'Clock'], ['clockLine', 'Clock’s edge'], ['clockText', 'Clock’s time']]],
+    ['Menus', 'menu', [['bg', 'Background'], ['text', 'Writing'], ['line', 'Lines between'], ['hover', 'Pointed at'], ['border', 'Edge']]],
+    ['The profile menu', 'prof', [['top', 'Top'], ['bottom', 'Bottom'], ['item', 'Its rows'], ['small', 'Small writing'], ['link', 'Links'], ['box', 'Pet box'], ['boxLine', 'Pet box’s edge']]],
+    ['News, alerts and quests', 'news', [['bg', 'Background'], ['panel', 'Panels'], ['line', 'Lines'], ['head', 'Headings'], ['text', 'Writing'], ['link', 'Links'], ['visited', 'Links you’ve read']]],
+    ['Pop-ups and windows', 'pop', [['top', 'Top'], ['bottom', 'Bottom'], ['title', 'Titles'], ['glow', 'Glow round them']]],
+    ['The page', 'page', [['colour', 'Background']]],
+    ['The foot of the page', 'foot', [['colour', 'Background'], ['line', 'Line over it'], ['text', 'Writing']]],
+    ['Neoboards', 'boards', [['bar', 'Bars and buttons'], ['button', 'Buttons pointed at'], ['link', 'Links'], ['hover', 'Links pointed at']]],
+    ['Links', 'link', [['hover', 'Pointed at']]],
+  ];
+  const MY_PATS = [['bar', 'The top bar', 'Over the top bar’s colours'], ['page', 'The page', 'Behind everything'], ['pop', 'Pop-ups and windows', 'Their tops and feet'], ['foot', 'The foot of the page', 'Under the links']];
+  const MY_PROBE = {   // (where each colour shows on the page: read from it, so a colour you haven't changed starts as it looks)
+    'bar.top': ['.nav-top__2020', 'bgimg0'], 'bar.mid': ['.nav-top__2020', 'bgimg1'], 'bar.bottom': ['.nav-top__2020', 'bgimgN'], 'bar.line': ['.nav-top__2020', 'borderBottomColor'], 'bar.text': ['.nav-text__2020', 'color'],
+    'bar.clock': ['.nav-top__2020 .nav-top-nst', 'backgroundColor'], 'bar.clockLine': ['.nav-top__2020 .nav-top-nst', 'borderTopColor'], 'bar.clockText': ['.nav-top__2020 .nav-top-nst', 'color'],
+    'menu.bg': ['.nav-dropdown__2020', 'backgroundColor'], 'menu.text': ['.nav-dropdown__2020', 'color'], 'menu.border': ['.nav-dropdown__2020', 'borderTopColor'],
+    'pop.top': ['.popup-header__2020', 'bgimg0'], 'pop.bottom': ['.popup-header__2020', 'bgimgN'], 'pop.title': ['.popup-header__2020 h3', 'color'],
+    'page.colour': ['body', 'backgroundColor'], 'foot.colour': ['.footer__2020', 'backgroundColor'], 'foot.line': ['.footer__2020', 'borderTopColor'], 'foot.text': ['.footer-copyright__2020', 'color'],
+    'boards.bar': ['#boardIndex h3', 'backgroundColor'],
+  };
+  let myTab = 'who', myPreviewOf = '', myPick = null;   // (the editor's section; the theme being shown while you change it; the picture picker: { part })
+  const myEditable = (k) => { const t = myKey(k); return t && !t.built ? t : null; };
+  function myProbeColour(path) {   // (a colour as the page shows it now)
+    const [sel, prop] = MY_PROBE[path] || [];
+    if (!sel) return '';
+    let el = document.querySelector(sel), box = null;
+    if (!el) {
+      box = document.createElement('div');
+      box.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;pointer-events:none';
+      box.innerHTML = sel === '#boardIndex h3' ? '<div id="boardIndex"><ul><h3>x</h3></ul></div>' : sel.split(' ').reduceRight((inner, s) => `<div class="${s.replace(/^\./, '')}">${inner}</div>`, 'x');
+      (document.body || document.documentElement).append(box);
+      el = box.querySelector(sel.split(' ').pop().replace(/^(?!\.)/, '')) || box.firstElementChild;
+    }
+    const cs = getComputedStyle(el);
+    let c = '';
+    if (prop.startsWith('bgimg')) { const all = cs.backgroundImage.match(/rgba?\([^)]*\)|#[0-9a-f]{3,8}\b/gi) || []; c = prop === 'bgimg0' ? all[0] : prop === 'bgimg1' ? all[1] : all[all.length - 1]; c = c || cs.backgroundColor; }
+    else c = cs[prop];
+    if (box) box.remove();
+    return nbHex(rgbToHex(c)) || '';
+  }
+  function rgbToHex(c) { const m = /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?/.exec(c || ''); if (!m) return c || ''; if (m[4] != null && Number(m[4]) === 0) return ''; return `#${[m[1], m[2], m[3]].map((x) => Math.round(Number(x)).toString(16).padStart(2, '0')).join('')}`; }
+  function myGet(t, path) { const [a, b] = path.split('.'); return t && t.v && t.v[a] ? t.v[a][b] : undefined; }
+  const MY_PAIRS = [['bar.top', 'bar.bottom'], ['prof.top', 'prof.bottom'], ['pop.top', 'pop.bottom']];   // (a gradient's two ends: one changed, the other kept as it looks)
+  function mySet(t, path, val, alone) {   // (one part of one of your themes: kept a moment later, shown at once)
+    const [a, b] = path.split('.');
+    t.v = { ...(t.v || {}) };
+    t.v[a] = { ...(t.v[a] || {}) };
+    if (val == null || val === '') delete t.v[a][b]; else t.v[a][b] = val;
+    if (!Object.keys(t.v[a]).length) delete t.v[a];
+    if (!alone && val != null && val !== '') for (const pr of MY_PAIRS) { const o = pr[0] === path ? pr[1] : pr[1] === path ? pr[0] : ''; if (o && !myGet(t, o)) { const was = myProbeColour(o); if (was) mySet(t, o, was, true); } }
+    clearTimeout(mySet.t);
+    mySet.t = setTimeout(saveNow, 700);   // (a slider dragged: one save when you let go, never one a step)
+    myShowNow(t, a === 'icons');
+  }
+  function myShowNow(t, icons) {   // (the theme being changed, on the page as it is now)
+    if (myPreviewOf !== t.id && S.wear !== t.id) return;
+    const st = document.getElementById('bnp-my-style');
+    if (st) st.textContent = myCss(t);
+    if (icons) { clearTimeout(myShowNow.t); myShowNow.t = setTimeout(() => myIcons(t), 160); }
+    themeHeadKept = null;
+    themeBarKept = null;
+    themeFootKept = undefined;
+    if (hub) { themeWin(hub.win); }
+  }
+  function myPreview(k) {   // (a theme being changed: shown on the page meanwhile; yours again when you're done)
+    const t = myKey(k);
+    if (!t || S.wear === t.id) { myPreviewEnd(); return; }
+    if (myPreviewOf === t.id) return;
+    myPreviewOf = t.id;
+    myOn(t, false);
+    themeChanged();
+  }
+  function myPreviewEnd() {
+    if (!myPreviewOf) return;
+    myPreviewOf = '';
+    const w = myWorn();
+    if (w) myOn(w, false); else myOff();
+    themeChanged();
+  }
+  function myNew(from) {   // (a new theme: starts as a Neopets theme exactly, until you change it)
+    const base = from || themeAccount() || 'basic', n = (S.myThemes || []).length + 1;
+    const t = { id: `t${Date.now().toString(36)}`, name: `My theme${n > 1 ? ` ${n}` : ''}`, base, v: {} };
+    S.myThemes = [...(S.myThemes || []), t];
+    saveNow();
+    return t;
+  }
+  function myCopy(id) {   // (one of yours made from another: every part of it, and who stands where)
+    const src = myOf(id);
+    if (!src) return null;
+    const t = { id: `t${Date.now().toString(36)}`, name: `${src.name} (yours)`, base: src.base, v: JSON.parse(JSON.stringify(src.v || {})) };
+    S.myThemes = [...(S.myThemes || []), t];
+    const L = lookOf(`my:${src.id}`);
+    S.looks = { ...(S.looks || {}), [`my:${t.id}`]: { left: L.left, right: L.right, corner: L.corner } };
+    saveNow();
+    return t;
+  }
+  const themeAccount = () => { const l = themeLinks().pop(); return themeOfUrl(l && (l.getAttribute('data-bnp-was') || l.href)) || (() => { try { return localStorage.getItem('bnp-themenow') || ''; } catch (_) { return ''; } })(); };
+  function myEditHtml(k) {   // (one of your themes: its colours, its pictures, its icons; who stands where is the page above)
+    const t = myKey(k);
+    if (!t) return '';
+    const tabs = [['who', 'Who stands where'], ['colours', 'Colours'], ['pictures', 'Pictures'], ['icons', 'Icons and logo']];
+    const bar = `<div class="bnp-subtabs bnp-mytabs" role="tablist">${tabs.map(([v, l]) => `<button type="button" role="tab" data-mytab="${v}" aria-selected="${myTab === v}">${l}</button>`).join('')}</div>`;
+    if (t.built) return myTab === 'who' ? bar : `${bar}<div class="bnp-card"><p class="bnp-note">${esc(t.name)} comes with Neopets Enhance, so its colours, pictures and icons stay as they are. Make your own copy to change any of them: it starts exactly the same.</p><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mycopy="${esc(t.id)}">Make your own copy</button></div>`;
+    if (myTab === 'who') return bar;
+    const sw = (path, name) => {
+      const val = myGet(t, path), shown = val || myProbeColour(path);
+      return `<div class="bnp-myc"><span>${esc(name)}</span><button type="button" class="bnp-myswatch${val ? '' : ' is-base'}" data-mycol="${path}" data-hex="${esc(shown || '#888888')}" style="background-color:${esc(shown || 'transparent')}" title="${val ? esc(val) : `As ${esc(nbcThemeName(t.base))} has it`}" aria-label="${esc(name)}: ${val ? esc(val) : 'as its base has it'}"></button>${val ? `<button type="button" class="bnp-myx" data-myclear="${path}" title="Back to ${esc(nbcThemeName(t.base))}’s" aria-label="Back to its base’s">×</button>` : ''}</div>`;
+    };
+    if (myTab === 'colours') {
+      return `${bar}<p class="bnp-note bnp-mylead">A colour you haven’t changed is ${esc(nbcThemeName(t.base))}’s own (its swatch has a dotted edge). Everything shows on this page as you change it.</p>
+        ${MY_FIELDS.map(([area, part, keys]) => `<h5>${esc(area)}</h5><div class="bnp-card"><div class="bnp-mycols">${keys.map(([k2, name]) => sw(`${part}.${k2}`, name)).join('')}</div></div>`).join('')}`;
+    }
+    if (myTab === 'pictures') {
+      const slider = (path, name, min, max, unit, d) => { const v = myGet(t, path); return `<label class="bnp-myslide"><span>${esc(name)}</span><input type="range" min="${min}" max="${max}" value="${esc(v == null ? d : v)}" data-myrange="${path}"><b>${esc(v == null ? d : v)}${unit}</b></label>`; };
+      return `${bar}<p class="bnp-note bnp-mylead">Patterns are shown at their own size or smaller, so they stay crisp.</p>
+        ${MY_PATS.map(([part, area, what]) => { const p = myGet(t, `${part}.pat`), u = myPic(p); return `<h5>${esc(area)} <span class="bnp-note">${esc(what)}</span></h5><div class="bnp-card"><div class="bnp-mypat">
+          <span class="bnp-mypatbox" style="${u ? `background-image:url('${esc(cssUrl(u))}');background-size:${Math.min(Number(myGet(t, `${part}.size`)) || 150, 150)}px auto` : ''}">${u ? '' : `<small>${esc(nbcThemeName(t.base))}’s own</small>`}</span>
+          <span class="bnp-mypatgo"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mypat="${part}">Choose a pattern…</button>${p ? `<button type="button" class="bnp-linkbtn" data-myclear="${part}.pat">Back to ${esc(nbcThemeName(t.base))}’s</button>` : ''}
+            ${p ? slider(`${part}.size`, 'Its size', 40, 300, 'px', 150) : ''}${p && part === 'bar' ? slider('bar.show', 'How strong', 10, 100, '%', 100) : ''}</span>
+        </div></div>`; }).join('')}`;
+    }
+    // icons and logo
+    const ic = (t.v && t.v.icons) || {}, lg = (t.v && t.v.logo) || {}, sets = lookThemes(), canTint = (f) => /\.svg(\?|$)/i.test(myIconUrl(f, 'community-icon'));   // (drawn as shapes: these take your colours; pictures come as they are)
+    const islide = (k2, name, min, max, unit, d) => `<label class="bnp-myslide"><span>${esc(name)}</span><input type="range" min="${min}" max="${max}" value="${esc(ic[k2] == null ? d : ic[k2])}" data-myrange="icons.${k2}"><b>${esc(ic[k2] == null ? d : ic[k2])}${unit}</b></label>`;
+    const lslide = (k2, name, min, max, unit, d) => `<label class="bnp-myslide"><span>${esc(name)}</span><input type="range" min="${min}" max="${max}" value="${esc(lg[k2] == null ? d : lg[k2])}" data-myrange="logo.${k2}"><b>${esc(lg[k2] == null ? d : lg[k2])}${unit}</b></label>`;
+    const setRow = (f, name, on, attr) => `<button type="button" class="bnp-myset${on ? ' is-on' : ''}" ${attr}="${esc(f)}" aria-pressed="${on}"><span>${['community', 'games', 'explore', 'shop', 'premium'].map((n) => `<i style="background-image:url('${esc(cssUrl(myIconUrl(f || t.base, `${n}-icon`)))}')"></i>`).join('')}</span><b>${esc(name)}</b>${f ? `<small>${canTint(f) ? 'Can take your colours' : 'Pictures: their own colours'}</small>` : ''}</button>`;
+    return `${bar}<h5>Its icons <span class="bnp-note">Another theme’s icons in your colours: drawn as shapes, so crisp at any size</span></h5>
+      <div class="bnp-card"><div class="bnp-mysets">${setRow('', `${nbcThemeName(t.base)}’s own, as they are`, !ic.from, 'data-myicons')}${sets.map(([f, name]) => setRow(f, name, ic.from === f, 'data-myicons')).join('')}</div>
+        ${ic.from && !canTint(ic.from) ? `<p class="bnp-note">${esc(nbcThemeName(ic.from))}’s icons are pictures rather than shapes, so they come in their own colours.</p>` : ''}${ic.from && canTint(ic.from) ? `<label class="bnp-switch"><input type="checkbox" data-myasis${ic.as === 'own' ? ' checked' : ''}><span>Their own colours<small>As ${esc(nbcThemeName(ic.from))} has them; untick to colour them to your theme.</small></span></label>
+          ${ic.as === 'own' ? '' : `<div class="bnp-myslides">${islide('hue', 'Colour', 0, 359, '°', 280)}${islide('keep', 'Keep their own differences', 0, 100, '%', 30)}${islide('sat', 'How strong', 20, 160, '%', 100)}${islide('grey', 'Colour in their greys', 0, 100, '%', 55)}${islide('light', 'Lighter or darker', -30, 30, '', 0)}</div>`}` : ''}</div>
+      <h5>Its logo <span class="bnp-note">A theme’s Neopets logo, turned to your colours if you like</span></h5>
+      <div class="bnp-card"><div class="bnp-mysets">${['', ...sets.map((x) => x[0])].map((f) => { const nm = f ? nbcThemeName(f) : `${nbcThemeName(t.base)}’s own`, on = (lg.from || '') === f; return `<button type="button" class="bnp-mylogo${on ? ' is-on' : ''}" data-mylogo="${esc(f)}" aria-pressed="${on}"><i style="background-image:url('${esc(cssUrl(myLogoOf(f || t.base)))}')"></i><b>${esc(nm)}</b></button>`; }).join('')}</div>
+        <div class="bnp-myslides">${lslide('hue', 'Turn its colours', 0, 359, '°', 0)}${lslide('sat', 'How strong', 0, 200, '%', 100)}${lslide('light', 'Lighter or darker', 50, 150, '%', 100)}</div></div>`;
+  }
+  // the colour picker: the boards' own, for a theme's colours
+  let mcp = null;
+  function myColourOpen(anchor) {
+    myColourClose();
+    const path = anchor.dataset.mycol, t = myEditable(lookAt), start = nbHex(anchor.dataset.hex) || '#888888';
+    if (!t) return;
+    const own = nbJson('bnp-cprecent', []).filter((c) => nbHex(c)).slice(0, 10);
+    const sws = (cs) => cs.map((c) => `<button type="button" data-cpc="${c}" style="background:${c}" title="${c}" aria-label="${c}"></button>`).join('');
+    const el = document.createElement('div');
+    el.className = 'bnp-cp';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-label', 'Its colour');
+    el.innerHTML = `<div class="bnp-cp-sv" tabindex="0" role="slider" aria-label="How light, and how strong"><i></i></div>
+      <div class="bnp-cp-hue" tabindex="0" role="slider" aria-label="Which colour" aria-valuemin="0" aria-valuemax="360"><i></i></div>
+      <div class="bnp-cp-row"><span class="bnp-cp-now" style="--was:${start}"><i></i></span><input type="text" class="bnp-cp-hex" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Its colour, as #rrggbb"></div>
+      ${own.length ? `<div class="bnp-cp-h">Your recent ones</div><div class="bnp-cp-sws">${sws(own)}</div>` : ''}
+      <div class="bnp-cp-foot"><button type="button" class="bnp-nbc-lb" data-cp="was">As it was</button><button type="button" class="bnp-cp-ok" data-cp="ok">Done</button></div>`;
+    hub.win.append(el);
+    const sv = el.querySelector('.bnp-cp-sv'), hue = el.querySelector('.bnp-cp-hue'), hexIn = el.querySelector('.bnp-cp-hex'), nowSw = el.querySelector('.bnp-cp-now');
+    mcp = { el, anchor, path, t, start, hex: start, hsv: hexHsv(start), raf: 0 };
+    const paint = (fromHex) => {
+      const [h, s, v] = mcp.hsv;
+      sv.style.setProperty('--cp-h', String(Math.round(h)));
+      sv.firstElementChild.style.left = `${s * 100}%`;
+      sv.firstElementChild.style.top = `${(1 - v) * 100}%`;
+      hue.firstElementChild.style.left = `${(h / 360) * 100}%`;
+      nowSw.style.background = mcp.hex;
+      if (!fromHex && document.activeElement !== hexIn) hexIn.value = mcp.hex;
+    };
+    const set = (hex, hsv, fromHex) => {
+      mcp.hex = hex;
+      mcp.hsv = hsv || hexHsv(hex);
+      paint(fromHex);
+      anchor.style.backgroundColor = hex;
+      anchor.classList.remove('is-base');
+      if (!mcp.raf) mcp.raf = requestAnimationFrame(() => { if (!mcp) return; mcp.raf = 0; mySet(mcp.t, mcp.path, mcp.hex); });
+    };
+    const drag = (box, at) => (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      try { box.setPointerCapture(e.pointerId); } catch (_) { /* */ }
+      const r = box.getBoundingClientRect(), f = (ev) => at(Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (ev.clientY - r.top) / r.height)));
+      f(e);
+      const up = () => { box.removeEventListener('pointermove', f); box.removeEventListener('pointerup', up); box.removeEventListener('pointercancel', up); };
+      box.addEventListener('pointermove', f);
+      box.addEventListener('pointerup', up);
+      box.addEventListener('pointercancel', up);
+    };
+    sv.addEventListener('pointerdown', drag(sv, (x, y) => { const hsv = [mcp.hsv[0], x, 1 - y]; set(hsvHex(...hsv), hsv); }));
+    hue.addEventListener('pointerdown', drag(hue, (x) => { const hsv = [Math.min(359.9, x * 360), mcp.hsv[1], mcp.hsv[2]]; set(hsvHex(...hsv), hsv); }));
+    hexIn.addEventListener('input', () => { const h = nbHex(hexIn.value.trim().replace(/^(?!#)/, '#')); hexIn.classList.toggle('is-bad', !!hexIn.value.trim() && !h); if (h) set(h, null, true); });
+    hexIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); myColourClose(); anchor.focus(); } });
+    el.addEventListener('click', (e) => {
+      const tg = e.target instanceof Element ? e.target : null, c = tg && tg.closest('[data-cpc]'), b = tg && tg.closest('[data-cp]');
+      if (c) { set(c.dataset.cpc); return; }
+      if (b && b.dataset.cp === 'ok') { myColourClose(); anchor.focus(); } else if (b && b.dataset.cp === 'was') set(mcp.start);
+    });
+    paint();
+    const w = hub.win.getBoundingClientRect(), a = anchor.getBoundingClientRect(), pw = el.offsetWidth, ph = el.offsetHeight;
+    let left = a.right - w.left + 10, top = a.top - w.top - 8;
+    if (left + pw > w.width - 8) left = Math.max(8, a.left - w.left - pw - 10);
+    el.style.left = `${Math.round(left)}px`;
+    el.style.top = `${Math.round(Math.max(56, Math.min(top, w.height - ph - 8)))}px`;
+    sv.focus({ preventScroll: true });
+  }
+  function myColourClose() {
+    if (!mcp) return;
+    cancelAnimationFrame(mcp.raf);
+    if (mcp.hex !== mcp.start) { mySet(mcp.t, mcp.path, mcp.hex); nbJsonSet('bnp-cprecent', [mcp.hex, ...nbJson('bnp-cprecent', []).filter((c) => c !== mcp.hex)].slice(0, 10)); }
+    mcp.el.remove();
+    mcp = null;
+    if (hub && hubPage === 'themes') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
+  }
+  // the pattern picker: every theme's own patterns, and the Void Within's, or one by its address
+  function myPatList() {
+    const out = [['tvw:void', 'The Void Within: the void']];
+    for (const [f, name, id] of lookThemes()) {
+      const sw = themeData().sw[f], pics = (sw && sw.pics) || {};
+      for (const [k, l] of [['bar', 'top bar'], ['page', 'page'], ['pop', 'pop-ups'], ['foot', 'foot of the page']]) { const u = k === 'pop' ? (sw && sw.pat) : pics[k]; if (u && !out.some((x) => x[0] === u)) out.push([u, `${name}: ${l}`, id]); }
+    }
+    return out;
+  }
+  function myPickPaint() {
+    if (!hub) return;
+    let el = hub.win.querySelector('.bnp-mypick');
+    if (!myPick) { if (el) el.remove(); return; }
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'bnp-lookpick bnp-mypick';
+      el.setAttribute('role', 'dialog');
+      el.setAttribute('aria-label', 'Choose a pattern');
+      hub.win.querySelector('.bnp-hub-body').append(el);
+    }
+    const area = (MY_PATS.find((x) => x[0] === myPick.part) || [])[1] || 'it';
+    el.innerHTML = `<div class="bnp-lptop"><b>A pattern for ${esc(area.replace(/^The /, 'the '))}</b><button type="button" class="bnp-lpx" data-mypickclose title="Close" aria-label="Close">×</button></div>
+      <div class="bnp-lpbody"><div class="bnp-mypats">${myPatList().map(([u, name]) => `<button type="button" class="bnp-mypatone" data-mypatuse="${esc(u)}"><span style="background-image:url('${esc(cssUrl(myPic(u) || fullUrl(u)))}')"></span><b>${esc(name)}</b></button>`).join('')}</div>
+        ${themeData().sw && Object.keys(themeData().sw).length < 5 ? '<p class="bnp-note">More patterns come as each theme’s colours are read: open Themes once more in a moment.</p>' : ''}</div>
+      <div class="bnp-lpurl"><input type="url" data-mypaturl placeholder="Or a picture’s address: https://images.neopets.com/…" aria-label="A picture’s address" spellcheck="false"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mypatadd>Use it</button></div>`;
+  }
+  function myEditClick(t, d) {   // (the editor's own buttons; true when it was one of them)
+    const k = lookAt, mine = myEditable(k);
+    if (d.mytab) { myTab = d.mytab; myColourClose(); paintHub(); return true; }
+    if ('mynew' in d) { const n = myNew(); lookAt = `my:${n.id}`; myTab = 'colours'; myPreview(lookAt); changed(`${n.name}: it starts as ${nbcThemeName(n.base)} exactly`); hub.main.scrollTop = 0; return true; }
+    if (d.mycopy) { const n = myCopy(d.mycopy); if (n) { lookAt = `my:${n.id}`; myTab = 'colours'; myPreview(lookAt); changed(`${n.name}: yours to change`); hub.main.scrollTop = 0; } return true; }
+    if ('mywear' in d) { myPreviewOf = ''; myWear(d.mywear); paintHub(); toast(d.mywear ? `${(myOf(d.mywear) || {}).name} is on (in this browser)` : 'Your Neopets theme again'); return true; }
+    if (d.myren && mine) { const box = hub.main.querySelector('[data-myname]'); if (box) { mine.name = (box.value || '').trim().slice(0, 40) || mine.name; S.myThemes = [...S.myThemes]; changed('Named'); } return true; }
+    if ('mydel' in d && mine) { if (d.mydel !== 'sure') { t.dataset.mydel = 'sure'; t.textContent = 'Delete it for good?'; t.classList.add('is-sure'); return true; } const gone = mine; S.myThemes = S.myThemes.filter((x) => x.id !== gone.id); const lk = { ...(S.looks || {}) }; delete lk[`my:${gone.id}`]; S.looks = lk; if (S.wear === gone.id) myWear(''); myPreviewEnd(); lookAt = ''; changed(`${gone.name} is gone`); return true; }
+    if (d.mycol) { myColourOpen(t); return true; }
+    if (d.myclear && mine) { mySet(mine, d.myclear, ''); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return true; }
+    if ('myicons' in d && mine) { const ic = { ...(mine.v.icons || {}) }; if (d.myicons) { ic.from = d.myicons; if (ic.hue == null) Object.assign(ic, { hue: 280, keep: 30, sat: 100, grey: 55, light: 0 }); } else delete ic.from; mine.v = { ...mine.v, icons: ic }; mySet(mine, 'icons.from', ic.from || ''); paintHub(); return true; }
+    if ('mylogo' in d && mine) { mySet(mine, 'logo.from', d.mylogo); paintHub(); return true; }
+    if (d.mypat) { myPick = { part: d.mypat }; myPickPaint(); return true; }
+    if ('mypickclose' in d) { myPick = null; myPickPaint(); return true; }
+    if (d.mypatuse && mine && myPick) { mySet(mine, `${myPick.part}.pat`, d.mypatuse); myPick = null; myPickPaint(); paintHub(); return true; }
+    if ('mypatadd' in d && mine && myPick) { const u = String((hub.win.querySelector('[data-mypaturl]') || {}).value || '').trim(); if (!/^https:\/\/\S+\.(png|gif|webp|jpe?g|svg)(\?\S*)?$/i.test(u)) { toast('A picture’s whole address, starting https://'); return true; } mySet(mine, `${myPick.part}.pat`, u); myPick = null; myPickPaint(); paintHub(); return true; }
+    return false;
+  }
+  const lookChanged = (f) => !!(S.looks && S.looks[f] && Object.keys(S.looks[f]).length);
+  function themesPage() {
+    themeSwatches();   // (each theme's colours, once: the tiles fill in as they come)
+    if (lookAt) return lookPage(lookAt);
+    const acc = themeAccount(), worn = S.wear;
+    const yours = new Set(themeList().map(([id]) => id)), busy = themeBusy;
+    const tile = ([f, name, id]) => {
+      const sw = themeSwatchOf(id), on = !worn && f === acc;
+      const act = on ? '<span class="bnp-look-on">✓ Yours now</span>'
+        : busy === id ? '<span class="bnp-look-on is-busy">Putting it on…</span>'
+        : yours.has(id) ? `<button type="button" class="bnp-look-put" data-lookon="${id}"${busy ? ' disabled' : ''}>Put it on</button>` : '';
+      return `<div class="bnp-look${on ? ' is-now' : ''}">
+        <button type="button" class="bnp-look-open" data-look="${esc(f)}" title="${esc(name)}: who stands where">
+          <span class="bnp-look-band" style="background-color:${esc(sw ? sw.bg : '#ece8dc')};background-image:${esc(themeSwatchImg(sw))}"></span>
+          <span class="bnp-look-pair"><img src="${NPI}themes/h5/${esc(f)}/images/npc-left.png" alt="" loading="lazy"><img src="${NPI}themes/h5/${esc(f)}/images/npc-right.png" alt="" loading="lazy"></span>
+          <span class="bnp-look-name"><b>${esc(name)}</b>${lookChanged(f) ? '<small>Changed</small>' : ''}</span>
+        </button>
+        ${act ? `<span class="bnp-look-foot">${act}</span>` : ''}
+      </div>`;
+    };
+    const myTile = (t) => {   // (a theme of yours, or Neopets Enhance's: its pop-up colours and pattern, the first one on each side of its foot)
+      const k = `my:${t.id}`, on = worn === t.id, pop = (t.v && t.v.pop) || {}, pu = myPic(pop.pat);
+      const band = `background-color:${pop.top || '#ece8dc'};background-image:${[pu ? `url("${cssUrl(pu)}")` : '', pop.top && pop.bottom ? `linear-gradient(${pop.top}, ${pop.bottom})` : ''].filter(Boolean).join(', ') || 'none'};background-size:${Math.min(150, Number(pop.size) || 150)}px auto, auto;background-repeat:repeat, no-repeat`;
+      return `<div class="bnp-look is-mine${on ? ' is-now' : ''}">
+        <button type="button" class="bnp-look-open" data-look="${esc(k)}" title="${esc(t.name)}">
+          <span class="bnp-look-band" style="${esc(band)}"></span>
+          <span class="bnp-look-pair"><span class="bnp-look-fig" data-tilefig="${esc(k)}:left"></span><span class="bnp-look-fig" data-tilefig="${esc(k)}:right"></span></span>
+          <span class="bnp-look-name"><b>${esc(t.name)}</b><small>${t.built ? 'Comes with Neopets Enhance' : `Yours, from ${esc(nbcThemeName(t.base))}`}${t.wip ? ' (Work in progress)' : ''}</small></span>
+        </button>
+        <span class="bnp-look-foot">${on ? '<span class="bnp-look-on">✓ Wearing it</span>' : `<button type="button" class="bnp-look-put" data-mywear="${esc(t.id)}">Wear it</button>`}</span>
+      </div>`;
+    };
+    return `<div class="bnp-mhead"><h2>Themes</h2><span class="bnp-note">Put one on, or open one to choose who stands at the foot of its pages and in this window’s corner. Themes of your own change everything else too.</span></div>
+      <h6 class="bnp-looks-h">Neopets Enhance’s and yours <span class="bnp-note">Only in this browser: your Neopets account keeps its own theme</span></h6>
+      <div class="bnp-looks">${myAll().map(myTile).join('')}<button type="button" class="bnp-look-new" data-mynew><b>+</b><span>New theme</span><small>It starts as ${esc(nbcThemeName(acc) || 'your theme')}, for you to change</small></button></div>
+      <h6 class="bnp-looks-h">Neopets’ own</h6>
+      <div class="bnp-looks">${lookThemes().map(tile).join('')}</div>`;
+  }
+  function lookTileFigs() {   // (your themes' tiles: the first one on each side of their foot)
+    if (!hub) return;
+    for (const box of hub.main.querySelectorAll('[data-tilefig]')) {
+      if (box.firstChild) continue;
+      const [, id, side] = box.dataset.tilefig.split(':'), sp = (lookOf(`my:${id}`)[side] || []).find((x) => x && x.p);
+      if (!sp) continue;
+      figBox(sp).then((b) => { if (b && box.isConnected && !box.firstChild) box.append(figFit(figEl(sp, b, side), b, sp, 74, 62)); }).catch(report);
+    }
+  }
+  function lookPage(f) {
+    const m = myKey(f), t = m ? [f, m.name, 0] : lookThemes().find((x) => x[0] === f) || [f, nbcThemeName(f), 0], L = lookOf(f), now = themeAccount(), mine = (S.looks && S.looks[f]) || {};
+    const ownName = m ? `${nbcThemeName(m.base)}’s own` : 'Neopets’ own';
+    const card = (sp, slot, i) => `<span class="bnp-lookcard${sp === 'own' ? ' is-own' : ''}"><span class="bnp-lookfig" data-fig="${slot}:${i}"></span><b>${sp === 'own' ? ownName : esc(sp.n || 'Someone')}</b>
+      <button type="button" class="bnp-lookx" data-lookdel="${slot}:${i}" title="Take out" aria-label="Take ${sp === 'own' ? 'Neopets’ own' : esc(sp.n || 'them')} out">×</button></span>`;
+    const row = (slot) => `<div class="bnp-lookrow">${L[slot].map((sp, i) => card(sp, slot, i)).join('')}<button type="button" class="bnp-lookadd" data-lookadd="${slot}"><b>+</b>Add someone</button></div>`;
+    return `<button type="button" class="bnp-backpill" data-lookback><span aria-hidden="true">‹</span>Every theme</button>
+      <div class="bnp-mhead bnp-lookhead"><h2>${esc(t[1])}</h2>${m ? myActs(m) : !S.wear && f === now ? '<span class="bnp-look-on">✓ Yours now</span>' : t[2] ? `<button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-lookon="${t[2]}">Put it on</button>` : ''}</div>
+      ${m ? myEditHtml(f) : ''}${m && myTab !== 'who' ? '' : `
+      <h5>At the foot of every page <span class="bnp-note">Left and right, where Neopets has its two. With more than one, a different one on each page, at random.</span></h5>
+      <div class="bnp-card"><div class="bnp-lookcols">${[['left', 'Left'], ['right', 'Right']].map(([k, l]) => `<div class="bnp-lookcol"><h6>${l}</h6>${row(k)}</div>`).join('')}</div>
+        ${mine.left || mine.right ? '<p class="bnp-note"><button type="button" class="bnp-linkbtn" data-lookreset="foot">Back to Neopets’ own</button></p>' : ''}</div>
+      <h5>In this window’s corner <span class="bnp-note">With more than one, the next one each time Settings opens.</span></h5>
+      <div class="bnp-card">${row('corner')}
+        ${mine.corner ? '<p class="bnp-note"><button type="button" class="bnp-linkbtn" data-lookreset="corner">Back to how it started</button></p>' : ''}
+        ${S.features.hubPal ? '' : '<p class="bnp-note">The corner is off: General › Windows.</p>'}</div>`}`;
+  }
+  function myActs(m) {   // (a theme of yours: wear it or take it off; Neopets Enhance's: a copy to change; yours: its name, or gone)
+    const on = S.wear === m.id;
+    return `<span class="bnp-lookacts">${on ? '<span class="bnp-look-on">✓ Wearing it</span><button type="button" class="bnp-linkbtn" data-mywear="">Take it off</button>' : `<button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mywear="${esc(m.id)}">Wear it</button>`}
+      ${m.built ? `<button type="button" class="bnp-linkbtn" data-mycopy="${esc(m.id)}">Make your own copy</button>` : `<input type="text" data-myname value="${esc(m.name)}" maxlength="40" aria-label="Its name" spellcheck="false"><button type="button" class="bnp-linkbtn" data-myren>Rename</button><button type="button" class="bnp-linkbtn" data-mydel>Delete…</button>`}</span>
+      <p class="bnp-note bnp-mylead">${m.built ? `Comes with Neopets Enhance${m.wip ? ' (work in progress: more to come)' : ''}. ` : `Starts from ${esc(nbcThemeName(m.base))}. `}${on ? '' : 'Shown on this page while it’s open here; your own theme comes back when you leave.'}</p>`;
+  }
+  function lookFigs() {   // (each card's figure, once its picture is known)
+    if (!hub || !lookAt) return;
+    const L = lookOf(lookAt);
+    for (const box of hub.main.querySelectorAll('.bnp-lookfig[data-fig]')) {
+      if (box.firstChild) continue;
+      const [slot, i] = box.dataset.fig.split(':'), sp = L[slot] && L[slot][Number(i)];
+      if (!sp) continue;
+      const one = sp === 'own' ? { p: `themes/h5/${(myKey(lookAt) || {}).base || lookAt}/images/npc-${slot}.png`, t: slot === 'right' ? 1 : 0 } : sp;
+      figBox(one).then((b) => { if (b && box.isConnected && !box.firstChild) box.append(figFit(figEl(one, b, slot === 'right' ? 'right' : 'left'), b, one, 92, 84)); }).catch(report);
+    }
+  }
+  function lookAdd(sp) {   // (someone chosen in the picker: in that list, at its end)
+    const f = lookAt, slot = lookPick && lookPick.slot;
+    if (!f || !slot) return;
+    lookSet(f, slot, [...lookOf(f)[slot], sp]);
+    lookPick = null;
+    lookPickPaint();
+    lookDone(`${sp.n || 'They'} ${slot === 'corner' ? 'will stand in the corner' : `will stand at the foot, on the ${slot}`}`);
+  }
+  function lookDone(msg) {   // (kept; this page's foot and corner as they are now, when it's your theme)
+    changed(msg);
+    if (lookAt === nbcTheme()) { footPals(); hubPal(); }
+  }
+  // the picker: everyone there is, by where they're from; a character with several looks shows them all
+  function lookPickPaint() {
+    if (!hub) return;
+    let el = hub.win.querySelector('.bnp-lookpick');
+    if (!lookPick) { if (el) el.remove(); return; }
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'bnp-lookpick';
+      el.setAttribute('role', 'dialog');
+      el.setAttribute('aria-label', 'Add someone');
+      hub.win.querySelector('.bnp-hub-body').append(el);
+    }
+    const P = lookPick, q = (P.q || '').trim().toLowerCase().replace(/^the /, ''), where = { left: 'at the foot, on the left', right: 'at the foot, on the right', corner: 'in this window’s corner' }[P.slot];
+    const list = LOOK_LIB.map((c, i) => [c, i]).filter(([c]) => (!P.from || lookFrom(c) === P.from) && (!q || c[0].toLowerCase().replace(/^the /, '').includes(q) || c[0].toLowerCase().includes(q)));
+    const tile = (c, i, j, label, sub, n = 0) => `<button type="button" class="bnp-lpone" data-lp${j == null ? 'char' : 'pose'}="${i}${j == null ? '' : `:${j}`}">${n > 1 ? `<span class="bnp-lpn" title="${n} looks to choose from">${n} looks</span>` : ''}<span class="bnp-lookfig" data-lpfig="${i}:${j == null ? 0 : j}"></span><b>${esc(label)}</b><small>${esc(sub)}</small></button>`;
+    let body;
+    if (P.char != null) {
+      const c = LOOK_LIB[P.char];
+      body = `<button type="button" class="bnp-backpill" data-lpback><span aria-hidden="true">‹</span>Everyone</button><div class="bnp-lphead"><b>${esc(c[0])}</b><span class="bnp-note">Pick a look</span></div>
+        <div class="bnp-lpgrid">${c[2].map((pz, j) => tile(c, P.char, j, pz[0].replace(/^./, (x) => x.toUpperCase()), c[1])).join('')}</div>`;
+    } else {
+      body = `<div class="bnp-lpgrid">${list.map(([c, i]) => tile(c, i, null, c[0], c[1], c[2].length)).join('') || '<p class="bnp-note">No one by that name. Try another, or add a picture by its address below.</p>'}</div>`;
+    }
+    el.innerHTML = `<div class="bnp-lptop"><b>Add someone ${where}</b><button type="button" class="bnp-lpx" data-lpclose title="Close" aria-label="Close">×</button></div>
+      <div class="bnp-lpbar"><input type="search" data-lpq placeholder="Find someone…" aria-label="Find someone" value="${esc(P.q || '')}" spellcheck="false" autocomplete="off">
+        <span class="bnp-seg" role="group">${[['', 'Everyone'], ...LOOK_FROM.map((s) => [s, s])].map(([v, l]) => `<button type="button" data-lpfrom="${esc(v)}" aria-pressed="${(P.from || '') === v}">${esc(l)}</button>`).join('')}</span></div>
+      <div class="bnp-lpbody">${body}</div>
+      <div class="bnp-lpurl"><input type="url" data-lpurl placeholder="Or a picture’s address: https://images.neopets.com/…" aria-label="A picture’s address" spellcheck="false"><input type="text" data-lpname placeholder="Their name" aria-label="Their name" maxlength="40"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-lpadd>Add</button></div>`;
+    lookPickFigs(el);
+    const box = el.querySelector('[data-lpq]');
+    if (P.focus) { P.focus = false; box.focus(); box.setSelectionRange(box.value.length, box.value.length); }
+  }
+  let lookIo = null;
+  function lookPickFigs(el) {   // (each one's figure as it comes into sight: never hundreds of pictures at once)
+    if (lookIo) lookIo.disconnect();
+    lookIo = new IntersectionObserver((es) => {
+      for (const e of es) {
+        if (!e.isIntersecting) continue;
+        lookIo.unobserve(e.target);
+        const box = e.target, [i, j] = box.dataset.lpfig.split(':').map(Number), pz = LOOK_LIB[i] && LOOK_LIB[i][2][j];
+        if (!pz) continue;
+        const sp = { p: pz[1], t: pz[2] || 0, c: pz[3] || 0 };
+        figBox(sp).then((b) => { if (b && box.isConnected && !box.firstChild) box.append(figFit(figEl(sp, b, 'left'), b, sp, 96, 88)); }).catch(report);
+      }
+    }, { root: el.querySelector('.bnp-lpbody'), rootMargin: '120px' });
+    for (const b of el.querySelectorAll('[data-lpfig]')) lookIo.observe(b);
+  }
+  document.addEventListener('click', (e) => {   // (Themes' buttons, and the picker's)
+    if (!hub || !(e.target instanceof Element) || !hub.win.contains(e.target)) return;
+    if (lookPick && e.target.closest('.bnp-rail [data-page], .bnp-rail [data-kind], .bnp-subtabs [data-page]')) { lookPick = null; lookPickPaint(); }   // (another page: the picker closes)
+    if (myPreviewOf && e.target.closest('.bnp-rail [data-page], .bnp-rail [data-kind]')) myPreviewEnd();   // (another page: your own theme again)
+    const t = e.target.closest('[data-look], [data-lookback], [data-lookadd], [data-lookdel], [data-lookreset], [data-lookon], [data-lpclose], [data-lpfrom], [data-lpchar], [data-lppose], [data-lpback], [data-lpadd], [data-lookgo], [data-mywear], [data-mynew], [data-mycopy], [data-myren], [data-mydel], [data-mytab], [data-mycol], [data-myclear], [data-myicons], [data-mylogo], [data-mypat], [data-mypickclose], [data-mypatuse], [data-mypatadd]');
+    if (!t) return;
+    const d = t.dataset;
+    if ('lookgo' in d) { goPage('themes'); return; }
+    if (myEditClick(t, d)) return;
+    if (d.look) { lookAt = d.look; myTab = 'who'; lookPick = null; lookPickPaint(); if (myKey(lookAt)) myPreview(lookAt); else myPreviewEnd(); paintHub(); hub.main.scrollTop = 0; return; }
+    if ('lookback' in d) { lookAt = ''; lookPick = null; myPick = null; lookPickPaint(); myPickPaint(); myColourClose(); myPreviewEnd(); paintHub(); return; }
+    if (d.lookon) { const p = themePick(Number(d.lookon)); if (hubPage === 'themes') paintHub(); p.then(() => { if (hubPage === 'themes') paintHub(); }).catch(report); return; }
+    if (d.lookadd) { lookPick = { slot: d.lookadd, q: '', from: '', char: null, focus: true }; lookPickPaint(); return; }
+    if (d.lookdel) {
+      const [slot, i] = d.lookdel.split(':'), list = lookOf(lookAt)[slot].slice(), [gone] = list.splice(Number(i), 1);
+      const was = lookOf(lookAt)[slot];
+      lookSet(lookAt, slot, list);
+      changed(`${gone === 'own' ? 'Neopets’ own' : (gone && gone.n) || 'They'} won’t stand there now`, () => { lookSet(lookAt, slot, was); lookDone(); });
+      if (lookAt === nbcTheme()) { footPals(); hubPal(); }
+      return;
+    }
+    if (d.lookreset) {
+      const f = lookAt, slots = d.lookreset === 'foot' ? ['left', 'right'] : ['corner'], was = slots.map((s) => lookOf(f)[s]);
+      for (const s of slots) lookSet(f, s, lookStart(f)[s]);
+      lookDone();
+      toast(d.lookreset === 'foot' ? 'Neopets’ own two again' : 'As it started again', () => { slots.forEach((s, n) => lookSet(f, s, was[n])); lookDone(); });
+      return;
+    }
+    if (!lookPick) return;
+    if ('lpclose' in d) { lookPick = null; lookPickPaint(); return; }
+    if ('lpfrom' in d) { lookPick.from = d.lpfrom; lookPick.char = null; lookPickPaint(); return; }
+    if ('lpback' in d) { lookPick.char = null; lookPickPaint(); return; }
+    if (d.lpchar) {
+      const c = LOOK_LIB[Number(d.lpchar)];
+      if (c[2].length > 1) { lookPick.char = Number(d.lpchar); lookPickPaint(); return; }
+      const [, p, tt = 0, cc = 0] = c[2][0];
+      lookAdd({ p, n: c[0], t: tt, c: cc });
+      return;
+    }
+    if (d.lppose) {
+      const [i, j] = d.lppose.split(':').map(Number), c = LOOK_LIB[i], [, p, tt = 0, cc = 0] = c[2][j];
+      lookAdd({ p, n: c[0], t: tt, c: cc });
+      return;
+    }
+    if ('lpadd' in d) {
+      const box = hub.win.querySelector('[data-lpurl]'), u = String(box.value || '').trim(), n = String(hub.win.querySelector('[data-lpname]').value || '').trim();
+      if (!/^https:\/\/\S+\.(png|gif|webp|jpe?g|svg)(\?\S*)?$/i.test(u)) { box.focus(); toast('A picture’s whole address, starting https:// and ending .png, .gif, .webp or .jpg'); return; }
+      const own = u.replace(/^https:\/\/images\.neopets\.com\//, '');
+      lookAdd({ p: own === u ? u : own, n: n || decodeURIComponent(u.split('/').pop().replace(/\.\w+(\?.*)?$/, '')).replace(/[_-]+/g, ' ').slice(0, 40), t: 0, c: 0 });
+    }
+  });
+  document.addEventListener('input', (e) => {   // (a theme of yours: its sliders, as you move them)
+    const el = e.target instanceof Element ? e.target.closest('[data-myrange]') : null, t = el && myEditable(lookAt);
+    if (!t) return;
+    const n = Number(el.value), lab = el.parentElement.querySelector('b');
+    if (lab) lab.textContent = `${n}${lab.textContent.replace(/^-?[\d.]+/, '')}`;
+    mySet(t, el.dataset.myrange, n);
+  });
+  document.addEventListener('change', (e) => {   // (a theme of yours: its icons as they are, or its base)
+    const el = e.target instanceof Element ? e.target : null, t = el && myEditable(lookAt);
+    if (!t) return;
+    if (el.matches('[data-myasis]')) { mySet(t, 'icons.as', el.checked ? 'own' : ''); paintHub(); }
+    if (el.matches('[data-mybase]') && /^[a-z]+$/.test(el.value)) { t.base = el.value; S.myThemes = [...S.myThemes]; saveNow(); if (myPreviewOf === t.id || S.wear === t.id) myOn(t, false); paintHub(); }
+  });
+  document.addEventListener('input', (e) => {   // (the picker's search: as you type)
+    if (!lookPick || !(e.target instanceof Element) || !e.target.matches('.bnp-lookpick [data-lpq]')) return;
+    lookPick.q = e.target.value;
+    lookPick.char = null;
+    lookPick.focus = true;
+    clearTimeout(lookPickPaint.t);
+    lookPickPaint.t = setTimeout(lookPickPaint, 120);
+  });
+  document.addEventListener('keydown', (e) => {   // (Esc: the picker first, then Settings)
+    if (e.key !== 'Escape' || !lookPick || !hub || !hub.win.contains(e.target instanceof Element ? e.target : null)) return;
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    lookPick = null;
+    lookPickPaint();
+  }, true);
   function toast(msg, undo) {
     if (!hub) return;
     const t = hub.win.querySelector('[data-g="toast"]');
@@ -10343,7 +11558,7 @@
   }
   const hubTabbed = (p) => p[2] === 'menu' || (p[2] === 'folder' && p[0] !== 'dailies');
   function hubPageHtml(p) {   // (a page of these settings: a Menus or Folders one with its tabs on top)
-    const pages = { general: () => featuresPage('general'), neomail: () => featuresPage('neomail'), shops: () => featuresPage('shops'), otherpages: otherPagesPage, dailies: dailiesHubPage, backup: backupPage, clock: clockPage, reminders: remPage, randomevents: rePage, avatars: avPage, items: itemsHubPage, neoboards: nbHubPage, tabs: tabsPage };
+    const pages = { themes: () => { const h = themesPage(); queueMicrotask(() => { lookFigs(); lookTileFigs(); }); return h; }, general: () => featuresPage('general'), neomail: () => featuresPage('neomail'), shops: () => featuresPage('shops'), otherpages: otherPagesPage, dailies: dailiesHubPage, backup: backupPage, clock: clockPage, reminders: remPage, randomevents: rePage, avatars: avPage, items: itemsHubPage, neoboards: nbHubPage, tabs: tabsPage };
     const tabs = hubTabbed(p) ? `<div class="bnp-subtabs" role="tablist" aria-label="${p[2] === 'menu' ? 'Menus' : 'Folders'}">${hubTabs(p[2]).map(([k, n]) => `<button type="button" role="tab" data-page="${k}" aria-selected="${k === p[0]}">${esc(n)}</button>`).join('')}</div>` : '';
     return tabs + (p[2] === 'menu' ? menuPage(p[0]) : pages[p[0]] ? pages[p[0]]() : folderPage(p[0]));
   }
@@ -10371,7 +11586,7 @@
     nav.className = 'bnp-jumps';
     nav.setAttribute('aria-label', 'On this page');
     hs.forEach((h, i) => { h.id = `bnp-hj-${i}`; const b = document.createElement('button'); b.type = 'button'; b.textContent = (h.firstChild && h.firstChild.nodeType === 3 ? h.firstChild.nodeValue : h.textContent).trim(); b.addEventListener('click', () => h.scrollIntoView({ block: 'start', behavior: 'smooth' })); nav.append(b); });
-    const head = hub.main.querySelector(':scope > .bnp-mhead');
+    const head = hub.main.querySelector(':scope > .bnp-mytabs') || hub.main.querySelector(':scope > .bnp-mhead');   // (a theme of yours: under its tabs)
     if (head) head.after(nav); else hub.main.prepend(nav);
   }
   // Find a setting: every page's switches, fields and parts, from what they say (made out of sight the first time you look, once each
@@ -10832,7 +12047,7 @@
       const r = await fetch('/settings/neoboards/', { credentials: 'include' });
       const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
       const o = avReadOwned(doc);
-      if (o) set('avown', o); else avOwnErr = /\/login/i.test(r.url) || doc.querySelector('form[action*="login"]') ? 'login' : 'page';
+      if (o) avOwnSave(o); else avOwnErr = /\/login/i.test(r.url) || doc.querySelector('form[action*="login"]') ? 'login' : 'page';
     } catch (e) { avOwnErr = 'page'; report(e); }
     finally { avOwnBusy = false; avAfter(); }
   }
@@ -10841,8 +12056,39 @@
     if (!f || !o || o.list.some((x) => avKey(x[0]) === avKey(f))) return;
     o.list.push([f, '', '']);
     set('avown', o);
+    set('avnew', { f, at: Date.now() });
   }
-  const avIcon = () => { const o = avOwn(); return o && o.cur ? avPic(o.cur) : AV_DEFAULT_PIC; };
+  function avSeeMine(src) {   // (the avatar you wear, as last seen: on a post of yours, your pen, or Neoboard Settings)
+    const f = avFile(src);
+    if (!f || /^default\./i.test(f)) return;
+    const c = get('avcur', null);
+    if (c && c.f === f) return;
+    set('avcur', { f, at: Date.now() });
+    clearTimeout(avSeeMine.t);
+    avSeeMine.t = setTimeout(() => { try { applyAll(); } catch (e) { report(e); } }, 400);   // (your menus: the Avatar Collection wears it now)
+  }
+  function avTop(files) {   // (of these, the newest there is: the highest number on SunnyNeo's list; one it doesn't know yet, newer still)
+    const L = avList(), at = new Map(L ? L.list.map((a) => [avKey(a.f), a.i]) : []);
+    let best = '', bi = -1;
+    for (const x of files) { const i = at.has(avKey(x)) ? at.get(avKey(x)) : 1e9; if (i >= bi) { best = x; bi = i; } }
+    return best;
+  }
+  function avOwnSave(o) {   // (your avatars, kept; one that wasn't yours before is the newest you got)
+    const was = avOwn();
+    if (was && was.list.length) {
+      const had = new Set(was.list.map((x) => avKey(x[0]))), fresh = o.list.filter((x) => !had.has(avKey(x[0])));
+      if (fresh.length) set('avnew', { f: avTop(fresh.map((x) => x[0])), at: Date.now() });
+    }
+    set('avown', o);
+  }
+  function avNewest() {   // (the last one you got; before one comes, the newest of yours)
+    const o = avOwn(), n = get('avnew', null);
+    if (!o) return '';
+    if (n && o.list.some((x) => avKey(x[0]) === avKey(n.f))) return n.f;
+    return avTop(o.list.map((x) => x[0]));
+  }
+  const avWorn = () => { const c = get('avcur', null), o = avOwn(); return (c && c.f) || (o && o.cur && o.cur !== 'NC' ? o.cur : ''); };
+  const avIcon = () => { const f = (S.features.avIcon === 'new' && avNewest()) || avWorn(); return f ? avPic(f) : AV_DEFAULT_PIC; };
   function avData() {   // (the list with what's yours marked)
     const L = avList(), O = avOwn();
     if (!L) return null;
@@ -10880,6 +12126,8 @@
     const how = `<h5>How it works</h5>
       <div class="bnp-card">
         ${sw('avatars', 'Avatar collection', 'This page, a link to it in Neoboard Settings (where a search finds any of yours in Neopets’ own avatar chooser), and an avatar a random event gives you counted at once.')}
+        ${f.avatars ? `<div class="bnp-f"><span>Its picture in your menus</span><span class="bnp-seg" role="group">${[['worn', 'The one you wear'], ['new', 'Your newest']].map(([k, l]) => `<button type="button" data-featv="avIcon:${k}" aria-pressed="${(f.avIcon || 'worn') === k}">${l}</button>`).join('')}</span></div>
+        <p class="bnp-note">${f.avIcon === 'new' ? 'Your newest: the last one you got (until one comes, the newest of yours).' : 'The one you wear: as last seen on a post of yours, your pen or Neoboard Settings.'}</p>` : ''}
         <p class="bnp-note">Which ones are yours: Neoboard Settings, read when you visit it, or from here${D && D.O ? ` (${avAgo(D.O.at)})` : ''}. <button type="button" class="bnp-linkbtn" data-avdo="own"${avOwnBusy ? ' disabled' : ''}>${avOwnBusy ? 'Checking…' : 'Check again'}</button></p>
         <p class="bnp-note">Every avatar there is, and how to get it: <a href="${SN}/avatars/avatars.php" target="_blank" rel="noopener">SunnyNeo’s avatar list</a>, kept in this browser${D ? ` (${avAgo(D.L.at)})` : ''}. A quick look for new ones once a week; the whole list again every two months. <button type="button" class="bnp-linkbtn" data-avdo="all"${avBusy ? ' disabled' : ''}>Get the whole list again</button></p>
       </div>`;
@@ -11042,7 +12290,7 @@
   function avSettingsPage() {
     if (!S.features.avatars || !/^\/settings\/neoboards\/?$/i.test(location.pathname)) return;
     const o = avReadOwned(document);
-    if (o) set('avown', o);
+    if (o) avOwnSave(o);
     avChooserFind();
     let tries = 0;
     const wait = () => {   // (Neopets draws the settings themselves a moment after the page)
@@ -11050,6 +12298,7 @@
       if (!btn) { if (++tries < 40) setTimeout(wait, 250); return; }
       const cur = document.querySelector('#avatar_preview img'), own = avOwn();
       if (cur && own && own.cur !== avFile(cur.getAttribute('src'))) { own.cur = avFile(cur.getAttribute('src')); set('avown', own); }
+      if (cur) avSeeMine(cur.getAttribute('src'));
       avSettingsLink();
       const m = /[#&]bnp-av=([\w-]+)/.exec(location.hash);
       if (m) avWear(decodeURIComponent(m[1]), btn);
@@ -12235,7 +13484,7 @@
 
   // ---- features ----
   const FEAT_PAGES = {   // (what was one Features page, shared out: each page's name, and what it's for)
-    general: ['General', 'The top bar and the side menu: what’s in them and what they do.'],
+    general: ['General', 'The top bar and the side menu: what’s in them and what they do. And these windows.'],
     neomail: ['Neomail', 'Your Neomail, and writing to people.'],
     shops: ['Shops and money', 'Neopia’s shops and yours, the bank and the Stock Market.'],
     otherpages: ['Other pages', 'A few of Neopets’ pages made better, each on its own.'],
@@ -12269,6 +13518,10 @@
       </div>`],
       ['general', `<div class="bnp-card"><h4>Pets</h4>
         ${sw('pets', 'Switch Pet', 'A swap button beside “Active Pet” in the side menu, and Switch Pet in the Profile menu: every pet with what it is and how hungry; one click makes it your active pet.')}
+      </div>`],
+      ['general', `<div class="bnp-card"><h4>Windows</h4>
+        <div class="bnp-f"><span>Their footers</span><span class="bnp-seg" role="group">${[['pop', 'Like Neopets’ pop-ups'], ['page', 'Like the foot of the page']].map(([v, l]) => `<button type="button" data-featv="hubFoot:${v}" aria-pressed="${(f.hubFoot || 'pop') === v}">${l}</button>`).join('')}</span></div>
+        ${sw('hubPal', 'A Neopian in Settings’ corner', palNote())}
       </div>`],
       ['shops', `<div class="bnp-card"><h4>Shops</h4>
         ${sw('shopDock', 'The Shop Dock', 'Your favourite shops in a little window, each as its shopkeeper: open it from the Shops menu and it stays open on every page until you close it. It fits itself beside the page; drag it anywhere else, fold it up, or close it. ✎ chooses your shops and sets how it looks; drag tiles into your own order.')}
@@ -12332,6 +13585,7 @@
       if (k === 'shopMin') { shopMin(); paintDock(); }
       if (k === 'fquest') paintFq();
       if (k === 'scView') { if (S.features.scView) scPage(); else scOff(); }
+      if (k === 'hubPal') hubPal();
       if (k === 'nmPopup' && !S.features.nmPopup) nmwClose();
       if (t.type !== 'text') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
     }, t.type === 'text' ? 400 : 0);
@@ -12346,9 +13600,10 @@
   }
   document.addEventListener('click', (e) => {   // (the hub's other buttons: folder shortcuts, chips, backup)
     if (!hub || !(e.target instanceof Element) || !hub.win.contains(e.target)) return;
-    const t = e.target.closest('[data-dset], [data-bk], [data-unchip], [data-dcdel], [data-rset], [data-rcdel], button[data-re], [data-rek], [data-redel], button[data-tb], [data-avs], [data-avo], [data-avv], [data-avk], [data-avx], button[data-av], [data-avdo], button[data-game], button[data-itk], button[data-its], button[data-ittest], button[data-itnc], button[data-nbh], button[data-nbov], [data-tablk]');
+    const t = e.target.closest('[data-dset], [data-bk], [data-unchip], [data-dcdel], [data-rset], [data-rcdel], button[data-re], [data-rek], [data-redel], button[data-tb], [data-avs], [data-avo], [data-avv], [data-avk], [data-avx], button[data-av], [data-avdo], button[data-game], button[data-itk], button[data-its], button[data-ittest], button[data-itnc], button[data-nbh], button[data-nbov], [data-tablk], button[data-featv]');
     if (!t) return;
     if (t.dataset.nbh || t.dataset.nbov) { nbHubClick(t); return; }
+    if (t.dataset.featv) { const [k, v] = t.dataset.featv.split(':'); S.features[k] = v; changed(); for (const h of $$('.bnp-hub-head')) { try { themeWin(h.parentElement); } catch (_) { /* */ } } return; }   // (a choice of pills: this one)
     if (t.dataset.tablk) { S.features.tabLookup = t.dataset.tablk; lookupPick = null; changed(); tabsApply(true); return; }   // (a lookup's tab picture: this one, from now on)
     if (t.dataset.itk || t.dataset.its || t.dataset.itnc || 'ittest' in t.dataset) { itemsHubClick(t); return; }
     if (t.dataset.game) { const on = gameToggle(t.dataset.game); changed(`${gameName(t.dataset.game)} is ${on ? 'in My Games' : 'out of My Games'}`); return; }
@@ -12904,9 +14159,8 @@
     .bnp-pets-rf.is-busy { cursor: default; }
     .bnp-pets-rf.is-busy svg { animation: bnp-turn .8s linear infinite; }
     .bnp-pets .bnp-pets-tg { position: relative; }
-    .bnp-pets .bnp-pets-tg[aria-pressed="false"] { opacity: .5; filter: grayscale(.6); }   /* (off: faded) */
+    .bnp-pets .bnp-pets-tg[aria-pressed="false"] { opacity: .5; filter: grayscale(.6); }   /* (off: faded; on: full, like the buttons beside them) */
     .bnp-pets .bnp-pets-tg[aria-pressed="false"]:hover { opacity: .8; }
-    .bnp-pets .bnp-pets-tg[aria-pressed="true"]::after { content: ""; position: absolute; top: -3px; right: -3px; width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; background: #3bc92e url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M3 6.2 5 8.2 9 4' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / 12px no-repeat; box-shadow: 0 1px 2px rgba(0, 0, 0, .3); }   /* (on: a green tick in its corner) */
     .bnp-pets-x:hover { opacity: 1; background: color-mix(in srgb, currentColor 12%, transparent); }
     .bnp-pets-note { margin: 4px 2px 8px; font: 13px "MuseoSansRounded500", Arial, sans-serif; opacity: .85; }
     .bnp-pets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
@@ -13100,6 +14354,135 @@
     .bnp-hub .bnp-hub-body p { width: auto; margin: 0 0 8px; position: static; }
     .bnp-hub .bnp-hub-foot { flex: none; position: relative; display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 10px 16px; border-radius: 0; }
     .bnp-hub .bnp-done { width: auto; min-width: 140px; }
+    .popup-footer__2020.bnp-pagefoot { background: var(--bnp-pf-bg, #fed123); border-top: var(--bnp-pf-line, 0); }
+    .popup-footer__2020.bnp-pagefoot .popup-footer-pattern__2020 { background-color: transparent; background-image: var(--bnp-pf-img); background-size: var(--bnp-pf-size, auto); background-position: var(--bnp-pf-pos, center top); background-repeat: var(--bnp-pf-repeat, repeat); }
+    .bnp-hub .bnp-pal { position: absolute; left: 6px; bottom: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+    /* a Neopian standing on an edge: the foot of the page, Settings' corner, the Themes cards */
+    .bnp-fig { position: relative; display: block; flex: none; overflow: hidden; pointer-events: none; }
+    .bnp-fig img { position: absolute; display: block; max-width: none; max-height: none; height: auto; margin: 0; padding: 0; border: 0; }
+    .bnp-fig.is-turned { transform: scaleX(-1); }
+    .footer-npcs__2020 .bnp-footpal { background-image: none !important; }
+    .footer-npcs__2020 .bnp-fig { position: absolute; bottom: 0; height: 100%; }
+    .footer-npcs__2020 .bnp-fig.is-left { left: 0; }
+    .footer-npcs__2020 .bnp-fig.is-right { right: 0; }
+    /* Settings › Themes: a tile for every theme, as Neopets dresses its pop-ups */
+    .bnp-hub .bnp-looks { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 14px; margin-top: 6px; }
+    .bnp-hub .bnp-look { position: relative; display: flex; flex-direction: column; border: 1px solid #d3ccb7; border-radius: 13px; background: #faf9f5; box-shadow: 0 3px 0 #e4dece; color: #363636; overflow: hidden; transition: transform .12s, box-shadow .12s; }
+    .bnp-hub .bnp-look:hover { transform: translateY(-2px); box-shadow: 0 5px 0 #e4dece; }
+    .bnp-hub .bnp-look-open { position: relative; display: flex; flex-direction: column; margin: 0; padding: 0; border: 0; background: none; color: inherit; text-align: left; cursor: pointer; }
+    .bnp-hub .bnp-look-open:focus-visible { outline: 3px solid var(--bnp-bar, var(--bnp-accent)); outline-offset: -3px; border-radius: 12px; }
+    .bnp-hub .bnp-look-foot { display: flex; align-items: center; min-height: 34px; padding: 0 9px 9px; }
+    .bnp-hub .bnp-look-put { height: 26px; margin: 0; padding: 0 13px; border: 1px solid color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 70%, #000); border-radius: 999px; background: var(--bnp-bar, var(--bnp-accent)); box-shadow: 0 2px 0 color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 62%, #000); color: var(--bnp-bar-ink, #fff); font: 12px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
+    .bnp-hub .bnp-look-put:hover { filter: brightness(1.12); }
+    .bnp-hub .bnp-look-put:active { transform: translateY(1px); box-shadow: 0 1px 0 color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 62%, #000); }
+    .bnp-hub .bnp-look-put[disabled] { opacity: .5; cursor: default; }
+    .bnp-hub .bnp-look-on { color: #2b7a27; font: 12px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-look-on.is-busy { color: #8a8270; }
+    .bnp-hub .bnp-look.is-now { border-color: var(--bnp-bar, var(--bnp-accent)); box-shadow: 0 0 0 2px var(--bnp-bar, var(--bnp-accent)), 0 3px 0 #e4dece; }
+    .bnp-hub .bnp-look-band { display: block; height: 46px; background: center / auto 100% repeat; border-bottom: 2px solid rgba(0, 0, 0, .14); }
+    .bnp-hub .bnp-look-pair { position: absolute; top: 6px; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-end; height: 62px; padding: 0 4px; pointer-events: none; }
+    .bnp-hub .bnp-look-pair img { width: 74px; height: 62px; object-fit: contain; object-position: bottom; }
+    .bnp-hub .bnp-look-pair img + img { object-position: bottom right; }
+    .bnp-hub .bnp-look-name { display: grid; gap: 1px; padding: 22px 11px 7px; }
+    .bnp-hub .bnp-look-name b { font: 15px/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3px; }
+    .bnp-hub .bnp-look-name small { color: #757575; font: 11.5px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-lookhead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+    .bnp-hub .bnp-backpill { display: inline-flex; align-items: center; gap: 7px; height: 30px; margin: 0 0 10px; padding: 0 15px 0 11px; border: 1px solid #d3ccb7; border-radius: 999px; background: #faf9f5; box-shadow: 0 2px 0 #e4dece; color: #4a4536; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }   /* (back a step: a pill of its own, above the name) */
+    .bnp-hub .bnp-backpill span { font: 19px/1 "MuseoSansRounded700", Arial, sans-serif; margin-top: -2px; }
+    .bnp-hub .bnp-backpill:hover, .bnp-hub .bnp-backpill:focus-visible { border-color: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 70%, #000); background: var(--bnp-bar, var(--bnp-accent)); color: var(--bnp-bar-ink, #fff); }
+    .bnp-hub .bnp-backpill:active { transform: translateY(1px); box-shadow: 0 1px 0 #e4dece; }
+    .bnp-hub .bnp-lookhead h2 { margin: 0; }
+    .bnp-hub .bnp-lookcols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .bnp-hub .bnp-lookcol { min-width: 0; }
+    .bnp-hub .bnp-lookcol h6 { margin: 0 0 6px; color: #5d5845; font: 12px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+    .bnp-hub .bnp-lookrow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+    .bnp-hub .bnp-lookcard { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 108px; padding: 6px 6px 8px; border: 1px solid #e3ddca; border-radius: 10px; background: #fff; text-align: center; }
+    .bnp-hub .bnp-lookcard b { width: 100%; overflow: hidden; color: #363636; font: 12px/1.25 "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-hub .bnp-lookcard.is-own b { color: #6b6553; }
+    .bnp-hub .bnp-lookfig { display: flex; align-items: flex-end; justify-content: center; width: 96px; height: 88px; overflow: hidden; border-bottom: 2px solid #ece6d4; }
+    .bnp-hub .bnp-lookx { position: absolute; top: 3px; right: 3px; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; margin: 0; padding: 0; border: 1px solid #ddd6c2; border-radius: 50%; background: #fff; color: #8a8270; font: 15px/1 Arial, sans-serif; cursor: pointer; }
+    .bnp-hub .bnp-lookx:hover { border-color: #c0392b; background: #c0392b; color: #fff; }
+    .bnp-hub .bnp-lookadd { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 108px; min-height: 122px; margin: 0; padding: 6px; border: 2px dashed #cfc7b0; border-radius: 10px; background: none; color: #6b6553; font: 12px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
+    .bnp-hub .bnp-lookadd b { font: 26px/1 "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-lookadd:hover { border-color: var(--bnp-bar, var(--bnp-accent)); color: #363636; background: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 8%, #fff); }
+    /* Themes: yours and Neopets Enhance's, and the editor */
+    .bnp-hub .bnp-looks-h { margin: 18px 0 8px; color: #5d5845; font: 12px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; letter-spacing: .07em; }
+    .bnp-hub .bnp-looks-h:first-of-type { margin-top: 6px; }
+    .bnp-hub .bnp-looks-h .bnp-note { margin-left: 8px; text-transform: none; letter-spacing: 0; font-family: "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-look-fig { position: relative; display: flex; align-items: flex-end; width: 74px; height: 62px; overflow: hidden; }
+    .bnp-hub .bnp-look-fig + .bnp-look-fig { justify-content: flex-end; }
+    .bnp-hub .bnp-look-new { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 160px; padding: 10px; border: 2px dashed #cfc7b0; border-radius: 13px; background: none; box-shadow: none; color: #6b6553; cursor: pointer; text-align: center; }
+    .bnp-hub .bnp-look-new b { font: 30px/1 "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-look-new span { font: 15px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3px; }
+    .bnp-hub .bnp-look-new small { color: #8a8270; font: 11.5px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-look-new:hover { border-color: var(--bnp-bar, var(--bnp-accent)); background: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 7%, #fff); color: #363636; }
+    .bnp-hub .bnp-lookacts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .bnp-hub .bnp-lookacts input[data-myname] { width: 190px; height: 30px; padding: 0 10px; border: 1px solid #cfc7b0; border-radius: 9px; font: 13.5px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-lookacts .is-sure { border-color: #c0392b !important; background: #c0392b !important; color: #fff !important; }
+    .bnp-hub .bnp-mytabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 14px 0 4px; }
+    .bnp-hub .bnp-mytabs button { height: 32px; margin: 0; padding: 0 14px; border: 1px solid #d3ccb7; border-radius: 999px; background: #faf9f5; color: #4a4536; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
+    .bnp-hub .bnp-mytabs button[aria-selected="true"] { border-color: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 70%, #000); background: var(--bnp-bar, var(--bnp-accent)); color: var(--bnp-bar-ink, #fff); box-shadow: 0 2px 0 color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 62%, #000); }
+    .bnp-hub .bnp-mylead { margin: 10px 0 0 !important; }
+    .bnp-hub .bnp-mycols { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px 18px; }
+    .bnp-hub .bnp-myc { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .bnp-hub .bnp-myc > span { flex: 1; min-width: 0; color: #4a4536; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-myswatch { flex: none; width: 46px; height: 28px; margin: 0; padding: 0; border: 2px solid rgba(0, 0, 0, .25); border-radius: 8px; cursor: pointer; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .55); }
+    .bnp-hub .bnp-myswatch.is-base { border-style: dashed; }
+    .bnp-hub .bnp-myswatch:hover, .bnp-hub .bnp-myswatch:focus-visible { outline: 3px solid color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 55%, transparent); }
+    .bnp-hub .bnp-myx { flex: none; width: 22px; height: 22px; margin: 0; padding: 0; border: 1px solid #ddd6c2; border-radius: 50%; background: #fff; color: #8a8270; font: 14px/1 Arial, sans-serif; cursor: pointer; }
+    .bnp-hub .bnp-myx:hover { border-color: #c0392b; background: #c0392b; color: #fff; }
+    .bnp-hub .bnp-mypat { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px; }
+    .bnp-hub .bnp-mypatbox { display: grid; place-items: center; width: 180px; height: 96px; border: 1px solid #d3ccb7; border-radius: 10px; background: #ece8dc center / 150px auto repeat; color: #8a8270; }
+    .bnp-hub .bnp-mypatgo { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; flex: 1; }
+    .bnp-hub .bnp-myslides { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 18px; margin-top: 12px; }
+    .bnp-hub .bnp-myslide { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; width: 100%; max-width: 360px; }
+    .bnp-hub .bnp-myslide span { color: #4a4536; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-myslide b { color: #6b6553; font: 12px "MuseoSansRounded500", Arial, sans-serif; text-align: right; }
+    .bnp-hub .bnp-myslide input { grid-column: 1 / -1; width: 100%; margin: 0; accent-color: var(--bnp-bar, var(--bnp-accent)); }
+    .bnp-hub .bnp-mysets { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 8px; }
+    .bnp-hub .bnp-myset, .bnp-hub .bnp-mylogo { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin: 0; padding: 8px 10px; border: 1px solid #e3ddca; border-radius: 10px; background: #fff; color: #363636; text-align: left; cursor: pointer; }
+    .bnp-hub .bnp-myset span { display: flex; gap: 4px; padding: 4px 6px; border-radius: 8px; background: #2c2357; }
+    .bnp-hub .bnp-myset i { width: 26px; height: 26px; background: center / contain no-repeat; }
+    .bnp-hub .bnp-mylogo i { width: 100%; height: 40px; border-radius: 8px; background: #2c2357 center / auto 30px no-repeat; }
+    .bnp-hub .bnp-myset b, .bnp-hub .bnp-mylogo b { font: 12px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-myset small { margin-top: -3px; color: #8a8270; font: 11px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-myset.is-on, .bnp-hub .bnp-mylogo.is-on { border-color: var(--bnp-bar, var(--bnp-accent)); box-shadow: 0 0 0 2px var(--bnp-bar, var(--bnp-accent)); }
+    .bnp-hub .bnp-myset:hover, .bnp-hub .bnp-mylogo:hover { border-color: var(--bnp-bar, var(--bnp-accent)); }
+    .bnp-hub .bnp-mypats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+    .bnp-hub .bnp-mypatone { display: flex; flex-direction: column; gap: 5px; margin: 0; padding: 6px; border: 1px solid #e3ddca; border-radius: 10px; background: #fff; text-align: left; cursor: pointer; }
+    .bnp-hub .bnp-mypatone span { display: block; height: 70px; border-radius: 7px; background: #ece8dc center / auto repeat; }
+    .bnp-hub .bnp-mypatone b { overflow: hidden; color: #363636; font: 11.5px/1.25 "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-hub .bnp-mypatone:hover { border-color: var(--bnp-bar, var(--bnp-accent)); }
+    /* the picker: over Settings' pages, everyone there is */
+    .bnp-hub .bnp-hub-body { position: relative; }
+    .bnp-hub .bnp-lookpick { position: absolute; inset: 8px; z-index: 6; display: flex; flex-direction: column; border: 1px solid #cfc7b0; border-radius: 13px; background: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, .28); overflow: hidden; }
+    .bnp-hub .bnp-lptop { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--bnp-bar, var(--bnp-accent)); color: var(--bnp-bar-ink, #fff); font: 15px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3px; }
+    .bnp-hub .bnp-lpx { margin-left: auto; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .22); color: inherit; font: 18px/1 Arial, sans-serif; cursor: pointer; }
+    .bnp-hub .bnp-lpbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 14px; border-bottom: 1px solid #ece6d4; background: #faf9f5; }
+    .bnp-hub .bnp-lpbar input { flex: 0 1 220px; min-width: 150px; height: 32px; padding: 0 10px; border: 1px solid #cfc7b0; border-radius: 9px; font: 13.5px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-lpbar .bnp-seg { flex-wrap: wrap; }
+    .bnp-hub .bnp-lpbody { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 14px; }
+    .bnp-hub .bnp-lphead { display: flex; align-items: baseline; gap: 12px; margin: 0 0 10px; }
+    .bnp-hub .bnp-lpgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+    .bnp-hub .bnp-lpn { position: absolute; top: 5px; right: 5px; z-index: 1; padding: 1px 7px; border-radius: 999px; background: var(--bnp-bar, var(--bnp-accent)); color: var(--bnp-bar-ink, #fff); font: 10.5px/1.5 "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-lpone { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; margin: 0; padding: 6px 4px 8px; border: 1px solid #e3ddca; border-radius: 10px; background: #fff; text-align: center; cursor: pointer; }
+    .bnp-hub .bnp-lpone:hover, .bnp-hub .bnp-lpone:focus-visible { border-color: var(--bnp-bar, var(--bnp-accent)); background: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 7%, #fff); }
+    .bnp-hub .bnp-lpone b { width: 100%; overflow: hidden; color: #363636; font: 12px/1.25 "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-hub .bnp-lpone small { width: 100%; overflow: hidden; color: #8a8270; font: 10.5px/1.25 "MuseoSansRounded500", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-hub .bnp-lpurl { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px; border-top: 1px solid #ece6d4; background: #faf9f5; }
+    .bnp-hub .bnp-lpurl input { height: 32px; padding: 0 10px; border: 1px solid #cfc7b0; border-radius: 9px; font: 13px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-lpurl input[type="url"] { flex: 1 1 300px; min-width: 0; }
+    .bnp-hub .bnp-lpurl input[type="text"] { flex: 0 1 160px; }
+    @media (max-width: 760px) { .bnp-hub .bnp-lookcols { grid-template-columns: 1fr; } }
+    .bnp-hub .bnp-pal img { position: absolute; display: block; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; }
+    .bnp-hub .bnp-pal.is-turned { transform: scaleX(-1); }
+    .bnp-hub.bnp-has-pal .bnp-hub-foot { padding-left: calc(var(--bnp-pal-w, 0px) + 18px); }
+    .bnp-hub.bnp-has-pal .bnp-rail { padding-bottom: calc(var(--bnp-pal-rise, 0px) + 12px); }
+    @media (max-width: 760px), (max-height: 560px) {
+      .bnp-hub .bnp-pal { display: none; }
+      .bnp-hub.bnp-has-pal .bnp-hub-foot { padding-left: 16px; }
+      .bnp-hub.bnp-has-pal .bnp-rail { padding-bottom: 12px; }
+    }
     .bnp-hub .bnp-rail { overflow-y: auto; padding: 10px 10px 12px; border-right: 1px solid #e6e2d6; background: #faf9f5; }
     .bnp-hub .bnp-rail h5 { margin: 12px 0 4px; padding: 4px 10px 5px; border-radius: 8px; background: var(--bnp-bar, var(--bnp-accent, #5d5590)); box-shadow: 0 2px 0 color-mix(in srgb, var(--bnp-bar, var(--bnp-accent, #5d5590)) 68%, #000); color: var(--bnp-bar-ink, #fff); font: 11.5px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; letter-spacing: .09em; }   /* (each group's name on your theme's own bar colour, its writing white: the groups stand right out) */
     .bnp-hub .bnp-rail h5:first-of-type { margin-top: 0; }
@@ -13914,10 +15297,11 @@
     .bnp-hub .bnp-tbhere { margin: 0 0 12px; padding: 0 0 10px; border: 1px solid #e3dfd2; border-radius: 12px; overflow: hidden; background: #faf9f5; }
     .bnp-hub .bnp-tbhere > .bnp-note, .bnp-hub .bnp-tbhere > .button-default__2020 { margin: 10px 14px 0; }
     .bnp-hub .bnp-tabbar { display: flex; align-items: flex-end; gap: 2px; min-height: 42px; padding: 8px 10px 0; background: #dee1e6; }
-    .bnp-hub .bnp-tabbar.is-small { display: inline-flex; min-height: 0; padding: 5px 6px 0; border-radius: 8px 8px 0 0; }
+    .bnp-hub .bnp-tabbar.is-small { display: inline-flex; min-height: 0; padding: 5px 6px 0; border: 1px solid #c8ccd2; border-bottom: 7px solid #fff; border-radius: 9px; box-shadow: 0 1px 0 #c8ccd2; }   /* (a little browser top: the tab strip and the bar under it, so the tab sits on something) */
     .bnp-hub .bnp-tabmock { display: inline-flex; align-items: center; gap: 8px; width: 250px; max-width: 100%; height: 34px; padding: 0 10px 0 12px; border-radius: 9px 9px 0 0; background: #fff; color: #202124; font: 12.5px/1 "Segoe UI", system-ui, -apple-system, sans-serif; letter-spacing: normal; text-transform: none; }
     .bnp-hub .bnp-tabbar.is-small .bnp-tabmock { width: 220px; height: 30px; }
     .bnp-hub .bnp-tabmock-ic { flex: none; width: 16px; height: 16px; background: center / cover no-repeat; }
+    .bnp-hub .bnp-tabmock-ic:not([style*="url("]) { border: 1.5px dashed #b4b8bf; border-radius: 50%; }   /* (no picture of its own chosen: the page's own goes here) */
     .bnp-hub .bnp-tabmock-t { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
     .bnp-hub .bnp-tabmock-x { flex: none; color: #5f6368; font-size: 14px; }
     .bnp-hub .bnp-tbrule { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid #efeadb; }
@@ -13952,11 +15336,12 @@
     .bnp-hub a.bnp-chip { padding: 4px 12px; color: #363636; text-decoration: none; cursor: pointer; }
     .bnp-hub a.bnp-chip:hover { border-color: #c9a227; background: #fff8db; }
     .bnp-hub a.bnp-small { text-decoration: none; }
-    .bnp-hub .bnp-card { margin: 0 0 16px; padding: 12px 14px; border: 1px solid #d9d3c1; border-radius: 12px; background: #faf9f5; box-shadow: 0 2px 0 #ebe6d6; }
+    .bnp-hub .bnp-card { margin: 0 0 16px; padding: 12px 14px; border: 1px solid #d3ccb7; border-radius: 12px; background: #faf9f5; box-shadow: 0 3px 0 #e4dece; }
     /* a section's name over its card (a card without a title of its own): a tab of your theme's colour joined to it, so each section reads as one, apart from the next */
-    .bnp-hub .bnp-main h5:not(.bnp-card h5):has(+ .bnp-card:not([hidden])) { margin: 28px 0 0; padding: 8px 14px 7px; border: 1px solid #d9d3c1; border-bottom: 1px solid #e3ddca; border-radius: 12px 12px 0 0; background: color-mix(in srgb, var(--bnp-accent) 16%, #fff); color: #3a3628; }
-    .bnp-hub .bnp-main h5:not(.bnp-card h5):has(+ .bnp-card > h4:first-child) { margin: 28px 0 8px; padding: 0; border: 0; border-radius: 0; background: none; }   /* (its card has a title strip of its own: the name stays a label over it, never two strips) */
-    .bnp-hub .bnp-main h5:not(.bnp-card h5) + .bnp-card:not(:has(> h4:first-child)) { margin-top: 0; border-top: 0; border-radius: 0 0 12px 12px; }
+    .bnp-hub .bnp-main h5:not(.bnp-card h5):has(+ .bnp-card:not([hidden])) { margin: 34px 0 0; padding: 8px 14px 8px; border: 1px solid color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 78%, #000); border-bottom: 0; border-radius: 12px 12px 0 0; background: var(--bnp-bar, var(--bnp-accent)); box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 74%, #000); color: var(--bnp-bar-ink, var(--bnp-accent-text, #fff)); }   /* (a band of your theme's own bar colour, as the side list's headings wear it: each section starts unmistakably) */
+    .bnp-hub .bnp-main h5:not(.bnp-card h5):has(+ .bnp-card:not([hidden])) .bnp-note { color: inherit; opacity: .82; }
+    .bnp-hub .bnp-main h5:not(.bnp-card h5):has(+ .bnp-card > h4:first-child) { margin: 34px 0 8px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: #4a4536; }   /* (its card has a title strip of its own: the name stays a label over it, never two strips) */
+    .bnp-hub .bnp-main h5:not(.bnp-card h5) + .bnp-card:not(:has(> h4:first-child)) { margin-top: 0; border-top: 0; border-color: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 30%, #d3ccb7); border-radius: 0 0 12px 12px; }
     .bnp-hub .bnp-main > .bnp-mhead + h5, .bnp-hub .bnp-main > .bnp-jumps + h5, .bnp-hub .bnp-main > .bnp-subtabs + h5 { margin-top: 10px !important; }
     .bnp-hub .bnp-card > h4:first-child { margin: -12px -14px 10px; padding: 8px 14px 7px; border-bottom: 1px solid #e3ddca; border-radius: 11px 11px 0 0; background: color-mix(in srgb, var(--bnp-accent) 16%, #fff); }   /* (each card's name on a strip of your theme's colour: where one ends and the next starts, at a glance) */
     .bnp-hub .bnp-switch { display: flex; align-items: flex-start; gap: 10px; margin: 6px 0 10px; cursor: pointer; font: 14px "MuseoSansRounded700", Arial, sans-serif; }
@@ -14196,7 +15581,7 @@
     if (document.documentElement) { fn(); return; }
     const o = new MutationObserver(() => { if (document.documentElement) { o.disconnect(); fn(); } });
     o.observe(document, { childList: true });
-  })(() => { try { tabsMark(); dockMark(); shopMin(); srEarly(); nbEarly(); stEarly(); nmEarly(); pageWait(); waitStyle(); navEarly(); } catch (e) { report(e); } });
+  })(() => { try { myEarly(); tabsMark(); dockMark(); shopMin(); srEarly(); nbEarly(); stEarly(); nmEarly(); pageWait(); waitStyle(); navEarly(); } catch (e) { report(e); } });
   function srEarly() {   // (search results: Neopets' plain list stays out of sight from the start, so it never shows first and goes)
     if (!S.features.searchPage || location.pathname !== '/search.phtml' || /selected_type=object/.test(location.search)) return;
     const root = document.documentElement;
@@ -14207,7 +15592,7 @@
     addEventListener('load', back, { once: true });
   }
   function boot() {   // (the page is read: the rest)
-    for (const fn of [finishOld, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, paintFq, searchPage, searchItemPage, searchNone, poundPage, itemsPage, nbPage, stPage, scPage, nmPage, nfNote, nfLook, smPage, fillAll, dailyFill, questGo]) { try { fn(); } catch (e) { report(e); } }
+    for (const fn of [finishOld, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, paintFq, searchPage, searchItemPage, searchNone, poundPage, itemsPage, nbPage, stPage, scPage, nmPage, nfNote, nfLook, smPage, fillAll, dailyFill, questGo]) { try { fn(); } catch (e) { report(e); } }
     whenLoaded(() => { try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } });   // (a random event Neopets adds a moment later; theme pictures for the tab)
     if (document.getElementById('navtop__2020') || document.getElementById('navbottom__2020')) startOnce();
     document.documentElement.classList.remove('bnp-pagewait');   // (made over: it shows)
