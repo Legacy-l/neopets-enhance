@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      3.4
+// @version      3.5
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Shop Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -1005,6 +1005,12 @@
       if (!(t instanceof Element)) return;
       if (t.matches('[data-pref]')) setBoardPrefs({ [t.dataset.pref]: t.value });
       else if (t.matches('[data-gname]')) { const gr = (S.dailyGroups || []).find((x) => x.id === t.dataset.gname); if (gr) { gr.name = t.value.trim().slice(0, 30) || gr.name; saveNow(); } }
+      else if (t.matches('[data-bfeat]')) {   // (a switch of Settings', right here: the bar on each daily's page)
+        const k = t.dataset.bfeat;
+        S.features[k] = t.checked;
+        saveNow();
+        if (k === 'dailyRun') { if (S.features.dailyRun && !runHere) dailyRunBar(); else paintRunBar(); }
+      }
     });
     boardDrag(win);
     winDrag(win);
@@ -1098,6 +1104,7 @@
           <h4>${counted ? (doneN === counted ? 'All done for now!' : `${doneN} of ${counted} done`) : 'Your dailies'}</h4>
           <p><b>${openN}</b> ready now${next ? ` · next: ${esc(next.d.label)} in <b data-next="${next.st.next}">${fmtLeft(next.st.next - now)}</b>` : ''} · new day in <b data-g="reset">${fmtClock(nextNstMidnight(now) - now)}</b> <small>(midnight NST)</small></p>
           <p class="bnb-numline">${!S.features.dailyNum ? 'The number on the Dailies button is hidden. <button type="button" class="bnp-linkbtn" data-b="numshow">Show it again</button>' : S.features.dailyNumOff === nstDay() ? 'The number on the Dailies button is hidden today (it’s back at midnight NST). <button type="button" class="bnp-linkbtn" data-b="numshow">Show it again</button>' : 'The number on the Dailies button: <button type="button" class="bnp-linkbtn" data-b="numday">hide it today</button> · <button type="button" class="bnp-linkbtn" data-b="numall">hide it always</button>'}</p>
+          <label class="bnp-switch bnb-runsw"><input type="checkbox" data-bfeat="dailyRun"${S.features.dailyRun ? ' checked' : ''}><span>The bar on each daily’s page<small>how far you are today, and the next one that’s ready, one click away</small></span></label>
         </div>
         ${openN ? `<div class="bnb-open">${boardAsk ? `<span>Open ${openN} tabs?</span><button type="button" class="button-default__2020 button-green__2020" data-b="openyes">Open them</button><button type="button" class="bnp-linkbtn" data-b="openno">Not now</button>` : `<button type="button" class="button-default__2020 button-green__2020" data-b="open" title="Each in a tab of its own, in the background">Open ${openN === 1 ? 'it' : `all ${openN}`}</button>`}</div>` : ''}
       </div>
@@ -1832,13 +1839,21 @@
   // narrows them; each item one click from the Shop Wizard, the Trading Post, Auctions, your SDB, itemdb or JellyNeo, and its
   // rarity, value and shop without leaving. An item's own page gets the same.
   // ═══════════════════════════════════════════════════════════════════════════
-  const SR_KINDS = [   // (Neopets' word for a kind of result → its part's name; in this order)
-    ['Item', 'Items'], ['NC Mall Item', 'NC Mall'], ['Neopet', 'Pets'], ['Species', 'Species'], ['User', 'Users'], ['Location', 'Places'],
-    ['Game', 'Games'], ['Neopedia', 'Neopedia'], ['TCG Card', 'Trading cards'], ['Screensaver', 'Screensavers'],
+  const SR_KINDS = [   // (Neopets' word for a kind of result → its part's name, in this order: pets and people first)
+    ['Neopet', 'Pets'], ['User', 'Users'], ['Item', 'Items'], ['NC Mall Item', 'NC Mall'], ['Location', 'Places'], ['Game', 'Games'],
+    ['Species', 'Species'], ['TCG Card', 'Trading cards'], ['Neopedia', 'Neopedia'], ['Screensaver', 'Screensavers'],
   ];
-  const SR_MANY = 12;   // (a part longer than this shows its first ones, and "Show all")
+  const SR_IC = {   // (each part's picture: your theme's own, from its menus)
+    Neopet: ['el:#navprofiledropdown__2020 .nav-petcentral-icon'], User: ['el:#navprofiledropdown__2020 .nav-profile-icon'], Item: ['el:#navprofiledropdown__2020 .nav-inventory-icon'],
+    'NC Mall Item': ['el:.nav-top__2020 .nav-premium-icon__2020'], Location: ['el:.nav-top__2020 .nav-explore-icon__2020'], Game: ['el:.nav-top__2020 .nav-games-icon__2020'],
+    Species: ['el:#navprofiledropdown__2020 .nav-createpet-icon'], 'TCG Card': ['el:#navprofiledropdown__2020 .nav-tcg-icon'], Neopedia: ['el:#navprofiledropdown__2020 .nav-bookshelf-icon'], Screensaver: ['el:#navprofiledropdown__2020 .nav-gallery-icon'],
+  };
+  const SR_CLS = { Neopet: 'pet', User: 'user', Item: 'item', 'NC Mall Item': 'nc', Location: 'place', Game: 'game', Species: 'species', 'TCG Card': 'tcg', Neopedia: 'pedia', Screensaver: 'saver' };
+  const SR_FIRST = { Item: 16, 'NC Mall Item': 12, 'TCG Card': 12, Neopedia: 16 };
+  const SR_MORE = { Neopet: 'pets', User: 'people', Item: 'items', 'NC Mall Item': 'NC Mall items', Location: 'places', Game: 'games', Species: 'species', 'TCG Card': 'trading cards', Neopedia: 'Neopedia articles', Screensaver: 'screensavers' };   // (Show all …)   // (a part longer than this shows its first ones, and "Show all"; the others, 10)
   let srView = { k: '', q: '', all: {} };
   const rarityName = (r) => (r >= 200 ? 'artifact' : r === 180 ? 'retired' : r >= 100 ? 'special' : r === 99 ? 'super rare' : r >= 95 ? 'ultra rare' : r >= 90 ? 'very rare' : r >= 85 ? 'rare' : r >= 75 ? 'uncommon' : '');
+  const rarityTone = (r) => (r >= 200 ? 'art' : r === 180 ? 'ret' : r >= 100 ? 'spec' : r >= 95 ? 'ult' : r >= 90 ? 'very' : r >= 85 ? 'rare' : r >= 75 ? 'unc' : 'com');   // (its chip's colour)
   function srFinds(name, keys = ['sw', 'tp', 'au', 'sdb', 'idb', 'jn'], named = false) {   // (one item, everywhere it can be looked for: buttons with each place's own picture; named, with its name too)
     return keys.map((k) => { const s = scopeOf(k), ic = tabIconOf(s.icon), label = s.name.replace(' Item DB', ''); return `<a class="bnp-sr-find${named ? ' is-named' : ''}" href="${esc(s.url(name))}"${s.away ? ' target="_blank" rel="noopener"' : ''} title="${esc(`${name}: ${s.name}`)}" aria-label="${esc(`${name} on ${s.name}`)}">${ic ? `<span class="bnp-ico" style="background-image:url('${esc(cssUrl(ic))}')"></span>` : named ? '' : esc(s.name.slice(0, 3))}${named ? esc(label) : ''}</a>`; }).join('');
   }
@@ -1849,24 +1864,68 @@
       return { k: reClean((li.querySelector('.search-result-type') || {}).textContent).replace(/:$/, ''), n: reClean((li.querySelector('.search-result-name') || a || {}).textContent), href: a ? a.getAttribute('href') : '', pic: img ? fullUrl(img.getAttribute('src') || '') : '' };
     }).filter((r) => r.n);
   }
-  function srCard(r) {
-    const item = r.k === 'Item', nc = r.k === 'NC Mall Item';
-    const acts = item ? srFinds(r.n) : nc ? srFinds(r.n, ['idb', 'jn']) + `<a class="bnp-sr-find bnp-sr-word" href="https://impress.openneo.net/items?q=${encodeURIComponent(r.n)}" target="_blank" rel="noopener" title="${esc(r.n)}: try it on at Dress to Impress">DTI</a>` : '';
-    return `<div class="bnp-sr-card${item ? ' is-item' : ''}" data-srn="${esc(goNorm(r.n))}">
-      <a class="bnp-sr-pic" href="${esc(r.href)}" tabindex="-1" aria-hidden="true">${r.pic ? `<img src="${esc(r.pic)}" alt="" loading="lazy" decoding="async">` : ''}</a>
-      <div class="bnp-sr-main"><a class="bnp-sr-name" href="${esc(r.href)}">${esc(r.n)}</a>
-        ${acts ? `<div class="bnp-sr-acts">${acts}</div>` : ''}
-        ${item ? `<button type="button" class="bnp-sr-more" data-srinfo="${esc(r.href)}">Rarity, value &amp; shop</button><div class="bnp-sr-info" hidden></div>` : ''}</div>
-    </div>`;
+  const srIco = (spec, cls = 'bnp-sr-ic') => { const u = iconOf(spec || []); return u ? `<i class="${cls}" style="background-image:url('${esc(cssUrl(u))}')" aria-hidden="true"></i>` : ''; };
+  const srPetPic = (u, size) => String(u || '').replace(/(\/cpn?\/[^/]+\/\d+\/)\d+(\.png)/i, `$1${size}$2`);   // (a pet's own picture at the size asked: 2 is 150 across, 4 is 300)
+  const srPet = (n) => { const m = /^(.+?) the (.+)$/.exec(n); return m ? [m[1], m[2]] : [n, '']; };   // (Neopets writes them “Name the Species”)
+  const srBare = (r) => goNorm(r.k === 'Neopet' ? srPet(r.n)[0] : r.n);   // (its name alone, for the best match)
+  function srUserActs(name, named) {   // (someone: their lookup, Neomail, trades, auctions, shop and gallery, each with your theme's own picture)
+    const enc = encodeURIComponent(name), e = esc(name);
+    const one = (ic, href, title, label) => `<a class="bnp-sr-act${named ? ' is-named' : ''}" href="${href}" title="${title}" aria-label="${title}">${ic}${named || !ic ? `<span>${label}</span>` : ''}</a>`;
+    return one(srIco(['el:#navprofiledropdown__2020 .nav-profile-icon'], 'bnp-sr-aic'), `/userlookup.phtml?user=${enc}`, `${e}’s lookup`, 'Lookup')
+      + one(nbIc('mail'), `/neomessages.phtml?type=send&recipient=${enc}`, `Neomail ${e}`, 'Neomail')
+      + one(nbIc('tp'), `/island/tradingpost.phtml?type=browse&criteria=owner&search_string=${enc}`, `${e}’s trades`, 'Trades')
+      + one(nbIc('au'), `/genie.phtml?type=find_user&auction_username=${enc}`, `${e}’s auctions`, 'Auctions')
+      + one(nbIc('shop'), `/browseshop.phtml?owner=${enc}`, `${e}’s shop`, 'Shop')
+      + one(nbIc('gal'), `/gallery/index.phtml?gu=${enc}`, `${e}’s gallery`, 'Gallery');
   }
+  function srPetActs(pn, named, look) {   // (a pet: its lookup (the tiles; the best match has its own big button) and its pet page, with your theme's pictures, as QuickRef has them)
+    const enc = encodeURIComponent(pn), e = esc(pn);
+    const one = (ic, href, title, label) => `<a class="bnp-sr-act${named ? ' is-named' : ''}" href="${href}" title="${title}" aria-label="${title}">${ic}${named || !ic ? `<span>${label}</span>` : ''}</a>`;
+    return (look ? one(srIco(['el:#navprofiledropdown__2020 .nav-profile-icon'], 'bnp-sr-aic'), look, `${e}’s lookup`, 'Lookup') : '') + one(srIco(['el:#navprofiledropdown__2020 .nav-adopt-icon', 'el:#navprofiledropdown__2020 .nav-petcentral-icon'], 'bnp-sr-aic'), `/~${enc}`, `${e}’s pet page`, 'Pet page');
+  }
+  const srImg = (u, extra = '') => (u ? `<img src="${esc(u)}" alt="" loading="lazy" decoding="async"${extra}>` : '');
+  function srTile(r, i) {   // (one result as a tile; an item's buttons, price and rarity come in after: data-srit)
+    const href = esc(r.href), name = esc(r.n), cls = SR_CLS[r.k] || 'other';
+    if (r.k === 'Neopet') {
+      const [pn, sp] = srPet(r.n);
+      return `<div class="bnp-sr-tile is-pet" data-srn="${esc(goNorm(r.n))}"><a class="bnp-sr-plate" href="${href}" tabindex="-1" aria-hidden="true">${srImg(srPetPic(r.pic, 2), ' width="150" height="150"')}</a>
+        <a class="bnp-sr-name" href="${href}">${esc(pn)}</a>${sp ? `<span class="bnp-sr-sub">the ${esc(sp)}</span>` : ''}<div class="bnp-sr-acts is-pet">${srPetActs(pn, false, href)}</div></div>`;
+    }
+    if (r.k === 'User') {
+      return `<div class="bnp-sr-tile is-user" data-srn="${esc(goNorm(r.n))}"><a class="bnp-sr-plate" href="${href}" tabindex="-1" aria-hidden="true">${srImg(r.pic)}</a>
+        <div class="bnp-sr-tbody"><a class="bnp-sr-name" href="${href}">${name}</a><div class="bnp-sr-acts">${srUserActs(r.n, false)}</div></div></div>`;
+    }
+    if (r.k === 'Neopedia') return `<a class="bnp-sr-line" href="${href}" data-srn="${esc(goNorm(r.n))}">${srIco(SR_IC.Neopedia, 'bnp-sr-lic')}<span>${name}</span></a>`;
+    const item = r.k === 'Item' || r.k === 'NC Mall Item';
+    const go = { Location: 'Go there', Game: 'Play', 'TCG Card': 'Its set', Screensaver: 'Screensavers', Species: 'Its page' }[r.k];
+    return `<div class="bnp-sr-tile is-${cls}" data-srn="${esc(goNorm(r.n))}"${item ? ` data-item="${name}"` : ''}><a class="bnp-sr-plate" href="${href}" tabindex="-1" aria-hidden="true">${srImg(r.pic)}</a>
+      <a class="bnp-sr-name" href="${href}">${name}</a>
+      ${item ? `<div class="bnp-sr-meta" data-item="${name}"><span class="bnp-sr-rar" hidden></span>${r.k === 'Item' ? `<button type="button" class="bnp-sr-det" data-srinfo="${href}" title="Neopets’ own word on it: rarity, value, weight, what it says, its shop" aria-label="${name}: Neopets’ own details" aria-expanded="false">i</button>` : ''}</div><div class="bnp-sr-tools" data-srit="${i}"></div>${r.k === 'Item' ? '<div class="bnp-sr-info is-pop" hidden></div>' : ''}` : go ? `<a class="bnp-sr-go" href="${href}">${go}</a>` : ''}</div>`;
+  }
+  function srHero(r, i) {   // (the best match: someone, a pet or an item with exactly the name searched, big and with its own buttons)
+    const href = esc(r.href), head = `<div class="bnp-sr-herohead">${srIco(SR_IC[r.k])}<span>${esc({ Neopet: 'Neopet', User: 'Neopian', Item: 'Item', 'NC Mall Item': 'NC Mall item', Location: 'Place', Game: 'Game' }[r.k] || r.k)}</span></div>`;
+    if (r.k === 'Neopet') {
+      const [pn, sp] = srPet(r.n);
+      return `<div class="bnp-sr-hero is-pet">${head}<div class="bnp-sr-herorow"><a class="bnp-sr-heropic" href="${href}" tabindex="-1" aria-hidden="true">${srImg(srPetPic(r.pic, 4), ' width="220" height="220"')}</a><div class="bnp-sr-herobody"><h4><a href="${href}">${esc(pn)}</a></h4>${sp ? `<p class="bnp-sr-sub">the ${esc(sp)}</p>` : ''}<div class="bnp-sr-heroacts"><a class="button-default__2020 button-yellow__2020 bnp-sr-big" href="${href}">Look at ${esc(pn)}</a>${srPetActs(pn, true)}</div></div></div></div>`;
+    }
+    if (r.k === 'User') return `<div class="bnp-sr-hero is-user">${head}<div class="bnp-sr-herorow"><a class="bnp-sr-heropic" href="${href}" tabindex="-1" aria-hidden="true">${srImg(r.pic)}</a><div class="bnp-sr-herobody"><h4><a href="${href}">${esc(r.n)}</a></h4><div class="bnp-sr-heroacts">${srUserActs(r.n, true)}</div></div></div></div>`;
+    const item = r.k === 'Item' || r.k === 'NC Mall Item';
+    return `<div class="bnp-sr-hero is-${SR_CLS[r.k] || 'other'}"${item ? ` data-item="${esc(r.n)}"` : ''}>${head}<div class="bnp-sr-herorow"><a class="bnp-sr-heropic" href="${href}" tabindex="-1" aria-hidden="true">${srImg(r.pic)}</a><div class="bnp-sr-herobody"><h4><a href="${href}">${esc(r.n)}</a></h4>
+      ${item ? `<div class="bnp-sr-meta" data-item="${esc(r.n)}"><span class="bnp-sr-rar" hidden></span></div>${r.k === 'Item' ? `<div class="bnp-sr-info" data-srauto="${href}"></div>` : ''}<div class="bnp-sr-heroacts">${r.k === 'Item' ? srFinds(r.n, undefined, true) : `${srFinds(r.n, ['idb', 'jn'], true)}<a class="bnp-sr-find is-named" href="https://impress.openneo.net/items?q=${encodeURIComponent(r.n)}" target="_blank" rel="noopener" title="${esc(r.n)}: try it on at Dress to Impress">Dress to Impress</a>`}</div><div class="bnp-sr-tools is-hero" data-srit="h${i}"></div>` : `<div class="bnp-sr-heroacts"><a class="button-default__2020 button-yellow__2020 bnp-sr-big" href="${href}">${r.k === 'Game' ? 'Play it' : 'Go there'}</a></div>`}</div></div></div>`;
+  }
+  function srNote(v) { try { sessionStorage.setItem('bnp-srq', JSON.stringify({ q: String(v).slice(0, 80), t: Date.now() })); } catch (_) { /* */ } }   // (the top bar's search, about to be posted)
+  function srNoted() { try { const k = JSON.parse(sessionStorage.getItem('bnp-srq') || 'null'); return k && Date.now() - k.t < 30 * 60000 ? String(k.q || '') : ''; } catch (_) { return ''; } }   // (its words, on a results page with none in its address)
+  function srKept() { try { const st = history.state; return st && typeof st === 'object' && typeof st.bnpSrq === 'string' ? st.bnpSrq : ''; } catch (_) { return ''; } }   // (this results page's own words, kept with it: still right after Back and a reload, when a newer search was noted since)
+  function srKeep(q) { try { const st = history.state && typeof history.state === 'object' ? history.state : {}; if (q && st.bnpSrq !== q) history.replaceState({ ...st, bnpSrq: q }, ''); } catch (_) { /* */ } }
   function searchPage() {
     if (!S.features.searchPage || location.pathname !== '/search.phtml') return;
     const list = $('#container__2020 ul.search-results');
     if (!list || document.querySelector('[data-bnp="srpage"]')) return;
     styles();
     const rows = srRead(document);
-    const q = new URLSearchParams(location.search).get('s') || new URLSearchParams(location.search).get('q') || (($('#navSearchH5 input[name="s"]') || {}).value) || '';
-    const said = (($('#container__2020 .search-result-count') || {}).textContent || '').match(/\d[\d,]*/);
+    const q = new URLSearchParams(location.search).get('s') || new URLSearchParams(location.search).get('q') || srKept() || srNoted() || (($('#navSearchH5 input[name="s"]') || {}).value) || '';
+    srKeep(q.trim());
+    const said =(($('#container__2020 .search-result-count') || {}).textContent || '').match(/\d[\d,]*/);
     srView = { k: '', q: '', all: {}, rows, query: q.trim(), total: said ? said[0] : String(rows.length) };
     const box = document.createElement('div');
     box.className = 'bnp-sr';
@@ -1875,6 +1934,8 @@
     (before && before.parentElement === list.parentElement ? before : list).before(box);
     document.documentElement.classList.add('bnp-sr-pre');   // (Neopets' own list: out of sight while ours shows)
     box.addEventListener('click', srClick);
+    box.addEventListener('error', (e) => { if (e.target instanceof HTMLImageElement) e.target.style.visibility = 'hidden'; }, true);   // (a picture that doesn't come: no broken frame)
+    box.addEventListener('keydown', (e) => { if (e.key === 'Escape' && box.querySelector('.bnp-sr-tile.is-open')) { e.preventDefault(); srInfoClose(); } });
     box.addEventListener('input', (e) => { if (e.target.matches('[data-srq]')) { clearTimeout(searchPage.t); searchPage.t = setTimeout(() => { srView.q = e.target.value; srPaint(true); }, 120); } });
     box.addEventListener('submit', (e) => {   // (a new search, from here: Neopets' own search, as its bar does it)
       e.preventDefault();
@@ -1886,37 +1947,80 @@
   function srPaint(listOnly) {
     const box = document.querySelector('[data-bnp="srpage"]');
     if (!box) return;
-    const v = srView, nq = goNorm(v.q);
+    const v = srView, nq = goNorm(v.q), nquery = goNorm(v.query);
     const kinds = [...SR_KINDS, ...[...new Set(v.rows.map((r) => r.k))].filter((k) => !SR_KINDS.some(([w]) => w === k)).map((k) => [k, k])];
     const count = (k) => v.rows.filter((r) => r.k === k).length;
+    let n = 0;
+    const tiles = [];   // (the items whose tiles get their buttons once they're on the page)
+    const best = !nq && !v.k && nquery ? ['Neopet', 'User', 'Item', 'NC Mall Item', 'Location', 'Game'].flatMap((w) => v.rows.filter((r) => r.k === w && srBare(r) === nquery)).slice(0, 2) : [];
+    const heroes = best.length ? `<section class="bnp-sr-best" aria-label="The best match"><div class="bnp-sr-heroes${best.length > 1 ? ' is-two' : ''}">${best.map((r) => { tiles.push([`h${tiles.length}`, r]); return srHero(r, tiles.length - 1); }).join('')}</div></section>` : '';
+    const shownOf = (w) => v.rows.filter((r) => r.k === w && !best.includes(r)).length;
+    const duo = !v.k && shownOf('Neopet') && shownOf('User') && count('Neopet') <= 4 && count('User') <= 4;   // (a few pets and a few people: side by side, so neither takes a whole row to itself)
     const parts = kinds.filter(([w]) => count(w) && (!v.k || v.k === w)).map(([w, name]) => {
       const all = v.rows.filter((r) => r.k === w && (!nq || goNorm(r.n).includes(nq)));
-      if (!all.length) return '';
-      const shown = nq || v.all[w] || v.k ? all : all.slice(0, SR_MANY);
-      const note = w === 'Item' && count('Item') >= 30 ? `<span class="bnp-note">Neopets lists the first 30: <a href="${esc(scopeOf('sw').url(v.query))}">all of them on the Shop Wizard</a></span>` : '';
-      return `<section class="bnp-sr-part"><h3><span>${esc(name)}</span><em>${all.length}</em>${note}</h3><div class="bnp-sr-grid">${shown.map(srCard).join('')}</div>${shown.length < all.length ? `<button type="button" class="bnp-sr-all" data-srall="${esc(w)}">Show all ${all.length}</button>` : ''}</section>`;
+      if (!all.length || all.every((r) => best.includes(r))) return '';   // (all of it the best match already: not twice)
+      const first = SR_FIRST[w] || 10, shown = nq || v.all[w] || v.k ? all : all.slice(0, first);
+      const body = shown.map((r) => { const i = n++; if (r.k === 'Item' || r.k === 'NC Mall Item') tiles.push([String(i), r]); return srTile(r, i); }).join('');
+      const part = `<section class="bnp-sr-part is-${SR_CLS[w] || 'other'}"><h3 class="bnp-sr-head">${srIco(SR_IC[w])}<span>${esc(name)}</span><em>${all.length}</em></h3><div class="bnp-sr-grid is-${SR_CLS[w] || 'other'}">${body}</div>${shown.length < all.length ? `<button type="button" class="bnp-sr-all" data-srall="${esc(w)}">Show all ${all.length} ${esc(SR_MORE[w] || name.toLowerCase())}</button>` : ''}</section>`;
+      return duo && w === 'Neopet' ? `<div class="bnp-sr-duo">${part}` : duo && w === 'User' ? `${part}</div>` : part;
     }).join('') || '<p class="bnp-note bnp-sr-none">None of them have that in their name.</p>';
     const list = box.querySelector('[data-g="srlist"]');
-    if (listOnly && list) { list.innerHTML = parts; return; }
-    const chip = (k, label, n) => `<button type="button" class="bnp-rechip" data-srk="${esc(k)}" aria-pressed="${v.k === k}">${esc(label)} <em>${n}</em></button>`;
-    box.innerHTML = `<form class="bnp-sr-box" role="search"><span class="bnp-go-glass" aria-hidden="true"></span><input type="search" data-srs value="${esc(v.query)}" placeholder="Search Neopets: items, pets, places, games…" aria-label="Search Neopets" spellcheck="false"><button type="submit" class="button-default__2020 button-yellow__2020">Search</button></form>
-      <div class="bnp-sr-sum"><b>${esc(v.total)}</b> result${v.total === '1' ? '' : 's'}${v.query ? ` for “${esc(v.query)}”` : ''}${v.query ? `<span class="bnp-sr-also">Also look on ${srFinds(v.query, ['sw', 'tp', 'au', 'sdb', 'idb', 'jn'])}</span>` : ''}</div>
-      <div class="bnp-sr-tools"><div class="bnp-rechips">${chip('', 'All', v.rows.length)}${kinds.filter(([w]) => count(w)).map(([w, name]) => chip(w, name, count(w))).join('')}</div><input type="search" class="bnp-research" data-srq value="${esc(v.q)}" placeholder="Narrow these…" aria-label="Narrow these results" spellcheck="false"></div>
-      <p class="bnp-note bnp-sr-rule">Super-rare items never show in Neopets’ search.</p>
-      <div data-g="srlist">${parts}</div>`;
+    if (listOnly && list) { list.innerHTML = parts; srTools(box, tiles); return; }
+    const chip = (k, label, c) => `<button type="button" class="bnp-sr-chip" data-srk="${esc(k)}" aria-pressed="${v.k === k}">${k ? srIco(SR_IC[k], 'bnp-sr-cic') : ''}<span>${esc(label)}</span><em>${c}</em></button>`;
+    box.innerHTML = `<div class="bnp-sr-top"><form class="bnp-sr-box" role="search"><span class="bnp-go-glass" aria-hidden="true"></span><input type="search" data-srs value="${esc(v.query)}" placeholder="Search Neopets: items, pets, people, places, games…" aria-label="Search Neopets" spellcheck="false"><button type="submit" class="button-default__2020 button-yellow__2020">Search</button></form>
+      <div class="bnp-sr-sum"><span><b>${esc(v.total)}</b> result${v.total === '1' ? '' : 's'}${v.query ? ` for <q>${esc(v.query)}</q>` : ''}</span></div>
+      ${v.query ? `<div class="bnp-sr-also"><span>Also look for it on</span>${srFinds(v.query, ['sw', 'tp', 'au', 'sdb', 'idb', 'jn'], true)}</div>` : ''}</div>
+      <div class="bnp-sr-tools-bar"><div class="bnp-sr-chips">${chip('', 'Everything', v.rows.length)}${kinds.filter(([w]) => count(w)).map(([w, name]) => chip(w, name, count(w))).join('')}</div><input type="search" class="bnp-sr-narrow" data-srq value="${esc(v.q)}" placeholder="Narrow these…" aria-label="Narrow these results" spellcheck="false"></div>
+      ${heroes}<div data-g="srlist">${parts}</div>`;
     themeSr(box);
+    srTools(box, tiles);
+    for (const auto of box.querySelectorAll('[data-srauto]')) srInfoInto(auto.dataset.srauto, auto);   // (the best match's own details, as Neopets has them)
   }
-  function themeSr(box) {   // (chips in your theme's header colour, as Nav Settings has them)
+  function srTools(box, tiles) {   // (each item's buttons, itemdb's price and its rarity, or an NC item's value in caps, as Items in Settings has them)
+    for (const [key, r] of tiles) {
+      const at = box.querySelector(`[data-srit="${key}"]`);
+      if (!at) continue;
+      const nc = r.k === 'NC Mall Item', hero = at.classList.contains('is-hero'), tile = at.closest('.bnp-sr-tile, .bnp-sr-hero'), meta = tile && tile.querySelector('.bnp-sr-meta');
+      const row = S.features.items !== false ? itRow(r.n, { page: 'search', cash: nc, wear: nc }) : null;
+      if (hero) at.remove();   // (the best match has its buttons with their names already)
+      if (!row) { if (!hero) at.insertAdjacentHTML('afterbegin', nc ? srFinds(r.n, ['idb', 'jn']) : srFinds(r.n)); continue; }
+      const price = row.querySelector('.bnp-it-price'), val = row.querySelector('.bnp-it-nc');
+      if (meta) { const det = meta.querySelector('.bnp-sr-det'); if (price) meta.insertBefore(price, det); if (val) meta.insertBefore(val, det); }   // (the price, or the value in caps, beside its rarity; the buttons under them)
+      if (!hero) at.prepend(row);
+      const rar = meta && meta.querySelector('.bnp-sr-rar');
+      const showRar = (x) => { const v = Number(x); if (!rar || !(v > 0)) return; rar.hidden = false; rar.className = `bnp-sr-rar is-${rarityTone(v)}`; rar.textContent = `r${v}${rarityName(v) ? ` · ${rarityName(v)}` : ''}`; rar.title = `Rarity ${v}${rarityName(v) ? `: ${rarityName(v)}` : ''}, as itemdb has it`; };
+      const kept = itPriceCache()[r.n];
+      if (kept && kept.r) showRar(kept.r.r); else if (price) price.bnpOn = (res) => showRar(res && res.r);
+    }
+  }
+  function themeSr(box) {   // (your theme's colours: its bar's for the parts' names, its header's for what's chosen)
     const head = $('.nav-top__2020, #navtop__2020');
     const bg = head ? getComputedStyle(head).backgroundColor : '';
     if (bg && !/rgba\(0, 0, 0, 0\)|transparent/.test(bg)) box.style.setProperty('--bnp-accent', bg);
+    const b = themeBar();
+    if (b) { box.style.setProperty('--bnp-bar', b.bar); box.style.setProperty('--bnp-bar-ink', inkReads(b.ink, b.bar)); }
+    if (head && getComputedStyle(head).position === 'fixed') box.style.setProperty('--bnp-sr-top', `${Math.round(head.getBoundingClientRect().height)}px`);   // (the chips stay in sight under the bar as you scroll)
   }
   async function srInfo(btn) {   // (an item's rarity, value, weight, words and shop, from its own search page; kept for this visit)
-    const href = btn.dataset.srinfo, out = btn.nextElementSibling;
+    const href = btn.dataset.srinfo, tile = btn.closest('.bnp-sr-tile, .bnp-sr-hero'), out = tile && tile.querySelector('.bnp-sr-info');
     if (!out) return;
-    if (!out.hidden) { out.hidden = true; btn.setAttribute('aria-expanded', 'false'); return; }
+    if (!out.hidden) { srInfoClose(); return; }
+    srInfoClose();
     out.hidden = false;
+    tile.classList.add('is-open');
     btn.setAttribute('aria-expanded', 'true');
+    btn.classList.add('is-on');
+    await srInfoInto(href, out);
+  }
+  function srInfoClose() {   // (an item's details card: one open at a time)
+    for (const t of $$('.bnp-sr-tile.is-open')) {
+      t.classList.remove('is-open');
+      const out = t.querySelector('.bnp-sr-info'), b = t.querySelector('.bnp-sr-det');
+      if (out) out.hidden = true;
+      if (b) { b.classList.remove('is-on'); b.setAttribute('aria-expanded', 'false'); }
+    }
+  }
+  async function srInfoInto(href, out) {
     let info = null;
     try { info = JSON.parse(sessionStorage.getItem('bnp-sri:' + href) || 'null'); } catch (_) { info = null; }
     if (!info) {
@@ -1938,7 +2042,7 @@
   }
   function srInfoHtml(i) {
     if (!i || i.none) return '<span class="bnp-note">Neopets has no page for this one.</span>';
-    const bits = [i.r != null ? `<b>r${i.r}</b>${rarityName(i.r) ? ` ${rarityName(i.r)}` : ''}` : '', i.v ? `about <b>${i.v.toLocaleString()} NP</b>` : '', i.w != null ? `${i.w} lb${i.w === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ');
+    const bits = [i.r != null ? `<b>r${i.r}</b>${rarityName(i.r) ? ` ${rarityName(i.r)}` : ''}` : '', i.v ? `Neopets’ value <b>${i.v.toLocaleString()} NP</b>` : '', i.w != null ? `${i.w} lb${i.w === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ');
     const shop = i.shop && TAB_SHOPS[i.shop] ? `<a class="bnp-sr-shop" href="/objects.phtml?type=shop&obj_type=${esc(i.shop)}"><span class="bnp-ico" style="${esc(icoCss(`${NPI}shopkeepers/w${i.shop}.gif`))}"></span>Sold at ${esc(TAB_SHOPS[i.shop])}</a>` : '';
     return `${bits ? `<div class="bnp-sr-facts">${bits}</div>` : ''}${i.d ? `<div class="bnp-sr-desc">${esc(i.d)}</div>` : ''}${shop}`;
   }
@@ -1950,7 +2054,8 @@
     const all = t.closest('[data-srall]');
     if (all) { srView.all[all.dataset.srall] = true; srPaint(true); return; }
     const more = t.closest('[data-srinfo]');
-    if (more) { e.preventDefault(); srInfo(more); }
+    if (more) { e.preventDefault(); srInfo(more); return; }
+    if (!t.closest('.bnp-sr-tile.is-open .bnp-sr-info')) srInfoClose();   // (a click anywhere else: the card goes)
   }
   function searchItemPage() {   // (an item's own search page: where to look for it, its rarity's name, and its shop by name)
     if (!S.features.searchPage || location.pathname !== '/search.phtml') return;
@@ -2062,9 +2167,10 @@
     ['hiddentower', 'Hidden Tower', IT_STD, IT_STD],
     ['coincidence', 'The Coincidence', IT_STD, IT_STD],
     ['redeem', 'Redeeming NC items', ['sdb', 'closet', 'dti', 'jn', 'idb'], ['sdb', 'closet', 'dti', 'jn', 'idb']],
+    ['search', 'Search results', ['ssw', 'sw', 'tp', 'au', 'sdb', 'closet', 'dti', 'jn', 'idb'], [...IT_STD, 'closet', 'dti']],
   ];
   const IT_PAGE = new Map(IT_PAGES.map((p) => [p[0], p]));
-  const IT_PRICED = ['auctions', 'moneytree'];   // (pages with itemdb's price on from the start: where it decides what you do)
+  const IT_PRICED = ['auctions', 'moneytree', 'search'];   // (pages with itemdb's price on from the start: where it decides what you do)
   const IT_DEFAULT = () => ({ size: 'm', pages: Object.fromEntries(IT_PAGES.map(([k, , , keys]) => [k, { on: true, keys: keys.slice(), price: IT_PRICED.includes(k) }])),
     auction: { deal: true, dealPct: 15, dealNp: 50000, rarity: false, big: false, bidFix: true }, qsPics: 0, noReload: true, autoClose: false, descHide: false, ncVal: true });
   function itSettings() {   // (yours; the first time, Item Helper's carried across)
@@ -2227,6 +2333,7 @@
   function itPriceShow(b, res) {   // (~12k NP: itemdb's page for it; against an auction's bid, how much under or over)
     if (!b.isConnected && !b.parentElement) return;
     b.classList.remove('is-wait');
+    if (typeof b.bnpOn === 'function') { try { b.bnpOn(res); } catch (_) { /* */ } }   // (one that wants to know more: search results show its rarity)
     if (!(res.p > 0) && b.parentElement && b.parentElement.querySelector('.bnp-it-nc:not([hidden])')) { b.remove(); return; }   // (an NC item: its value says it all)
     if (res.visit) {   // (itemdb wants a visit first)
       b.className = 'bnp-it-price is-none';
@@ -2237,7 +2344,7 @@
     }
     if (res.err) { b.className = 'bnp-it-price is-none'; b.textContent = '?'; b.title = 'itemdb didn’t answer just now'; return; }
     if (res.p == null) { b.className = 'bnp-it-price is-none'; b.textContent = 'No price'; b.title = 'itemdb has no price for it'; return; }
-    const name = b.closest('[data-bnp="it"]') ? b.closest('[data-bnp="it"]').dataset.item : '';
+    const at = b.closest('[data-item]'), name = at ? at.dataset.item : '';
     b.className = `bnp-it-price${res.inf ? ' is-inflated' : ''}`;
     b.innerHTML = `<a href="${esc(res.slug ? `https://itemdb.com.br/item/${encodeURIComponent(res.slug)}` : scopeOf('idb').url(name))}" target="_blank" rel="noopener">~${esc(npShort(res.p))} NP</a>`;
     b.title = `itemdb: about ${res.p.toLocaleString()} NP${res.inf ? ' (its price is going up fast)' : ''}${res.at ? `, seen ${new Date(res.at).toLocaleDateString()}` : ''}`;
@@ -9015,6 +9122,8 @@
   function iconsRefresh() {   // (Neopets Enhance's own pictures of icons, the bar's gear among them: read from the page again, so they're the theme's)
     if (document.readyState === 'loading') return;   // (the page's own start reads them, after this)
     try { applyAll(); } catch (e) { report(e); }
+    NB_IC = null;   // (the boards' buttons' pictures: read again)
+    if (document.querySelector('[data-bnp="srpage"]')) { try { srPaint(); } catch (e) { report(e); } }   // (search results: their parts' pictures, now your theme's own)
     const g = hub && hub.win.querySelector('[data-g="hubgear"]'), u = g && iconOf(['side:/settings/', 'el:#navprofiledropdown__2020 .nav-settings-icon']);
     if (g && u) g.style.backgroundImage = `url("${cssUrl(u)}")`;
   }
@@ -10341,20 +10450,38 @@
       else if (e.key === 'Escape' && !menu.hidden) { e.preventDefault(); e.stopPropagation(); recentClose(); }
     });
     menu.addEventListener('mousedown', (e) => e.preventDefault());
-    menu.addEventListener('click', (e) => { const a = e.target.closest('[data-recent]'); if (!a) return; e.preventDefault(); e.stopPropagation(); recentPick(inp, a.dataset.recent); });
+    menu.addEventListener('click', (e) => {
+      const del = e.target.closest('[data-recentdel]'), clr = e.target.closest('[data-recentclear]');
+      if (del || clr) { e.preventDefault(); e.stopPropagation(); recentForget(clr ? null : Number(del.dataset.recentdel), inp, btn, menu); return; }
+      const a = e.target.closest('[data-recent]');
+      if (!a) return;
+      e.preventDefault();
+      e.stopPropagation();
+      recentPick(inp, a.dataset.recent);
+    });
     menu.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); recentMove(menu, inp, e.key === 'ArrowDown' ? 1 : -1); }
       else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const a = e.target.closest('[data-recent]'); if (a) recentPick(inp, a.dataset.recent); }
       else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); recentClose(); inp.focus(); }
+      else if (e.key === 'Delete') { const a = e.target.closest('[data-recent]'); if (a) { e.preventDefault(); recentForget(Number(a.dataset.recent), inp, btn, menu, true); } }
       else if (e.key === 'Tab') recentClose();
     });
+  }
+  function recentForget(i, inp, btn, menu, keys) {   // (one of your last searches forgotten, or all of them: i null)
+    const list = recentList();
+    if (i == null) list.length = 0; else list.splice(i, 1);
+    set('searches', list);
+    searchList();
+    if (!list.length) { recentClose(); inp.focus(); return; }
+    recentShow(inp, btn, menu, false);
+    if (keys) { const a = menu.querySelectorAll('[data-recent]')[Math.min(i, list.length - 1)]; if (a) a.focus({ preventScroll: true }); }
   }
   function recentShow(inp, btn, menu, keys) {
     recentClose();
     closeScopes();
     const list = recentList();
     if (!list.length) return;
-    menu.innerHTML = '<h5>Your last searches</h5><ul>' + list.map((v, i) => `<a data-recent="${i}" role="option" tabindex="-1"><li><h4>${esc(v)}</h4></li></a>`).join('') + '</ul>';
+    menu.innerHTML = '<h5>Your last searches</h5><ul>' + list.map((v, i) => `<a data-recent="${i}" role="option" tabindex="-1"><li><h4>${esc(v)}</h4><span class="bnp-recentx" role="button" data-recentdel="${i}" title="Forget this one (or Delete)" aria-label="Forget ${esc(v)}">×</span></li></a>`).join('') + '</ul><div class="bnp-recentfoot"><button type="button" class="bnp-recentclear" data-recentclear>Clear them all</button></div>';
     menu.style.left = `${Math.max(0, inp.offsetLeft)}px`;
     menu.style.top = `${inp.offsetTop + inp.offsetHeight + 7}px`;
     menu.style.width = `${Math.max(200, inp.offsetWidth + btn.offsetWidth)}px`;
@@ -10434,7 +10561,7 @@
     const q = f.querySelector(isBar ? 'input[name="q"]' : '.bnp-q');
     let v = q ? q.value.trim() : '';
     if (v === NATIVE_HINT) v = '';
-    if (isBar && scope === 'np') { if (v) remember(v); return; }   // (Neopets' own search, as always)
+    if (isBar && scope === 'np') { if (v) { remember(v); srNote(v); } return; }   // (Neopets' own search, as always: it posts the words, so the results page is told them here)
     e.preventDefault();
     e.stopImmediatePropagation();
     closeScopes();
@@ -10452,7 +10579,7 @@
     const s = scopeOf(scope);
     if (!s.url) {   // (Neopets' own search: its own form, filled in and sent)
       const form = $('#navSearchH5'), inp = form && form.querySelector('input[name="q"]');
-      if (form && inp && typeof PAGE.search_handle === 'function') { inp.value = v; PAGE.search_handle(form); return; }
+      if (form && inp && typeof PAGE.search_handle === 'function') { inp.value = v; srNote(v); PAGE.search_handle(form); return; }
       location.href = '/search.phtml?q=' + encodeURIComponent(v);
       return;
     }
@@ -10631,12 +10758,116 @@
     location.href = url;
   }
   // ═══════════════════════════════════════════════════════════════════════════
+  // A colour picker over the page, beside a window (the boards' and the theme builder's look): a window's own colour, seen as it's chosen
+  // ═══════════════════════════════════════════════════════════════════════════
+  let cpop = null;   // (the one that's open)
+  function cpPop(anchor, o) {   // (o: id, label, start, was (where As it was goes: '' = none of your own), beside (the window), sets [[heading, [colour or [colour, name]]…]…], put(colour, kept): as it's chosen, and kept when let go)
+    cpPopClose();
+    styles();
+    const start = nbHex(o.start) || '#ffffff', own = [...new Set(nbJson('bnp-cprecent', []).map(nbHex).filter(Boolean))].slice(0, 10);
+    const sws = (cs) => cs.map((x) => { const [col, name] = Array.isArray(x) ? x : [x, '']; return `<button type="button" data-cpc="${col}" style="background:${col}" title="${esc(name ? `${name}: ${col}` : col)}" aria-label="${esc(name || col)}"></button>`; }).join('');
+    const el = document.createElement('div');
+    el.className = 'bnp-cp bnp-cp-pop';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-label', o.label || 'Its colour');
+    el.innerHTML = `<div class="bnp-cp-sv" tabindex="0" role="slider" aria-label="How light, and how strong (the arrow keys too)"><i></i></div>
+      <div class="bnp-cp-hue" tabindex="0" role="slider" aria-label="Which colour (the arrow keys too)" aria-valuemin="0" aria-valuemax="360"><i></i></div>
+      <div class="bnp-cp-row"><span class="bnp-cp-now" title="As it was, and now" style="--was:${start}"><i></i></span><input type="text" class="bnp-cp-hex" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Its colour code">${window.EyeDropper ? `<button type="button" class="bnp-cp-drop" data-cp="drop" title="Take a colour from anywhere on the screen" aria-label="Eyedropper">${CP_DROP_SVG}</button>` : ''}</div>
+      ${(o.sets || []).filter(([, cs]) => cs.length).map(([h, cs]) => `<div class="bnp-cp-h">${esc(h)}</div><div class="bnp-cp-sws">${sws(cs)}</div>`).join('')}
+      ${own.length ? `<div class="bnp-cp-h">Your recent ones</div><div class="bnp-cp-sws">${sws(own)}</div>` : ''}
+      <div class="bnp-cp-foot"><button type="button" class="bnp-nbc-lb" data-cp="was">As it was</button><button type="button" class="bnp-cp-ok" data-cp="ok">Done</button></div>`;
+    const host = o.beside || anchor.parentElement;
+    for (const v of ['--bnp-accent', '--bnp-accent-text']) { const x = getComputedStyle(host).getPropertyValue(v).trim(); if (x) el.style.setProperty(v, x); }   // (its Done in the window's own colours)
+    document.body.append(el);
+    const sv = el.querySelector('.bnp-cp-sv'), hue = el.querySelector('.bnp-cp-hue'), hexIn = el.querySelector('.bnp-cp-hex'), nowSw = el.querySelector('.bnp-cp-now');
+    const c = { el, anchor, o, start, hex: start, hsv: hexHsv(start), raf: 0, moved: false };
+    cpop = c;
+    const paint = (fromHex) => {
+      const [h, sat, v] = c.hsv;
+      sv.style.setProperty('--cp-h', String(Math.round(h)));
+      sv.firstElementChild.style.left = `${sat * 100}%`;
+      sv.firstElementChild.style.top = `${(1 - v) * 100}%`;
+      hue.firstElementChild.style.left = `${(h / 360) * 100}%`;
+      hue.setAttribute('aria-valuenow', String(Math.round(h)));
+      nowSw.style.background = c.hex;
+      if (!fromHex && document.activeElement !== hexIn) hexIn.value = c.hex;
+    };
+    const pick = (hex, hsv, fromHex) => {   // (seen at once: once a frame)
+      c.hex = hex;
+      c.hsv = hsv || hexHsv(hex);
+      c.moved = true;
+      paint(fromHex);
+      if (!c.raf) c.raf = requestAnimationFrame(() => { c.raf = 0; if (cpop === c) c.o.put(c.hex, false); });
+    };
+    const keep = () => { if (cpop !== c || !c.moved) return; cancelAnimationFrame(c.raf); c.raf = 0; c.o.put(c.hex, true); };
+    const drag = (box, at) => (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      box.focus({ preventScroll: true });
+      try { box.setPointerCapture(e.pointerId); } catch (_) { /* */ }
+      const r = box.getBoundingClientRect(), f = (ev) => at(Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (ev.clientY - r.top) / r.height)));
+      f(e);
+      const up = () => { box.removeEventListener('pointermove', f); box.removeEventListener('pointerup', up); box.removeEventListener('pointercancel', up); keep(); };
+      box.addEventListener('pointermove', f);
+      box.addEventListener('pointerup', up);
+      box.addEventListener('pointercancel', up);
+    };
+    sv.addEventListener('pointerdown', drag(sv, (x, y) => { const hsv = [c.hsv[0], x, 1 - y]; pick(hsvHex(...hsv), hsv); }));
+    hue.addEventListener('pointerdown', drag(hue, (x) => { const hsv = [Math.min(359.9, x * 360), c.hsv[1], c.hsv[2]]; pick(hsvHex(...hsv), hsv); }));
+    const keys = (box, step) => box.addEventListener('keydown', (e) => {
+      const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key];
+      if (!d) return;
+      e.preventDefault();
+      const n = e.shiftKey ? 5 : 1, hsv = step(...c.hsv, d[0] * n, d[1] * n);
+      pick(hsvHex(...hsv), hsv);
+      clearTimeout(c.keyT);
+      c.keyT = setTimeout(keep, 400);   // (kept a moment after the last key)
+    });
+    keys(sv, (h, sat, v, dx, dy) => [h, Math.min(1, Math.max(0, sat + dx / 50)), Math.min(1, Math.max(0, v + dy / 50))]);
+    keys(hue, (h, sat, v, dx, dy) => [(h + (dx || dy) * 3 + 360) % 360, sat, v]);
+    hexIn.addEventListener('input', () => { const h = nbHex(hexIn.value.trim().replace(/^(?!#)/, '#')); hexIn.classList.toggle('is-bad', !!hexIn.value.trim() && !h); if (h) pick(h, null, true); });
+    hexIn.addEventListener('change', () => { hexIn.classList.remove('is-bad'); hexIn.value = c.hex; keep(); });
+    el.addEventListener('keydown', (e) => { if (e.key === 'Escape' || (e.key === 'Enter' && e.target === hexIn)) { e.preventDefault(); e.stopPropagation(); cpPopClose(); if (anchor.isConnected) anchor.focus(); } });
+    el.addEventListener('click', (e) => {
+      const t = e.target instanceof Element ? e.target : null, sw = t && t.closest('[data-cpc]'), b = t && t.closest('[data-cp]');
+      if (sw) { pick(sw.dataset.cpc); keep(); return; }
+      if (!b) return;
+      if (b.dataset.cp === 'ok') { cpPopClose(); if (anchor.isConnected) anchor.focus(); }
+      else if (b.dataset.cp === 'was') { cancelAnimationFrame(c.raf); c.raf = 0; c.hex = start; c.hsv = hexHsv(start); c.moved = false; paint(); c.o.put(c.o.was ?? start, true); }
+      else if (b.dataset.cp === 'drop') new window.EyeDropper().open().then((res) => { const h = nbHex(res && res.sRGBHex); if (h && cpop === c) { pick(h); keep(); } }).catch(() => { /* (Esc: nothing taken) */ });
+    });
+    c.out = (e) => { if (!(e.target instanceof Element && e.target.closest('.bnp-cp-pop, [data-cpanchor]'))) cpPopClose(); };   // (a click anywhere else: kept, and it goes)
+    document.addEventListener('pointerdown', c.out, true);
+    anchor.setAttribute('aria-expanded', 'true');
+    paint();
+    // beside its window, on the side with room; no room either side: over it, by the button
+    const w = host.getBoundingClientRect(), a = anchor.getBoundingClientRect(), pw = el.offsetWidth, ph = el.offsetHeight, vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+    let left = w.left - pw - 10;
+    if (left < 8) left = w.right + 10 + pw <= vw - 8 ? w.right + 10 : Math.min(vw - pw - 8, Math.max(8, a.left));
+    el.style.left = `${Math.round(left)}px`;
+    el.style.top = `${Math.round(Math.max(8, Math.min(vh - ph - 8, a.top - ph / 2)))}px`;
+    sv.focus({ preventScroll: true });
+  }
+  function cpPopClose() {   // (closed: the colour it has is kept, and it joins your recent ones)
+    const c = cpop;
+    if (!c) return;
+    cpop = null;
+    cancelAnimationFrame(c.raf);
+    clearTimeout(c.keyT);
+    document.removeEventListener('pointerdown', c.out, true);
+    if (c.moved) { c.o.put(c.hex, true); if (c.hex !== c.start) nbJsonSet('bnp-cprecent', [c.hex, ...nbJson('bnp-cprecent', []).filter((x) => x !== c.hex)].slice(0, 10)); }
+    c.el.remove();
+    if (c.anchor.isConnected) c.anchor.setAttribute('aria-expanded', 'false');
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // The Shop Dock: your favourite shops in a little Neopets pop-up, their shopkeepers as tiles; open, it stays open on every page
   // (from the Shops menu; the Restock Highlighter's own dock steps aside)
   // ═══════════════════════════════════════════════════════════════════════════
   const DOCK_ICON = ['el:.nav-shop-icon__2020', 'nat:neopiacentral-icon'];
-  // (cols: shops in a row, 0 = as many as fit · order: the dock's, 'mine' (dragged) / 'az' / 'id' (by shop number) · pickSort: Choose shops' order, 'az' / 'id')
-  const sdock = () => ({ open: false, folded: false, list: [], x: null, y: null, newTab: false, snap: true, size: 'm', cols: 0, names: true, order: 'mine', pickSort: 'az', ...(get('sdock', null) || {}) });
+  // (cols: shops in a row, 0 = as many as fit · order: the dock's, 'mine' (dragged) / 'az' / 'id' (by shop number) · pickSort: Choose shops' order, 'az' / 'id'
+  //  · bg: your own colour behind the shops, '' = the window's white · bgOwn: the last one you chose, back with Your own)
+  const sdock = () => ({ open: false, folded: false, list: [], x: null, y: null, newTab: false, snap: true, size: 'm', cols: 0, names: true, order: 'mine', pickSort: 'az', bg: '', bgOwn: '', ...(get('sdock', null) || {}) });
   const setSdock = (patch) => { set('sdock', { ...sdock(), ...patch }); paintDock(); };
   const dockNarrow = () => innerWidth < 760;   // (a phone-sized window: the dock comes folded, so the page shows; unfolded there, it stays so)
   const dockFolded = (d) => !!d.folded || (dockNarrow() && !d.narrowOpen);
@@ -10655,7 +10886,7 @@
   function paintDock() {   // (open: built and kept up to date; closed: gone; nothing at all on pages while it's closed)
     if (!document.body) return;
     const d = sdock();
-    if (!S.features.shopDock || !d.open) { if (sdockEl) { sdockEl.remove(); sdockEl = null; } dockEdit = false; return; }
+    if (!S.features.shopDock || !d.open) { if (cpop && cpop.o.id === 'sdock') cpPopClose(); if (sdockEl) { sdockEl.remove(); sdockEl = null; } dockEdit = false; return; }
     styles();
     if (!sdockEl) {
       sdockEl = document.createElement('div');
@@ -10678,11 +10909,12 @@
     sdockEl.classList.toggle('is-folded', folded);
     sdockEl.classList.toggle('is-edit', dockEdit);
     sdockEl.classList.toggle('no-names', d.names === false);
+    sdockEl.querySelector('[data-dk="edit"]').setAttribute('aria-pressed', String(dockEdit));
     const fold = sdockEl.querySelector('[data-dk="fold"]');
     fold.innerHTML = SVG_FOLD(folded);
     fold.title = folded ? 'Open it up' : 'Fold it up';
     const here = shopHere(), tab = d.newTab ? ' target="_blank" rel="noopener"' : '';
-    const tiles = dockIds(d).map((id) => `<a class="bnp-sdock-tile${id === here ? ' is-here' : ''}" href="/objects.phtml?type=shop&obj_type=${esc(id)}"${tab} draggable="true" data-sid="${esc(id)}" title="${esc(TAB_SHOPS[id])} · shop ${esc(id)}"><span class="bnp-sdock-pic" style="${esc(icoCss(`${NPI}shopkeepers/w${id}.gif`))}"></span>${d.order === 'id' ? `<span class="bnp-shop-no">${esc(id)}</span>` : ''}<span class="bnp-sdock-name">${esc(shopShort(id))}</span><button type="button" class="bnp-sdock-del" data-dk-del="${esc(id)}" title="Take it away" aria-label="Take ${esc(TAB_SHOPS[id])} away">×</button></a>`).join('');
+    const tiles = dockIds(d).map((id) => `<a class="bnp-sdock-tile${id === here ? ' is-here' : ''}" href="/objects.phtml?type=shop&obj_type=${esc(id)}"${tab} draggable="true" data-sid="${esc(id)}" title="${esc(TAB_SHOPS[id])} · shop ${esc(id)}" style="${esc(icoCss(`${NPI}shopkeepers/w${id}.gif`))}">${d.order === 'id' ? `<span class="bnp-shop-no">${esc(id)}</span>` : ''}<span class="bnp-sdock-name">${esc(shopShort(id))}</span><button type="button" class="bnp-sdock-del" data-dk-del="${esc(id)}" title="Take it away" aria-label="Take ${esc(TAB_SHOPS[id])} away">×</button></a>`).join('');
     sdockEl.querySelector('.bnp-sdock-body').innerHTML = `${here && !d.list.includes(here) ? `<button type="button" class="bnp-sdock-this" data-dk-add="${esc(here)}">＋ Add ${esc(TAB_SHOPS[here])}</button>` : ''}
       ${tiles ? `<div class="bnp-sdock-grid">${tiles}</div>` : `<p class="bnp-sdock-empty">No shops yet. ${dockEdit ? '“Choose shops” below.' : 'Press ✎, then “Choose shops”.'}</p>`}
       ${dockEdit ? `<div class="bnp-sdock-edit"><button type="button" class="button-default__2020 button-yellow__2020 bnp-sdock-choose" data-dk="choose">Choose shops…</button>
@@ -10691,10 +10923,12 @@
           <div class="bnp-sdock-opt"><span>Tile size</span><span class="bnp-sdock-sizes">${Object.keys(DOCK_SIZES).map((s) => `<button type="button" data-dk-size="${s}" aria-pressed="${(d.size || 'm') === s}">${s.toUpperCase()}</button>`).join('')}</span></div>
           <div class="bnp-sdock-opt"><span>Order</span><span class="bnp-sdock-sizes">${[['mine', 'Mine', 'The order you put them in (drag a tile onto another)'], ['az', 'A–Z', 'By name'], ['id', '1–9', 'By shop number, lowest first']].map(([k, label, tip]) => `<button type="button" data-dk-order="${k}" aria-pressed="${(d.order || 'mine') === k}" title="${tip}">${label}</button>`).join('')}</span></div>
           <div class="bnp-sdock-opt"><span>Per row</span><span class="bnp-sdock-sizes bnp-sdock-cols"><button type="button" data-dk-cols="auto" aria-pressed="${!(d.cols > 0)}" title="As many as fit beside the page">Auto</button><button type="button" data-dk-cols="-1" title="One fewer in a row" aria-label="One fewer in a row"${d.cols === 1 ? ' disabled' : ''}>−</button><b data-dk-num class="${d.cols > 0 ? '' : 'is-auto'}" aria-live="polite">${d.cols > 0 ? d.cols : dockAuto}</b><button type="button" data-dk-cols="1" title="One more in a row" aria-label="One more in a row"${d.cols >= DOCK_COLS_MAX ? ' disabled' : ''}>+</button></span></div>
+          <div class="bnp-sdock-opt"><span>Background</span><span class="bnp-sdock-sizes"><button type="button" data-dk-bg aria-pressed="${!d.bg}" title="The Restock Highlighter’s own dark">Default</button><button type="button" data-dk="bgown" data-cpanchor aria-pressed="${!!d.bg}" aria-haspopup="dialog" aria-expanded="false" title="A colour of your own: choose it beside the dock"><i class="bnp-sdock-dot${d.bg || d.bgOwn ? '' : ' is-none'}" style="--c:${esc(nbHex(d.bg || d.bgOwn) || '#ffffff')}"></i>Your own</button></span></div>
           <label class="bnp-sdock-opt"><input type="checkbox" data-dk="names"${d.names !== false ? ' checked' : ''}> Names on the tiles</label>
           <label class="bnp-sdock-opt"><input type="checkbox" data-dk="newtab"${d.newTab ? ' checked' : ''}> Open shops in a new tab</label>
           <label class="bnp-sdock-opt" title="The shop’s title and its welcome words step aside (as in the Restock Highlighter): the shopkeeper and everything else stay"><input type="checkbox" data-dk="shopmin"${S.features.shopMin ? ' checked' : ''}> Minimal shop pages</label>
         </div></div>` : ''}`;
+    dockLook(d.bg);
     dockFit();
     if (shopPick) paintShopPick();
   }
@@ -10754,7 +10988,7 @@
   }
   function dockFit() {   // (beside the page: in the margin right of it, under the bar; put somewhere else, it stays there. In a row: as many as fit, or your own number)
     if (!sdockEl) return;
-    const d = sdock(), [w, h] = DOCK_SIZES[d.size] || DOCK_SIZES.m, gap = 6, edge = 16 + 6, n = Math.max(1, d.list.length);
+    const d = sdock(), [w, h] = DOCK_SIZES[d.size] || DOCK_SIZES.m, tw = w + 2, gap = 6, edge = 16 + 6, n = Math.max(1, d.list.length);   // (tw: a tile with its edge)
     sdockEl.style.setProperty('--sd-w', `${w}px`);
     sdockEl.style.setProperty('--sd-h', `${h}px`);
     const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
@@ -10762,9 +10996,9 @@
     const box = ['#container__2020', '#main', '#content'].map((s) => $(s)).find((el) => el && el.getBoundingClientRect().width > 300);   // (an old page in the beta look keeps an empty #container__2020: the page is #main)
     const right = box ? Math.min(vw, box.getBoundingClientRect().right) : vw;
     const room = vw - right - 12 - 40;   // (12 from the page; 40 kept for Neopets' side-menu tab at the window's edge)
-    dockAuto = room >= 190 ? Math.max(1, Math.min(6, Math.floor((room - edge + gap) / (w + gap)))) : 3;   // (Auto: as many as fit beside the page; no room there, 3)
+    dockAuto = room >= 190 ? Math.max(1, Math.min(6, Math.floor((room - edge + gap) / (tw + gap)))) : 3;   // (Auto: as many as fit beside the page; no room there, 3)
     const cols = Math.min(n, d.cols > 0 ? Math.min(DOCK_COLS_MAX, d.cols) : dockAuto);
-    const width = Math.max(190, cols * (w + gap) - gap + edge);
+    const width = Math.max(190, cols * (tw + gap) - gap + edge);
     const num = sdockEl.querySelector('[data-dk-num]');
     if (num && !(d.cols > 0)) num.textContent = String(dockAuto);
     const place = (left, rt, y) => {
@@ -10812,6 +11046,7 @@
     if (del) { e.preventDefault(); e.stopPropagation(); const id = del.dataset.dkDel; setSdock({ list: sdock().list.filter((x) => x !== id) }); return; }
     const add = t.closest('[data-dk-add]');
     if (add) { const id = add.dataset.dkAdd, list = sdock().list; if (!list.includes(id)) setSdock({ list: [...list, id] }); return; }
+    if (t.closest('[data-dk-bg]')) { setSdock({ bg: '' }); return; }   // (the window's own white again: your colour kept for Your own)
     const b = t.closest('[data-dk]');
     if (!b) return;
     const k = b.dataset.dk;
@@ -10819,6 +11054,7 @@
     else if (k === 'fold') { const d = sdock(); if (dockNarrow()) setSdock(dockFolded(d) ? { folded: false, narrowOpen: true } : { narrowOpen: false }); else setSdock({ folded: !d.folded }); }
     else if (k === 'edit') { dockEdit = !dockEdit; if (sdock().folded) setSdock({ folded: false }); else paintDock(); }
     else if (k === 'choose') openShopPick();
+    else if (k === 'bgown') dockColour(b);
   }
   function dockDrag() {   // (tiles in your own order: drag one onto another)
     let from = null;
@@ -10832,6 +11068,36 @@
       const d = sdock(), list = dockIds(d).filter((x) => x !== from), at = list.indexOf(a.dataset.sid);
       list.splice(at < 0 ? list.length : at, 0, from);
       setSdock({ list: [...list, ...d.list.filter((x) => !TAB_SHOPS[x])], order: 'mine' });
+    });
+  }
+  // its colour: the Restock Highlighter's own dark, or one of your own; ✎'s writing and lines on it light or dark, whichever reads
+  const DOCK_BGS = [['#ffffff', 'White'], ['#fbf6e9', 'Cream'], ['#f3ecd8', 'Parchment'], ['#e8f3fb', 'Sky'], ['#e9f6e6', 'Mint'], ['#f0eafb', 'Lavender'], ['#fdecef', 'Blush'], ['#3a3f4b', 'Slate'], ['#232733', 'Night'], ['#1b2440', 'Midnight blue'], ['#26163f', 'Void'], ['#000000', 'Black']];
+  function dockLook(bg) {   // (on the dock now, and its Background row in ✎ as it is)
+    if (!sdockEl) return;
+    const c = nbHex(bg), st = sdockEl.style, light = !!c && inkOn(c) !== '#fff';
+    const vars = { ...(c ? { '--sd-bg': c } : {}), ...(light ? { '--sd-ink': inkReads('#363636', c), '--sd-soft': inkReads('#5c5845', c), '--sd-faint': inkReads('#757575', c), '--sd-rule': 'rgba(0, 0, 0, .12)' } : {}) };
+    for (const v of ['--sd-bg', '--sd-ink', '--sd-soft', '--sd-faint', '--sd-rule']) { if (vars[v]) st.setProperty(v, vars[v]); else st.removeProperty(v); }
+    sdockEl.classList.toggle('is-light', light);
+    const def = sdockEl.querySelector('[data-dk-bg]'), own = sdockEl.querySelector('[data-dk="bgown"]'), dot = own && own.querySelector('.bnp-sdock-dot');
+    if (def) def.setAttribute('aria-pressed', String(!c));
+    if (own) own.setAttribute('aria-pressed', String(!!c));
+    if (dot && c) { dot.style.setProperty('--c', c); dot.classList.remove('is-none'); }
+  }
+  function dockColour(btn) {   // (Your own: the colour you had comes back, and the picker opens beside the dock for another)
+    if (cpop && cpop.o.id === 'sdock') { cpPopClose(); return; }
+    let d = sdock();
+    if (!d.bg && d.bgOwn) { d = { ...d, bg: d.bgOwn }; set('sdock', d); dockLook(d.bg); }
+    const nb = nbJson('bnp-nbtheme', null) || {}, tb = themeBar(), pop = $('.togglePopup__2020'), probe = document.createElement('div');
+    probe.className = 'popup-header__2020';   // (your theme's pop-up header colour, read off one out of sight)
+    probe.style.cssText = 'position:absolute;left:-9999px;top:0;width:10px;height:10px;visibility:hidden;pointer-events:none';
+    document.body.append(probe);
+    const head = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    const theirs = [...new Set([head, tb && tb.bar, pop && getComputedStyle(pop).borderTopColor, nb.panel, nb.frame, nb.pop, getComputedStyle(document.body).backgroundColor].map((x) => nbHex(rgbToHex(String(x || '').trim()))).filter(Boolean))].slice(0, 10);
+    cpPop(btn, {
+      id: 'sdock', label: 'The Shop Dock’s colour', start: d.bg || '#ffffff', was: d.bg, beside: sdockEl,
+      sets: [['Some to try', DOCK_BGS], ['Your theme’s colours', theirs]],
+      put: (hex, kept) => { dockLook(hex); if (kept) set('sdock', { ...sdock(), bg: hex || '', ...(hex ? { bgOwn: hex } : {}) }); },
     });
   }
   function dockMark() { if (S.features.shopDock && document.documentElement) document.documentElement.setAttribute('data-bnp-dock', ''); }   // (the Restock Highlighter's dock steps aside)
@@ -14946,7 +15212,7 @@
         ${sw('boardPal', 'A Neopian in the Dailies window’s corner', palNote('board'))}
       </div>`],
       ['shops', `<div class="bnp-card"><h4>Shops</h4>
-        ${sw('shopDock', 'The Shop Dock', 'Your favourite shops in a little window, each as its shopkeeper: open it from the Shops menu and it stays open on every page until you close it. It fits itself beside the page; drag it anywhere else, fold it up, or close it. ✎ chooses your shops and sets how it looks; drag tiles into your own order.')}
+        ${sw('shopDock', 'The Shop Dock', 'Your favourite shops in a little window, each as its shopkeeper: open it from the Shops menu and it stays open on every page until you close it. It fits itself beside the page; drag it anywhere else, fold it up, or close it. ✎ chooses your shops and sets how it looks (the tiles, and a colour of your own behind them); drag tiles into your own order.')}
         ${sw('shopMin', 'Minimal shop pages', 'Neopia’s shops without their title and welcome words, just as the Restock Highlighter’s minimal look: the shopkeeper, the Shop Inventory bar and the items stay (your tab and the Shop Dock still show which shop it is).')}
       </div>`],
       ['shops', `<div class="bnp-card"><h4>Bank and shop till</h4>
@@ -15554,6 +15820,12 @@
     #navSearchH5 .bnp-recentbtn { position: relative; z-index: 1; height: 38px; margin: auto 0 auto -2px; padding: 0 9px; border: 2px inset rgb(118, 118, 118); border-left: 0; background: #fff; color: #333; }
     .nav-dropdown__2020.bnp-recents li { grid-template-columns: minmax(0, 1fr); padding-left: 12px; }
     .nav-dropdown__2020.bnp-recents h4 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .nav-dropdown__2020.bnp-recents li { position: relative; padding-right: 34px; }
+    .bnp-recentx { position: absolute; top: 50%; right: 8px; display: grid; place-items: center; width: 22px; height: 22px; margin-top: -11px; border-radius: 50%; color: inherit; font: 15px/1 Arial, sans-serif; opacity: .55; cursor: pointer; }   /* (forget this one) */
+    .bnp-recentx:hover { background: rgba(0, 0, 0, .18); opacity: 1; }
+    .bnp-recentfoot { display: flex; justify-content: flex-end; padding: 6px 8px 4px; }
+    .bnp-recentclear { margin: 0; padding: 2px 12px; border: 1px solid currentColor; border-radius: 999px; background: none; color: inherit; font: 12px "MuseoSansRounded700", Arial, sans-serif; opacity: .8; cursor: pointer; }
+    .bnp-recentclear:hover { opacity: 1; background: rgba(0, 0, 0, .15); }
     .nav-dropdown__2020.bnp-scopes h5 { margin: 0; padding: 7px 10px 3px; font: 10.5px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; letter-spacing: .08em; opacity: .7; }
     .nav-dropdown__2020.bnp-scopes a { display: block; cursor: pointer; outline: none; }
     .nav-dropdown__2020.bnp-scopes a:focus li { background-color: var(--bnp-sub, rgba(128, 128, 128, .25)); }
@@ -16221,7 +16493,8 @@
     .bnp-hub .bnp-radd .bnp-f select { flex: 0 1 auto; }
     .bnp-hub .bnp-coming { padding-top: 6px; padding-bottom: 6px; }
     /* Reminders: Neopets' pop-up, small, in the corner under the bar */
-    .bnp-rems { position: fixed; z-index: 2147482900; top: 76px; right: 14px; display: flex; flex-direction: column; gap: 10px; width: min(340px, calc(100vw - 28px)); pointer-events: none; }
+    .bnp-rems { position: fixed; z-index: 2147482900; top: 76px; right: 14px; display: flex; flex-direction: column; gap: 10px; width: min(340px, calc(100vw - 28px)); pointer-events: none; transition: opacity .15s, visibility .15s; }
+    html:has(.nav-toggle-dropdown__2020.nav-dropdown-active, .nav-dropdown__2020.bnp-scopes:not([hidden])) .bnp-rems { opacity: 0; visibility: hidden; }   /* (a menu open in the top bar, Neopets' or ours: the notes step aside till it closes, never over it) */
     .bnp-rem { pointer-events: auto; overflow: hidden; border: 3px solid color-mix(in srgb, var(--bnp-accent, #fed123) 65%, #000 15%); border-radius: 14px; background: #fff; box-shadow: 0 10px 28px rgba(0, 0, 0, .3); color: #363636; font: 13px/1.4 "MuseoSansRounded500", Arial, sans-serif; text-align: left; animation: bnp-rem-in .35s cubic-bezier(.2, .9, .3, 1.2); }
     @keyframes bnp-rem-in { from { opacity: 0; transform: translateX(30px) scale(.96); } }
     @media (prefers-reduced-motion: reduce) { .bnp-rem { animation: none; } }
@@ -16350,60 +16623,146 @@
     .bnp-fq.is-got .bnp-fq-dot { background: #3cb043; }
     /* search results: cards in parts, chips, a box to narrow them; each item one click from everywhere it can be looked for */
     html.bnp-sr-pre #container__2020 .search-result-count, html.bnp-sr-pre #container__2020 .search-result-subtitle, html.bnp-sr-pre #container__2020 ul.search-results { display: none !important; }
-    .bnp-sr { --bnp-accent: #fed123; --bnp-accent-text: #363636; margin: 4px auto 18px; padding: 0 4px; color: #363636; font: 14px/1.4 "MuseoSansRounded500", Arial, sans-serif; text-align: left; }
+    .bnp-sr { --bnp-accent: #fed123; --bnp-accent-text: #363636; --bnp-bar: #5d5590; --bnp-bar-ink: #fff; margin: 4px auto 22px; padding: 0 4px; color: #363636; font: 14px/1.4 "MuseoSansRounded500", Arial, sans-serif; text-align: left; }
     .bnp-sr *, .bnp-sr *::before, .bnp-sr *::after { box-sizing: border-box; }
-    .bnp-sr-box { position: relative; display: flex; gap: 10px; align-items: center; max-width: 760px; margin: 0 auto 10px; }
-    .bnp-sr-box .bnp-go-glass { position: absolute; left: 15px; top: 50%; width: 14px; height: 14px; margin-top: -9px; border: 2.5px solid #8a8571; border-radius: 50%; }
+    /* the top: the box, how many there are, and everywhere else to look */
+    .bnp-sr-top { margin: 4px 0 10px; padding: 16px 18px 14px; border: 1px solid #e3dfd2; border-radius: 16px; background: linear-gradient(180deg, color-mix(in srgb, var(--bnp-bar) 11%, #fff), #fff 72%); box-shadow: 0 3px 0 #ebe6d6; }
+    .bnp-sr-box { position: relative; display: flex; gap: 10px; align-items: center; max-width: 760px; margin: 0 auto; }
+    .bnp-sr-box .bnp-go-glass { position: absolute; left: 16px; top: 50%; width: 15px; height: 15px; margin-top: -10px; border: 2.5px solid #8a8571; border-radius: 50%; }
     .bnp-sr-box .bnp-go-glass::after { content: ""; position: absolute; right: -6px; bottom: -6px; width: 7px; height: 2.5px; border-radius: 2px; background: #8a8571; transform: rotate(45deg); }
-    .bnp-sr .bnp-sr-box input { flex: 1; min-width: 0; height: 42px; margin: 0; padding: 6px 16px 6px 40px; border: 2px solid #d8d3c2; border-radius: 999px; background: #fff; color: #222; font: 15px "MuseoSansRounded500", Arial, sans-serif; outline: none; }
-    .bnp-sr .bnp-sr-box input:focus { border-color: #b8a050; box-shadow: 0 0 0 3px rgba(254, 209, 35, .45); }
-    .bnp-sr .bnp-sr-box button { flex: none; width: auto; margin: 0; padding: 4px 22px 6px; font-size: 12pt; }
-    .bnp-sr-sum { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; margin: 0 0 10px; color: #5c5845; font: 14px "MuseoSansRounded700", Arial, sans-serif; }
-    .bnp-sr-sum > b { color: #2a2a2a; font: 17pt/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; }
-    .bnp-sr-also { display: inline-flex; align-items: center; gap: 5px; color: #8a8571; font-size: 12.5px; }
-    .bnp-sr-tools { position: sticky; top: 0; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 -4px 4px; padding: 8px 4px; border-bottom: 1px solid #efeadb; background: rgba(255, 255, 255, .96); }
-    .bnp-sr .bnp-rechips { display: flex; flex-wrap: wrap; gap: 5px; flex: 1 1 360px; }
-    .bnp-sr .bnp-rechip { display: inline-flex; align-items: center; gap: 5px; margin: 0; padding: 2px 10px; border: 1px solid #e3dfd2; border-radius: 999px; background: #fff; color: #363636; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
-    .bnp-sr .bnp-rechip:hover { border-color: #c9a227; }
-    .bnp-sr .bnp-rechip em { color: #8a8571; font-size: 11.5px; font-style: normal; }
-    .bnp-sr .bnp-rechip[aria-pressed="true"] { border-color: transparent; background: var(--bnp-accent); color: var(--bnp-accent-text); }
-    .bnp-sr .bnp-rechip[aria-pressed="true"] em { color: inherit; opacity: .8; }
-    .bnp-sr .bnp-research { flex: 0 1 220px; min-width: 120px; height: 32px; margin: 0; padding: 3px 14px; border: 1px solid #cfcbbd; border-radius: 999px; background: #fff; color: #363636; font: 13px "MuseoSansRounded500", Arial, sans-serif; }
-    .bnp-sr-rule { margin: 2px 0 0; color: #8a8571; font-size: 12px; text-align: right; }
-    .bnp-sr-part { margin: 14px 0 0; }
-    .bnp-sr-part h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0 0 8px; padding: 0 0 4px; border-bottom: 2px solid #efeadb; color: #2a2a2a; font: 15pt/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-align: left; }
-    .bnp-sr-part h3 em { color: #8a8571; font: 13px "MuseoSansRounded700", Arial, sans-serif; font-style: normal; letter-spacing: 0; }
-    .bnp-sr-part h3 .bnp-note { margin-left: auto; color: #6f6a58; font: 12px "MuseoSansRounded500", Arial, sans-serif; letter-spacing: 0; }
-    .bnp-sr-part h3 .bnp-note a { color: #2c5aa0; }
-    .bnp-sr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
-    .bnp-sr-card { display: flex; gap: 10px; align-items: flex-start; min-width: 0; padding: 8px; border: 1px solid #e3dfd2; border-radius: 12px; background: #fff; }
-    .bnp-sr-card:hover { border-color: #c9a227; }
-    .bnp-sr-pic { flex: none; display: grid; place-items: center; width: 64px; height: 64px; overflow: hidden; border-radius: 8px; background: #faf9f5; }
-    .bnp-sr-pic img { display: block; max-width: 64px; max-height: 64px; }
-    .bnp-sr-main { flex: 1; min-width: 0; }
-    .bnp-sr .bnp-sr-name { display: block; color: #2a2a2a; font: 13.5px/1.25 "MuseoSansRounded700", Arial, sans-serif; text-decoration: none; overflow-wrap: anywhere; }
+    .bnp-sr .bnp-sr-box input { flex: 1; min-width: 0; height: 46px; margin: 0; padding: 6px 18px 6px 42px; border: 2px solid #d8d3c2; border-radius: 999px; background: #fff; color: #222; font: 15.5px "MuseoSansRounded500", Arial, sans-serif; outline: none; box-shadow: inset 0 2px 0 rgba(0, 0, 0, .04); }
+    .bnp-sr .bnp-sr-box input:focus { border-color: color-mix(in srgb, var(--bnp-bar) 70%, #d8d3c2); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bnp-bar) 30%, transparent); }
+    .bnp-sr .bnp-sr-box button { flex: none; width: auto; margin: 0; padding: 5px 24px 8px; font-size: 13pt; }
+    .bnp-sr-sum { margin: 11px 0 0; color: #5c5845; font: 14px "MuseoSansRounded700", Arial, sans-serif; text-align: center; }
+    .bnp-sr-sum b { margin-right: 2px; color: #2a2a2a; font: 19pt/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; vertical-align: -2px; }
+    .bnp-sr-sum q { color: #2a2a2a; quotes: "“" "”"; }
+    .bnp-sr-also { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; margin-top: 9px; color: #8a8571; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-sr-also > span { margin-right: 2px; }
+    /* the chips and the narrowing box: in sight under the bar as you scroll */
+    .bnp-sr-tools-bar { position: sticky; top: var(--bnp-sr-top, 0px); z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 -4px 4px; padding: 9px 4px; border-bottom: 1px solid #efeadb; background: #fff; }
+    .bnp-sr-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 420px; }
+    .bnp-sr-chip { display: inline-flex; align-items: center; gap: 6px; height: 31px; margin: 0; padding: 0 12px 0 7px; border: 1px solid #ddd7c4; border-radius: 999px; background: #faf9f5; box-shadow: 0 2px 0 #ebe6d6; color: #363636; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
+    .bnp-sr-chip:first-child { padding-left: 13px; }
+    .bnp-sr-chip em { color: #8a8571; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; font-style: normal; }
+    .bnp-sr-chip:hover { border-color: color-mix(in srgb, var(--bnp-bar) 60%, #ddd7c4); }
+    .bnp-sr-chip[aria-pressed="true"] { border-color: color-mix(in srgb, var(--bnp-bar) 75%, #000); background: var(--bnp-bar); box-shadow: 0 2px 0 color-mix(in srgb, var(--bnp-bar) 60%, #000); color: var(--bnp-bar-ink); }
+    .bnp-sr-chip[aria-pressed="true"] em { color: inherit; opacity: .8; }
+    .bnp-sr-cic { flex: none; width: 20px; height: 20px; border-radius: 6px; background: #fff center / 17px 17px no-repeat; box-shadow: 0 0 0 1px rgba(0, 0, 0, .06); }
+    .bnp-sr .bnp-sr-narrow { flex: 0 1 230px; min-width: 130px; height: 32px; margin: 0 0 0 auto; padding: 3px 14px; border: 1px solid #cfcbbd; border-radius: 999px; background: #fff; color: #363636; font: 13px "MuseoSansRounded500", Arial, sans-serif; outline: none; }
+    .bnp-sr .bnp-sr-narrow:focus { border-color: color-mix(in srgb, var(--bnp-bar) 70%, #cfcbbd); }
+    /* the best match: someone, a pet or an item with exactly the name you looked for */
+    .bnp-sr-best { margin: 14px 0 6px; }
+    .bnp-sr-besth { margin: 0 0 8px 4px; color: #5d5845; font: 12px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; letter-spacing: .08em; }
+    .bnp-sr-heroes { display: grid; gap: 12px; }
+    .bnp-sr-heroes.is-two { grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
+    .bnp-sr-hero { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 2px solid var(--bnp-bar); border-radius: 16px; background: radial-gradient(circle at 0 60%, color-mix(in srgb, var(--bnp-bar) 14%, #fff), #fff 62%); box-shadow: 0 4px 0 color-mix(in srgb, var(--bnp-bar) 60%, #000); }
+    .bnp-sr-herohead { display: flex; align-items: center; gap: 9px; padding: 6px 14px 6px 7px; background: var(--bnp-bar); color: var(--bnp-bar-ink); font: 14pt/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; }   /* (its own bar, as the parts below have) */
+    .bnp-sr-herohead .bnp-sr-ic { flex: none; width: 30px; height: 30px; border-radius: 9px; background: #fff center / 22px 22px no-repeat; box-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
+    .bnp-sr-herorow { display: flex; flex: 1; align-items: center; gap: 22px; padding: 16px 22px; }
+    .bnp-sr-heropic { position: relative; flex: none; display: grid; place-items: center; width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle, #fff 57%, color-mix(in srgb, var(--bnp-bar) 13%, #f3efe2)); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .05); }
+    .bnp-sr-hero.is-pet .bnp-sr-heropic { width: 230px; height: 230px; border-radius: 24px; }
+    .bnp-sr-hero.is-user .bnp-sr-heropic { width: 110px; height: 110px; border-radius: 22px; }
+    .bnp-sr-heropic img { display: block; max-width: 100%; max-height: 100%; }
+    .bnp-sr-herobody { flex: 1; min-width: 0; }
+    .bnp-sr-kind { display: inline-flex; align-items: center; gap: 6px; color: #6f6a58; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; letter-spacing: .08em; }
+    .bnp-sr-kic { flex: none; width: 22px; height: 22px; background: center / contain no-repeat; }
+    .bnp-sr .bnp-sr-hero h4 { margin: 3px 0 0; padding: 0; color: #2a2a2a; font: 25pt/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .5pt; overflow-wrap: anywhere; }
+    .bnp-sr .bnp-sr-hero h4 a { color: inherit; text-decoration: none; }
+    .bnp-sr .bnp-sr-hero h4 a:hover { text-decoration: underline; }
+    .bnp-sr-hero .bnp-sr-sub { margin: 2px 0 0; font-size: 14px; }
+    .bnp-sr-hero .bnp-sr-meta { justify-content: flex-start; margin-top: 8px; }
+    .bnp-sr-hero .bnp-sr-rar, .bnp-sr-hero .bnp-it-price, .bnp-sr-hero .bnp-it-nc { font-size: 12px; line-height: 1.7; }
+    .bnp-sr-hero .bnp-sr-info { margin-top: 8px; padding: 8px 12px; border-radius: 10px; background: rgba(255, 255, 255, .8); box-shadow: inset 0 0 0 1px #ece6d4; }
+    .bnp-sr-heroacts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+    .bnp-sr .bnp-sr-big { width: auto; margin: 0; padding: 5px 24px 8px; font-size: 13pt; text-decoration: none; }
+    /* each part: its name on your theme's bar colour, with its own picture */
+    .bnp-sr-part { margin: 20px 0 0; }
+    .bnp-sr .bnp-sr-head { display: flex; align-items: center; gap: 10px; margin: 0 0 11px; padding: 6px 12px 6px 7px; border: 0; border-radius: 12px; background: var(--bnp-bar); box-shadow: 0 3px 0 color-mix(in srgb, var(--bnp-bar) 60%, #000); color: var(--bnp-bar-ink); font: 15pt/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; }
+    .bnp-sr-head .bnp-sr-ic { flex: none; width: 32px; height: 32px; border-radius: 9px; background: #fff center / 24px 24px no-repeat; box-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
+    .bnp-sr-head em { margin-left: auto; padding: 0 10px; border-radius: 999px; background: rgba(255, 255, 255, .22); font: 12.5px/1.75 "MuseoSansRounded700", Arial, sans-serif; font-style: normal; letter-spacing: 0; }
+    /* tiles */
+    .bnp-sr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+    .bnp-sr-duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 0 18px; align-items: start; }
+    .bnp-sr-duo .bnp-sr-grid.is-user { grid-template-columns: 1fr; }
+    .bnp-sr-grid.is-pet { grid-template-columns: repeat(auto-fill, minmax(186px, 1fr)); }
+    .bnp-sr-grid.is-user { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+    .bnp-sr-grid.is-pedia { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px 10px; }
+    .bnp-sr-tile { position: relative; display: flex; flex-direction: column; align-items: center; min-width: 0; height: 100%; padding: 12px 10px 10px; border: 1px solid #e3dfd2; border-radius: 15px; background: #fff; box-shadow: 0 3px 0 #ebe6d6; text-align: center; transition: transform .12s, box-shadow .12s, border-color .12s; }
+    .bnp-sr-tile:hover { z-index: 1; transform: translateY(-2px); border-color: color-mix(in srgb, var(--bnp-bar) 55%, #e3dfd2); box-shadow: 0 5px 0 #e4dece; }
+    .bnp-sr-plate { position: relative; display: grid; place-items: center; flex: none; width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle, #fff 56%, #f1ecdd); }
+    .bnp-sr-plate img { display: block; max-width: 100%; max-height: 100%; }
+    .bnp-sr-tile.is-pet .bnp-sr-plate { width: 156px; height: 156px; border-radius: 18px; background: radial-gradient(circle at 50% 62%, color-mix(in srgb, var(--bnp-bar) 12%, #fff), #fff 70%); }
+    .bnp-sr-tile.is-game .bnp-sr-plate, .bnp-sr-tile.is-saver .bnp-sr-plate { width: 116px; height: 116px; border-radius: 16px; }
+    .bnp-sr-tile.is-tcg .bnp-sr-plate { width: 100px; height: 124px; border-radius: 12px; }
+    .bnp-sr-ncb { position: absolute; right: 0; bottom: 8px; padding: 0 7px; border-radius: 999px; background: #8a3fbf; box-shadow: 0 1px 0 rgba(0, 0, 0, .25); color: #fff; font: 10.5px/1.6 "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-sr .bnp-sr-name { display: block; margin-top: 8px; color: #2a2a2a; font: 13px/1.25 "MuseoSansRounded700", Arial, sans-serif; text-decoration: none; overflow-wrap: anywhere; }
     .bnp-sr .bnp-sr-name:hover { text-decoration: underline; }
-    .bnp-sr-acts { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
-    .bnp-sr-find { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 2px; border: 1px solid #e3dfd2; border-radius: 8px; background: #fff; color: #5c5845; font: 11px "MuseoSansRounded700", Arial, sans-serif; text-decoration: none; }
-    .bnp-sr-find:hover { border-color: #c9a227; background: #fffbe6; }
+    .bnp-sr-sub { display: block; margin-top: 1px; color: #8a8571; font-size: 12px; }
+    .bnp-sr-meta { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px; margin-top: 6px; }
+    .bnp-sr .bnp-sr-meta .bnp-it-price, .bnp-sr .bnp-sr-meta .bnp-it-nc { margin: 0; }
+    .bnp-sr-rar { padding: 0 8px; border-radius: 999px; font: 10.5px/1.6 "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }   /* (a rarity's colour: from common to artifact) */
+    .bnp-sr-rar.is-com { background: #f1efe8; color: #6b6553; }
+    .bnp-sr-rar.is-unc { background: #e5f3e1; color: #2e7d32; }
+    .bnp-sr-rar.is-rare { background: #e1edfb; color: #1f5fa8; }
+    .bnp-sr-rar.is-very { background: #fff0d2; color: #9a5800; }
+    .bnp-sr-rar.is-ult { background: #fde3df; color: #b3261e; }
+    .bnp-sr-rar.is-spec { background: #f0e4fb; color: #7b3fa0; }
+    .bnp-sr-rar.is-ret { background: #ebebeb; color: #555; }
+    .bnp-sr-rar.is-art { background: #3d2b14; color: #ffd36b; }
+    .bnp-sr-tools { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px; width: 100%; margin-top: auto; padding-top: 8px; }
+    .bnp-sr-tile .bnp-sr-meta + .bnp-sr-tools { margin-top: 8px; border-top: 1px dashed #ece6d4; }
+    .bnp-sr-tools .bnp-it { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 3px; margin: 0; }
+    .bnp-sr-det { flex: none; width: 26px; height: 26px; margin: 0; padding: 0; border: 1px solid #ddd7c4; border-radius: 50%; background: #faf9f5; color: #5c5845; font: italic 700 14px/1 Georgia, "Times New Roman", serif; cursor: pointer; }   /* (Neopets' own word on it) */
+    .bnp-sr-det:hover, .bnp-sr-det.is-on { border-color: color-mix(in srgb, var(--bnp-bar) 70%, #000); background: var(--bnp-bar); color: var(--bnp-bar-ink); }
+    .bnp-sr-info { width: 100%; margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: #faf9f5; color: #3a3a3a; font-size: 12.5px; text-align: left; }
+    .bnp-sr-info.is-pop { position: absolute; z-index: 8; left: 4px; right: 4px; top: calc(100% - 6px); width: auto; margin: 0; padding: 10px 12px; border: 1px solid #d8d2bf; border-radius: 12px; background: #fff; box-shadow: 0 12px 28px rgba(0, 0, 0, .2); }   /* (an item's details: a card over the tiles below, never stretching them) */
+    .bnp-sr-tile.is-open { z-index: 9; transform: none; }
+    .bnp-sr-tile .bnp-sr-det { position: absolute; top: 7px; right: 7px; width: 22px; height: 22px; font-size: 12px; }   /* (Neopets' own word on it: its corner, out of the way) */
+    .bnp-sr-heroes:not(.is-two) .bnp-sr-hero { max-width: 820px; margin: 0 auto; }
+    @media (hover: hover) {   /* (an item's buttons: quiet until you point at its tile) */
+      .bnp-sr-tile .bnp-sr-tools .bnp-it-b, .bnp-sr-tile .bnp-sr-tools .bnp-sr-find { filter: grayscale(1); opacity: .5; transition: filter .15s, opacity .15s; }
+      .bnp-sr-tile:hover .bnp-sr-tools .bnp-it-b, .bnp-sr-tile:hover .bnp-sr-tools .bnp-sr-find, .bnp-sr-tile:focus-within .bnp-sr-tools .bnp-it-b, .bnp-sr-tile:focus-within .bnp-sr-tools .bnp-sr-find { filter: none; opacity: 1; }
+    }
+    .bnp-sr .bnp-sr-go { margin-top: auto; padding: 3px 15px; border: 1px solid #ddd7c4; border-radius: 999px; background: #faf9f5; box-shadow: 0 2px 0 #ebe6d6; color: #4a4536; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; text-decoration: none; }
+    .bnp-sr-tile .bnp-sr-name + .bnp-sr-go { margin-top: 10px; }
+    .bnp-sr .bnp-sr-go:hover { border-color: color-mix(in srgb, var(--bnp-bar) 70%, #000); background: var(--bnp-bar); color: var(--bnp-bar-ink); }
+    /* people: their picture, their name, and their places */
+    .bnp-sr-tile.is-user { flex-direction: row; align-items: center; gap: 14px; text-align: left; }
+    .bnp-sr-tile.is-user .bnp-sr-plate { width: 66px; height: 66px; border-radius: 16px; background: #f3efe2; }
+    .bnp-sr-tbody { flex: 1; min-width: 0; }
+    .bnp-sr .bnp-sr-tile.is-user .bnp-sr-name { margin-top: 0; font-size: 14.5px; }
+    .bnp-sr-acts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+    .bnp-sr-acts.is-pet { justify-content: center; margin-top: auto; padding-top: 8px; }
+    .bnp-sr .bnp-sr-act { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 30px; height: 30px; padding: 0 6px; border: 1px solid #ddd7c4; border-radius: 10px; background: #faf9f5; color: #4a4536; font: 12px "MuseoSansRounded700", Arial, sans-serif; text-decoration: none; }
+    .bnp-sr .bnp-sr-act i { display: block; flex: none; width: 19px; height: 19px; background: center / contain no-repeat; }
+    .bnp-sr .bnp-sr-act.is-named { height: 34px; padding: 0 14px 0 9px; border-radius: 999px; box-shadow: 0 2px 0 #ebe6d6; font-size: 13px; }
+    .bnp-sr .bnp-sr-act:hover { border-color: color-mix(in srgb, var(--bnp-bar) 60%, #ddd7c4); background: color-mix(in srgb, var(--bnp-bar) 10%, #fff); }
+    /* Neopedia: its articles as lines (they all share one picture) */
+    .bnp-sr .bnp-sr-line { display: flex; align-items: center; gap: 9px; min-width: 0; padding: 8px 12px 8px 9px; border: 1px solid #e3dfd2; border-radius: 11px; background: #fff; box-shadow: 0 2px 0 #ebe6d6; color: #2a2a2a; font: 13px "MuseoSansRounded700", Arial, sans-serif; text-decoration: none; }
+    .bnp-sr .bnp-sr-line:hover { border-color: color-mix(in srgb, var(--bnp-bar) 55%, #e3dfd2); background: color-mix(in srgb, var(--bnp-bar) 7%, #fff); }
+    .bnp-sr-line span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-sr-lic { flex: none; width: 22px; height: 22px; background: center / contain no-repeat; }
+    .bnp-sr .bnp-sr-all { display: block; margin: 12px auto 0; padding: 5px 20px; border: 1px solid #ddd7c4; border-radius: 999px; background: #faf9f5; box-shadow: 0 2px 0 #ebe6d6; color: #4a4536; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
+    .bnp-sr .bnp-sr-all:hover { border-color: color-mix(in srgb, var(--bnp-bar) 70%, #000); background: var(--bnp-bar); color: var(--bnp-bar-ink); }
+    .bnp-sr-none { margin: 18px 0; text-align: center; }
+    @media (max-width: 640px) { .bnp-sr-herorow { flex-direction: column; text-align: center; } .bnp-sr-hero .bnp-sr-meta, .bnp-sr-heroacts { justify-content: center; } .bnp-sr .bnp-sr-narrow { margin-left: 0; flex-basis: 100%; } }
+    /* everywhere to look for an item (here and on its own page): a button each, with its place's own picture */
+    .bnp-sr-find { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 3px; border: 1px solid #e3dfd2; border-radius: 9px; background: #fff; color: #5c5845; font: 11px "MuseoSansRounded700", Arial, sans-serif; text-decoration: none; }
+    .bnp-sr-find:hover { border-color: color-mix(in srgb, var(--bnp-bar, #c9a227) 60%, #e3dfd2); background: color-mix(in srgb, var(--bnp-bar, #c9a227) 9%, #fff); }
     .bnp-sr-find .bnp-ico { display: block; width: 18px; height: 18px; background: center / contain no-repeat; }
-    .bnp-sr-word { padding: 0 7px; }
+    .bnp-sr-find.is-named { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px 0 7px; border-radius: 999px; box-shadow: 0 2px 0 #ebe6d6; font-size: 12.5px; }
+    .bnp-sr-find.is-named .bnp-ico { width: 20px; height: 20px; }
     .bnp-sr-acts.is-big { gap: 6px; margin-top: 10px; }
     .bnp-sr-acts.is-big .bnp-sr-find { min-width: 34px; height: 34px; border-radius: 10px; }
     .bnp-sr-acts.is-big .bnp-sr-find .bnp-ico { width: 24px; height: 24px; }
-    .bnp-sr .bnp-sr-more { margin: 5px 0 0; padding: 0; border: 0; background: none; color: #2c5aa0; font: 12px "MuseoSansRounded700", Arial, sans-serif; text-decoration: underline; cursor: pointer; }
-    .bnp-sr-info { margin-top: 5px; padding: 6px 8px; border-radius: 8px; background: #faf9f5; color: #3a3a3a; font-size: 12.5px; }
     .bnp-sr-facts { color: #3a3a3a; font-size: 12.5px; }
     .bnp-sr-facts b { color: #2a2a2a; }
     .bnp-sr-desc { margin-top: 3px; color: #5c5845; font-size: 12px; font-style: italic; }
-    .bnp-sr-shop { display: inline-flex; align-items: center; gap: 6px; margin-top: 5px; color: #2c5aa0; font: 12px "MuseoSansRounded700", Arial, sans-serif; }
-    .bnp-sr-shop .bnp-ico { width: 22px; height: 22px; border-radius: 5px; }
-    .bnp-sr .bnp-sr-all { display: block; margin: 8px auto 0; padding: 3px 16px; border: 1px solid #d8d3c2; border-radius: 999px; background: #fff; color: #5c5845; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
-    .bnp-sr .bnp-sr-all:hover { border-color: #c9a227; }
-    .bnp-sr-none { margin: 16px 0; text-align: center; }
+    .bnp-sr-shop { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; padding: 2px 12px 2px 4px; border: 1px solid #e3dfd2; border-radius: 999px; background: #fff; color: #4a4536; font: 12px "MuseoSansRounded700", Arial, sans-serif; text-decoration: none; }
+    .bnp-sr-shop:hover { border-color: color-mix(in srgb, var(--bnp-bar, #c9a227) 60%, #e3dfd2); }
+    .bnp-sr-shop .bnp-ico { width: 22px; height: 22px; border-radius: 50%; }
     .bnp-sr-itemx { margin-top: 8px; text-align: left; }
     .bnp-sr-tier { display: inline-block; margin-left: 4px; padding: 0 8px; border-radius: 999px; background: #efeadb; color: #5c5845; font: 11.5px/18px "MuseoSansRounded700", Arial, sans-serif; vertical-align: 1px; }
-    .bnp-sr-find.is-named { gap: 6px; display: inline-flex; align-items: center; padding: 0 10px 0 6px; font-size: 12px; }
     /* the bank and the shop till: "all of it", filled in */
     .bnp-fill { display: block; margin: 7px auto 0; padding: 1px 8px; border: 0; border-radius: 6px; background: none; color: #2c5aa0; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; text-decoration: underline dotted 1px; text-underline-offset: 3px; cursor: pointer; }
     .bnp-fill.is-inline { display: inline-block; margin: 0 0 0 8px; text-decoration: none; vertical-align: middle; }   /* (the till's page dresses buttons its own way: this one wears it too) */
@@ -16610,12 +16969,13 @@
     .bnp-hub .bnp-re.is-old .bnp-re-band { background: #ffffcc; color: #3d3a22; text-shadow: none; }
     .bnp-hub .bnp-re.is-old .bnp-re-band a, .bnp-hub .bnp-re.is-old .bnp-re-x { color: #3d3a22; }
     .bnp-hub .bnp-re.is-old .bnp-re-body { background: #fff; }
-    /* the Shop Dock: Neopets' pop-up, small; your shops as their shopkeepers (the Restock Highlighter's tiles, in the Neopets look) */
-    .bnp-sdock { --bnp-accent: #fed123; --bnp-accent-text: #363636; position: fixed; z-index: 2147482850; top: 86px; right: 16px; display: flex; flex-direction: column; width: auto; max-width: calc(100vw - 24px); max-height: calc(100vh - 100px); overflow: hidden; border: var(--bnp-border, 3px solid #4d4d4d); border-radius: 14px; background: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, .35); box-sizing: border-box; color: #363636; font: 13px/1.35 "MuseoSansRounded500", Arial, sans-serif; text-align: left; letter-spacing: normal; text-transform: none; user-select: none; }
+    /* the Shop Dock: Neopets' pop-up, small, in your theme; your shops in the Restock Highlighter's own tiles, on its dark (the user's pick), or on a colour of your own */
+    .bnp-sdock { --bnp-accent: #fed123; --bnp-accent-text: #363636; --sd-ink: #f4f2ec; --sd-soft: rgba(255, 255, 255, .86); --sd-faint: rgba(255, 255, 255, .66); --sd-rule: rgba(255, 255, 255, .2); position: fixed; z-index: 2147482850; top: 86px; right: 16px; display: flex; flex-direction: column; width: auto; max-width: calc(100vw - 24px); max-height: calc(100vh - 100px); overflow: hidden; border: var(--bnp-border, 3px solid #4d4d4d); border-radius: 14px; background: var(--sd-bg, linear-gradient(160deg, #111113, #17171a)); box-shadow: 0 10px 30px rgba(0, 0, 0, .35); box-sizing: border-box; color: var(--sd-ink); color-scheme: dark; font: 13px/1.35 "MuseoSansRounded500", Arial, sans-serif; text-align: left; letter-spacing: normal; text-transform: none; user-select: none; }
+    .bnp-sdock.is-light { color-scheme: light; }   /* (a light colour of your own: its scrollbar and ticks light too) */
     .bnp-sdock *, .bnp-sdock *::before, .bnp-sdock *::after { box-sizing: border-box; }
-    .bnp-sdock .bnp-hub-head { flex: none; position: relative; display: flex; align-items: center; padding: 5px 6px 5px 12px; border-radius: 0; text-align: left; cursor: grab; touch-action: none; }
+    .bnp-sdock .bnp-hub-head { flex: none; position: relative; display: flex; align-items: center; gap: 10px; padding: 5px 6px 5px 12px; border-radius: 0; text-align: left; cursor: grab; touch-action: none; }
     .bnp-sdock .bnp-hub-head.is-drag { cursor: grabbing; }
-    .bnp-sdock .bnp-hub-head h3 { position: relative; z-index: 1; flex: 1; margin: 0; font-size: 13.5pt !important; line-height: 1.3; text-align: left; }
+    .bnp-sdock .bnp-hub-head h3 { position: relative; z-index: 1; flex: 1; margin: 0; font-size: 13.5pt !important; line-height: 1.3; text-align: left; white-space: nowrap; }   /* (clear of the buttons, folded too: a theme's outlined titles reach past their letters) */
     .bnp-sdock .bnp-hub-head .popup-header-pattern__2020 { border-radius: 0; }
     .bnp-sdock-btns { position: relative; z-index: 1; display: flex; align-items: center; gap: 4px; }
     .bnp-sdock .bnp-sdock-b { display: grid; place-items: center; width: 28px; height: 26px; min-width: 0; margin: 0; padding: 0 0 2px; color: #5a3d00; cursor: pointer; }
@@ -16625,34 +16985,36 @@
     .bnp-sdock .bnp-sdock-x .popup-exit-icon { width: 13px; height: 14px; margin: 0; background-size: contain; }
     .bnp-sdock.is-folded .bnp-sdock-body { display: none; }
     .bnp-sdock-body { overflow-y: auto; padding: 8px; }
-    .bnp-sdock-grid { display: grid; grid-template-columns: repeat(var(--sd-cols, 3), var(--sd-w, 86px)); justify-content: center; gap: 6px; }
-    .bnp-sdock .bnp-sdock-tile { position: relative; display: block; width: var(--sd-w, 86px); height: var(--sd-h, 70px); overflow: hidden; border: 1px solid rgba(0, 0, 0, .25); border-radius: 9px; background: #f4f1e6; text-decoration: none; transition: transform .12s, box-shadow .12s; }
-    .bnp-sdock.no-names .bnp-sdock-name { display: none; }
-    .bnp-sdock .bnp-sdock-tile:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0, 0, 0, .25); }
-    .bnp-sdock .bnp-sdock-tile.is-here { box-shadow: 0 0 0 3px color-mix(in srgb, var(--bnp-accent) 80%, #000 10%); }
+    .bnp-sdock-grid { display: grid; grid-template-columns: repeat(var(--sd-cols, 3), calc(var(--sd-w, 86px) + 2px)); justify-content: center; gap: 6px; }
+    /* its tiles: the Restock Highlighter's own. A see-through edge on its dark (the shopkeeper under it at the sides), a shade under the name; lighter under the pointer */
+    .bnp-sdock .bnp-sdock-tile { position: relative; display: block; box-sizing: content-box; width: var(--sd-w, 86px); height: var(--sd-h, 70px); overflow: hidden; border: 1px solid rgba(255, 255, 255, .08); border-radius: 8px; background-color: #0e0e1a; background-repeat: no-repeat; text-decoration: none; cursor: pointer; transition: border-color .15s, filter .15s; }
+    .bnp-sdock .bnp-sdock-tile::before { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, .55) 0%, rgba(0, 0, 0, 0) 55%); pointer-events: none; }
+    .bnp-sdock .bnp-sdock-tile:hover { border-color: rgba(255, 255, 255, .3); filter: brightness(1.18); }
+    .bnp-sdock .bnp-sdock-tile.is-here { border-color: rgba(255, 255, 255, .55); }   /* (the shop you're in) */
     .bnp-sdock .bnp-sdock-tile.is-drag { opacity: .4; }
-    .bnp-sdock .bnp-sdock-tile.is-over { outline: 2px dashed #2c5aa0; outline-offset: -2px; }
+    .bnp-sdock .bnp-sdock-tile.is-over { outline: 2px solid rgba(255, 255, 255, .55); outline-offset: -2px; }
+    .bnp-sdock-name { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 6px; overflow: hidden; background: linear-gradient(to top, rgba(0, 0, 0, .82) 0%, rgba(0, 0, 0, .55) 100%); color: #fff; font: 600 9.5px/1.25 "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0, 0, 0, .9); white-space: nowrap; }
+    .bnp-sdock.no-names .bnp-sdock-name, .bnp-sdock.no-names .bnp-sdock-tile::before { display: none; }
+    .bnp-sdock .bnp-sdock-del { position: absolute; top: 3px; right: 3px; display: none; place-items: center; width: 18px; height: 18px; margin: 0; padding: 0 0 1px; border: 1px solid rgba(255, 255, 255, .25); border-radius: 50%; background: rgba(0, 0, 0, .62); color: #dddddd; font: 13px/1 "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif; cursor: pointer; transition: background-color .15s, color .15s; }
+    .bnp-sdock.is-edit .bnp-sdock-del { display: grid; }
+    .bnp-sdock .bnp-sdock-del:hover { background: rgba(220, 60, 60, .9); color: #fff; }
+    /* Choose shops' tiles: the same, its shopkeeper a picture inside */
     .bnp-sdock-pic { position: absolute; inset: 0; background-repeat: no-repeat; }
-    .bnp-sdock-name { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 6px 3px; overflow: hidden; background: linear-gradient(to top, rgba(20, 16, 6, .82), rgba(20, 16, 6, 0)); color: #fff; font: 10.5px/1.2 "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; text-shadow: 0 1px 2px rgba(0, 0, 0, .8); white-space: nowrap; }
-    .bnp-sdock .bnp-sdock-del { position: absolute; top: 3px; right: 3px; display: none; width: 20px; height: 20px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: rgba(176, 58, 46, .92); color: #fff; font: 14px/1 Arial, sans-serif; cursor: pointer; }
-    .bnp-sdock.is-edit .bnp-sdock-del { display: block; }
+    .bnp-sdock-pic::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, .55) 0%, rgba(0, 0, 0, 0) 55%); }
+    .bnp-shoppick .bnp-pick-tile::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .22); pointer-events: none; }
     .bnp-sdock .bnp-sdock-this { display: block; width: 100%; margin: 0 0 8px; padding: 5px 10px; border: 1px dashed color-mix(in srgb, var(--bnp-accent) 70%, #000 15%); border-radius: 10px; background: color-mix(in srgb, var(--bnp-accent) 14%, #fff); color: #2a2a2a; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
-    .bnp-sdock-empty { max-width: 270px; margin: 4px 2px; color: #757575; font-size: 12.5px; }
-    .bnp-sdock-edit { margin-top: 8px; padding-top: 8px; border-top: 1px solid #efeadb; }
-    .bnp-sdock .bnp-sdock-edit input[type="text"] { width: 100%; height: 30px; margin: 0; padding: 4px 10px; border: 1px solid #cfcbbd; border-radius: 999px; background: #fff; color: #363636; font: 13px "MuseoSansRounded500", Arial, sans-serif; user-select: text; }
-    .bnp-sdock-found { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
-    .bnp-sdock .bnp-sdock-hit { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0; padding: 3px 6px; border: 0; border-radius: 8px; background: none; color: #2a2a2a; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; text-align: left; cursor: pointer; }
-    .bnp-sdock .bnp-sdock-hit:hover { background: color-mix(in srgb, var(--bnp-accent) 25%, #fff); }
-    .bnp-sdock-hpic { flex: none; width: 28px; height: 28px; border-radius: 6px; background-repeat: no-repeat; }
+    .bnp-sdock-empty { max-width: 270px; margin: 4px 2px; color: var(--sd-faint); font-size: 12.5px; }
+    .bnp-sdock-edit { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--sd-rule); }
     .bnp-sdock .bnp-sdock-choose { display: block; width: 100%; margin: 0; padding: 3px 10px 5px; font-size: 11.5pt; }
     /* Choose shops: every shop as its shopkeeper; yours ticked */
     .bnp-go.bnp-shoppick { width: min(760px, calc(100vw - 24px)); max-height: min(720px, 88vh); }
     .bnp-shoppick .bnp-hub-head { padding: 7px 46px; }
     .bnp-shoppick .bnp-pick-x { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
     .bnp-pick-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; overflow-y: auto; padding: 10px 12px 12px; }
-    .bnp-shoppick .bnp-pick-tile { position: relative; display: block; height: 70px; margin: 0; padding: 0; overflow: hidden; border: 1px solid rgba(0, 0, 0, .25); border-radius: 9px; background: #f4f1e6; cursor: pointer; opacity: .62; filter: saturate(.55); transition: opacity .12s, filter .12s, box-shadow .12s, transform .12s; }
-    .bnp-shoppick .bnp-pick-tile:hover { opacity: .9; filter: none; transform: translateY(-1px); }
+    .bnp-shoppick .bnp-pick-tile { position: relative; display: block; height: 70px; margin: 0; padding: 0; overflow: hidden; border: 0; border-radius: 8px; background: #0e0e1a; cursor: pointer; opacity: .62; filter: saturate(.55); transition: opacity .12s, filter .12s, box-shadow .12s, transform .12s; }
+    .bnp-shoppick .bnp-pick-tile:hover { opacity: .9; filter: brightness(1.18); transform: translateY(-1px); }
     .bnp-shoppick .bnp-pick-tile.is-on { opacity: 1; filter: none; box-shadow: 0 0 0 3px #3cb043; }
+    .bnp-shoppick .bnp-pick-tile.is-on:hover { filter: brightness(1.18); }
     .bnp-pick-check { position: absolute; top: 4px; right: 4px; display: none; width: 20px; height: 20px; border-radius: 50%; background: #3cb043; color: #fff; font: 12px/20px "MuseoSansRounded700", Arial, sans-serif; text-align: center; box-shadow: 0 1px 3px rgba(0, 0, 0, .4); }
     .bnp-pick-tile.is-on .bnp-pick-check { display: block; }
     .bnp-pick-foot { justify-content: space-between; align-items: center; }
@@ -16665,8 +17027,8 @@
     .bnp-shop-no { position: absolute; top: 4px; left: 4px; z-index: 1; min-width: 18px; padding: 1px 5px; border-radius: 7px; background: rgba(20, 16, 6, .74); color: #fff; font: 10.5px/1.35 "MuseoSansRounded700", Arial, sans-serif; text-align: center; box-shadow: 0 1px 2px rgba(0, 0, 0, .35); pointer-events: none; }
     .bnp-pick-tools { display: inline-flex; align-items: center; gap: 12px; }
     .bnp-pick-tools .bnp-small { width: auto; margin: 0; padding: 2px 16px 5px; font-size: 11.5pt; }
-    .bnp-sdock-opts { margin-top: 6px; padding-top: 4px; border-top: 1px dashed #ece7d5; }
-    .bnp-sdock-opt { display: flex; align-items: center; gap: 6px; margin-top: 5px; color: #5c5845; font: 12px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
+    .bnp-sdock-opts { margin-top: 6px; padding-top: 4px; border-top: 1px dashed var(--sd-rule); }
+    .bnp-sdock-opt { display: flex; align-items: center; gap: 6px; margin-top: 5px; color: var(--sd-soft); font: 12px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
     .bnp-sdock-opt input { margin: 0; accent-color: #2b8a27; }
     .bnp-sdock-sizes { display: inline-flex; overflow: hidden; border: 1px solid #d8d3c2; border-radius: 999px; }
     .bnp-sdock .bnp-sdock-sizes button { margin: 0; padding: 1px 10px; border: 0; background: #fff; color: #5c5845; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
@@ -16676,6 +17038,10 @@
     .bnp-sdock .bnp-sdock-cols button:disabled { color: #c9c4b2; cursor: default; }
     .bnp-sdock-cols b { display: grid; place-items: center; min-width: 22px; border-left: 1px solid #e6e1cf; border-right: 1px solid #e6e1cf; background: #faf8f1; color: #363636; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-sdock-cols b.is-auto { color: #a39e8a; }
+    .bnp-sdock-dot { display: inline-block; width: 10px; height: 10px; margin: 0 5px 0 -3px; border-radius: 50%; background: var(--c, #fff); box-shadow: 0 0 0 1px rgba(0, 0, 0, .35); vertical-align: -1px; }   /* (Your own: its colour; none chosen yet, all of them) */
+    .bnp-sdock-dot.is-none { background: conic-gradient(#e74c3c, #f1c40f, #2ecc71, #3498db, #9b59b6, #e74c3c); }
+    .bnp-cp.bnp-cp-pop { --bnp-accent: #fed123; --bnp-accent-text: #363636; position: fixed; z-index: 2147482950; color: #363636; font: 13px/1.35 "MuseoSansRounded500", Arial, sans-serif; text-align: left; letter-spacing: normal; }   /* (a window's own colour, chosen over the page beside it) */
+    .bnp-cp-pop *, .bnp-cp-pop *::before, .bnp-cp-pop *::after { box-sizing: border-box; }
     /* the daily run bar: a small card in the corner of a daily's page */
     .bnp-run { --bnp-accent: #fed123; --bnp-accent-text: #363636; position: fixed; z-index: 2147482800; right: 16px; bottom: 16px; display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 32px); padding: 6px 6px 6px 6px; border: 3px solid color-mix(in srgb, var(--bnp-accent) 65%, #000 15%); border-radius: 16px; background: #fff; box-shadow: 0 8px 26px rgba(0, 0, 0, .28); box-sizing: border-box; color: #363636; font: 13px/1.3 "MuseoSansRounded500", Arial, sans-serif; text-align: left; letter-spacing: normal; animation: bnp-rem-in .35s cubic-bezier(.2, .9, .3, 1.2); }
     .bnp-run[hidden] { display: none; }
@@ -16975,6 +17341,9 @@
     .bnp-board .bnb-sumtext p.bnb-numline { margin-top: 3px; color: #8a8571; font-size: 12px; }
     .bnp-board .bnb-numline .bnp-linkbtn { font-size: 12px; }
     .bnp-board .bnb-sumtext small { color: #8a8571; font-size: 12px; }
+    .bnp-hub.bnp-board .bnb-runsw { display: inline-flex; align-items: center; gap: 8px; margin: 6px 0 0; color: #4a4636; font: 13px "MuseoSansRounded700", Arial, sans-serif; }   /* (the bar on each daily's page: on or off, right here) */
+    .bnp-hub.bnp-board .bnb-runsw input { margin: 0; }
+    .bnp-hub.bnp-board .bnb-runsw small { display: inline; margin: 0 0 0 6px; color: #8a8571; font: 12px "MuseoSansRounded500", Arial, sans-serif; }
     .bnp-board .bnb-open { flex: none; display: flex; align-items: center; gap: 10px; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-board .bnb-open .button-default__2020 { width: auto; margin: 0; padding: 4px 18px 8px; font-size: 13pt; }
     .bnp-board .bnb-tools { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; padding: 10px 18px; border-bottom: 1px solid #f0ece0; }
