@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      3.3
+// @version      3.4
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Shop Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -370,7 +370,7 @@
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false,
     scopes: true, search: false, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: false, oldLookups: false, qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true,
-    dailyBtn: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, avIcon: 'worn', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, nm2: true, nmPopup: true, stocks: true, stockSell: 60, fillAll: true, dailyFill: true, questGo: true,
+    dailyBtn: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, avIcon: 'worn', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, nm2: true, nmPopup: true, stocks: true, stockSell: 60, fillAll: true, dailyFill: true, questGo: true,
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,
@@ -943,10 +943,14 @@
   const boardPrefs = () => ({ view: 'tiles', show: 'all', group: 'mine', size: 'xs', readyFirst: true, folded: [], ...(get('dboard', null) || {}) });
   const setBoardPrefs = (patch) => { set('dboard', { ...boardPrefs(), ...patch }); paintBoard(); };
   function openBoard() {
-    if (!board) buildBoard();
+    remBoardSeen();   // (the dailies' reminders: seen, on every tab)
+    if (!board || !board.win.isConnected || !board.veil.isConnected) { if (board) { board.win.remove(); board.veil.remove(); } buildBoard(); }   // (built again if the page lost it on the way)
     board.win.classList.add('open');
     board.veil.classList.add('open');
     themeWin(board.win);
+    boardPal(true);
+    const bi = board.win.querySelector('[data-g="boardicon"]'), bu = iconOf(FOLDERS.dailies.icon);   // (the Dailies picture by its name, the one the menus have)
+    if (bi) { bi.hidden = !bu; if (bu) bi.style.backgroundImage = `url("${cssUrl(bu)}")`; }
     boardAsk = false;
     paintBoard();
     clearInterval(boardTick);
@@ -976,7 +980,7 @@
     win.tabIndex = -1;
     win.innerHTML = `
       <div class="popup-header__2020 bnp-hub-head">
-        <h3>Dailies</h3>
+        <h3><i class="bnp-hub-gear" data-g="boardicon" aria-hidden="true" hidden></i>Dailies</h3>
         <button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button>
         <div class="popup-header-pattern__2020"></div>
       </div>
@@ -1409,7 +1413,12 @@
     }
     set('train', all);
   }
-  function remFired() { return get('remfired', {}) || {}; }
+  function remFired() {   // (which reminders have been said, and by which tab: kept in the site's own storage too, which every Neopets tab reads the same at once; the script's own can be a moment behind in another tab, and then two tabs both said it)
+    let ls = null;
+    try { ls = JSON.parse(localStorage.getItem('bnp-remfired') || 'null'); } catch (_) { /* */ }
+    return { ...(get('remfired', {}) || {}), ...(ls && typeof ls === 'object' ? ls : {}) };
+  }
+  function remFiredSet(f) { try { localStorage.setItem('bnp-remfired', JSON.stringify(f)); } catch (_) { /* */ } set('remfired', f); }
   function remClaim(keys) {   // (the tab you're looking at says it; the others wait a moment, see it's said, and stay quiet)
     return new Promise((done) => setTimeout(() => {
       const fired = remFired(), mine = keys.filter((k) => !fired[k]);
@@ -1417,7 +1426,7 @@
       const now = Date.now();
       for (const k of mine) fired[k] = `${TAB_ID}@${now}`;
       for (const k of Object.keys(fired)) if (now - Number(String(fired[k]).split('@')[1] || 0) > 4 * DAY_MS) delete fired[k];
-      set('remfired', fired);
+      remFiredSet(fired);
       setTimeout(() => { const f2 = remFired(); done(mine.filter((k) => String(f2[k] || '').startsWith(TAB_ID + '@'))); }, 300);
     }, document.hidden ? 1500 + Math.random() * 600 : Math.random() * 120));
   }
@@ -1448,7 +1457,7 @@
     const ready = shown.filter((e) => e.kind === 'ready');   // (several dailies ready at once: one notice for them all)
     const notes = shown.filter((e) => e.kind !== 'ready');
     if (ready.length === 1) notes.push(ready[0]);
-    else if (ready.length > 1) notes.push({ kind: 'ready', title: `${ready.length} dailies are ready again`, text: ready.map((e) => e.d.label).join(', '), icon: ready[0].icon, board: true, sound: 'chime' });
+    else if (ready.length > 1) notes.push({ kind: 'ready', keys: ready.map((e) => e.key), title: `${ready.length} dailies are ready again`, text: ready.map((e) => e.d.label).join(', '), icon: ready[0].icon, board: true, sound: 'chime' });
     const quiet = remQuiet();
     for (const n of notes) {
       if (R.popup) remPopup(n);
@@ -1510,20 +1519,40 @@
     card.innerHTML = `
       <div class="popup-header__2020 bnp-rem-head"><h3>${esc(n.title)}</h3><span class="bnp-rem-btns"><button type="button" class="button-default__2020 button-yellow__2020 bnp-rem-b" data-r="set" title="Reminder settings: which ones you get, and how" aria-label="Reminder settings">${SVG_GEAR}</button><button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-rem-x" data-r="x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button></span><div class="popup-header-pattern__2020"></div></div>
       <div class="bnp-rem-body">${n.icon ? `<img src="${esc(n.icon)}" alt="">` : ''}<div><p>${esc(n.text || '')}</p>${n.until ? `<p class="bnp-rem-left" data-until="${n.until}"></p>` : ''}
-        <div class="bnp-rem-acts">${n.board || n.href ? `<button type="button" class="button-default__2020 button-green__2020" data-r="go">${n.board ? 'Open the board' : 'Go'}</button>` : ''}<button type="button" class="bnp-linkbtn" data-r="snooze">In 10 minutes</button></div></div></div>`;
+        <div class="bnp-rem-acts">${n.board || n.href ? `<button type="button" class="button-default__2020 button-green__2020" data-r="go">${n.board ? 'Open the board' : 'Go'}</button>` : ''}<button type="button" class="bnp-linkbtn" data-r="snooze" title="Put it away, and say it again in 10 minutes">Remind me in 10 minutes</button></div></div></div>`;
+    const keys = (n.keys || [n.key]).filter(Boolean);
+    card.dataset.keys = keys.join(' ');
+    if (n.board) card.dataset.board = '1';
     card.addEventListener('click', (e) => {
       const b = e.target.closest('[data-r]');
       if (!b) return;
       if (b.dataset.r === 'set') { openHub('reminders'); return; }   // (the note stays, to Go from after)
-      if (b.dataset.r === 'go') remGo(n);
       if (b.dataset.r === 'snooze') { const sn = (get('remsnooze', []) || []).filter((s) => s.at > Date.now() - 3600000); sn.push({ key: 'sn' + uid(), at: Date.now() + 10 * 60000, title: n.title, text: n.text || '', href: n.href || '', icon: n.icon || '', board: !!n.board, kind: n.kind, sound: n.sound, ...(n.kind === 'snow' ? { start: n.start, until: n.until } : {}) }); set('remsnooze', sn); remSchedule(); }
       card.remove();
+      remCloseAll({ keys });   // (closed here: closed on every tab)
+      if (b.dataset.r === 'go') remGo(n);
     });
     box.prepend(card);
     const left = card.querySelector('[data-until]');
     if (left) { const tick = () => { if (!left.isConnected) { clearInterval(t); return; } const ms = +left.dataset.until - Date.now(); left.textContent = ms > 0 ? `Asleep for ${fmtClock(ms).replace(/^0:/, '')} more` : 'It’s awake again'; if (ms <= 0) clearInterval(t); }; const t = setInterval(tick, 1000); tick(); }
     while (box.children.length > 4) box.lastElementChild.remove();
   }
+  function remClose(m) {   // (this tab's reminders that match: these keys, or every one of the dailies')
+    for (const c of $$('[data-bnp="rems"] .bnp-rem')) if ((m.board && c.dataset.board) || (m.keys || []).some((k) => (c.dataset.keys || '').split(' ').includes(k))) c.remove();
+  }
+  function remCloseAll(m) {   // (the same on every Neopets tab: the others hear it through the site's storage)
+    remClose(m);
+    try { localStorage.setItem('bnp-remclose', JSON.stringify({ ...m, at: Date.now(), from: TAB_ID })); } catch (_) { /* */ }
+  }
+  function remBoardSeen() {   // (the board opened: the dailies' reminders go from every tab, and any put off for 10 minutes with them)
+    const sn = get('remsnooze', []) || [];
+    if (sn.some((s) => s && s.board)) set('remsnooze', sn.filter((s) => !(s && s.board)));
+    if ($('[data-bnp="rems"] .bnp-rem[data-board]') || sn.some((s) => s && s.board)) remCloseAll({ board: true });
+  }
+  addEventListener('storage', (e) => {   // (a reminder closed on another tab, or the board opened there: gone here too)
+    if (e.key !== 'bnp-remclose' || !e.newValue) return;
+    try { const m = JSON.parse(e.newValue); if (m && m.from !== TAB_ID) remClose(m); } catch (_) { /* */ }
+  });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // Random events: each one, on any page, kept in a log (Nav Settings › Random events), with a little "Logged" tab under it on the page
@@ -2678,7 +2707,7 @@
     html.bnp-nb .bnp-nbhb svg, html.bnp-nb .bnp-nbchip svg { width: 15px; height: 15px; flex: none; }
     html.bnp-nb .bnp-nbhb.is-busy svg, html.bnp-nb .bnp-nbchip.is-busy svg { animation: bnp-nb-spin .8s linear infinite; }
     @keyframes bnp-nb-spin { to { transform: rotate(360deg); } }
-    html.bnp-nb .bnp-linkbtn { margin: 0; padding: 0; border: 0; background: none; color: var(--nb-link); font: 12.5px var(--nb-ui); text-decoration: underline; cursor: pointer; }
+    html.bnp-nb .bnp-linkbtn { font-family: var(--nb-ui); }
     html.bnp-nb .bnp-nbinput { height: 38px; margin: 0; padding: 4px 14px; border: 2px solid var(--nb-frame); border-radius: 11px; background: #fff; color: #222; box-shadow: inset 0 2px 0 rgba(0, 0, 0, .05); font: 14px var(--nb-txt); outline: none; box-sizing: border-box; }
     html.bnp-nb .bnp-nbinput:focus { box-shadow: 0 0 0 3px var(--nb-tint2); }
     /* the bar on every board page: Neoboards, your boards, ★ Bookmarks, Read lately */
@@ -7889,7 +7918,7 @@
   function winDrag(win, onEnd) {   // (a pop-up's header moves it; onEnd: where it was put down)
     const head = win.querySelector('.bnp-hub-head');
     head.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0 || e.target.closest('button')) return;
+      if (e.button !== 0 || e.target.closest('button') || win.classList.contains('is-max')) return;   // (full screen: it stays put)
       const r = win.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
       head.setPointerCapture(e.pointerId);
       head.classList.add('is-drag');
@@ -8426,8 +8455,16 @@
         out.push(itemEl(`/guilds/guild_members.phtml?id=${g.id}`, 'Members', iconOf(['el:.nav-community-icon__2020']), sub));
         out.push(itemEl(`/guilds/guild_calendar.phtml?id=${g.id}`, 'Calendar', iconOf(['el:.nav-calendar-icon__2020', 'nat:explore-icon']), sub));
       } else out.push(moreEl(g.none ? 'Not in a guild: find one…' : 'Find your guild…', 'community'));
-    } else if (f.preset === 'themes') {
-      const now = themeNowId();
+    } else if (f.preset === 'themes') {   // (Neopets Enhance's and yours first, only in this browser; then your account's, as General Settings lists them)
+      const now = S.wear ? 0 : themeNowId(), mine = myAll();
+      mine.forEach((t, i) => {
+        const on = S.wear === t.id, a = itemEl('#', t.name, '', { kind: 'mytheme', cls: `bnp-sub bnp-theme${on ? ' bnp-cur' : ''}${i === mine.length - 1 ? ' bnp-theme-mine' : ''}`, title: on ? 'Your theme now, in this browser' : `Put on ${t.name}, in this browser` }), ic = a.querySelector('.dropdown-icon');
+        a.dataset.mytheme = t.id;
+        a.setAttribute('role', 'button');
+        ic.classList.add('bnp-swatch');
+        mySwatchPaint(ic, t);
+        out.push(a);
+      });
       for (const [id, name] of themeList()) {
         const a = itemEl('#', name, '', { kind: 'theme', cls: `bnp-sub bnp-theme${id === now ? ' bnp-cur' : ''}${id === themeBusy ? ' is-busy' : ''}`, title: id === now ? 'Your theme now' : `Put on ${name}` });
         a.dataset.theme = String(id);
@@ -8588,6 +8625,18 @@
     return '';
   }
   const myRoot = (sel) => sel.split(',').map((s) => `:root ${s.trim()}`).join(', ');   // (a step stronger than the base theme's own rule for it)
+  const myVaryNow = new Map();   // (each part with several looks: the one this page has)
+  function myVaryOn(t, part, list) {   // (the looks of a part that take turns: those ticked in Themes, or all of them)
+    const ids = (((S.looks || {})[`my:${t.id}`] || {}).vary || {})[part], on = Array.isArray(ids) ? list.filter((x) => ids.includes(x.id)) : list;
+    return on.length ? on : list;
+  }
+  function myVaryPick(t, part, list) {   // (this page's look for a part: picked once, at random among those taking turns)
+    const k = `${t.id}:${part}`, on = myVaryOn(t, part, list), was = myVaryNow.get(k), kept = on.find((x) => x.id === was);
+    if (kept) return kept;
+    const one = on[Math.floor(Math.random() * on.length)];
+    if (one) myVaryNow.set(k, one.id);
+    return one;
+  }
   function myCss(t) {   // (the theme's own look, over its base's)
     const v = (t && t.v) || {}, out = [];
     const rule = (sel, ...decls) => { const d = decls.filter((x) => x && !/undefined|null|NaN/.test(x)); if (d.length) out.push(`${myRoot(sel)} { ${d.join('; ')}; }`); };
@@ -8595,22 +8644,69 @@
     const pic = (p) => { const u = myPic(p); return u ? `url("${cssUrl(u)}")` : ''; };
     const px = (n, d) => `${Math.max(8, Math.round(Number(n) || d))}px`;
     const grad = (deg, a, b, c) => (has(a, b) ? `linear-gradient(${deg}, ${a} 0%, ${c ? `${c} 45%, ` : ''}${b} 100%)` : '');
-    const { link = {}, bar = {}, logo = {}, page = {}, menu = {}, prof = {}, news = {}, pop = {}, foot = {}, boards = {}, home = {} } = v;
-    out.push(`html.bnp-my-wait .nav-top__2020 [class*="-icon__2020"], html.bnp-my-wait .nav-bottom__2020 [class*="-icon__2020"], html.bnp-my-wait .nav-dropdown-arrow__2020, html.bnp-my-wait .nav-search-icon__2020 { visibility: hidden !important; }`);   // (its icons out of sight the moment before they're recoloured)
+    const op = (n, d) => `opacity: ${Math.min(1, Math.max(0, (n == null ? d : Number(n)) / 100))}`;
+    const place = (o, defSize, [ax, ay], own) => [   // (how a part's picture sits: its size, where, repeated or not, still as the page scrolls; own: a picture chosen for it, so all of it is ours to give)
+      (own || o.fit || o.size != null) && `background-size: ${({ own: 'auto', height: 'auto 100%', width: '100% auto', cover: 'cover', contain: 'contain' })[o.fit] || `${px(o.size, defSize)} auto`}`,
+      (own || o.x || o.y) && `background-position: ${o.x ? `calc(${ax} + ${Number(o.x)}px)` : ax} ${o.y ? `calc(${ay} + ${Number(o.y)}px)` : ay}`,
+      (own || o.repeat) && `background-repeat: ${({ x: 'repeat-x', y: 'repeat-y', none: 'no-repeat' })[o.repeat] || 'repeat'}`,
+      o.fixed && 'background-attachment: fixed',
+    ];
+    const placed = (o) => !!(o.fit || o.size != null || o.x || o.y || o.repeat || o.fixed);
+    const moving = (part, sels, [ax, ay]) => {   // (a part's picture moving forever, one whole repeat at a time, so it never jumps: Neopets' own snow and rain do this)
+      const o = v[part];
+      if (!o || !o.move || (o.fit && o.fit !== 'own')) return;
+      const pw = Number(o.pw) || 0, ph = Number(o.ph) || 0, w = o.fit === 'own' ? pw : Math.max(8, Math.round(Number(o.size) || 150)), h = pw && ph ? (w * ph) / pw : w;
+      if (!w || !h) return;
+      const dx = /left/i.test(o.move) ? -w : /right/i.test(o.move) ? w : 0, dy = /down/i.test(o.move) ? h : o.move === 'up' ? -h : 0;
+      const dur = Math.max(0.2, Math.hypot(dx, dy) / Math.max(1, Number(o.speed) || 40)), at = (x, y) => `calc(${ax} + ${Math.round((Number(o.x) || 0) + x)}px) calc(${ay} + ${Math.round((Number(o.y) || 0) + y)}px)`;
+      out.push(`@keyframes bnp-move-${part} { from { background-position: ${at(0, 0)}; } to { background-position: ${at(dx, dy)}; } }`);
+      out.push(`@media (prefers-reduced-motion: no-preference) { ${myRoot(sels)} { animation: bnp-move-${part} ${dur.toFixed(2)}s linear infinite; } }`);
+    };
+    const { link = {}, bar = {}, logo = {}, page = {}, menu = {}, prof = {}, news = {}, pop = {}, foot = {}, boards = {}, home = {}, box = {}, font = {} } = v;
+    const pats = Object.fromEntries(['bar', 'page', 'pop', 'foot', 'home', 'box'].map((k) => [k, myPatNow(t, k)]));   // (each part's picture on this page: its own, or one of those taking turns)
+    for (const [k, [sel]] of Object.entries(MY_FONT_AT)) {   // (its writing's fonts: Neopets' own, or Google Fonts)
+      const f = font[k], px2 = Number(font[`${k}Size`]) || 0;
+      if (myFontOk(f) || px2) rule(sel, myFontOk(f) && `font-family: "${f}", ${k === 'page' ? '"MuseoSansRounded500"' : '"Cafeteria"'}, Arial, sans-serif`, px2 && `font-size: ${Math.round(px2)}px`);
+    }
+    if (has(box.colour) || has(pats.box) || placed(box)) rule('#container__2020', has(box.colour) && `background-color: ${box.colour}`, has(pats.box) ? `background-image: ${pic(pats.box)}` : has(box.colour) && 'background-image: none', ...place(box, 150, ['50%', '0%'], has(pats.box)));
+    if (has(box.line) || has(box.glow) || box.round != null) rule('#container__2020', box.round != null && `border-radius: ${Math.round(Number(box.round) || 0)}px`, (has(box.line) || has(box.glow)) && `box-shadow: ${[has(box.line) && `0 0 0 ${Math.round(box.lineW == null ? 3 : Number(box.lineW))}px ${box.line}`, has(box.glow) && `0 0 18px 2px ${box.glow}`].filter(Boolean).join(', ')}`);
+    if (pop.lineW != null) rule('.togglePopup__2020', `border-width: ${Math.round(Number(pop.lineW) || 0)}px`, 'border-style: solid');
+    if (pop.round != null) { const r = Math.round(Number(pop.round) || 0); rule('.togglePopup__2020', `border-radius: ${r}px`); rule('.popup-header__2020, .popup-header-pattern__2020', `border-radius: ${r}px ${r}px 0 0`); rule('.popup-footer__2020, .popup-footer-pattern__2020', `border-radius: 0 0 ${r}px ${r}px`); }
+    if (menu.lineW != null) rule('.nav-dropdown__2020', `border-width: ${Math.round(Number(menu.lineW) || 0)}px`, 'border-style: solid');
+    if (menu.round != null) rule('.nav-dropdown__2020', `border-radius: ${Math.round(Number(menu.round) || 0)}px`);
+    const cur = page.cursor ? myPic(page.cursor) : '', curLink = page.cursorLink ? myPic(page.cursorLink) : '', hot = `${Math.round(Number(page.cursorX) || 0)} ${Math.round(Number(page.cursorY) || 0)}`;   // (its own pointer, as Haunted Woods has: its tip where you set it)
+    if (cur) rule('body, #container__2020, .footer__2020, .nav-top__2020, #navprofiledropdown__2020', `cursor: url("${cssUrl(cur)}") ${hot}, auto`);
+    if (curLink) rule('a, button, [role="button"], input[type="submit"], input[type="button"], .nav-dropdown-button, label', `cursor: url("${cssUrl(curLink)}") ${hot}, pointer`);
+    if (has(page.scroll)) out.push(`:root { scrollbar-color: ${page.scroll} ${page.scrollTrack || 'transparent'}; }`);   // (the page's own scrollbar: on the root itself)
+    if (has(page.select) || has(page.selectText)) rule('::selection', has(page.select) && `background-color: ${page.select}`, has(page.selectText) && `color: ${page.selectText}`);
+    out.push(`html.bnp-my-wait .nav-top__2020 [class*="-icon__2020"], html.bnp-my-wait .nav-bottom__2020 [class*="-icon__2020"], html.bnp-my-wait .nav-dropdown-arrow__2020, html.bnp-my-wait .nav-search-icon__2020, html.bnp-my-wait .bnp-gear { visibility: hidden !important; }`);
+    for (const k of myTints(t)) out.push(`html.bnp-my-wait ${MY_PAT_AT[k].split(',').join(', html.bnp-my-wait ')} { ${k === 'page' || k === 'home' ? 'background-image: none' : 'visibility: hidden'} !important; }`);   // (its patterns out of sight the moment before they're recoloured; the page keeps its colour)
+    if (logo.tint && logo.tint.mode && tintOn(logo.tint)) out.push('html.bnp-my-wait .nav-logo__2020, html.bnp-my-wait .footer-logo__2020 { visibility: hidden !important; }');
+    for (const b of Object.values(v.borrow && typeof v.borrow === 'object' ? v.borrow : {})) if (b && typeof b.css === 'string') out.push(b.css);   // (a part taken from another theme: its own rules, then your changes over them)
+    if (has(link.colour)) rule('a', `color: ${link.colour}`);
     if (has(link.hover)) rule('a:hover', `color: ${link.hover}`);
     // the top bar
     if (has(bar.top, bar.bottom)) rule('.nav-top__2020', `background: ${grad('180deg', bar.top, bar.bottom, bar.mid)}`, has(bar.line) && `border-bottom: 3px solid ${bar.line}`, has(bar.glow) && `box-shadow: 0 2px 10px color-mix(in srgb, ${bar.glow} 32%, transparent)`);
-    if (has(bar.pat)) rule('.nav-top-pattern__2020', `background: ${pic(bar.pat)} center / ${px(bar.size, 150)} repeat`, 'top: 0', 'height: 100% !important', `opacity: ${Math.min(1, Math.max(0, (bar.show == null ? 100 : Number(bar.show)) / 100))}`, 'mix-blend-mode: screen');
+    if (has(pats.bar) || placed(bar)) {
+      const layer = [has(pats.bar) && 'background-color: transparent', has(pats.bar) && `background-image: ${pic(pats.bar)}`, ...place(bar, 150, ['50%', '50%'], has(pats.bar)), (has(pats.bar) || bar.show != null) && op(bar.show, 100), (has(pats.bar) || bar.blend) && `mix-blend-mode: ${bar.blend || 'screen'}`];
+      rule('.nav-top-pattern__2020', ...layer, 'top: 0', 'height: 100% !important');
+      rule('.nav-bottom-pattern__2020', ...layer);
+    }
     if (has(bar.text)) rule('.nav-text__2020, .nav-text-bottom__2020', `color: ${bar.text}`);
+    if (has(bar.textGlow)) rule('.nav-text__2020, .nav-text-bottom__2020', `text-shadow: 0 0 3px ${bar.textGlow}, 0 0 7px ${bar.textGlow}`);
     if (has(bar.top, bar.bottom)) rule('.nav-bottom__2020', `background: ${grad('0deg', bar.top, bar.bottom, bar.mid)}`, has(bar.line) && `border-top: 3px solid ${bar.line}`);
-    if (has(bar.pat)) rule('.nav-bottom-pattern__2020', `background: ${pic(bar.pat)} center / ${px(bar.size, 150)} repeat`, `opacity: ${Math.min(1, Math.max(0, (bar.show == null ? 100 : Number(bar.show)) / 100))}`, 'mix-blend-mode: screen');
     if (has(bar.clock)) rule('.nav-top__2020 .nav-top-nst', `background-color: ${bar.clock}`, has(bar.clockLine) && `border-color: ${bar.clockLine}`, has(bar.clockText) && `color: ${bar.clockText}`);
+    if (has(bar.badge) || has(bar.badgeText)) rule('.nav-notif-dot__2020, #alerts-notif__2020, #news-notif__2020, #quests-notif__2020, .nav-neofriends-dot__2020', has(bar.badge) && `background: ${bar.badge}`, has(bar.badgeText) && `color: ${bar.badgeText}`);   // (the little counts on its icons)
     // the logo: a theme's own, its colours turned a little if you like
     const logoUrl = logo.pic ? myPic(logo.pic) : logo.from ? myLogoOf(logo.from) : '';
-    const logoFilter = [logo.hue ? `hue-rotate(${Number(logo.hue)}deg)` : '', logo.sat != null && Number(logo.sat) !== 100 ? `saturate(${Number(logo.sat) / 100})` : '', logo.light != null && Number(logo.light) !== 100 ? `brightness(${Number(logo.light) / 100})` : ''].filter(Boolean).join(' ');
-    if (logoUrl || logoFilter) rule('.nav-logo__2020, .footer-logo__2020', logoUrl && `background-image: url("${cssUrl(logoUrl)}")`, logoFilter && `filter: ${logoFilter}`);
+    const logoFilter = logo.tint ? '' : [logo.hue ? `hue-rotate(${Number(logo.hue)}deg)` : '', logo.sat != null && Number(logo.sat) !== 100 ? `saturate(${Number(logo.sat) / 100})` : '', logo.light != null && Number(logo.light) !== 100 ? `brightness(${Number(logo.light) / 100})` : ''].filter(Boolean).join(' ');   // (an older theme's, turned by the browser; newer ones are recoloured as pictures)
+    const logoAt = logo.foot ? '.nav-logo__2020' : '.nav-logo__2020, .footer-logo__2020', footPic = logo.foot === 'own' && logo.footPic ? myPic(logo.footPic) : '';   // (the foot's logo: the same, a picture of its own, or none)
+    if (logoUrl || logoFilter) rule(logoAt, logoUrl && `background-image: url("${cssUrl(logoUrl)}")`, logoFilter && `filter: ${logoFilter}`);
+    if (logo.foot === 'none') rule('.footer-logo__2020', 'visibility: hidden');
+    else if (footPic) rule('.footer-logo__2020', `background-image: url("${cssUrl(footPic)}") !important`, 'filter: none');
+    if (logo.size != null || logo.x || logo.y) rule('.nav-logo__2020', `transform: translate(${Number(logo.x) || 0}px, ${Number(logo.y) || 0}px) scale(${(Number(logo.size) || 100) / 100})`, 'transform-origin: left center');   // (its size and place in the bar: a logo of your own may want them)
     // the page
-    if (has(page.colour) || has(page.pat)) rule('body', has(page.colour) && `background-color: ${page.colour}`, has(page.pat) && `background-image: ${pic(page.pat)}`, has(page.pat) && `background-size: ${px(page.size, 150)} auto`);
+    if (has(page.colour) || has(pats.page) || placed(page) || page.blend) rule('body', has(page.colour) && `background-color: ${page.colour}`, has(pats.page) && `background-image: ${pic(pats.page)}`, ...place(page, 150, ['0%', '0%'], has(pats.page)), page.blend && `background-blend-mode: ${page.blend}`);
     // the menus
     if (has(menu.bg)) {
       rule('.nav-dropdown__2020', `background-color: ${menu.bg}`, has(menu.text) && `color: ${menu.text}`, has(menu.border) && `border: 2px solid ${menu.border}`);
@@ -8631,6 +8727,7 @@
     if (has(prof.small)) rule('.nav-profile-dropdown-text', `color: ${prof.small}`);
     if (has(prof.link)) rule('.nav-profile-dropdown-text a', `color: ${prof.link}`);
     if (has(prof.item)) rule('.nav-profile-dropdown__2020 ul li, .nav-profile-dropdown__2020 ul a', `color: ${prof.item}`);
+    if (has(prof.clock)) rule('.nav-profile-dropdown-clock__2020', `color: ${prof.clock}`);
     // news, alerts and quests
     if (has(news.bg)) rule('#navnewsdropdown__2020', `background: ${news.bg}`);
     if (has(news.panel)) rule('#alertstab__2020, #newstab__2020, #queststab__2020, #navquestsdropdown__2023, .tabActive__2020', `background: ${grad('180deg', news.panel, news.bg || news.panel)}`);
@@ -8639,15 +8736,23 @@
     if (has(news.text)) rule('.news-tab-content__2020 p, .alerts-none__2020', `color: ${news.text}`);
     if (has(news.link)) rule('#newstab__2020 ul li a, .alerts-tab-viewclick__2020 .news-dropdown-text__2020, .news-tab-viewclick__2020 .news-dropdown-text__2020, .quests-tab-viewclick__2020 .quests-dropdown-text__2020', `color: ${news.link}`);
     if (has(news.visited)) rule('#newstab__2020 ul li a:visited', `color: ${news.visited}`);
+    if (has(news.tab)) rule('.tabHidden__2020', `background: ${news.tab}`);
     // pop-ups (and every window of Neopets Enhance's, which wears them)
     if (has(pop.glow)) rule('.togglePopup__2020', `box-shadow: 0 0 5px 3px ${pop.glow}`);
+    if (has(pop.line)) rule('.togglePopup__2020', `border-color: ${pop.line}`);
     if (has(pop.top, pop.bottom)) { rule('.popup-header__2020', `background: ${grad('180deg', pop.top, pop.bottom)} ${pop.bottom}`); rule('.popup-footer__2020', `background: ${grad('0deg', pop.top, pop.bottom)} ${pop.bottom}`); }
-    if (has(pop.pat)) rule('.popup-header-pattern__2020, .popup-footer-pattern__2020', `background-color: transparent`, `background-image: ${pic(pop.pat)}`, `background-size: ${px(pop.size, 150)} auto`, 'background-position: center');
+    if (has(pats.pop) || placed(pop) || pop.show != null || pop.blend) rule('.popup-header-pattern__2020, .popup-footer-pattern__2020', has(pats.pop) && 'background-color: transparent', has(pats.pop) && `background-image: ${pic(pats.pop)}`, ...place(pop, 150, ['50%', '50%'], has(pats.pop)), pop.show != null && op(pop.show, 100), pop.blend && `mix-blend-mode: ${pop.blend}`);
     if (has(pop.title)) rule('.popup-header__2020 h3', `color: ${pop.title}`);
+    if (has(pop.titleEdge)) rule('.popup-header__2020 h3', `-webkit-text-stroke: 5px ${pop.titleEdge}`, 'paint-order: stroke fill');   // (its titles drawn round in a colour: clear on any picture)
+    if (has(pop.titleShadow)) rule('.popup-header__2020 h3', `text-shadow: 0 2px 0 ${pop.titleShadow}, 0 0 6px ${pop.titleShadow}`);
+    if (has(pop.headLine)) rule('.popup-header__2020', `border-bottom: 3px solid ${pop.headLine}`);
+    if (has(pop.footLine)) rule('.popup-footer__2020', `border-top: 3px solid ${pop.footLine}`);
+    if (has(pop.body)) rule('.popup-body__2020', `background: ${pop.body}`);
     // the foot of the page
     if (has(foot.top, foot.bottom) || has(foot.colour)) rule('.footer__2020', `background: ${has(foot.top, foot.bottom) ? `${grad('180deg', foot.top, foot.bottom)} ${foot.bottom}` : foot.colour}`, has(foot.line) && `border-top: 3px solid ${foot.line}`, has(foot.glow) && `box-shadow: 0 -2px 12px color-mix(in srgb, ${foot.glow} 30%, transparent)`);
-    if (has(foot.pat)) rule('.footer-pattern__2020', `background: ${pic(foot.pat)} center 0 / ${px(foot.size, 150)} auto repeat`, foot.show != null && `opacity: ${Math.min(1, Math.max(0, Number(foot.show) / 100))}`, foot.show != null && 'mix-blend-mode: screen');
+    if (has(pats.foot) || placed(foot) || foot.show != null || foot.blend) rule('.footer-pattern__2020', has(pats.foot) && `background-image: ${pic(pats.foot)}`, ...place(foot, 150, ['50%', '0%'], has(pats.foot)), foot.show != null && op(foot.show, 100), (foot.blend || foot.show != null) && `mix-blend-mode: ${foot.blend || 'screen'}`);
     if (has(foot.text)) rule('.footer-copyright__2020, .footer-link__2020, .footer__2020 a', `color: ${foot.text}`);
+    if (has(foot.textGlow)) rule('.footer-copyright__2020, .footer-link__2020, .footer__2020 a', `text-shadow: 0 1px 0 ${foot.textGlow}, 0 0 6px ${foot.textGlow}`);
     // the boards
     const B_BAR = '#boardIndex h3, #boardList ul .boardNavBottom .createTopicButton a, #boardList ul .boardNavTop .createTopicButton a, #boardCreateTopic h1, #boardTopic .topicReplyContainer .topicReplySubmit, #boardCreateTopic .topicCreateContainer .topicCreateSubmit, #boardTopic ul .topicNavTop .replyTopicButton-top, #boardList ul .pageNav .boardPageButton-active, #boardTopic .pageNav .boardPageButton-active, #boardList ul .pageNav .boardPageButton:hover, #boardTopic .pageNav .boardPageButton:hover, #boardTopic ul .topicReplyContainer .topicReplyTitle';
     const B_LINK = '#boardIndex ul li h4, #boardIndex ul li p a, #boardList .breadcrumbs a, #boardTopic .breadcrumbs a, #boardList ul li .last a, #boardList ul li .last-mobile a, #boardList ul li .author-mobile a, #boardList ul .pageNav .boardPageButton, #boardTopic .pageNav .boardPageButton, #boardTopic ul li .boardPostByline a, #boardTopic ul .topicNavTop .topicCreator, .neoboardPenTitle, .boardPostMessage a, #boardList ul li .boardTopicTitle, #boardIndex ul li .premiumBoardButton a';
@@ -8657,13 +8762,38 @@
     if (has(boards.button)) rule(B_BTN, `background-color: ${boards.button} !important`);
     if (has(boards.hover)) rule(B_LINK.split(',').map((s) => `${s.trim()}:hover`).join(', '), `color: ${boards.hover} !important`);
     // the home page: a scene at its own size (never stretched), fading into what's around it
-    if (has(home.around) || has(home.pat)) rule('.hp-bg-grid__2020', has(home.around) && `background-color: ${home.around}`, has(home.pat) && `background-image: ${pic(home.pat)}`, has(home.pat) && `background-size: ${px(home.size, 150)} auto`);
+    if (has(home.around) || has(pats.home) || placed(home)) rule('.hp-bg-grid__2020', has(home.around) && `background-color: ${home.around}`, has(pats.home) && `background-image: ${pic(pats.home)}`, ...place(home, 150, ['0%', '0%'], has(pats.home)), home.blend && `background-blend-mode: ${home.blend}`);
     if (has(home.scene)) {
       const w = Math.round(Number(home.w) || 1080), h = Math.round(Number(home.h) || 600), at = `center top / ${w}px ${h}px no-repeat`;
       const fade = `linear-gradient(to right, transparent 0, #000 110px, #000 calc(100% - 110px), transparent 100%) ${at}, linear-gradient(to bottom, #000 72%, transparent 100%) ${at}`;   // (its edges fade away: each layer the scene's own size, where the scene is)
       rule('.hp-bg-top__2020', `background: ${pic(home.scene)} center top / ${w}px ${h}px no-repeat !important`, `height: ${h}px !important`, 'width: 100% !important', 'margin: 0 !important', 'top: 0 !important', `-webkit-mask: ${fade}`, `mask: ${fade}`, '-webkit-mask-composite: source-in', 'mask-composite: intersect');
-      rule('.hp-bg-mid__2020, .hp-bg-bottom__2020, .hp-bg-obj__2020', 'background-image: none !important');
+      const bare = [['mid', '.hp-bg-mid__2020'], ['bottom', '.hp-bg-bottom__2020'], ['obj', '.hp-bg-obj__2020']].filter(([k2]) => !(home[k2] && home[k2].pat)).map((x) => x[1]);
+      if (bare.length) rule(bare.join(', '), 'background-image: none !important');
     }
+    for (const [k2, sel, ax, ay] of [['top', '.hp-bg-top__2020', '50%', '0%'], ['mid', '.hp-bg-mid__2020', '50%', '0%'], ['bottom', '.hp-bg-bottom__2020', '50%', '100%'], ['obj', '.hp-bg-obj__2020', '50%', '100%']]) {   // (its layers, as Neopets' own home pages are made: each a picture of its own, or none)
+      const L = home[k2];
+      if (!L || typeof L !== 'object' || (k2 === 'top' && has(home.scene))) continue;
+      if (L.off) rule(sel, 'background-image: none !important');
+      else if (has(L.pat)) rule(sel, `background-image: ${pic(L.pat)} !important`, ...place(L, 150, [ax, ay], true).filter(Boolean).map((d) => `${d} !important`));
+    }
+    moving('bar', '.nav-top-pattern__2020, .nav-bottom-pattern__2020', ['50%', '50%']);
+    moving('page', 'body', ['0%', '0%']);
+    moving('pop', '.popup-header-pattern__2020, .popup-footer-pattern__2020', ['50%', '50%']);
+    moving('foot', '.footer-pattern__2020', ['50%', '0%']);
+    moving('home', '.hp-bg-grid__2020', ['0%', '0%']);
+    moving('box', '#container__2020', ['50%', '0%']);
+    const decos = Array.isArray(v.deco) ? v.deco.filter((d) => d && MY_DECO_AT[d.at] && myPic(d.pic)) : [];   // (pictures of your own placed on a part: behind its writing and icons, or in front of everything)
+    for (const at of Object.keys(MY_DECO_AT)) for (const over of [false, true]) {
+      const list = decos.filter((d) => d.at === at && !!d.over === over);
+      if (!list.length) continue;
+      const layer = list.map((d) => { const s = String(d.spot || 'cb'), ax = { l: 0, c: 50, r: 100 }[s[0]] ?? 50, ay = { t: 0, c: 50, b: 100 }[s[1]] ?? 100; return `url("${cssUrl(myPic(d.pic))}") calc(${ax}% + ${Math.round(Number(d.x) || 0)}px) calc(${ay}% + ${Math.round(Number(d.y) || 0)}px) / ${d.w === 'h' ? 'auto 100%' : Number(d.w) > 0 ? `${Math.round(Number(d.w))}px auto` : 'auto'} ${({ x: 'repeat-x', y: 'repeat-y' })[d.rep] || 'no-repeat'}`; }).join(', ');
+      const sel = MY_DECO_AT[at], pseudo = over ? '::after' : '::before';
+      if (at === 'page') out.push(`${myRoot(`body${pseudo}`)} { content: ""; position: ${page.decoStill ? 'fixed' : 'absolute'}; left: 0; right: 0; top: 0; height: 100vh; pointer-events: none; z-index: ${over ? 3 : 0}; background: ${layer}; }`);
+      else { rule(sel, 'isolation: isolate'); out.push(`${myRoot(`${sel}${pseudo}`)} { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: ${over ? 10 : -1}; border-radius: inherit; background: ${layer}; }`); }
+    }
+    const picCss = (s) => s.replace(/\{pic:([\w:.-]+)\}/g, (m, k) => cssUrl(myPic(k)));
+    if (typeof v.css === 'string' && v.css) out.push(picCss(v.css));   // (a theme of Neopets Enhance's own: rules its pictures need)
+    for (const [part, list] of Object.entries(v.vary && typeof v.vary === 'object' ? v.vary : {})) { const one = Array.isArray(list) && myVaryPick(t, part, list); if (one && one.css) out.push(picCss(one.css)); }   // (a part with more than one look: this page's)
     if (has(home.plate)) rule('.hp-carousel-nameplate', 'border-image: none !important', `background: ${home.plate} !important`, has(home.plateLine) && `border: 3px solid ${home.plateLine} !important`, 'border-radius: 12px !important', has(home.plateLine) && `box-shadow: 0 3px 0 color-mix(in srgb, ${home.plateLine} 60%, #000)`, has(home.plateText) && `color: ${home.plateText} !important`);   // (each pet's name: drawn, so crisp)
     return out.join('\n');
   }
@@ -8700,56 +8830,203 @@
     const h = mx === r ? ((g - b) / d + (g < b ? 6 : 0)) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
     return [h * 60, s, l];
   }
-  function hslHex(h, s, l) {
-    const f = (n) => { const k = (n + h / 30) % 12, a = s * Math.min(l, 1 - l); return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))); };
-    return `#${[f(0), f(8), f(4)].map((x) => x.toString(16).padStart(2, '0')).join('')}`;
-  }
-  function svgTint(svg, o, ref) {   // (o: hue it turns to, keep: how much of each part's difference it keeps, sat, grey: how coloured the greys become, light)
+  function hslUnit(h, s, l) { const a = s * Math.min(l, 1 - l), f = (n) => { const k = (n + h / 30) % 12; return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); }; return [f(0), f(8), f(4)]; }   // (→ [r, g, b] from 0 to 1)
+  const unitHex = (u) => `#${u.map((x) => Math.round(Math.min(1, Math.max(0, x)) * 255).toString(16).padStart(2, '0')).join('')}`;
+  const hslHex = (h, s, l) => unitHex(hslUnit(h, s, l));
+  // Recolouring a picture, the two ways Photoshop has. hue: every colour turned round the colour wheel by the same amount, each keeping
+  // its place beside the others (its saturation and lightness changed too, if you like); colour: all of it in one colour, its light and
+  // dark kept, and its main shade exactly the colour chosen. A theme's older ones (no mode): each colour toward one hue, keeping some of
+  // its difference. Shapes stay shapes (an SVG's own colours changed); pictures are recoloured pixel by pixel, at their own size
+  const tintOn = (o) => !!o && typeof o === 'object' && (o.mode === 'hue' || o.mode === 'colour' || o.mode === 'map' || (o.mode == null && o.hue != null));
+  const tintHash = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+  const tintKey = (o) => (o.mode === 'hue' ? `h${Number(o.hue) || 0},${Number(o.sat) || 0},${Number(o.light) || 0}` : o.mode === 'colour' ? `c${o.colour},${Number(o.light) || 0},${o.contrast == null ? 100 : Number(o.contrast)}` : o.mode === 'map' ? `m${tintHash(JSON.stringify(o.files || o.map || {}))}` : `o${o.hue},${o.keep},${o.sat},${o.grey},${o.light}`);
+  function tintFn(o, ref, key) {   // (→ [r, g, b] from 0 to 1 → its new colour, or null to leave it as it is; ref: the picture as it is, { hue, lum }; key: its file's name)
+    if (o.mode === 'map') { const m = (o.files && key && o.files[key]) || o.map || {}; return (rgb) => { const t = m[unitHex(rgb)]; return t ? hexUnit(t) : null; }; }   // (each colour an exact other: a theme of Neopets Enhance's own, picture by picture)
+    const cl = (x) => Math.min(1, Math.max(0, x)), lit = (l, d) => (d < 0 ? l * (1 + d) : l + (1 - l) * d);   // (lighter toward white, darker toward black)
+    if (o.mode === 'hue') {
+      const dh = Number(o.hue) || 0, ds = (Number(o.sat) || 0) / 100, dl = (Number(o.light) || 0) / 100;
+      return (rgb) => { const [h, s, l] = rgbHsl(rgb); return hslUnit((h + dh + 360) % 360, cl(s * (1 + ds)), cl(lit(l, dl))); };
+    }
+    if (o.mode === 'colour') {
+      const [H, S, L] = rgbHsl(hexUnit(nbHex(o.colour) || '#808080')), m = Math.min(0.97, Math.max(0.03, ref.lum)), c = (o.contrast == null ? 100 : Number(o.contrast)) / 100, dl = (Number(o.light) || 0) / 100;
+      return ([r, g, b]) => {
+        const y = 0.2126 * r + 0.7152 * g + 0.0722 * b, l = y <= m ? L * (y / m) : L + (1 - L) * ((y - m) / (1 - m));   // (black stays black, white white, its main shade the colour itself)
+        return hslUnit(H, S, cl(lit(L + (l - L) * c, dl)));
+      };
+    }
     const hue = Number(o.hue) || 0, keep = (o.keep == null ? 30 : Number(o.keep)) / 100, sat = (o.sat == null ? 100 : Number(o.sat)) / 100, grey = (o.grey == null ? 55 : Number(o.grey)) / 100, light = (Number(o.light) || 0) / 100;
-    const turn = (rgb) => {
+    return (rgb) => {
       const [h, s, l] = rgbHsl(rgb);
       if (l > 0.97) return null;   // (white stays white)
-      if (s < 0.12) return hslHex(hue, grey, Math.min(1, Math.max(0, l + light)));
-      const d = ((h - ref + 540) % 360) - 180;
-      return hslHex((hue + d * keep + 360) % 360, Math.min(1, s * sat), Math.min(1, Math.max(0, l + light)));
+      if (s < 0.12) return hslUnit(hue, grey, cl(l + light));
+      const d = ((h - ref.hue + 540) % 360) - 180;
+      return hslUnit((hue + d * keep + 360) % 360, Math.min(1, s * sat), cl(l + light));
     };
-    return svg.replace(/#([0-9a-f]{6}|[0-9a-f]{3})\b/gi, (m, h) => turn(hexUnit(h)) || m)
-      .replace(/rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/gi, (m, r, g, b) => { const x = turn([r / 255, g / 255, b / 255]); return x ? `rgb(${hexUnit(x).map((c) => Math.round(c * 255)).join(',')}` : m; });
+  }
+  function svgRecolour(svg, fn) {   // (every colour an SVG names: #hex, rgb(), white and black, and a filter's flood of one colour)
+    const one = (u) => { const x = fn(u); return x ? unitHex(x) : null; }, px = (x) => Math.round(Math.min(1, Math.max(0, x)) * 255);
+    return svg
+      .replace(/((?:fill|stroke|stop-color|flood-color|lighting-color|color)\s*(?:=\s*["']\s*|:\s*))(white|black)(?=[\s"';}]|$)/gi, (m, a, c) => `${a}${/^w/i.test(c) ? '#ffffff' : '#000000'}`)
+      .replace(/(?<!&|url\(\s*["']?|href\s*=\s*["'])#([0-9a-f]{6}|[0-9a-f]{3})\b/gi, (m, h) => one(hexUnit(h)) || m)
+      .replace(/(rgba?\(\s*)(\d+)([\s,]+)(\d+)([\s,]+)(\d+)/gi, (m, a, r, s1, g, s2, b) => { const x = fn([r / 255, g / 255, b / 255]); return x ? `${a}${px(x[0])}${s1}${px(x[1])}${s2}${px(x[2])}` : m; })
+      .replace(/(<feColorMatrix\b[^>]*?\bvalues\s*=\s*["']\s*)0\s+0\s+0\s+0\s+([\d.]+)\s+0\s+0\s+0\s+0\s+([\d.]+)\s+0\s+0\s+0\s+0\s+([\d.]+)(?=\s)/gi, (m, a, r, g, b) => { const x = fn([+r, +g, +b]); return x ? `${a}0 0 0 0 ${x[0].toFixed(4)} 0 0 0 0 ${x[1].toFixed(4)} 0 0 0 0 ${x[2].toFixed(4)}` : m; });
   }
   function svgHue(svgs) {   // (a set of icons' own main colour: where their coloured parts mostly are)
     let x = 0, y = 0;
     for (const svg of svgs) for (const m of svg.matchAll(/#([0-9a-f]{6}|[0-9a-f]{3})\b/gi)) { const [h, s, l] = rgbHsl(hexUnit(m[1])); if (s < 0.12 || l > 0.95 || l < 0.05) continue; x += Math.cos(h * Math.PI / 180) * s; y += Math.sin(h * Math.PI / 180) * s; }
     return (x || y) ? (Math.atan2(y, x) * 180 / Math.PI + 360) % 360 : 220;
   }
-  let myIconsAsk = 0;
-  async function myIcons(t) {   // (its icons: fetched from Neopets' image server, as the browser keeps them, and recoloured)
-    const o = t && t.v && t.v.icons, ask = ++myIconsAsk, root = document.documentElement;
+  let myIconsAsk = 0, myIconsKept = new Map();   // (this page's recoloured pictures, by picture and colours: kept while they show)
+  const MY_PAT_AT = { bar: '.nav-top-pattern__2020, .nav-bottom-pattern__2020', pop: '.popup-header-pattern__2020, .popup-footer-pattern__2020', foot: '.footer-pattern__2020', page: 'body', home: '.hp-bg-grid__2020', box: '#container__2020' };   // (where each part's pattern is drawn)
+  function myPatNow(t, k) {   // (a part's picture on this page: its own, or one of those taking turns with it, picked once a page at random)
+    const o = (t && t.v && t.v[k]) || {}, alts = Array.isArray(o.alts) ? o.alts.filter((x) => x && myPic(x)) : [];
+    if (!alts.length) return o.pat;
+    const all = [o.pat || '', ...alts], key = `${t.id}:alt:${k}`;   // ('': the base's own picture, taking its turn too)
+    let one = myVaryNow.get(key);
+    if (!all.includes(one)) { one = all[Math.floor(Math.random() * all.length)]; myVaryNow.set(key, one); }
+    return one || undefined;
+  }
+  function myBasePat(t, k) { const sw = t && themeData().sw[t.base], u = sw && (k === 'pop' ? sw.pat : sw.pics && sw.pics[k]); return u ? fullUrl(u) : ''; }   // (the base theme's own picture for a part)
+  const MY_DECO_AT = { bar: '.nav-top__2020', page: 'body', foot: '.footer__2020', pop: '.popup-header__2020' };   // (where decorations can go)
+  function myPatSrc(t, k) {   // (the pattern a part of the theme shows: its own, or its base's)
+    const p = t && t.v && t.v[k], own = p && myPic(myPatNow(t, k));
+    if (own) return own;
+    const sw = t && themeData().sw[t.base], u = sw && (k === 'pop' ? sw.pat : sw.pics && sw.pics[k]);
+    return u ? fullUrl(u) : '';
+  }
+  const isSvg = (u) => /\.svg(\?|#|$)/i.test(u || '') || /^data:image\/svg\+xml/i.test(u || '');
+  const myTints = (t) => Object.keys(MY_PAT_AT).filter((k) => { const p = t && t.v && t.v[k], u = p && tintOn(p.tint) && myPatSrc(t, k); return !!u && (!!p.tint.mode || isSvg(u)); });   // (older ones: shapes only)
+  const svgGet = async (u) => { try { const r = await fetch(u); if (!r.ok) return ''; const svg = await r.text(); return /<svg[\s>]/i.test(svg) ? svg : ''; } catch (_) { return ''; } };
+  const picLoad = (u) => new Promise((done, fail) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.decoding = 'async'; im.onload = () => done(im); im.onerror = () => fail(new Error('the picture didn’t come')); im.src = u; });
+  function picCanvas(im, scale = 1, most = 2400) {   // (a picture on a canvas of its own: at its own size, or the size asked)
+    const W = (im.naturalWidth || 300) * scale, H = (im.naturalHeight || 150) * scale, k = Math.min(1, most / Math.max(W, H)), cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.round(W * k));
+    cv.height = Math.max(1, Math.round(H * k));
+    const g = cv.getContext('2d', { willReadFrequently: true });
+    g.drawImage(im, 0, 0, cv.width, cv.height);
+    return { cv, g };
+  }
+  function picRef(d) {   // (pixels → the picture's main shade: the lightness most of it has)
+    const n = new Float64Array(24), y = new Float64Array(24);
+    for (let i = 0; i < d.length; i += 4) {
+      const a = d[i + 3];
+      if (a < 16) continue;
+      const l = (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255, k = Math.min(23, Math.floor(l * 24));
+      n[k] += a;
+      y[k] += a * l;
+    }
+    let best = 0;
+    for (let k = 1; k < 24; k++) if (n[k] > n[best]) best = k;
+    return { hue: 220, lum: n[best] ? y[best] / n[best] : 0.5 };
+  }
+  function pxRecolour(im, o, scale) {   // (a picture recoloured pixel by pixel, at its own size: a canvas)
+    const { cv, g } = picCanvas(im, scale), img = g.getImageData(0, 0, cv.width, cv.height), d = img.data, fn = tintFn(o, picRef(d)), seen = new Map();
+    for (let i = 0; i < d.length; i += 4) {
+      if (!d[i + 3]) continue;
+      const key = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2];
+      let x = seen.get(key);
+      if (x === undefined) { x = fn([d[i] / 255, d[i + 1] / 255, d[i + 2] / 255]); if (seen.size < 262144) seen.set(key, x); }
+      if (x) { d[i] = x[0] * 255; d[i + 1] = x[1] * 255; d[i + 2] = x[2] * 255; }
+    }
+    g.putImageData(img, 0, 0);
+    return cv;
+  }
+  async function svgRef(svg) {   // (an SVG's main shade: drawn small and measured)
+    const u = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    try { const { cv, g } = picCanvas(await picLoad(u), 1, 160); return picRef(g.getImageData(0, 0, cv.width, cv.height).data); } catch (_) { return { hue: 220, lum: 0.5 }; } finally { URL.revokeObjectURL(u); }
+  }
+  async function tintDo(u, o) {   // (one picture recoloured: { svg } its text, or { cv } a canvas; null when it can't be)
+    const key = String(u || '').split('/').pop().replace(/\.svg.*$/i, '');
+    if (isSvg(u)) {
+      const svg = await svgGet(u);
+      if (!svg) return null;
+      if (!/<image\b/i.test(svg)) return { svg: svgRecolour(svg, tintFn(o, o.mode === 'colour' ? await svgRef(svg) : { hue: svgHue([svg]), lum: 0.5 }, key)) };
+      if (!o.mode || o.mode === 'map') return null;
+      const bu = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+      try { return { cv: pxRecolour(await picLoad(bu), o, 2) }; } finally { URL.revokeObjectURL(bu); }   // (an SVG holding a picture: drawn at twice its size, then recoloured as one)
+    }
+    return o.mode && o.mode !== 'map' ? { cv: pxRecolour(await picLoad(u), o, 1) } : null;
+  }
+  const cvBlob = (cv) => new Promise((done) => cv.toBlob(done, 'image/png'));
+  async function tintBlobUrl(r) { if (!r) return ''; const b = r.svg != null ? new Blob([r.svg], { type: 'image/svg+xml' }) : await cvBlob(r.cv); return b ? URL.createObjectURL(b) : ''; }
+  const tintSmallKept = new Map();
+  function tintSmall(u, o) {   // (a small one, for swatches and previews: a data: address, so nothing to let go of afterwards)
+    const k = `${u}|${tintKey(o)}`;
+    if (!tintSmallKept.has(k)) {
+      if (tintSmallKept.size >= 80) tintSmallKept.delete(tintSmallKept.keys().next().value);
+      tintSmallKept.set(k, tintDo(u, o).then((r) => {
+        if (!r) return '';
+        if (r.svg != null) return `data:image/svg+xml,${encodeURIComponent(r.svg)}`;
+        const s = Math.min(1, 320 / Math.max(r.cv.width, r.cv.height));
+        if (s === 1) return r.cv.toDataURL('image/png');
+        const c2 = document.createElement('canvas');
+        c2.width = Math.max(1, Math.round(r.cv.width * s));
+        c2.height = Math.max(1, Math.round(r.cv.height * s));
+        c2.getContext('2d').drawImage(r.cv, 0, 0, c2.width, c2.height);
+        return c2.toDataURL('image/png');
+      }).catch(() => ''));
+    }
+    return tintSmallKept.get(k);
+  }
+  const myLogoSrc = (t) => { const lg = (t && t.v && t.v.logo) || {}; return lg.pic ? myPic(lg.pic) : myLogoOf(lg.from || t.base); };
+  async function myIcons(t) {   // (its icons, its logo and the patterns it recolours: fetched from Neopets' image server, as the browser keeps them, and recoloured)
+    const v = (t && t.v) || {}, o = v.icons || {}, lg = v.logo || {}, tints = myTints(t), ask = ++myIconsAsk, root = document.documentElement;
+    const iconTint = o.tint && o.tint.mode && tintOn(o.tint) ? o.tint : null, legacy = !o.tint && o.from && o.as !== 'own' && o.hue != null ? o : null;
+    const urls = o.urls && typeof o.urls === 'object' ? o.urls : {}, setAt = typeof o.set === 'string' && /^https:\/\/\S*\{name\}/.test(o.set) ? o.set : '';
+    const ownIcon = (file) => (typeof urls[file] === 'string' && /^https:\/\//.test(urls[file]) ? urls[file] : setAt ? setAt.replace(/\{name\}/g, file) : '');   // (your own: one by one, or a whole set at an address with {name} in it)
+    const iconSet = o.from || (iconTint || setAt || Object.keys(urls).length ? t.base : ''), logoTint = lg.tint && lg.tint.mode && tintOn(lg.tint) ? lg.tint : null;
     const done = () => { if (ask === myIconsAsk) root.classList.remove('bnp-my-wait'); };
-    if (!o || !o.from) { const st = document.getElementById('bnp-my-icons'); if (st) st.remove(); done(); return; }
+    if (!iconSet && !tints.length && !logoTint) { const st = document.getElementById('bnp-my-icons'); if (st) { st.remove(); iconsRefresh(); } done(); return; }
     root.classList.add('bnp-my-wait');
     const safety = setTimeout(done, 1500);   // (never out of sight for long, whatever happens)
+    const next = new Map(), made = [];
+    const pic = (k, make) => {   // (each picture made once a page, and again only when its colours change)
+      if (!next.has(k)) next.set(k, myIconsKept.has(k) ? Promise.resolve(myIconsKept.get(k)) : make().then((u) => { if (u) made.push(u); return u; }));
+      return next.get(k).catch(() => '');
+    };
+    const tinted = (u, tint) => pic(`${u}|${tintKey(tint)}`, async () => tintBlobUrl(await tintDo(u, tint)));
     try {
-      const got = await Promise.all(MY_ICON_PARTS.map(async ([file]) => {
-        const u = myIconUrl(o.from, file);
-        if (!/\.svg(\?|$)/i.test(u)) return { pic: u };
-        try { const r = await fetch(u); if (!r.ok) return ''; const svg = await r.text(); return /<svg[\s>]/i.test(svg) ? svg : ''; } catch (_) { return ''; }
-      }));
-      if (ask !== myIconsAsk) return;
-      const ref = svgHue(got.filter((x) => typeof x === 'string' && x)), css = [], urls = [];
-      got.forEach((svg, i) => {   // (each one a picture of this page's own: the sheet stays small)
-        if (svg && svg.pic) { css.push(`${myRoot(MY_ICON_PARTS[i][1])} { background-image: url("${cssUrl(svg.pic)}") !important; }`); return; }
-        if (!svg) return;
-        const u = URL.createObjectURL(new Blob([o.as === 'own' ? svg : svgTint(svg, o, ref)], { type: 'image/svg+xml' }));
-        urls.push(u);
-        css.push(`${myRoot(MY_ICON_PARTS[i][1])} { background-image: url("${u}") !important; }`);
-      });
+      const css = [];
+      if (iconSet) {
+        const files = MY_ICON_PARTS.map(([file]) => ownIcon(file) || myIconUrl(iconSet, file));
+        const ref = legacy ? svgHue((await Promise.all(files.filter(isSvg).map(svgGet))).filter(Boolean)) : 0;   // (older ones: turned from the set's own main colour)
+        const got = await Promise.all(files.map((u) => {
+          if (iconTint) return tinted(u, iconTint);
+          if (legacy && isSvg(u)) return pic(`${u}|${tintKey(legacy)}`, async () => { const svg = await svgGet(u); return svg ? tintBlobUrl({ svg: svgRecolour(svg, tintFn(legacy, { hue: ref, lum: 0.5 })) }) : ''; });
+          return u;   // (another theme's, in their own colours)
+        }));
+        got.forEach((u, i) => { if (u) css.push(`${myRoot(MY_ICON_PARTS[i][1])} { background-image: url("${cssUrl(u)}") !important; }`); });
+      }
+      const pats = await Promise.all(tints.map((k) => tinted(myPatSrc(t, k), t.v[k].tint)));
+      tints.forEach((k, i) => { if (pats[i]) css.push(`${myRoot(MY_PAT_AT[k])} { background-image: url("${cssUrl(pats[i])}") !important; }`); });
+      if (logoTint) { const u = await tinted(myLogoSrc(t), logoTint); if (u) css.push(`${myRoot(lg.foot ? '.nav-logo__2020' : '.nav-logo__2020, .footer-logo__2020')} { background-image: url("${cssUrl(u)}") !important; }`); }
+      if (ask !== myIconsAsk) { made.forEach((u) => URL.revokeObjectURL(u)); return; }   // (another asked for meanwhile: these were never shown)
       let st = document.getElementById('bnp-my-icons');
       if (!st) { st = document.createElement('style'); st.id = 'bnp-my-icons'; (document.head || root).append(st); }
       st.textContent = css.join('\n');
-      const old = myIcons.urls || [];
-      myIcons.urls = urls;
-      setTimeout(() => old.forEach((u) => URL.revokeObjectURL(u)), 4000);   // (the last ones, once nothing shows them)
+      if (iconSet) iconsRefresh();   // (the gear, the menus, Settings: read again, now the theme's own icons are in)
+      const kept = new Map();
+      for (const [k, p] of next) { const u = await p.catch(() => ''); if (u) kept.set(k, u); }
+      const old = myIconsKept, keep = new Set(kept.values());
+      myIconsKept = kept;
+      setTimeout(() => { for (const u of old.values()) if (!keep.has(u)) URL.revokeObjectURL(u); }, 4000);   // (the last ones, once nothing shows them)
     } catch (e) { report(e); } finally { clearTimeout(safety); done(); }
+  }
+  function iconsRefresh() {   // (Neopets Enhance's own pictures of icons, the bar's gear among them: read from the page again, so they're the theme's)
+    if (document.readyState === 'loading') return;   // (the page's own start reads them, after this)
+    try { applyAll(); } catch (e) { report(e); }
+    const g = hub && hub.win.querySelector('[data-g="hubgear"]'), u = g && iconOf(['side:/settings/', 'el:#navprofiledropdown__2020 .nav-settings-icon']);
+    if (g && u) g.style.backgroundImage = `url("${cssUrl(u)}")`;
+  }
+  function mySwatchPaint(el, t) {   // (a theme of yours in small, as its pop-ups have it: colours, gradient and pattern, recoloured as it has it)
+    if (!el || !t) return;
+    const pop = (t.v && t.v.pop) || {}, base = themeData().sw[t.base] || null, src = myPatSrc(t, 'pop'), o = pop.tint;
+    const grad = pop.top && pop.bottom ? `linear-gradient(${pop.top}, ${pop.bottom})` : (!pop.top && base && base.grad) || '';
+    const paint = (u) => { el.style.backgroundImage = [u ? `url("${cssUrl(u)}")` : '', grad].filter(Boolean).join(', ') || 'none'; };
+    el.classList.remove('is-unknown');
+    el.style.backgroundColor = pop.top || (base && base.bg) || '#ece8dc';
+    if (src && tintOn(o) && (o.mode || isSvg(src))) { const want = `${src}|${tintKey(o)}`; el.dataset.want = want; paint(''); tintSmall(src, o).then((u) => { if (u && el.dataset.want === want) paint(u); }).catch(report); }
+    else { delete el.dataset.want; paint(src); }
   }
   const myBaseHref = (f) => { const t = THEMES.find((x) => x[1] === f); return (t && themeData().css[t[0]]) || `${NPI}themes/h5/${f}/theme-${f}.css`; };
   function myOn(t, early) {   // (a theme of yours on this page: its base's sheet in place of your account's, its own look over it, its icons)
@@ -8759,6 +9036,7 @@
     let st = document.getElementById('bnp-my-style');
     if (!st) { st = document.createElement('style'); st.id = 'bnp-my-style'; (document.head || root).append(st); }
     st.textContent = myCss(t);
+    myFonts(t);
     const want = myBaseHref(t.base);
     const fix = (l) => { if (!l.hasAttribute('data-bnp-was')) l.setAttribute('data-bnp-was', l.href); if (themeOfUrl(l.href) !== t.base) l.href = want; };
     if (early && document.readyState === 'loading') {   // (the page's own sheet, swapped as it comes: before anything is drawn)
@@ -8804,7 +9082,7 @@
   }
   function themeCssOf(id) { const d = themeData(); if (d.css[id]) return d.css[id]; const f = themeFolder(id); return f ? `https://images.neopets.com/themes/h5/${f}/theme-${f}.css` : ''; }
   function themeSwatchOf(id) {   // ({ bg, pat, grad }: the theme's pop-up header, its colour, pattern and gradient; yours read from the page itself)
-    if (id && id === themeNowId()) { const h = themeHead(); if (h) return { bg: h.bg, pat: (/url\(["']?([^"')]+)/.exec(h.pat || '') || [])[1] || '', grad: h.grad || '' }; }
+    if (id && id === themeNowId() && !document.documentElement.classList.contains('bnp-my')) { const h = themeHead(); if (h) return { bg: h.bg, pat: (/url\(["']?([^"')]+)/.exec(h.pat || '') || [])[1] || '', grad: h.grad || '' }; }   // (not while a theme of yours is on it)
     const f = themeFolder(id);
     return (f && themeData().sw[f]) || null;
   }
@@ -8863,15 +9141,22 @@
       if (Object.keys(got).length) { const d = themeData(); Object.assign(d.sw, got); themeDataSet(d); themeMenuPaint(); if (stOn()) stThemes(); if (hub && hubPage === 'themes' && !lookAt && hub.win.classList.contains('open')) paintHub(); }   // (General Settings' swatches too)
     } finally { themeSwBusy = false; }
   }
-  function themeMenuPaint() {   // (the theme rows as they are now: ✓ on yours, the one on its way, every colour known)
-    const now = themeNowId();
+  function themeMenuPaint() {   // (the theme rows as they are now: ✓ on the one you have on, the one on its way, every colour known)
+    const worn = myWorn(), now = worn ? 0 : themeNowId();
     for (const a of $$('a[data-bnp="theme"]')) {
       const id = Number(a.dataset.theme), li = a.querySelector('li');
       if (li) { li.classList.toggle('bnp-cur', id === now); li.classList.toggle('is-busy', id === themeBusy); }
       a.title = id === now ? 'Your theme now' : `Put on ${(a.querySelector('h4') || {}).textContent || 'this theme'}`;
       themeSwatchPaint(a.querySelector('.dropdown-icon'), id);
     }
-    for (const r of $$('a[data-fold-key$=":themes"]')) themeSwatchPaint(r.querySelector('.dropdown-icon'), now);
+    for (const a of $$('a[data-bnp="mytheme"]')) {   // (Neopets Enhance's and yours)
+      const t = myOf(a.dataset.mytheme), on = !!t && t === worn, li = a.querySelector('li');
+      if (li) li.classList.toggle('bnp-cur', on);
+      if (!t) continue;
+      a.title = on ? 'Your theme now, in this browser' : `Put on ${t.name}, in this browser`;
+      mySwatchPaint(a.querySelector('.dropdown-icon'), t);
+    }
+    for (const r of $$('a[data-fold-key$=":themes"]')) { const ic = r.querySelector('.dropdown-icon'); if (worn && ic) { ic.classList.add('bnp-swatch'); mySwatchPaint(ic, worn); } else themeSwatchPaint(ic, now); }
   }
   let themeBusy = 0;
   async function themePick(id) {   // (on at once; Neopets saves it meanwhile; if it doesn't, yours comes back)
@@ -8995,7 +9280,7 @@
     themeFootKept = undefined;
     try { applyAll(); } catch (e) { report(e); }
     for (const h of $$('.bnp-hub-head')) { try { themeWin(h.parentElement); } catch (_) { /* */ } }
-    try { hubPal(); footPals(); } catch (e) { report(e); }   // (Settings' corner and the foot of the page: the new theme's Neopians)
+    try { hubPal(); boardPal(); footPals(); } catch (e) { report(e); }   // (Settings' corner and the foot of the page: the new theme's Neopians)
     for (const b of $$('[data-bnp="rems"]')) remAccent(b);
     for (const b of $$('[data-bnp="run"]')) themeRun(b);
     for (const b of $$('.bnp-sr')) themeSr(b);
@@ -9143,6 +9428,8 @@
     if (dk) { e.preventDefault(); e.stopPropagation(); closeDropdowns(); dockToggle(); return; }
     const nwp = t.closest('[data-bnp="nmwpop"]');   // (Write a Neomail's own row goes to Neopets' page; its little window button, the window)
     if (nwp) { e.preventDefault(); e.stopPropagation(); closeDropdowns(); nmwOpen(); return; }
+    const mt = t.closest('a[data-bnp="mytheme"]');
+    if (mt) { e.preventDefault(); e.stopPropagation(); if (S.wear !== mt.dataset.mytheme) { myPreviewOf = ''; myWear(mt.dataset.mytheme); } return; }   // (Neopets Enhance's or yours: on at once, in this browser; the menu stays open)
     const th = t.closest('a[data-bnp="theme"]');
     if (th) { e.preventDefault(); e.stopPropagation(); themePick(Number(th.dataset.theme)); return; }   // (the menu stays open: the ✓ moves, and another can be tried)
     const go = t.closest('[data-dgo]');
@@ -10017,11 +10304,86 @@
     });
     $$('[data-bnp="search"] .bnp-q').forEach((q) => { q.placeholder = s.hint; });
   }
-  function searchList() {   // (your last searches, offered as you type)
-    let dl = document.getElementById('bnp-searches');
-    if (!dl) { dl = document.createElement('datalist'); dl.id = 'bnp-searches'; dl.setAttribute('data-bnp', 'searches'); document.body.append(dl); }
-    dl.innerHTML = (get('searches', []) || []).map((v) => `<option value="${esc(v)}"></option>`).join('');
+  // your last searches: a ▼ at the end of the box opens them (or ↓ in the box), never a click in the box itself
+  let recentOpen = null;
+  const recentList = () => (get('searches', []) || []).filter((x) => typeof x === 'string' && x);
+  function searchList() {   // (the ▼ shows only when there's something to show; the browser's own list from before, gone)
+    const dl = document.getElementById('bnp-searches');
+    if (dl) dl.remove();
+    const any = recentList().length > 0;
+    for (const b of $$('[data-bnp="recentbtn"]')) b.hidden = !any;
   }
+  function recentFor(inp) {
+    const form = inp && (inp.form || inp.parentElement);
+    if (!form || form.querySelector('[data-bnp="recentbtn"]')) return;
+    inp.removeAttribute('list');
+    inp.setAttribute('autocomplete', 'off');   // (the browser's own memory of this box: never over it)
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'bnp-recentbtn';
+    btn.setAttribute('data-bnp', 'recentbtn');
+    btn.setAttribute('aria-haspopup', 'listbox');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-label', 'Your last searches');
+    btn.title = 'Your last searches';
+    btn.innerHTML = '<span class="bnp-scopechev"></span>';
+    const menu = document.createElement('div');
+    menu.className = 'nav-dropdown__2020 bnp-scopes bnp-recents';
+    menu.setAttribute('data-bnp', 'recents');
+    menu.setAttribute('role', 'listbox');
+    menu.hidden = true;
+    inp.after(btn);
+    form.append(menu);
+    btn.addEventListener('mousedown', (e) => e.preventDefault());   // (the box keeps what's typed in it, and its place)
+    btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); if (menu.hidden) recentShow(inp, btn, menu, false); else recentClose(); });
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' && menu.hidden && !e.altKey && recentList().length) { e.preventDefault(); recentShow(inp, btn, menu, true); }
+      else if (e.key === 'Escape' && !menu.hidden) { e.preventDefault(); e.stopPropagation(); recentClose(); }
+    });
+    menu.addEventListener('mousedown', (e) => e.preventDefault());
+    menu.addEventListener('click', (e) => { const a = e.target.closest('[data-recent]'); if (!a) return; e.preventDefault(); e.stopPropagation(); recentPick(inp, a.dataset.recent); });
+    menu.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); recentMove(menu, inp, e.key === 'ArrowDown' ? 1 : -1); }
+      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const a = e.target.closest('[data-recent]'); if (a) recentPick(inp, a.dataset.recent); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); recentClose(); inp.focus(); }
+      else if (e.key === 'Tab') recentClose();
+    });
+  }
+  function recentShow(inp, btn, menu, keys) {
+    recentClose();
+    closeScopes();
+    const list = recentList();
+    if (!list.length) return;
+    menu.innerHTML = '<h5>Your last searches</h5><ul>' + list.map((v, i) => `<a data-recent="${i}" role="option" tabindex="-1"><li><h4>${esc(v)}</h4></li></a>`).join('') + '</ul>';
+    menu.style.left = `${Math.max(0, inp.offsetLeft)}px`;
+    menu.style.top = `${inp.offsetTop + inp.offsetHeight + 7}px`;
+    menu.style.width = `${Math.max(200, inp.offsetWidth + btn.offsetWidth)}px`;
+    menu.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    recentOpen = { inp, btn, menu };
+    if (keys) { const a = menu.querySelector('[data-recent]'); if (a) a.focus({ preventScroll: true }); }
+  }
+  function recentClose() {
+    if (!recentOpen) return;
+    recentOpen.menu.hidden = true;
+    recentOpen.btn.setAttribute('aria-expanded', 'false');
+    recentOpen = null;
+  }
+  function recentMove(menu, inp, d) {
+    const items = [...menu.querySelectorAll('[data-recent]')], i = items.indexOf(document.activeElement && document.activeElement.closest ? document.activeElement.closest('[data-recent]') : null);
+    if (i <= 0 && d < 0) { inp.focus(); return; }   // (up from the first: back in the box)
+    items[(i + d + items.length) % items.length].focus({ preventScroll: true });
+  }
+  function recentPick(inp, i) {   // (in the box, ready to search: Enter, or the magnifying glass)
+    const v = recentList()[Number(i)];
+    recentClose();
+    if (v == null) return;
+    inp.value = v;
+    inp.style.color = '';
+    inp.focus();
+    try { inp.setSelectionRange(v.length, v.length); } catch (_) { /* */ }
+  }
+  document.addEventListener('click', (e) => { if (recentOpen && !(e.target instanceof Element && e.target.closest('.bnp-recents, [data-bnp="recentbtn"]'))) recentClose(); });
   function searchExtras() {
     // Neopets' own search bar (the magnifying glass): the "where" button before its box
     const form = $('#navSearchH5');
@@ -10029,8 +10391,8 @@
     const had = form && form.querySelector('[data-bnp="scopebtn"]');
     if (S.features.scopes && inp) {
       if (!had) { const [b, m] = scopePicker(); b.classList.add('bnp-scope-bar'); inp.before(b); form.append(m); }
-      inp.setAttribute('list', 'bnp-searches');
-    } else if (had) { had.remove(); const m = form.querySelector('.bnp-scopes'); if (m) m.remove(); if (inp) inp.removeAttribute('list'); }
+      recentFor(inp);
+    } else if (had) { had.remove(); for (const x of form.querySelectorAll('.bnp-scopes, [data-bnp="recentbtn"]')) x.remove(); if (inp) inp.removeAttribute('list'); }
     // a box of its own in the bar, dressed like the bar's clock
     const d = dockEl();
     let f = $('[data-bnp="search"]');
@@ -10042,9 +10404,10 @@
       f.setAttribute('role', 'search');
       const [b, m] = scopePicker();
       f.append(b);
-      f.insertAdjacentHTML('beforeend', '<input type="search" class="bnp-q" autocomplete="off" spellcheck="false" list="bnp-searches" aria-label="Search"><button type="submit" class="bnp-go" title="Search" aria-label="Search"></button>');
+      f.insertAdjacentHTML('beforeend', '<input type="search" class="bnp-q" autocomplete="off" spellcheck="false" aria-label="Search"><button type="submit" class="bnp-go" title="Search" aria-label="Search"></button>');
       f.append(m);
       d.prepend(f);
+      recentFor(f.querySelector('.bnp-q'));
     }
     if (f) boxLook(f);
     paintScopes();
@@ -10082,6 +10445,7 @@
     const list = (get('searches', []) || []).filter((x) => x.toLowerCase() !== v.toLowerCase());
     list.unshift(v.slice(0, 60));
     set('searches', list.slice(0, 15));
+    searchList();
   }
   function runSearch(scope, v) {
     remember(v);
@@ -10517,23 +10881,54 @@
   const hubTabs = (kind) => PAGES.filter((p) => p[2] === kind && p[0] !== 'dailies');   // (a Menus or Folders page's tabs: the Dailies folder has its own line)
   const hubLast = { menu: 'community', folder: 'boards' };
   function openHub(page) {
-    if (!hub) buildHub();
+    if (!hub || !hub.win.isConnected || !hub.veil.isConnected) { if (hub) { hub.win.remove(); hub.veil.remove(); } buildHub(); }   // (built again if the page lost it on the way)
     page = PAGE_WAS[page] || page;
     if (page && PAGES.some((p) => p[0] === page)) { if (page !== hubPage) hubSel = null; hubPage = page; }
     hub.find.value = '';   // (a page asked for: shown, not what you'd looked for)
     hub.idx = null;   // (what's found: as the pages are now)
     hub.win.classList.add('open');
     hub.veil.classList.add('open');
-    themeHub();
-    paintHub();
+    try { themeHub(); } catch (e) { report(e); }   // (the window opens whatever its dressing does)
+    try { paintHub(); } catch (e) { report(e); hub.main.innerHTML = '<p class="bnp-note">This page didn’t come just now: choose another, or reload the page.</p>'; }
     hub.win.focus({ preventScroll: true });
   }
+  let peekBack = null, peekWas = null;
+  function hubPeek(on) {   // (Settings out of sight for a moment: the page as it is now, the part you're changing scrolled into view)
+    if (!hub) return;
+    hub.win.classList.toggle('is-peek', on);
+    hub.veil.classList.toggle('is-peek', on);
+    if (on) {
+      if (!peekBack) {
+        peekBack = document.createElement('button');
+        peekBack.type = 'button';
+        peekBack.className = 'button-default__2020 button-yellow__2020 bnp-peekback';
+        peekBack.setAttribute('data-bnp', 'peekback');
+        peekBack.textContent = 'Back to Settings';
+        peekBack.addEventListener('click', () => hubPeek(false));
+        document.body.append(peekBack);
+      }
+      peekBack.hidden = false;
+      if (!peekWas) {
+        peekWas = { y: scrollY };
+        const where = hubPage === 'themes' && myKey(lookAt) ? ({ foot: 'end', who: 'end' })[myTab] || (['bar', 'logo', 'icons', 'menus', 'colours'].includes(myTab) ? 'top' : '') : '';
+        if (where === 'end') scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+        else if (where === 'top') scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } else {
+      if (peekBack) peekBack.hidden = true;
+      if (peekWas) { scrollTo({ top: peekWas.y }); peekWas = null; }
+    }
+  }
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && hub && hub.win.classList.contains('is-peek')) { e.preventDefault(); e.stopPropagation(); hubPeek(false); } }, true);
   function closeHub() {
     if (!hub) return;
+    hubPeek(false);
     lookPick = null;
     lookPickPaint();
     myPick = null;
     myPickPaint();
+    myImp = false;
+    myImpPaint();
     myColourClose();
     myPreviewEnd();
     hub.win.classList.remove('open');
@@ -10557,6 +10952,8 @@
     win.innerHTML = `
       <div class="popup-header__2020 bnp-hub-head">
         <h3><i class="bnp-hub-gear" data-g="hubgear" aria-hidden="true" hidden></i>Settings</h3>
+        <button type="button" class="button-default__2020 button-yellow__2020 bnp-headbtn bnp-peek" data-g="peek" title="Peek at the page (hold for a quick look)" aria-label="Peek at the page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1.8 12s3.7-6.6 10.2-6.6S22.2 12 22.2 12s-3.7 6.6-10.2 6.6S1.8 12 1.8 12z"/><circle cx="12" cy="12" r="3.1"/></svg></button>
+        <button type="button" class="button-default__2020 button-yellow__2020 bnp-headbtn bnp-max" data-g="max" title="Full screen" aria-label="Full screen" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="is-out" d="M4 9.5V4h5.5M14.5 4H20v5.5M20 14.5V20h-5.5M9.5 20H4v-5.5"/><path class="is-in" d="M9.5 4v5.5H4M20 9.5h-5.5V4M14.5 20v-5.5H20M4 14.5h5.5V20"/></svg></button>
         <button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button>
         <div class="popup-header-pattern__2020"></div>
       </div>
@@ -10573,7 +10970,29 @@
     hub = { veil, win, main: win.querySelector('[data-g="main"]'), find: win.querySelector('[data-g="find"]') };
     win.querySelector('.bnp-x').addEventListener('click', closeHub);
     win.querySelector('[data-g="done"]').addEventListener('click', closeHub);
+    const max = win.querySelector('[data-g="max"]'), maxSet = (on) => { win.classList.toggle('is-max', on); max.setAttribute('aria-pressed', String(on)); max.title = on ? 'Back to its own size' : 'Full screen'; max.setAttribute('aria-label', max.title); };
+    try { maxSet(localStorage.getItem('bnp-hubmax') === '1'); } catch (_) { maxSet(false); }
+    const maxFlip = () => { const on = !win.classList.contains('is-max'); maxSet(on); try { localStorage.setItem('bnp-hubmax', on ? '1' : '0'); } catch (_) { /* */ } requestAnimationFrame(() => hubPal()); };   // (the whole browser window, a little edge left; remembered)
+    max.addEventListener('click', maxFlip);
+    win.querySelector('.bnp-hub-head').addEventListener('dblclick', (e) => { if (!e.target.closest('button')) maxFlip(); });
+    const peek = win.querySelector('[data-g="peek"]');
+    peek.addEventListener('pointerdown', (e) => {   // (a click: the page until you come back; held: the page while it's held)
+      if (e.button !== 0) return;
+      e.preventDefault();
+      try { peek.setPointerCapture(e.pointerId); } catch (_) { /* */ }
+      const at = Date.now();
+      hubPeek(true);
+      const up = () => { peek.removeEventListener('pointerup', up); peek.removeEventListener('pointercancel', up); if (Date.now() - at > 350) hubPeek(false); };
+      peek.addEventListener('pointerup', up);
+      peek.addEventListener('pointercancel', up);
+    });
+    peek.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hubPeek(true); } });
     win.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && /^[zy]$/i.test(e.key) && !(e.target instanceof Element && e.target.closest('input:not([type="range"]):not([type="checkbox"]), textarea, select, [contenteditable="true"]'))) {   // (your theme: back a step, or forward again)
+        const t = hubPage === 'themes' && myEditable(lookAt);
+        if (t) { e.preventDefault(); myHistStep(t, e.key.toLowerCase() === 'z' && !e.shiftKey); }
+        return;
+      }
       if (e.key !== 'Escape') return;
       const ic = win.querySelector('.bnp-icons');
       if (ic) { ic.remove(); return; }
@@ -10692,21 +11111,23 @@
     ],
   };
   // Who stands where: each theme's Neopians at the foot of its pages (left and right, a different one on each page, as the old themes
-  // did) and in Settings' corner (the next one each time it opens). Chosen in Settings › Themes; until then Neopets' own at the foot and
+  // did; Either side's on whichever side a page picks) and in Settings' corner (the next one each time it opens). Chosen in Settings › Themes; until then Neopets' own at the foot and
   // the first picks above in the corner. One of them: { p: its picture (a path on Neopets' image server, or an address), n: its name,
   // t: turned to face right, c: how much of it stands below the edge, b: the figure in the picture, k: its largest scale }
   const palSpec = (v) => { const [n, p, [W, H], [x, y, w, h], c = 0, t = 0, k] = v; return { p, n, t, c, b: [W, H, x, y, w, h], ...(k ? { k } : {}) }; };
   const firstPals = (f) => { const v = HUB_PALS[f]; return !v ? [] : (Array.isArray(v[0]) ? v : [v]).map(palSpec); };
-  function lookStart(f) {   // (how a theme's lists start: Neopets' own two at the foot and the first picks in the corner; a theme of yours, as it was made)
-    const m = myKey(f);
-    if (m) return { left: (m.looks && m.looks.left) || [], right: (m.looks && m.looks.right) || [], corner: (m.looks && m.looks.corner) || [] };
-    return { left: ['own'], right: ['own'], corner: firstPals(f) };
+  function lookStart(f) {   // (how a theme's lists start: Neopets' own two at the foot and the first picks in each window's corner; a theme of yours, as it was made)
+    const m = myKey(f), lk = (m && m.looks) || {};
+    if (m) return { left: lk.left || [], right: lk.right || [], both: lk.both || [], corner: lk.corner || [], board: lk.board || lk.corner || [] };
+    return { left: ['own'], right: ['own'], both: [], corner: firstPals(f), board: firstPals(f) };
   }
-  function lookOf(f) {   // (a theme's three lists: yours, or as they start)
-    const mine = (S.looks && S.looks[f]) || {}, st = lookStart(f);
-    return { left: Array.isArray(mine.left) ? mine.left : st.left, right: Array.isArray(mine.right) ? mine.right : st.right, corner: Array.isArray(mine.corner) ? mine.corner : st.corner };
+  function lookOf(f) {   // (a theme's lists: yours, or as they start)
+    const mine = (S.looks && S.looks[f]) || {}, st = lookStart(f), one = (k) => (Array.isArray(mine[k]) ? mine[k] : st[k]);
+    return { left: one('left'), right: one('right'), both: one('both'), corner: one('corner'), board: one('board') };
   }
   function lookSet(f, slot, list) {   // (one list changed and kept; as it starts again, nothing kept)
+    const mt = myEditable(f);
+    if (mt) myHistPush(mt, 'looks');   // (a theme of yours: who stands where is part of it, so Undo has it too)
     const all = { ...(S.looks || {}) }, mine = { ...(all[f] || {}) };
     if (JSON.stringify(list) === JSON.stringify(lookStart(f)[slot])) delete mine[slot]; else mine[slot] = list;
     if (Object.keys(mine).length) all[f] = mine; else delete all[f];
@@ -10719,7 +11140,13 @@
     return NPI + p;
   }
   let figKept = null;
-  const figKeep = () => { if (!figKept) { try { figKept = JSON.parse(localStorage.getItem('bnp-figs') || '{}') || {}; } catch (_) { figKept = {}; } } return figKept; };
+  const figKeep = () => {
+    if (!figKept) {
+      try { figKept = JSON.parse(localStorage.getItem('bnp-figs2') || '{}') || {}; } catch (_) { figKept = {}; }
+      try { localStorage.removeItem('bnp-figs'); } catch (_) { /* (measured before the see-through parts counted) */ }
+    }
+    return figKept;
+  };
   function figBox(sp) {   // (where the figure is in its picture: known, kept, or read from the picture itself once)
     if (sp.b) return Promise.resolve(sp.b);
     const url = lookUrl(sp.p), kept = figKeep()[url];
@@ -10738,12 +11165,12 @@
           g.drawImage(im, 0, 0, w, h);
           const d = g.getImageData(0, 0, w, h).data;
           let x0 = w, y0 = h, x1 = -1, y1 = -1;
-          for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 200) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+          for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }   // (the see-through parts too, glows and wisps: nothing that shows is ever cut)
           if (x1 >= 0) { const X = Math.max(0, Math.floor(x0 / s) - 1), Y = Math.max(0, Math.floor(y0 / s) - 1); box = [W, H, X, Y, Math.min(W - X, Math.ceil((x1 + 1) / s) + 1 - X), Math.min(H - Y, Math.ceil((y1 + 1) / s) + 1 - Y)]; }
         } catch (_) { /* (a picture from somewhere that won't be read: all of it) */ }
         const all = figKeep();
         all[url] = box;
-        try { localStorage.setItem('bnp-figs', JSON.stringify(all)); } catch (_) { /* */ }
+        try { localStorage.setItem('bnp-figs2', JSON.stringify(all)); } catch (_) { /* */ }
         done(box);
       };
       im.onerror = () => done(null);
@@ -10756,7 +11183,7 @@
     el.className = 'bnp-fig';
     el.setAttribute('aria-hidden', 'true');
     el.style.aspectRatio = `${w} / ${vis}`;
-    if (side === 'right' ? !sp.t : !!sp.t) el.classList.add('is-turned');   // (facing in: right on the left, left on the right)
+    if (side && (side === 'right' ? !sp.t : !!sp.t)) el.classList.add('is-turned');   // (facing in: right on the left, left on the right; no side: as drawn)
     const img = document.createElement('img');
     img.alt = '';
     img.decoding = 'async';
@@ -10771,61 +11198,102 @@
     return el;
   }
   function footPals() {   // (the foot of the page: one of this theme's Neopians on each side, a different one on each page)
-    const L = lookOf(nbcTheme()), used = new Set();
-    for (const side of ['left', 'right']) {
+    const ask = (footPals.ask = (footPals.ask || 0) + 1), L = lookOf(nbcTheme()), used = new Set(), either = L.both.filter((x) => x && x.p);
+    for (const side of Math.random() < 0.5 ? ['left', 'right'] : ['right', 'left']) {   // (either side first: Either side's as likely on each)
       const slot = document.querySelector(`.footer-npcs__2020 .nav-npc-${side}__2020`);
       if (!slot) continue;
       for (const o of slot.querySelectorAll('.bnp-fig')) o.remove();
       slot.classList.remove('bnp-footpal');
-      const list = L[side].filter((x) => x === 'own' || (x && x.p));
+      const mine = L[side].filter((x) => x === 'own' || (x && x.p)), list = [...mine, ...either];
       if (list.length === 1 && list[0] === 'own') continue;   // (Neopets' own, as it is)
       if (!list.length) { slot.classList.add('bnp-footpal'); continue; }   // (no one on this side)
-      const free = list.filter((x) => x === 'own' || !used.has(x.p)), from = free.length ? free : list;
+      const free = list.filter((x) => x === 'own' || !used.has(x.p)), from = free.length ? free : mine;   // (never the same one on both sides, unless both sides' own lists have them)
+      if (!from.length) { slot.classList.add('bnp-footpal'); continue; }
       const sp = from[Math.floor(Math.random() * from.length)];
       if (sp === 'own') continue;
       used.add(sp.p);
       slot.classList.add('bnp-footpal');   // (Neopets' own picture steps aside)
       figBox(sp).then((box) => {
-        if (!slot.isConnected) return;
+        if (ask !== footPals.ask || !slot.isConnected) return;   // (asked again meanwhile: only the last one stands there)
         if (!box) { slot.classList.remove('bnp-footpal'); return; }
-        const el = figEl(sp, box, side), [W] = box, vis = box[5] * (1 - (sp.c || 0));
-        el.classList.add(`is-${side}`);
-        el.style.maxHeight = `${Math.round(vis * (sp.k || (W >= 700 ? 0.3 : 1)))}px`;   // (never bigger than its picture: never blurry)
+        const el = footFig(sp, box, side, !mine.includes(sp));
         el.firstChild.onerror = () => { el.remove(); slot.classList.remove('bnp-footpal'); };
+        for (const o of slot.querySelectorAll('.bnp-fig')) o.remove();
         slot.append(el);
       }).catch(report);
     }
   }
-  function hubPal(next) {   // (standing on the footer, in the corner under the side list; with several, the next one each time Settings opens)
-    if (!hub) return;
-    const foot = hub.win.querySelector('.bnp-hub-foot'), t = nbcTheme(), all = S.features.hubPal ? lookOf(t).corner.filter((x) => x && x.p) : [];
-    const gone = () => { for (const o of foot.querySelectorAll('.bnp-pal')) o.remove(); hub.win.classList.remove('bnp-has-pal'); };
-    if (!all.length) { gone(); return; }
-    let i = 0;
-    if (all.length > 1) {
-      try { i = Number(localStorage.getItem(`bnp-pal-${t}`)) || 0; } catch (_) { /* */ }
-      if (next) { i = (i + 1) % all.length; try { localStorage.setItem(`bnp-pal-${t}`, String(i)); } catch (_) { /* */ } }
+  function footFig(sp, box, side, drawn) {   // (one at the foot of the page as their own settings have them: how much is below the edge, their size, how far past the side, turned; Either side's as drawn)
+    const cut = sp.y != null ? Math.min(0.85, Math.max(0, Number(sp.y))) : footCut(sp, box), vis = box[5] * (1 - cut);
+    const el = figEl({ ...sp, c: cut }, box, drawn ? '' : side);
+    if (sp.m) el.classList.toggle('is-turned');
+    el.classList.add(`is-${side}`);
+    if (drawn) el.classList.add('is-drawn');
+    el.dataset.p = sp.p;
+    if (sp.z != null) el.style.height = `${Math.round(Number(sp.z) * 100)}%`;
+    if (sp.x != null) el.style.setProperty('--out', `${side === 'left' ? -Number(sp.x) : Number(sp.x)}%`);
+    el.style.maxHeight = `${Math.round(vis * (sp.k || 1))}px`;   // (never bigger than its picture: never blurry)
+    return el;
+  }
+  function footCut(sp, box) {   // (how much of someone is below the edge at the foot of the page, as Neopets' own are cut: a picture cut already, as it is; a portrait a little more; a whole figure at the waist or the knees)
+    if (sp.c) return sp.c;
+    const [W, H, x, y, w, h] = box, foot = y + h >= H - 3;
+    if (foot && (x <= 2 || x + w >= W - 2) && y <= H * 0.15) return 0;
+    if (foot) return 0.28;
+    const r = h / Math.max(1, w);
+    return r >= 1.25 ? 0.4 : r >= 0.9 ? 0.3 : 0.18;
+  }
+  // A window's corner: someone who belongs with your theme, standing on its footer, the way the foot of Neopets' pages has two. Settings
+  // has its own list and the Dailies window its own; with several, the next one each time the window opens. Each one as you adjusted them
+  const PAL_WIN = { corner: () => hub, board: () => board };
+  const PAL_FEAT = { corner: 'hubPal', board: 'boardPal' };
+  const palCut = (sp) => (sp.y != null ? Math.min(0.85, Math.max(0, Number(sp.y))) : sp.c || 0);   // (how much of them is below the footer's edge)
+  function palFig(sp, box) {   // (one of them in a window's corner: 96 to 132 px tall where the picture allows, never past its own size; then their size, place, cut and turn)
+    const [W, , , , w, h] = box, c = palCut(sp), vis = Math.max(1, h * (1 - c)), most = sp.k || (W >= 700 ? 0.2 : 0.5);
+    const k0 = Math.min(132 / vis, 172 / w, 1, Math.max(most, 96 / vis)), k = Math.min(1, k0 * (sp.z != null ? Number(sp.z) || 1 : 1));   // (bigger only up to the picture's own size: never blurry)
+    const el = figEl({ ...sp, c }, box, 'left');
+    if (sp.m) el.classList.toggle('is-turned');
+    el.classList.add('bnp-pal');
+    el.dataset.p = sp.p;
+    el.style.height = `${Math.round(vis * k)}px`;
+    if (sp.x != null) el.style.setProperty('--out', `${-Number(sp.x)}%`);
+    return { el, w: Math.round(w * k * (1 - Math.max(0, Number(sp.x) || 0) / 100)), h: Math.round(vis * k) };
+  }
+  function winPal(slot, next, only) {   // (only: that one, while they're being adjusted)
+    const w = PAL_WIN[slot](), win = w && w.win;
+    if (!win) return;
+    const foot = win.querySelector('.bnp-hub-foot'), t = nbcTheme(), all = S.features[PAL_FEAT[slot]] ? (lookOf(t)[slot] || []).filter((x) => x && x.p) : [];
+    const gone = () => { for (const o of foot.querySelectorAll('.bnp-pal')) o.remove(); win.classList.remove('bnp-has-pal'); };
+    if (!all.length && !only) { gone(); return; }
+    let sp = only;
+    if (!sp) {
+      const key = `bnp-pal${slot === 'board' ? 'b' : ''}-${t}`;
+      let i = 0;
+      if (all.length > 1) {
+        try { i = Number(localStorage.getItem(key)) || 0; } catch (_) { /* */ }
+        if (next) { i = (i + 1) % all.length; try { localStorage.setItem(key, String(i)); } catch (_) { /* */ } }
+      }
+      sp = all[i % all.length];
     }
-    const sp = all[i % all.length], ask = (hubPal.ask = (hubPal.ask || 0) + 1);
+    const ask = (winPal[slot] = (winPal[slot] || 0) + 1);
     figBox(sp).then((box) => {
-      if (ask !== hubPal.ask) return;   // (another one asked for meanwhile)
+      if (ask !== winPal[slot] || !win.isConnected) return;   // (another one asked for meanwhile)
       if (!box) { gone(); return; }
-      const [W, , , , w, h] = box, vis = h * (1 - (sp.c || 0)), most = sp.k || (W >= 700 ? 0.2 : 0.5);
-      const k = Math.min(132 / vis, 172 / w, 1, Math.max(most, 96 / vis));   // (96 to 132 px tall where the picture allows; the smaller pictures at half size at most: crisp, edges clean)
-      const el = figEl(sp, box, 'left'), img = el.firstChild;
-      el.classList.add('bnp-pal');
-      el.style.height = `${Math.round(vis * k)}px`;
+      const { el, w: pw, h: ph } = palFig(sp, box), img = el.firstChild;
       img.style.visibility = 'hidden';
       img.onload = () => { img.style.visibility = ''; for (const o of foot.querySelectorAll('.bnp-pal')) if (o !== el) o.remove(); };   // (the last one stays until this one's here)
-      img.onerror = () => { el.remove(); if (!foot.querySelector('.bnp-pal')) hub.win.classList.remove('bnp-has-pal'); };
+      img.onerror = () => { el.remove(); if (!foot.querySelector('.bnp-pal')) win.classList.remove('bnp-has-pal'); };
       foot.prepend(el);
-      hub.win.style.setProperty('--bnp-pal-w', `${Math.round(w * k)}px`);
-      hub.win.classList.add('bnp-has-pal');
-      requestAnimationFrame(() => hub.win.style.setProperty('--bnp-pal-rise', `${Math.max(0, Math.round(vis * k) - foot.offsetHeight)}px`));   // (the side list's last lines scroll up past them)
+      win.style.setProperty('--bnp-pal-w', `${pw}px`);
+      win.classList.add('bnp-has-pal');
+      requestAnimationFrame(() => win.style.setProperty('--bnp-pal-rise', `${Math.max(0, ph - foot.offsetHeight)}px`));   // (the list above them scrolls up past them)
     }).catch(report);
   }
-  function palNote() {
-    const k = nbcTheme(), names = lookOf(k).corner.filter((x) => x && x.p).map((x) => x.n || 'someone');
+  function hubPal(next) { winPal('corner', next); }
+  function boardPal(next) { if (board && board.win.classList.contains('open')) winPal('board', next); }
+  function palAdjEnd() { if (!winPal.forced) return; winPal.forced = false; hubPal(); }   // (Settings' corner as it was, once no one in it is being adjusted)
+  function palNote(slot = 'corner') {
+    const k = nbcTheme(), names = (lookOf(k)[slot] || []).filter((x) => x && x.p).map((x) => x.n || 'someone');
     const who = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}, taking turns` : names[0];
     return `Someone who belongs with your theme, the way the foot of Neopets’ pages has two. ${who ? `For ${esc(nbcThemeName(k))}: ${esc(who)}.` : 'Your theme has no one yet.'} Choose them in Themes.`;
   }
@@ -11058,7 +11526,7 @@
   ];
   const LOOK_FROM = ['The Void Within', 'Faerie Festival', 'Negg Festival', 'Advent Calendar', 'Festival of Fears', 'Ancient Obelisk', 'Battledome', 'Site themes'];
   const lookFrom = (c) => c[1].replace(/ \d{4}$/, '');
-  let lookAt = '', lookPick = null;   // (the theme open in Themes; the picker: { slot, q, from, char })
+  let lookAt = '', lookPick = null, lookTileAll = [], lookAdj = null;   // (the theme open in Themes; the picker: { slot, q, from, char }; everyone its tile can show; the one being adjusted: { slot, i })
   function lookThemes() {   // ([folder, name, its number] for every theme: yours as General Settings lists them, then the rest)
     const seen = new Set(), out = [];
     const put = (id, name) => { const f = themeFolder(id); if (f && !seen.has(f)) { seen.add(f); out.push([f, name, id]); } };
@@ -11068,63 +11536,156 @@
   }
   // ---- Themes of your own, made and changed in Settings › Themes: shown on the page as you change them ----
   const MY_FIELDS = [   // [what it is, its part of the theme, [[key, name], …]]: every colour a theme has, by where it shows
-    ['The top bar', 'bar', [['top', 'Top'], ['mid', 'Middle'], ['bottom', 'Bottom'], ['line', 'Line under it'], ['glow', 'Glow under it'], ['text', 'Menu names'], ['clock', 'Clock'], ['clockLine', 'Clock’s edge'], ['clockText', 'Clock’s time']]],
+    ['The top bar', 'bar', [['top', 'Top'], ['mid', 'Middle'], ['bottom', 'Bottom'], ['line', 'Line under it'], ['glow', 'Glow under it'], ['text', 'Menu names'], ['textGlow', 'Menu names’ glow'], ['clock', 'Clock'], ['clockLine', 'Clock’s edge'], ['clockText', 'Clock’s time'], ['badge', 'Counts on its icons'], ['badgeText', 'The counts’ numbers']]],
     ['Menus', 'menu', [['bg', 'Background'], ['text', 'Writing'], ['line', 'Lines between'], ['hover', 'Pointed at'], ['border', 'Edge']]],
-    ['The profile menu', 'prof', [['top', 'Top'], ['bottom', 'Bottom'], ['item', 'Its rows'], ['small', 'Small writing'], ['link', 'Links'], ['box', 'Pet box'], ['boxLine', 'Pet box’s edge']]],
-    ['News, alerts and quests', 'news', [['bg', 'Background'], ['panel', 'Panels'], ['line', 'Lines'], ['head', 'Headings'], ['text', 'Writing'], ['link', 'Links'], ['visited', 'Links you’ve read']]],
-    ['Pop-ups and windows', 'pop', [['top', 'Top'], ['bottom', 'Bottom'], ['title', 'Titles'], ['glow', 'Glow round them']]],
-    ['The page', 'page', [['colour', 'Background']]],
-    ['The foot of the page', 'foot', [['colour', 'Background'], ['line', 'Line over it'], ['text', 'Writing']]],
+    ['The profile menu', 'prof', [['top', 'Top'], ['bottom', 'Bottom'], ['item', 'Its rows'], ['small', 'Small writing'], ['link', 'Links'], ['box', 'Pet box'], ['boxLine', 'Pet box’s edge'], ['clock', 'Its clock']]],
+    ['News, alerts and quests', 'news', [['bg', 'Background'], ['panel', 'Panels'], ['tab', 'Tabs not chosen'], ['line', 'Lines'], ['head', 'Headings'], ['text', 'Writing'], ['link', 'Links'], ['visited', 'Links you’ve read']]],
+    ['Pop-ups and windows', 'pop', [['top', 'Top'], ['bottom', 'Bottom'], ['line', 'Edge'], ['glow', 'Glow round them'], ['headLine', 'Line under the top'], ['footLine', 'Line over the foot'], ['body', 'Inside'], ['title', 'Titles'], ['titleEdge', 'Titles’ outline'], ['titleShadow', 'Titles’ shadow']]],
+    ['The page', 'page', [['colour', 'Background'], ['scroll', 'Scrollbar'], ['scrollTrack', 'Scrollbar’s track'], ['select', 'Writing you select: behind it'], ['selectText', 'Writing you select']]],
+    ['The pages’ box', 'box', [['colour', 'Its colour'], ['line', 'Its edge'], ['glow', 'Its glow']]],
+    ['Links', 'link', [['colour', 'Links'], ['hover', 'Pointed at']]],
+    ['The foot of the page', 'foot', [['colour', 'Background'], ['top', 'Top: with Bottom, a gradient'], ['bottom', 'Bottom'], ['line', 'Line over it'], ['glow', 'Glow over it'], ['text', 'Writing'], ['textGlow', 'Writing’s glow']]],
+    ['The home page', 'home', [['around', 'Around its scene'], ['plate', 'Name plate'], ['plateLine', 'Name plate’s edge'], ['plateText', 'Name plate’s writing']]],
     ['Neoboards', 'boards', [['bar', 'Bars and buttons'], ['button', 'Buttons pointed at'], ['link', 'Links'], ['hover', 'Links pointed at']]],
-    ['Links', 'link', [['hover', 'Pointed at']]],
   ];
-  const MY_PATS = [['bar', 'The top bar', 'Over the top bar’s colours'], ['page', 'The page', 'Behind everything'], ['pop', 'Pop-ups and windows', 'Their tops and feet'], ['foot', 'The foot of the page', 'Under the links']];
-  const MY_PROBE = {   // (where each colour shows on the page: read from it, so a colour you haven't changed starts as it looks)
-    'bar.top': ['.nav-top__2020', 'bgimg0'], 'bar.mid': ['.nav-top__2020', 'bgimg1'], 'bar.bottom': ['.nav-top__2020', 'bgimgN'], 'bar.line': ['.nav-top__2020', 'borderBottomColor'], 'bar.text': ['.nav-text__2020', 'color'],
+  const myHex = (c) => { const s = String(c || '').trim().toLowerCase(); if (/^#[0-9a-f]{8}$/.test(s)) return s.endsWith('ff') ? s.slice(0, 7) : s; return nbHex(s); };   // (#rrggbb, or #rrggbbaa when it's see-through)
+  const hexA = (c) => { const s = myHex(c); return s.length === 9 ? [s.slice(0, 7), parseInt(s.slice(7), 16) / 255] : [s, 1]; };   // (→ [#rrggbb, how solid, 0 to 1])
+  const withA = (hex, a) => (a == null || a >= 0.995 ? hex : `${hex}${Math.round(Math.max(0, a) * 255).toString(16).padStart(2, '0')}`);
+  const MY_FONTS = [['Cafeteria', 'Cafeteria: Neopets’ titles'], ['MuseoSansRounded700', 'Museo Sans Rounded, bold'], ['MuseoSansRounded500', 'Museo Sans Rounded'], ['Palanquin', 'Palanquin'], ['8bit', '8-bit']];   // (Neopets' own: every page has them)
+  const MY_GFONTS = ['Almendra', 'Audiowide', 'Baloo 2', 'Bangers', 'Bubblegum Sans', 'Caveat', 'Chewy', 'Cinzel', 'Cinzel Decorative', 'Creepster', 'Fredoka', 'Great Vibes', 'Grenze Gotisch', 'Henny Penny', 'Lilita One', 'Luckiest Guy', 'MedievalSharp', 'Mountains of Christmas', 'Nosifer', 'Orbitron', 'Patrick Hand', 'Pirata One', 'Press Start 2P', 'Silkscreen', 'Sniglet', 'Uncial Antiqua', 'UnifrakturMaguntia', 'VT323'];   // (from Google Fonts, fetched only when a theme uses one)
+  const MY_FONT_AT = { bar: ['.nav-text__2020, .nav-text-bottom__2020', 'The menus’ names'], menu: ['.nav-dropdown__2020 h4, .nav-dropdown__2020 h5, .nav-profile-dropdown__2020 ul li, .nav-profile-dropdown__2020 ul li h4, .nav-profile-dropdown-text, .news-dropdown-text__2020, .quests-dropdown-text__2020', 'The menus’ writing'], title: ['.popup-header__2020 h3', 'The pop-ups’ titles'], foot: ['.footer-copyright__2020, .footer-link__2020, .footer-link__2020 a', 'The foot’s writing'], page: ['#container__2020', 'The pages’ own writing'] };
+  const myFontOk = (f) => typeof f === 'string' && /^[A-Za-z0-9][A-Za-z0-9 ]{1,39}$/.test(f);
+  function myFonts(t) {   // (a Google Font a theme uses: fetched once a page)
+    const fs = (t && t.v && t.v.font) || {};
+    for (const k of Object.keys(MY_FONT_AT)) {
+      const f = fs[k];
+      if (!myFontOk(f) || MY_FONTS.some(([n]) => n === f) || document.querySelector(`link[data-bnp-font="${CSS.escape(f)}"]`)) continue;
+      const l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(f).replace(/%20/g, '+')}:wght@400;700&display=swap`;
+      l.setAttribute('data-bnp-font', f);
+      (document.head || document.documentElement).append(l);
+    }
+  }
+  const myFieldName = (path) => { const [part, k] = path.split('.'), a = MY_FIELDS.find((x) => x[1] === part), f = a && a[2].find((x) => x[0] === k); return f ? f[1] : k; };
+  const MY_PATS = [['bar', 'The top bar', 'Over the top bar’s colours'], ['page', 'The page', 'Behind everything'], ['pop', 'Pop-ups and windows', 'Their tops and feet'], ['foot', 'The foot of the page', 'Under the links'], ['home', 'Around the home page’s scene', ''], ['box', 'The pages’ box', '']];
+  const MY_ON = { 'bar.text': ['bar.mid', 'bar.top'], 'bar.clockText': ['bar.clock'], 'bar.badgeText': ['bar.badge'], 'menu.text': ['menu.bg'], 'prof.item': ['prof.top'], 'prof.small': ['prof.top'], 'news.text': ['news.bg'], 'news.head': ['news.panel', 'news.bg'], 'pop.title': ['pop.top'], 'foot.text': ['foot.colour', 'foot.top'], 'home.plateText': ['home.plate'] };   // (writing → what it's read on: "Hard to read" when the two are too close)
+  const MY_ON_HELP = { 'bar.text': 'bar.textGlow', 'pop.title': 'pop.titleEdge', 'foot.text': 'foot.textGlow' };   // (a glow or an outline round the writing: it reads anyway)
+  const MY_PROBE = {   // (where each colour shows on the page: read from it, so a colour you haven't changed starts as it looks. "!": always one made for the purpose)
+    'bar.top': ['.nav-top__2020', 'bgimg0'], 'bar.mid': ['.nav-top__2020', 'bgimg1'], 'bar.bottom': ['.nav-top__2020', 'bgimgN'], 'bar.line': ['.nav-top__2020', 'borderBottomColor'], 'bar.glow': ['.nav-top__2020', 'shadow'],
+    'bar.text': ['.nav-text__2020', 'color'], 'bar.textGlow': ['.nav-text__2020', 'tshadow'],
     'bar.clock': ['.nav-top__2020 .nav-top-nst', 'backgroundColor'], 'bar.clockLine': ['.nav-top__2020 .nav-top-nst', 'borderTopColor'], 'bar.clockText': ['.nav-top__2020 .nav-top-nst', 'color'],
-    'menu.bg': ['.nav-dropdown__2020', 'backgroundColor'], 'menu.text': ['.nav-dropdown__2020', 'color'], 'menu.border': ['.nav-dropdown__2020', 'borderTopColor'],
-    'pop.top': ['.popup-header__2020', 'bgimg0'], 'pop.bottom': ['.popup-header__2020', 'bgimgN'], 'pop.title': ['.popup-header__2020 h3', 'color'],
-    'page.colour': ['body', 'backgroundColor'], 'foot.colour': ['.footer__2020', 'backgroundColor'], 'foot.line': ['.footer__2020', 'borderTopColor'], 'foot.text': ['.footer-copyright__2020', 'color'],
-    'boards.bar': ['#boardIndex h3', 'backgroundColor'],
+    'bar.badge': ['!.nav-notif-dot__2020', 'bgimg0'], 'bar.badgeText': ['!.nav-notif-dot__2020', 'color'],
+    'menu.bg': ['.nav-dropdown__2020', 'backgroundColor'], 'menu.text': ['.nav-dropdown__2020', 'color'], 'menu.border': ['.nav-dropdown__2020', 'borderTopColor'], 'menu.line': ['!.nav-dropdown__2020 ul li', 'borderBottomColor'],
+    'prof.top': ['.nav-profile-dropdown__2020', 'bgimgN'], 'prof.bottom': ['.nav-profile-dropdown__2020', 'bgimg0'], 'prof.item': ['!.nav-profile-dropdown__2020 ul li', 'color'], 'prof.small': ['!.nav-profile-dropdown-text', 'color'], 'prof.link': ['!.nav-profile-dropdown-text a', 'color'],
+    'prof.box': ['.nav-profile-pet-box-lg__2020', 'backgroundColor'], 'prof.boxLine': ['.nav-profile-pet-box-sm__2020', 'borderTopColor'], 'prof.clock': ['.nav-profile-dropdown-clock__2020', 'color'],
+    'news.bg': ['#navnewsdropdown__2020', 'bgimg0'], 'news.panel': ['!.tabActive__2020', 'bgimg0'], 'news.tab': ['!.tabHidden__2020', 'bgimg0'], 'news.line': ['!#newstab__2020 ul li', 'borderBottomColor'], 'news.head': ['!#newstab__2020 ul li h4', 'color'], 'news.text': ['!.news-tab-content__2020 p', 'color'], 'news.link': ['!#newstab__2020 ul li a', 'color'],
+    'pop.top': ['.popup-header__2020', 'bgimg0'], 'pop.bottom': ['.popup-header__2020', 'bgimgN'], 'pop.title': ['.popup-header__2020 h3', 'color'], 'pop.titleShadow': ['.popup-header__2020 h3', 'tshadow'], 'pop.line': ['.togglePopup__2020', 'borderTopColor'], 'pop.glow': ['.togglePopup__2020', 'shadow'],
+    'pop.headLine': ['!.popup-header__2020', 'borderBottomColor'], 'pop.footLine': ['!.popup-footer__2020', 'borderTopColor'], 'pop.body': ['!.popup-body__2020', 'backgroundColor'],
+    'page.colour': ['body', 'backgroundColor'], 'link.colour': ['!a', 'color'],
+    'foot.colour': ['.footer__2020', 'backgroundColor'], 'foot.top': ['.footer__2020', 'bgimg0'], 'foot.bottom': ['.footer__2020', 'bgimgN'], 'foot.line': ['.footer__2020', 'borderTopColor'], 'foot.glow': ['.footer__2020', 'shadow'], 'foot.text': ['.footer-copyright__2020', 'color'], 'foot.textGlow': ['.footer-copyright__2020', 'tshadow'],
+    'home.around': ['!.hp-bg-grid__2020', 'backgroundColor'], 'home.plate': ['!.hp-carousel-nameplate', 'bgimg0'], 'home.plateText': ['!.hp-carousel-nameplate', 'color'],
+    'boards.bar': ['!#boardIndex h3', 'backgroundColor'], 'boards.link': ['!#boardIndex ul li h4', 'color'],
   };
   let myTab = 'who', myPreviewOf = '', myPick = null;   // (the editor's section; the theme being shown while you change it; the picture picker: { part })
+  const myFolds = {};   // (Themes' folded parts: which you've opened, while Settings stays open)
   const myEditable = (k) => { const t = myKey(k); return t && !t.built ? t : null; };
   function myProbeColour(path) {   // (a colour as the page shows it now)
-    const [sel, prop] = MY_PROBE[path] || [];
-    if (!sel) return '';
-    let el = document.querySelector(sel), box = null;
-    if (!el) {
+    const [sel0, prop] = MY_PROBE[path] || [];
+    if (!sel0) return '';
+    const made = sel0.startsWith('!'), sel = made ? sel0.slice(1) : sel0;
+    let el = made ? null : document.querySelector(sel), box = null;
+    if (!el) {   // (not on this page: made for a moment, out of sight, from its selector)
       box = document.createElement('div');
       box.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;pointer-events:none';
-      box.innerHTML = sel === '#boardIndex h3' ? '<div id="boardIndex"><ul><h3>x</h3></ul></div>' : sel.split(' ').reduceRight((inner, s) => `<div class="${s.replace(/^\./, '')}">${inner}</div>`, 'x');
+      let at = box;
+      for (const part of sel.split(/\s+/)) {
+        const m = /^([a-z][a-z0-9]*)?((?:[#.][\w-]+)*)$/i.exec(part);
+        if (!m) break;
+        const n = document.createElement(m[1] || 'div');
+        for (const x of m[2].match(/[#.][\w-]+/g) || []) { if (x[0] === '#') n.id = x.slice(1); else n.classList.add(x.slice(1)); }
+        if (n.tagName === 'A') n.href = '#';
+        at.append(n);
+        at = n;
+      }
+      at.textContent = 'x';
       (document.body || document.documentElement).append(box);
-      el = box.querySelector(sel.split(' ').pop().replace(/^(?!\.)/, '')) || box.firstElementChild;
+      el = at;
     }
-    const cs = getComputedStyle(el);
+    const cs = getComputedStyle(el), find = (s) => s.match(/rgba?\([^)]*\)|#[0-9a-f]{3,8}\b/gi) || [];
     let c = '';
-    if (prop.startsWith('bgimg')) { const all = cs.backgroundImage.match(/rgba?\([^)]*\)|#[0-9a-f]{3,8}\b/gi) || []; c = prop === 'bgimg0' ? all[0] : prop === 'bgimg1' ? all[1] : all[all.length - 1]; c = c || cs.backgroundColor; }
+    if (prop.startsWith('bgimg')) { const all = find(cs.backgroundImage); c = (prop === 'bgimg0' ? all[0] : prop === 'bgimg1' ? all[1] : all[all.length - 1]) || cs.backgroundColor; }
+    else if (prop === 'shadow' || prop === 'tshadow') c = find(prop === 'shadow' ? cs.boxShadow : cs.textShadow)[0] || '';
     else c = cs[prop];
     if (box) box.remove();
-    return nbHex(rgbToHex(c)) || '';
+    const m = /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+)(%?))?/.exec(c || ''), a = m && m[4] != null ? Number(m[4]) / (m[5] ? 100 : 1) : 1;
+    if (m && a <= 0) return '';
+    return withA(nbHex(rgbToHex(c)) || '', a) || '';
   }
   function rgbToHex(c) { const m = /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?/.exec(c || ''); if (!m) return c || ''; if (m[4] != null && Number(m[4]) === 0) return ''; return `#${[m[1], m[2], m[3]].map((x) => Math.round(Number(x)).toString(16).padStart(2, '0')).join('')}`; }
-  function myGet(t, path) { const [a, b] = path.split('.'); return t && t.v && t.v[a] ? t.v[a][b] : undefined; }
-  const MY_PAIRS = [['bar.top', 'bar.bottom'], ['prof.top', 'prof.bottom'], ['pop.top', 'pop.bottom']];   // (a gradient's two ends: one changed, the other kept as it looks)
-  function mySet(t, path, val, alone) {   // (one part of one of your themes: kept a moment later, shown at once)
-    const [a, b] = path.split('.');
+  function myGet(t, path) { let o = t && t.v; for (const k of path.split('.')) { if (!o || typeof o !== 'object') return undefined; o = o[k]; } return o; }
+  const MY_PAIRS = [['bar.top', 'bar.bottom'], ['prof.top', 'prof.bottom'], ['pop.top', 'pop.bottom'], ['foot.top', 'foot.bottom']];   // (a gradient's two ends: one changed, the other kept as it looks)
+  // Undo and Redo for a theme of yours: how it was before each change (its parts, its base, who stands where), while this page is open
+  const myHist = new Map();
+  function myHistPush(t, key) {
+    let h = myHist.get(t.id);
+    if (!h) myHist.set(t.id, (h = { past: [], next: [], key: '', at: 0 }));
+    const now = Date.now();
+    if (key && key === h.key && now - h.at < 900) { h.at = now; return; }   // (a slider dragged, a colour picked as it moves: one step)
+    h.past.push(JSON.stringify({ v: t.v || {}, base: t.base, looks: (S.looks || {})[`my:${t.id}`] || null }));
+    if (h.past.length > 100) h.past.shift();
+    h.next = [];
+    h.key = key;
+    h.at = now;
+    myHistPaint(t);
+  }
+  function myHistStep(t, back) {
+    const h = myHist.get(t.id), from = h && (back ? h.past : h.next), to = h && (back ? h.next : h.past);
+    if (!from || !from.length) { toast(back ? 'Nothing to undo' : 'Nothing to redo'); return; }
+    to.push(JSON.stringify({ v: t.v || {}, base: t.base, looks: (S.looks || {})[`my:${t.id}`] || null }));
+    const st = JSON.parse(from.pop()), all = { ...(S.looks || {}) };
+    h.key = '';
+    if (st.looks) all[`my:${t.id}`] = st.looks; else delete all[`my:${t.id}`];
+    S.looks = all;
+    myColourClose();
+    myRestore(t, st);
+    lookAdj = null;
+    changed();
+    if (lookAt === nbcTheme()) { footPals(); hubPal(); boardPal(); }
+    toast(back ? 'Undone' : 'Redone');
+  }
+  function myHistPaint(t) {   // (the two buttons: faded when there's nothing that way)
+    if (!hub) return;
+    const h = myHist.get(t.id);
+    for (const [k, list] of [['myundo', h && h.past], ['myredo', h && h.next]]) { const b = hub.main.querySelector(`[data-${k}]`); if (b) b.classList.toggle('is-off', !list || !list.length); }
+  }
+  function myPut(t, path, val) {   // (one part of a theme of yours, however deep, set or gone; a part left empty goes too)
+    const ks = path.split('.'), last = ks.pop(), chain = [];
     t.v = { ...(t.v || {}) };
-    t.v[a] = { ...(t.v[a] || {}) };
-    if (val == null || val === '') delete t.v[a][b]; else t.v[a][b] = val;
-    if (!Object.keys(t.v[a]).length) delete t.v[a];
-    if (!alone && val != null && val !== '') for (const pr of MY_PAIRS) { const o = pr[0] === path ? pr[1] : pr[1] === path ? pr[0] : ''; if (o && !myGet(t, o)) { const was = myProbeColour(o); if (was) mySet(t, o, was, true); } }
+    let o = t.v;
+    for (const k of ks) { chain.push([o, k]); o[k] = { ...(o[k] && typeof o[k] === 'object' ? o[k] : {}) }; o = o[k]; }
+    if (val == null || val === '') delete o[last]; else o[last] = val;
+    for (const [up, k] of chain.reverse()) { if (Object.keys(up[k]).length) break; delete up[k]; }
+  }
+  function mySetMany(t, entries, icons) {   // ([[path, value], …] at once: one save and one redraw for them all)
+    for (const [p, val] of entries) myPut(t, p, val);
+    clearTimeout(mySet.t);
+    mySet.t = setTimeout(saveNow, 700);
+    myShowNow(t, icons);
+  }
+  function mySet(t, path, val, alone) {   // (one part of one of your themes, however deep: kept a moment later, shown at once)
+    if (!alone) myHistPush(t, path);
+    myPut(t, path, val);
+    if (!alone && val != null && val !== '') for (const pr of MY_PAIRS) { const p2 = pr[0] === path ? pr[1] : pr[1] === path ? pr[0] : ''; if (p2 && !myGet(t, p2)) { const was = myProbeColour(p2); if (was) mySet(t, p2, was, true); } }
     clearTimeout(mySet.t);
     mySet.t = setTimeout(saveNow, 700);   // (a slider dragged: one save when you let go, never one a step)
-    myShowNow(t, a === 'icons');
+    myShowNow(t, /^(icons|logo)\.|\.(tint|pat)(\.|$)/.test(path));
   }
   function myShowNow(t, icons) {   // (the theme being changed, on the page as it is now)
     if (myPreviewOf !== t.id && S.wear !== t.id) return;
     const st = document.getElementById('bnp-my-style');
     if (st) st.textContent = myCss(t);
+    myFonts(t);
     if (icons) { clearTimeout(myShowNow.t); myShowNow.t = setTimeout(() => myIcons(t), 160); }
     themeHeadKept = null;
     themeBarKept = null;
@@ -11159,84 +11720,417 @@
     const t = { id: `t${Date.now().toString(36)}`, name: `${src.name} (yours)`, base: src.base, v: JSON.parse(JSON.stringify(src.v || {})) };
     S.myThemes = [...(S.myThemes || []), t];
     const L = lookOf(`my:${src.id}`);
-    S.looks = { ...(S.looks || {}), [`my:${t.id}`]: { left: L.left, right: L.right, corner: L.corner } };
+    S.looks = { ...(S.looks || {}), [`my:${t.id}`]: { left: L.left, right: L.right, both: L.both, corner: L.corner, board: L.board } };
     saveNow();
     return t;
   }
   const themeAccount = () => { const l = themeLinks().pop(); return themeOfUrl(l && (l.getAttribute('data-bnp-was') || l.href)) || (() => { try { return localStorage.getItem('bnp-themenow') || ''; } catch (_) { return ''; } })(); };
-  function myEditHtml(k) {   // (one of your themes: its colours, its pictures, its icons; who stands where is the page above)
+  const MY_ICON_NAMES = { 'community-icon': 'Community', 'games-icon': 'Games', 'explore-icon': 'Explore', 'shop-icon': 'Shop', 'premium-icon': 'NC Mall', 'search-icon': 'Search', 'quests-icon': 'Quests', 'bell-icon': 'Alerts', 'calendar-icon': 'Calendar', 'dropdown-arrow': 'Menus’ arrow',
+    compress: 'Pet box: smaller', expand: 'Pet box: bigger', 'carouselarrow-left': 'Home page: left arrow', 'carouselarrow-right': 'Home page: right arrow',
+    'profile-icon': 'Your profile', 'neopass-icon': 'NeoPass', 'mypets-icon': 'Your pets', 'customise-icon': 'Customise', 'chamber-icon': 'Styling Chamber', 'createpet-icon': 'Create a pet', 'adoptpet-icon': 'Adopt a pet', 'inventory-icon': 'Inventory', 'safetydeposit-icon': 'Safety Deposit Box', 'quickstock-icon': 'Quick Stock',
+    'transferlog-icon': 'Transfer log', 'myalbums-icon': 'Albums', 'bookshelf-icon': 'Bookshelf', 'closet-icon': 'Closet', 'gallery-icon': 'Gallery', 'stamps-icon': 'Stamps', 'tradingcards-icon': 'Trading cards', 'ncalbum-icon': 'NC Album', 'settings-icon': 'Settings', 'signout-icon': 'Log out' };
+  const MY_BLENDS = [['', 'As it starts'], ['normal', 'Normal'], ['multiply', 'Multiply: darkens'], ['screen', 'Screen: lightens'], ['overlay', 'Overlay'], ['soft-light', 'Soft light'], ['hard-light', 'Hard light'], ['darken', 'Darken'], ['lighten', 'Lighten'], ['color-burn', 'Colour burn'], ['color-dodge', 'Colour dodge'], ['color', 'Colour'], ['luminosity', 'Luminosity']];
+  const MY_SCENES = [['tvw:council', 'The Void Within: the council chamber']];   // (home page scenes that come with Neopets Enhance)
+  const MY_TABS = [['who', 'Characters'], ['bar', 'Top bar'], ['logo', 'Logo and icons'], ['menus', 'Menus'], ['pop', 'Pop-ups'], ['page', 'Page'], ['foot', 'Foot of the page'], ['home', 'Home page'], ['boards', 'Neoboards'], ['palette', 'Palette'], ['more', 'More']];
+  const MY_TURN_PICS = ['bar', 'page', 'pop', 'foot', 'home', 'icons', 'logo'];   // (the parts with a picture whose colours can turn with the rest)
+  function myPalette(t) {   // (every colour this theme sets, each with where it's used: most used first)
+    const by = new Map(), add = (p, c) => { if (!c) return; if (!by.has(c)) by.set(c, []); by.get(c).push(p); };
+    for (const [, part, keys] of MY_FIELDS) for (const [k] of keys) add(`${part}.${k}`, myHex(myGet(t, `${part}.${k}`)));
+    for (const part of MY_TURN_PICS) { const o = myGet(t, `${part}.tint`); if (o && o.mode === 'colour') add(`${part}.tint.colour`, nbHex(o.colour)); }
+    return [...by].map(([hex, paths]) => ({ hex, paths })).sort((a, b) => b.paths.length - a.paths.length);
+  }
+  const myWhere = (p) => { const [part, k] = p.split('.'), a = MY_FIELDS.find((x) => x[1] === part), area = a ? a[0] : part; return k === 'tint' ? `${area}: its picture’s colour` : `${area}: ${myFieldName(p)}`; };
+  let myTurn = null;   // (Turn them all, while it's being turned: every colour as it was before, and the pictures' colours)
+  function myTurnStart(t) {
+    const from = {}, had = {}, tints = {};
+    for (const [, part, keys] of MY_FIELDS) for (const [k] of keys) { const p = `${part}.${k}`, val = myGet(t, p), c = myHex(val || myProbeColour(p)); if (c) { from[p] = c; had[p] = val || ''; } }
+    for (const part of MY_TURN_PICS) tints[part] = myGet(t, `${part}.tint`) || null;
+    myHistPush(t, '');
+    myTurn = { id: t.id, from, had, tints, hue: 0, sat: 0, light: 0, pics: false };
+  }
+  function myTurnApply(t) {   // (every colour turned from how it was, together; at nought, exactly as it was)
+    if (!myTurn || myTurn.id !== t.id) return;
+    const o = { mode: 'hue', hue: myTurn.hue, sat: myTurn.sat, light: myTurn.light }, still = !o.hue && !o.sat && !o.light, fn = tintFn(o, { hue: 0, lum: 0.5 });
+    const entries = Object.entries(myTurn.from).map(([p, c]) => { const [h6, a] = hexA(c); return [p, still ? myTurn.had[p] : withA(unitHex(fn(hexUnit(h6))), a)]; });
+    for (const part of MY_TURN_PICS) if (part === 'icons' || part === 'logo' || myPatSrc(t, part)) entries.push([`${part}.tint`, myTurn.pics && !still ? { ...o } : myTurn.tints[part]]);
+    mySetMany(t, entries, true);
+  }
+  const MY_MOVES = { down: 'falling', up: 'rising', left: 'drifting left', right: 'drifting right', downleft: 'falling to the left', downright: 'falling to the right' };
+  function myEditHtml(k) {   // (one of your themes, a tab for each part of the page: all of that part in one place. Characters is the page above)
     const t = myKey(k);
     if (!t) return '';
-    const tabs = [['who', 'Who stands where'], ['colours', 'Colours'], ['pictures', 'Pictures'], ['icons', 'Icons and logo']];
-    const bar = `<div class="bnp-subtabs bnp-mytabs" role="tablist">${tabs.map(([v, l]) => `<button type="button" role="tab" data-mytab="${v}" aria-selected="${myTab === v}">${l}</button>`).join('')}</div>`;
+    if (!MY_TABS.some(([v]) => v === myTab)) myTab = 'who';
+    let bar = `<div class="bnp-subtabs bnp-mytabs" role="tablist">${MY_TABS.map(([v, l]) => `<button type="button" role="tab" data-mytab="${v}" aria-selected="${myTab === v}">${l}</button>`).join('')}</div>`;
     if (t.built) return myTab === 'who' ? bar : `${bar}<div class="bnp-card"><p class="bnp-note">${esc(t.name)} comes with Neopets Enhance, so its colours, pictures and icons stay as they are. Make your own copy to change any of them: it starts exactly the same.</p><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mycopy="${esc(t.id)}">Make your own copy</button></div>`;
+    const hist = myHist.get(t.id), tools = `<div class="bnp-mytools"><button type="button" class="bnp-pillbtn${hist && hist.past.length ? '' : ' is-off'}" data-myundo title="Undo (Ctrl+Z)"><span aria-hidden="true">↶</span>Undo</button><button type="button" class="bnp-pillbtn${hist && hist.next.length ? '' : ' is-off'}" data-myredo title="Redo (Ctrl+Y)"><span aria-hidden="true">↷</span>Redo</button><span class="bnp-myfind"><input type="search" data-myfind placeholder="Find an option…" aria-label="Find an option in this theme" spellcheck="false" autocomplete="off"><span class="bnp-myfindres" data-myfindres hidden></span></span><span class="bnp-note">Everything is kept as you change it. To see the page itself: the eye at the top.</span></div>`;
+    bar = tools + bar;
     if (myTab === 'who') return bar;
-    const sw = (path, name) => {
-      const val = myGet(t, path), shown = val || myProbeColour(path);
-      return `<div class="bnp-myc"><span>${esc(name)}</span><button type="button" class="bnp-myswatch${val ? '' : ' is-base'}" data-mycol="${path}" data-hex="${esc(shown || '#888888')}" style="background-color:${esc(shown || 'transparent')}" title="${val ? esc(val) : `As ${esc(nbcThemeName(t.base))} has it`}" aria-label="${esc(name)}: ${val ? esc(val) : 'as its base has it'}"></button>${val ? `<button type="button" class="bnp-myx" data-myclear="${path}" title="Back to ${esc(nbcThemeName(t.base))}’s" aria-label="Back to its base’s">×</button>` : ''}</div>`;
+    const baseName = esc(nbcThemeName(t.base)), probed = new Map();
+    const probe = (p) => { if (!probed.has(p)) probed.set(p, myProbeColour(p)); return probed.get(p); };
+    const colourOf = (p) => hexA(myGet(t, p) || probe(p))[0];
+    const lum = (hex) => { const [r, g, b] = hexUnit(hex).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const hard = (path) => {   // (writing too close to what it's on)
+      const on = MY_ON[path];
+      if (!on || (MY_ON_HELP[path] && myGet(t, MY_ON_HELP[path])) || (!myGet(t, path) && !on.some((p) => myGet(t, p)))) return '';   // (only once you've chosen one of the two: the base's own pictures may sit between them)
+      const a = colourOf(path), b = on.map(colourOf).find(Boolean);
+      if (!a || !b) return '';
+      const [l1, l2] = [lum(a), lum(b)].sort((x, y) => y - x), r = (l1 + 0.05) / (l2 + 0.05);
+      return r < 3 ? `<span class="bnp-mywarn" title="This writing and what it’s on are close: ${r.toFixed(1)} to 1 (3 to 1 or more reads well)">Hard to read</span>` : '';
     };
-    if (myTab === 'colours') {
-      return `${bar}<p class="bnp-note bnp-mylead">A colour you haven’t changed is ${esc(nbcThemeName(t.base))}’s own (its swatch has a dotted edge). Everything shows on this page as you change it.</p>
-        ${MY_FIELDS.map(([area, part, keys]) => `<h5>${esc(area)}</h5><div class="bnp-card"><div class="bnp-mycols">${keys.map(([k2, name]) => sw(`${part}.${k2}`, name)).join('')}</div></div>`).join('')}`;
+    const sw = (path, name = myFieldName(path)) => {
+      const val = myGet(t, path), shown = val || probe(path);
+      return `<div class="bnp-myc"><span>${esc(name)}${hard(path)}</span><button type="button" class="bnp-myswatch${val ? '' : ' is-base'}" data-mycol="${path}" data-hex="${esc(shown || '#888888')}" style="--c:${esc(shown || 'transparent')}" title="${val ? esc(val) : `As ${baseName} has it`}" aria-label="${esc(name)}: ${val ? esc(val) : 'as its base has it'}"></button>${val ? `<button type="button" class="bnp-myx" data-myclear="${path}" title="Back to ${baseName}’s" aria-label="Back to its base’s">×</button>` : ''}</div>`;
+    };
+    const cols = (part, keys) => `<div class="bnp-mycols">${keys.map((k2) => sw(`${part}.${k2}`)).join('')}</div>`;
+    const fontRow = (k2, sample) => {   // (a part's writing: its font and size)
+      const f = String(myGet(t, `font.${k2}`) || ''), mine = !!f && !MY_FONTS.some(([n]) => n === f) && !MY_GFONTS.includes(f), sz = myGet(t, `font.${k2}Size`);
+      const opts = `<option value=""${f ? '' : ' selected'}>As it is</option><optgroup label="Neopets’ own">${MY_FONTS.map(([n, l]) => `<option value="${n}"${f === n ? ' selected' : ''}>${esc(l)}</option>`).join('')}</optgroup><optgroup label="More, from Google Fonts">${MY_GFONTS.map((n) => `<option value="${esc(n)}"${f === n ? ' selected' : ''}>${esc(n)}</option>`).join('')}</optgroup><option value="*"${mine ? ' selected' : ''}>Another Google Font, by its name…</option>`;
+      return `<div class="bnp-myfont"><label class="bnp-f"><span>Its font</span><select class="bnp-inline" data-myfont="${k2}">${opts}</select></label>${mine || myFolds[`font:${k2}`] ? `<label class="bnp-f"><span>Its name</span><input type="text" data-myfontname="${k2}" value="${esc(mine ? f : '')}" placeholder="As Google Fonts writes it: Cinzel" spellcheck="false" autocomplete="off"></label>` : ''}
+        <span class="bnp-myfontprev" style="${myFontOk(f) ? `font-family:'${esc(f)}', Cafeteria, sans-serif;` : ''}${sz ? `font-size:${Math.round(Number(sz))}px` : ''}">${esc(sample)}</span>
+        <div class="bnp-myslides">${slider(`font.${k2}Size`, 'Its size', 8, 40, 'px', 16)}</div>${sz != null ? `<button type="button" class="bnp-pillbtn bnp-small" data-myclear="font.${k2}Size">Its size as it is</button>` : '<p class="bnp-note">Its size: as it is, until you move it.</p>'}</div>`;
+    };
+    const card = (title, note, body) => `<h5>${title}${note ? ` <span class="bnp-note">${note}</span>` : ''}</h5><div class="bnp-card">${body}</div>`;
+    const lead = (s) => `<p class="bnp-note bnp-mylead">${s}</p>`;
+    const back = (parts, what) => `<p class="bnp-lookback-row bnp-myback"><button type="button" class="bnp-pillbtn" data-myclearpart="${parts}">Back to ${baseName}’s ${what}</button></p>`;
+    const slider = (path, name, min, max, unit, d) => { const v = myGet(t, path), n = v == null ? d : Number(v); return `<label class="bnp-myslide"><span>${esc(name)}</span><input type="range" min="${min}" max="${max}" value="${esc(n)}" data-myrange="${path}"><b>${min < 0 && n > 0 ? '+' : ''}${esc(n)}${unit}</b></label>`; };
+    const segs = (path, opts) => { const cur = String(myGet(t, path) || ''); return `<span class="bnp-seg" role="group">${opts.map(([v, l]) => `<button type="button" data-myset="${path}:${v}" aria-pressed="${cur === v}">${l}</button>`).join('')}</span>`; };
+    const field = (path, label, ph, note) => { const v = myGet(t, path); return `<label class="bnp-f bnp-myurl"><span>${label}</span><input type="url" data-mytext="${path}" value="${esc(typeof v === 'string' && /^https:/.test(v) ? v : '')}" placeholder="${ph}" spellcheck="false" autocomplete="off"><small class="bnp-mypicinfo" data-mypicinfo="${path}"></small></label>${note ? `<p class="bnp-note">${note}</p>` : ''}`; };
+    const placeHtml = (part, o = {}) => {   // (how a part's picture sits: its size, where, repeated or not, how strong, blended how)
+      const fit = String(myGet(t, `${part}.fit`) || ''), rep = String(myGet(t, `${part}.repeat`) || '');
+      const said = [{ '': `${Number(myGet(t, `${part}.size`)) || 150}px wide`, own: 'as drawn', height: 'filling the height', width: 'filling the width', cover: 'covering it all', contain: 'fitting inside' }[fit] || '', { '': 'all over', x: 'across', y: 'down', none: 'once' }[rep] || ''].join(', ');
+      return `<details class="bnp-fold" data-fold="place:${part}"${myFolds[`place:${part}`] ? ' open' : ''}><summary>How it sits <span class="bnp-note">${esc(said)}</span></summary><div class="bnp-myplace"><div class="bnp-myrow"><span class="bnp-mytint-h">Its size</span>${segs(`${part}.fit`, [['', 'A width'], ['own', 'As drawn'], ['height', 'Fill the height'], ['width', 'Fill the width'], ['cover', 'Cover it all'], ['contain', 'Fit inside']])}</div>
+        <div class="bnp-myslides">${fit ? '' : slider(`${part}.size`, 'Its width', 20, 1200, 'px', 150)}${slider(`${part}.x`, 'Left and right', -600, 600, 'px', 0)}${slider(`${part}.y`, 'Up and down', -300, 300, 'px', 0)}${o.strength ? slider(`${part}.show`, 'How strong', 0, 100, '%', 100) : ''}</div>
+        <div class="bnp-myrow"><span class="bnp-mytint-h">Repeated</span>${segs(`${part}.repeat`, [['', 'All over'], ['x', 'Across'], ['y', 'Down'], ['none', 'Once']])}</div>
+        ${o.noblend ? '' : `<div class="bnp-myrow"><label class="bnp-f"><span>Blended</span><select class="bnp-inline" data-myselect="${part}.blend">${MY_BLENDS.map(([v, l]) => `<option value="${v}"${String(myGet(t, `${part}.blend`) || '') === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>${o.fixed ? `<label class="bnp-switch"><input type="checkbox" data-mycheck="${part}.fixed"${myGet(t, `${part}.fixed`) ? ' checked' : ''}><span>Stays still as the page scrolls</span></label>` : ''}</div>`}</div></details>`;
+    };
+    const motionHtml = (part) => {   // (its picture moving, as Neopets' own snow, rain and confetti do)
+      const mv = String(myGet(t, `${part}.move`) || ''), fit = String(myGet(t, `${part}.fit`) || '');
+      return `<details class="bnp-fold" data-fold="move:${part}"${myFolds[`move:${part}`] ? ' open' : ''}><summary>Moving <span class="bnp-note">${esc(MY_MOVES[mv] || 'still')}</span></summary><div class="bnp-myplace">
+        <div class="bnp-myrow"><span class="bnp-mytint-h">Which way</span>${segs(`${part}.move`, [['', 'Still'], ['down', 'Falling'], ['up', 'Rising'], ['left', 'Left'], ['right', 'Right'], ['downleft', 'Down and left'], ['downright', 'Down and right']])}</div>
+        ${mv ? `<div class="bnp-myslides">${slider(`${part}.speed`, 'How fast', 5, 300, ' px a second', 40)}</div>` : ''}
+        <p class="bnp-note">${fit && fit !== 'own' ? 'It moves smoothly when its size is A width or As drawn: other sizes can’t repeat seamlessly as it moves.' : 'Snow, rain, stars or confetti: a pattern that repeats, moving forever. Anyone who has asked their computer for less motion sees it still.'}</p></div></details>`;
+    };
+    const patRow = (part) => {   // (a part's picture: Neopets' own patterns or yours, by its address)
+      const p = myGet(t, `${part}.pat`), u = myPic(p), src = myPatSrc(t, part);
+      return `<div class="bnp-mypat"><span class="bnp-mypatbox" data-mypatprev="${part}" style="${src ? `background-image:url('${esc(cssUrl(src))}');background-size:${Math.min(Number(myGet(t, `${part}.size`)) || 150, 150)}px auto` : ''}">${u ? '' : `<small>${src ? `${baseName}’s own` : 'None'}</small>`}</span>
+        <span class="bnp-mypatgo"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mypat="${part}">Choose a pattern…</button>${p ? `<button type="button" class="bnp-pillbtn" data-myclear="${part}.pat">Back to ${baseName}’s</button>` : ''}<small class="bnp-mypicinfo" data-mypicinfo="${part}.pat"></small></span></div>${altsHtml(part)}`;
+    };
+    const altsHtml = (part) => {   // (other pictures taking turns with it: a different one on each page)
+      const alts = Array.isArray(myGet(t, `${part}.alts`)) ? myGet(t, `${part}.alts`) : [], now = myPatNow(t, part) || '';
+      if (!alts.length) return `<p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn" data-mypat="${part}" data-alt="1">+ Another, to take turns</button><span class="bnp-note"> a different one on each page, at random</span></p>`;
+      const chip = (u, i) => `<span class="bnp-myalt${u === now ? ' is-now' : ''}"><button type="button" class="bnp-myaltpic" data-myaltshow="${part}:${i}" title="${u ? 'Show this one on the page now' : `${baseName}’s own: show it on the page now`}" style="${u || myBasePat(t, part) ? `background-image:url('${esc(cssUrl(u ? myPic(u) : myBasePat(t, part)))}')` : ''}">${u ? '' : `<small>${baseName}’s own</small>`}</button>${i >= 0 ? `<button type="button" class="bnp-lookx" data-myaltdel="${part}:${i}" title="Not one of them any more" aria-label="Take it out">×</button>` : ''}${u === now ? '<small>On this page</small>' : ''}</span>`;
+      return `<div class="bnp-myalts"><h6 class="bnp-myh6">Taking turns <span class="bnp-note">A different one on each page, at random. Click one to see it now</span></h6><div class="bnp-myaltrow">${chip(String(myGet(t, `${part}.pat`) || ''), -1)}${alts.map((u, i) => chip(u, i)).join('')}<button type="button" class="bnp-lookadd bnp-myaltadd" data-mypat="${part}" data-alt="1"><b>+</b>Another</button></div></div>`;
+    };
+    const others = myAll().filter((x) => x.id !== t.id);
+    const take = (area) => {   // (a whole part of the page from another theme: Neopets' own, as their sheet has it, or one of yours)
+      const b = ((t.v && t.v.borrow) || {})[area];
+      return `<div class="bnp-mytake"><select class="bnp-inline" data-mytake="${area}" aria-label="Take the ${MY_TAKE_NAME[area]} from another theme"><option value="">Take the ${MY_TAKE_NAME[area]} from another theme…</option><optgroup label="Neopets’ own">${lookThemes().map(([f, name]) => `<option value="np:${esc(f)}">${esc(name)}</option>`).join('')}</optgroup>${others.length ? `<optgroup label="Yours, and Neopets Enhance’s">${others.map((x) => `<option value="my:${esc(x.id)}">${esc(x.name)}</option>`).join('')}</optgroup>` : ''}</select>${b ? `<span class="bnp-note">From ${esc(nbcThemeName(b.from))}, with your changes over it</span><button type="button" class="bnp-pillbtn" data-myuntake="${area}">Not from ${esc(nbcThemeName(b.from))} any more</button>` : ''}</div>`;
+    };
+    const decoCard = (at, note) => {   // (pictures of your own on a part of the page)
+      const list = (Array.isArray(myGet(t, 'deco')) ? myGet(t, 'deco') : []).filter((d) => d && d.at === at);
+      const dseg = (d, key, opts) => `<span class="bnp-seg" role="group">${opts.map(([val, l]) => { const cur = key === 'w' ? (d.w === 'h' ? 'h' : Number(d.w) > 0 ? '120' : '') : String(d[key] == null ? '' : d[key]); return `<button type="button" data-mydecoset="${d.id}:${key}:${val}" aria-pressed="${cur === val}">${l}</button>`; }).join('')}</span>`;
+      const dsl = (d, key, name, min, max, dv) => { const n = d[key] == null ? dv : Number(d[key]); return `<label class="bnp-myslide"><span>${esc(name)}</span><input type="range" min="${min}" max="${max}" value="${n}" data-mydecor="${d.id}:${key}"><b>${n}px</b></label>`; };
+      const row = (d) => {
+        const said = [MY_DECO_SPOT_NAMES[d.spot || 'cb'] || '', d.w === 'h' ? 'its height' : Number(d.w) > 0 ? `${Math.round(Number(d.w))}px wide` : 'its own size', d.over ? 'in front' : 'behind'].join(', ');
+        return `<details class="bnp-fold bnp-mydeco" data-fold="deco:${d.id}"${myFolds[`deco:${d.id}`] ? ' open' : ''}><summary><i class="bnp-mydecothumb" style="${myPic(d.pic) ? `background-image:url('${esc(cssUrl(myPic(d.pic)))}')` : ''}"></i><span>${myPic(d.pic) ? esc(said) : 'A new one: its picture first'}</span></summary><div class="bnp-myplace">
+          <label class="bnp-f bnp-myurl"><span>Its picture</span><input type="url" data-mydecopic="${d.id}" value="${esc(d.pic || '')}" placeholder="https://…" spellcheck="false" autocomplete="off"><small class="bnp-mypicinfo" data-mypicinfo="deco:${d.id}"></small></label>
+          <div class="bnp-myrow"><span class="bnp-mytint-h">Where</span><span class="bnp-myspots" role="group" aria-label="Where">${MY_DECO_SPOTS.map(([k2, ic]) => `<button type="button" data-mydecoset="${d.id}:spot:${k2}" aria-pressed="${(d.spot || 'cb') === k2}" title="${MY_DECO_SPOT_NAMES[k2]}">${ic}</button>`).join('')}</span></div>
+          <div class="bnp-myslides">${dsl(d, 'x', 'Left and right', -900, 900, 0)}${dsl(d, 'y', 'Up and down', -400, 400, 0)}${Number(d.w) > 0 ? dsl(d, 'w', 'Its width', 8, 1600, 120) : ''}</div>
+          <div class="bnp-myrow"><span class="bnp-mytint-h">Its size</span>${dseg(d, 'w', [['', 'Its own'], ['120', 'A width'], ['h', 'The part’s height']])}</div>
+          <div class="bnp-myrow"><span class="bnp-mytint-h">Repeated</span>${dseg(d, 'rep', [['', 'Once'], ['x', 'Across'], ['y', 'Down']])}</div>
+          <div class="bnp-myrow"><span class="bnp-mytint-h">Layer</span>${dseg(d, 'over', [['', at === 'page' ? 'Behind the pages’ box' : 'Behind its writing and icons'], ['1', 'In front of everything']])}</div>
+          <p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn is-danger" data-mydecodel="${d.id}">Take it away</button></p></div></details>`;
+      };
+      return card('Decorations', note, `${list.length ? list.map(row).join('') : '<p class="bnp-note">None yet. Any picture by its address: placed where you like, its size, once or repeated, behind or in front.</p>'}${at === 'page' && list.length ? `<label class="bnp-switch"><input type="checkbox" data-mycheck="page.decoStill"${myGet(t, 'page.decoStill') ? ' checked' : ''}><span>They stay still as the page scrolls</span></label>` : ''}<p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn" data-mydecoadd="${at}">+ Add a picture</button></p>`);
+    };
+    const picture = (part, o = {}) => patRow(part) + placeHtml(part, o) + motionHtml(part) + (myPatSrc(t, part) || myGet(t, `${part}.pat`) ? myTintHtml(t, `${part}.tint`, 'it') : '');   // (how it sits and moves reach the base's own picture too, known or not; its colours need the picture itself)
+    if (myTab === 'bar') {
+      return `${bar}${lead(`A colour you haven’t changed is ${baseName}’s own (its swatch has a dotted edge). The top bar on this page changes as you go; the eye at the top shows the whole page.`)}
+        ${card('Its colours', 'Top to bottom, then a line and a glow under it', cols('bar', ['top', 'mid', 'bottom', 'line', 'glow']))}
+        ${card('Its pattern', 'Over its colours', picture('bar', { strength: true }))}
+        ${card('Its writing', 'The menus’ names', `${cols('bar', ['text', 'textGlow'])}${fontRow('bar', 'Community · Games · Explore · Shop')}`)}
+        ${card('The clock', 'Neopian Standard Time', cols('bar', ['clock', 'clockLine', 'clockText']))}
+        ${card('The counts', 'The little numbers on its icons: new alerts, news, quests, friends online', cols('bar', ['badge', 'badgeText']))}
+        ${decoCard('bar', 'Pictures of your own on the bar: a crest, a garland, art at its ends')}
+        ${take('bar')}${back('bar', 'top bar')}`;
     }
-    if (myTab === 'pictures') {
-      const slider = (path, name, min, max, unit, d) => { const v = myGet(t, path); return `<label class="bnp-myslide"><span>${esc(name)}</span><input type="range" min="${min}" max="${max}" value="${esc(v == null ? d : v)}" data-myrange="${path}"><b>${esc(v == null ? d : v)}${unit}</b></label>`; };
-      return `${bar}<p class="bnp-note bnp-mylead">Patterns are shown at their own size or smaller, so they stay crisp.</p>
-        ${MY_PATS.map(([part, area, what]) => { const p = myGet(t, `${part}.pat`), u = myPic(p); return `<h5>${esc(area)} <span class="bnp-note">${esc(what)}</span></h5><div class="bnp-card"><div class="bnp-mypat">
-          <span class="bnp-mypatbox" style="${u ? `background-image:url('${esc(cssUrl(u))}');background-size:${Math.min(Number(myGet(t, `${part}.size`)) || 150, 150)}px auto` : ''}">${u ? '' : `<small>${esc(nbcThemeName(t.base))}’s own</small>`}</span>
-          <span class="bnp-mypatgo"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mypat="${part}">Choose a pattern…</button>${p ? `<button type="button" class="bnp-linkbtn" data-myclear="${part}.pat">Back to ${esc(nbcThemeName(t.base))}’s</button>` : ''}
-            ${p ? slider(`${part}.size`, 'Its size', 40, 300, 'px', 150) : ''}${p && part === 'bar' ? slider('bar.show', 'How strong', 10, 100, '%', 100) : ''}</span>
-        </div></div>`; }).join('')}`;
+    if (myTab === 'logo') {
+      const lg = (t.v && t.v.logo) || {}, own = typeof lg.pic === 'string' && /^https:/.test(lg.pic), foot = String(lg.foot || '');
+      const ic = (t.v && t.v.icons) || {}, mineIc = ic.urls && typeof ic.urls === 'object' ? ic.urls : {}, sets = lookThemes();
+      const setRow = (f, name, on) => `<button type="button" class="bnp-myset${on ? ' is-on' : ''}" data-myicons="${esc(f)}" aria-pressed="${on}"><span>${['community', 'games', 'explore', 'shop', 'premium'].map((n) => `<i style="background-image:url('${esc(cssUrl(myIconUrl(f || t.base, `${n}-icon`)))}')"></i>`).join('')}</span><b>${esc(name)}</b></button>`;
+      const from = sets.map(([f, name]) => `<option value="${esc(f)}">${esc(name)}</option>`).join('');
+      const iconRow = (file) => { const u = typeof mineIc[file] === 'string' ? mineIc[file] : '', cur = u || (ic.set ? ic.set.replace(/\{name\}/g, file) : '') || myIconUrl(ic.from || t.base, file); return `<div class="bnp-myicon"><i style="background-image:url('${esc(cssUrl(cur))}')"></i><span>${esc(MY_ICON_NAMES[file] || file)}</span><input type="url" data-mytext="icons.urls.${file}" value="${esc(u)}" placeholder="https://…" spellcheck="false" autocomplete="off" aria-label="${esc(MY_ICON_NAMES[file] || file)}: a picture’s address"><select class="bnp-inline" data-myiconfrom="${file}" aria-label="${esc(MY_ICON_NAMES[file] || file)}: another theme’s"><option value="">Another theme’s…</option>${from}</select></div>`; };
+      const files = MY_ICON_PARTS.map(([f]) => f);
+      return `${bar}${card('Its logo', 'Any theme’s Neopets logo, or your own picture', `<div class="bnp-mysets">${['', ...sets.map((x) => x[0])].map((f) => { const nm = f ? nbcThemeName(f) : `${nbcThemeName(t.base)}’s own`, on = !own && (lg.from || '') === f; return `<button type="button" class="bnp-mylogo${on ? ' is-on' : ''}" data-mylogo="${esc(f)}" aria-pressed="${on}"><i style="background-image:url('${esc(cssUrl(myLogoOf(f || t.base)))}')"></i><b>${esc(nm)}</b></button>`; }).join('')}</div>
+          ${field('logo.pic', 'Your own logo', 'https://…', 'Neopets shows its logo at 133 × 45: a picture of about 266 × 90 stays crisp on sharp screens.')}
+          <div class="bnp-myslides">${slider('logo.size', 'Its size', 40, 220, '%', 100)}${slider('logo.x', 'Left and right', -80, 200, 'px', 0)}${slider('logo.y', 'Up and down', -40, 40, 'px', 0)}</div>
+          ${myTintHtml(t, 'logo.tint', 'it')}
+          <div class="bnp-myrow bnp-mysep"><span class="bnp-mytint-h">In the foot of the page</span>${segs('logo.foot', [['', 'The same logo'], ['own', 'A picture of its own'], ['none', 'None']])}</div>
+          ${foot === 'own' ? field('logo.footPic', 'Its picture', 'https://…', 'Shown at 160 × 54 at the foot of every page.') : ''}`)}
+        ${card('Its icons', 'Any theme’s icons, in their own colours or in new ones', `<div class="bnp-mysets">${setRow('', `${nbcThemeName(t.base)}’s own`, !ic.from)}${sets.map(([f, name]) => setRow(f, name, ic.from === f)).join('')}</div>${myTintHtml(t, 'icons.tint', 'them')}`)}
+        ${card('Icons one by one', 'Each by a picture’s address, or another theme’s: an SVG stays crisp at any size', `${field('icons.set', 'A whole set', 'https://…/{name}.svg', '{name} becomes each icon’s own name (community-icon, games-icon…). An icon below with its own address wins over the set. New colours (above) reach pictures from other sites only if those sites allow it.')}
+          <h6 class="bnp-myh6">The top bar</h6><div class="bnp-myicons">${files.slice(0, 10).map(iconRow).join('')}</div>
+          <details class="bnp-fold" data-fold="icons:more"${myFolds['icons:more'] ? ' open' : ''}><summary>The pet box and the home page’s arrows</summary><div class="bnp-myicons">${files.slice(10, 14).map(iconRow).join('')}</div></details>
+          <details class="bnp-fold" data-fold="icons:prof"${myFolds['icons:prof'] ? ' open' : ''}><summary>The profile menu’s ${files.length - 14} icons</summary><div class="bnp-myicons">${files.slice(14).map(iconRow).join('')}</div></details>`)}
+        ${back('logo,icons', 'logo and icons')}`;
     }
-    // icons and logo
-    const ic = (t.v && t.v.icons) || {}, lg = (t.v && t.v.logo) || {}, sets = lookThemes(), canTint = (f) => /\.svg(\?|$)/i.test(myIconUrl(f, 'community-icon'));   // (drawn as shapes: these take your colours; pictures come as they are)
-    const islide = (k2, name, min, max, unit, d) => `<label class="bnp-myslide"><span>${esc(name)}</span><input type="range" min="${min}" max="${max}" value="${esc(ic[k2] == null ? d : ic[k2])}" data-myrange="icons.${k2}"><b>${esc(ic[k2] == null ? d : ic[k2])}${unit}</b></label>`;
-    const lslide = (k2, name, min, max, unit, d) => `<label class="bnp-myslide"><span>${esc(name)}</span><input type="range" min="${min}" max="${max}" value="${esc(lg[k2] == null ? d : lg[k2])}" data-myrange="logo.${k2}"><b>${esc(lg[k2] == null ? d : lg[k2])}${unit}</b></label>`;
-    const setRow = (f, name, on, attr) => `<button type="button" class="bnp-myset${on ? ' is-on' : ''}" ${attr}="${esc(f)}" aria-pressed="${on}"><span>${['community', 'games', 'explore', 'shop', 'premium'].map((n) => `<i style="background-image:url('${esc(cssUrl(myIconUrl(f || t.base, `${n}-icon`)))}')"></i>`).join('')}</span><b>${esc(name)}</b>${f ? `<small>${canTint(f) ? 'Can take your colours' : 'Pictures: their own colours'}</small>` : ''}</button>`;
-    return `${bar}<h5>Its icons <span class="bnp-note">Another theme’s icons in your colours: drawn as shapes, so crisp at any size</span></h5>
-      <div class="bnp-card"><div class="bnp-mysets">${setRow('', `${nbcThemeName(t.base)}’s own, as they are`, !ic.from, 'data-myicons')}${sets.map(([f, name]) => setRow(f, name, ic.from === f, 'data-myicons')).join('')}</div>
-        ${ic.from && !canTint(ic.from) ? `<p class="bnp-note">${esc(nbcThemeName(ic.from))}’s icons are pictures rather than shapes, so they come in their own colours.</p>` : ''}${ic.from && canTint(ic.from) ? `<label class="bnp-switch"><input type="checkbox" data-myasis${ic.as === 'own' ? ' checked' : ''}><span>Their own colours<small>As ${esc(nbcThemeName(ic.from))} has them; untick to colour them to your theme.</small></span></label>
-          ${ic.as === 'own' ? '' : `<div class="bnp-myslides">${islide('hue', 'Colour', 0, 359, '°', 280)}${islide('keep', 'Keep their own differences', 0, 100, '%', 30)}${islide('sat', 'How strong', 20, 160, '%', 100)}${islide('grey', 'Colour in their greys', 0, 100, '%', 55)}${islide('light', 'Lighter or darker', -30, 30, '', 0)}</div>`}` : ''}</div>
-      <h5>Its logo <span class="bnp-note">A theme’s Neopets logo, turned to your colours if you like</span></h5>
-      <div class="bnp-card"><div class="bnp-mysets">${['', ...sets.map((x) => x[0])].map((f) => { const nm = f ? nbcThemeName(f) : `${nbcThemeName(t.base)}’s own`, on = (lg.from || '') === f; return `<button type="button" class="bnp-mylogo${on ? ' is-on' : ''}" data-mylogo="${esc(f)}" aria-pressed="${on}"><i style="background-image:url('${esc(cssUrl(myLogoOf(f || t.base)))}')"></i><b>${esc(nm)}</b></button>`; }).join('')}</div>
-        <div class="bnp-myslides">${lslide('hue', 'Turn its colours', 0, 359, '°', 0)}${lslide('sat', 'How strong', 0, 200, '%', 100)}${lslide('light', 'Lighter or darker', 50, 150, '%', 100)}</div></div>`;
+    if (myTab === 'menus') {
+      return `${bar}${lead('The drop-downs from the top bar. Open one on the page with the eye at the top to see it.')}
+        ${card('Menus', 'Community, Games, Explore, Shop, NC Mall', `${cols('menu', ['bg', 'text', 'line', 'hover', 'border'])}<div class="bnp-myslides">${slider('menu.lineW', 'Edge’s thickness', 0, 10, 'px', 2)}${slider('menu.round', 'Corners’ roundness', 0, 30, 'px', 0)}</div>`)}
+        ${card('Their writing', 'Every menu’s, the profile menu’s and the news’', fontRow('menu', 'Community Central · Neomail · Neoboards'))}
+        ${card('The profile menu', 'Your pet, and the links under it', cols('prof', ['top', 'bottom', 'item', 'small', 'link', 'box', 'boxLine', 'clock']))}
+        ${card('News, alerts and quests', 'The bell’s drop-down', cols('news', ['bg', 'panel', 'tab', 'line', 'head', 'text', 'link', 'visited']))}
+        ${take('menus')}${back('menu,prof,news', 'menus')}`;
+    }
+    if (myTab === 'pop') {
+      return `${bar}${lead('Neopets’ pop-ups, and every window of Neopets Enhance’s: this one shows them as you change them.')}
+        ${card('Their colours', 'Their tops and feet, edge, glow and the inside', `${cols('pop', ['top', 'bottom', 'line', 'glow', 'headLine', 'footLine', 'body'])}<div class="bnp-myslides">${slider('pop.lineW', 'Edge’s thickness', 0, 10, 'px', 3)}${slider('pop.round', 'Corners’ roundness', 0, 40, 'px', 15)}</div>`)}
+        ${card('Their pattern', 'Over their tops and feet', picture('pop', { strength: true }))}
+        ${card('Their titles', '', `${cols('pop', ['title', 'titleEdge', 'titleShadow'])}${fontRow('title', 'Settings · Dailies · Quick Ref')}`)}
+        ${decoCard('pop', 'Pictures on every pop-up’s top: this window’s too')}
+        ${take('pop')}${back('pop', 'pop-ups')}`;
+    }
+    if (myTab === 'page') {
+      const ptr = (path, label) => field(path, label, 'https://… (32 × 32 at most)', '');
+      return `${bar}${card('Its background', 'Behind everything', `${cols('page', ['colour'])}${picture('page', { fixed: true })}`)}
+        ${card('The pages’ box', 'What each page sits in. As each page has it (the Inventory’s tan, say) until you choose', `${cols('box', ['colour', 'line', 'glow'])}<div class="bnp-myslides">${slider('box.lineW', 'Edge’s thickness', 0, 12, 'px', 3)}${slider('box.round', 'Corners’ roundness', 0, 40, 'px', 0)}</div>${picture('box', { strength: false, noblend: true })}`)}
+        ${card('Links', 'In the pages’ own writing', cols('link', ['colour', 'hover']))}
+        ${card('Its writing', 'The pages’ own words: some pages are laid out for theirs, so try a few', fontRow('page', 'Welcome to your Inventory!'))}
+        ${card('The pointer', 'A picture of your own as the mouse pointer, as Haunted Woods has: 32 × 32 at most', `${ptr('page.cursor', 'Everywhere')}${ptr('page.cursorLink', 'Over links and buttons')}<div class="bnp-myslides">${slider('page.cursorX', 'Its tip: from the left', 0, 31, 'px', 0)}${slider('page.cursorY', 'Its tip: from the top', 0, 31, 'px', 0)}</div>`)}
+        ${card('Scrollbars and selecting', 'The page’s scrollbar, and writing you select', cols('page', ['scroll', 'scrollTrack', 'select', 'selectText']))}
+        ${decoCard('page', 'Pictures on the page itself, at its top: behind the pages’ box, or in front')}
+        ${take('page')}${back('page,link,box', 'page')}`;
+    }
+    if (myTab === 'foot') {
+      return `${bar}${card('Its colours', 'One colour, or Top and Bottom for a gradient; then a line and a glow over it', cols('foot', ['colour', 'top', 'bottom', 'line', 'glow']))}
+        ${card('Its pattern', 'Under the links', picture('foot', { strength: true }))}
+        ${card('Its writing', 'The links and the small print', `${cols('foot', ['text', 'textGlow'])}${fontRow('foot', 'Terms of Use · Privacy Policy · Support')}`)}
+        <p class="bnp-lookback-row bnp-myback"><button type="button" class="bnp-pillbtn" data-mytab="who">Who stands at the foot: Characters</button><button type="button" class="bnp-pillbtn" data-mytab="logo">Its logo: Logo and icons</button></p>
+        ${decoCard('foot', 'Pictures on the foot of the page, beside who stands there')}
+        ${take('foot')}${back('foot', 'foot of the page')}`;
+    }
+    if (myTab === 'home') {
+      const scene = String(myGet(t, 'home.scene') || ''), own = /^https:/.test(scene);
+      const layer = (k2, name, note) => `<div class="bnp-mylayer"><h6 class="bnp-myh6">${name} <span class="bnp-note">${note}</span></h6>${field(`home.${k2}.pat`, 'Its picture', 'https://…', '')}<label class="bnp-switch"><input type="checkbox" data-mycheck="home.${k2}.off"${myGet(t, `home.${k2}.off`) ? ' checked' : ''}><span>Nothing here</span></label>${myGet(t, `home.${k2}.pat`) ? placeHtml(`home.${k2}`, { noblend: true }) : ''}</div>`;
+      return `${bar}${card('Its scene', 'One picture at the top of the home page, behind your pets', `<div class="bnp-mysets">${[['', `${nbcThemeName(t.base)}’s own`], ...MY_SCENES].map(([k2, l]) => `<button type="button" class="bnp-mylogo bnp-myscene${!own && scene === k2 ? ' is-on' : ''}" data-myscene="${esc(k2)}" aria-pressed="${!own && scene === k2}"><i${k2 ? ` style="background-image:url('${esc(cssUrl(myPic(k2)))}')"` : ''}></i><b>${esc(l)}</b></button>`).join('')}</div>
+          ${field('home.scene', 'Or a picture’s address', 'https://…', 'Neopets’ own scenes are 1080 × 600; yours shows at the size below, its edges fading into what’s around it.')}
+          ${scene ? `<div class="bnp-myslides">${slider('home.w', 'Its width', 300, 2000, 'px', 1080)}${slider('home.h', 'Its height', 150, 1000, 'px', 600)}</div>` : ''}`)}
+        <details class="bnp-card bnp-fold bnp-foldcard" data-fold="home:layers"${myFolds['home:layers'] ? ' open' : ''}><summary>Its layers <span class="bnp-note">Or as Neopets’ own home pages are made: a sky, a middle, the ground and an object, each a picture of its own</span></summary>
+          ${scene ? '<p class="bnp-note">With a scene above, the scene is the sky, and the layers you leave empty go.</p>' : ''}
+          ${layer('top', 'The sky', 'At the top, behind everything')}${layer('mid', 'The middle', 'Over the sky')}${layer('bottom', 'The ground', 'At the bottom')}${layer('obj', 'An object', 'Over them all: a moon, a fireplace')}</details>
+        ${card('Around it', 'The rest of the home page’s background', `${cols('home', ['around'])}${picture('home')}`)}
+        ${card('The name plate', 'Each pet’s name, under the scene', cols('home', ['plate', 'plateLine', 'plateText']))}
+        ${take('home')}${back('home', 'home page')}`;
+    }
+    if (myTab === 'boards') {
+      return `${bar}${lead('The Neoboards: their bars, buttons and links. The boards’ own looks in Neoboard Settings go over these.')}
+        ${card('Neoboards', '', cols('boards', ['bar', 'button', 'link', 'hover']))}
+        ${take('boards')}${back('boards', 'Neoboards')}`;
+    }
+    if (myTab === 'palette') {
+      const used = myPalette(t), turn = myTurn && myTurn.id === t.id ? myTurn : null;
+      const tsl = (k, name, min, max, unit) => { const n = turn ? turn[k] : 0; return `<label class="bnp-myslide"><span>${name}</span><input type="range" min="${min}" max="${max}" value="${n}" data-myturn="${k}"><b>${n > 0 ? '+' : ''}${n}${unit}</b></label>`; };
+      return `${bar}${lead('Every colour this theme sets, in one place. Change one here and it changes everywhere it’s used.')}
+        ${card('Its colours', used.length ? `${used.length}, the most used first` : '', used.length ? `<div class="bnp-mypal">${used.map(({ hex, paths }) => `<button type="button" class="bnp-mypalone" data-mycol="palette" data-paths="${esc(paths.join(','))}" data-hex="${hex}" title="${esc(paths.map(myWhere).join('\n'))}"><i style="--c:${hex}"></i><b>${hex}</b><small>${paths.length === 1 ? esc(myWhere(paths[0])) : `${paths.length} places`}</small></button>`).join('')}</div>` : '<p class="bnp-note">None of its own yet: every colour is its base’s. Choose some in the other tabs, or turn them all below.</p>')}
+        ${card('Turn them all', 'Every colour at once, its own and its base’s, round the colour wheel: Photoshop’s Hue/Saturation for the whole theme', `<div class="bnp-myslides">${tsl('hue', 'Hue', -180, 180, '°')}${tsl('sat', 'Saturation', -100, 100, '')}${tsl('light', 'Lightness', -100, 100, '')}</div>
+          <label class="bnp-switch bnp-mysep"><input type="checkbox" data-myturnpics${turn && turn.pics ? ' checked' : ''}><span>Its pictures too: the patterns, the icons and the logo, turned the same way</span></label>
+          <p class="bnp-lookback-row bnp-mybtns" data-myturnrow${turn ? '' : ' hidden'}><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-myturnkeep>Keep it</button><button type="button" class="bnp-pillbtn" data-myturnback>Back to before</button></p>
+          <p class="bnp-note">The colours it can read from the page turn with the rest; a few (those for pointing at things) stay as they are until you choose them.</p>`)}`;
+    }
+    // more: this theme itself, its base, extra CSS, saved versions and the theme as a file
+    const about = (t.about && typeof t.about === 'object') ? t.about : {};
+    return `${bar}${card('This theme', '', `<p class="bnp-lookacts"><input type="text" data-myname value="${esc(t.name)}" maxlength="40" aria-label="Its name" spellcheck="false"><button type="button" class="bnp-pillbtn" data-myren>Rename</button><button type="button" class="bnp-pillbtn" data-mycopy="${esc(t.id)}">Make a copy</button></p>
+      <label class="bnp-f bnp-myabout"><span>Made by</span><input type="text" data-myabout="by" value="${esc(about.by || '')}" maxlength="40" placeholder="Your name, if you’ll share it" spellcheck="false" autocomplete="off"></label>
+      <label class="bnp-f bnp-myabout"><span>About it</span><textarea data-myabout="note" maxlength="400" rows="2" placeholder="What it is, where its pictures are from…">${esc(about.note || '')}</textarea></label>
+      <p class="bnp-note">These go with it when you save it as a file or copy its code. Delete is at the top, beside Wear it.</p>`)}
+      ${card('Built on', 'Everything you haven’t changed comes from this theme', `<label class="bnp-f"><span>Its base</span><select class="bnp-inline" data-mybase>${lookThemes().map(([f, name]) => `<option value="${esc(f)}"${t.base === f ? ' selected' : ''}>${esc(name)}</option>`).join('')}</select></label>`)}
+      ${card('Extra CSS', 'For anything the other tabs don’t reach', `<textarea class="bnp-mycss" data-mycss rows="12" spellcheck="false" placeholder=":root .nav-top__2020 { … }">${esc(String(myGet(t, 'css') || ''))}</textarea>
+        <p class="bnp-note">Over everything else in this theme, on every page, as you type. Start a rule with :root to win over the theme it’s built on.</p>`)}
+      ${card('Saved versions', 'This build as it is now, kept to come back to: as many as you like', mySavesHtml(t))}
+      ${card('Export', 'To keep somewhere safe, or to give to a friend', `<p class="bnp-lookback-row bnp-mybtns"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-myfile>Save as a file</button><button type="button" class="bnp-pillbtn" data-myexport>Copy its code</button></p>
+        <p class="bnp-note">The file has all of it: colours, pictures (as their addresses), icons, Extra CSS, who stands where, and its saved versions. The code is the same without the saved versions, short enough to paste anywhere. To bring one in: Import a theme, on the Themes page.</p>`)}`;
+  }
+  // a theme of yours, saved: versions of it kept in this browser, and the whole of it as a file or a code
+  const mySaves = (id) => { const all = get('themesaves', {}) || {}; return Array.isArray(all[id]) ? all[id] : []; };
+  function mySavesSet(id, list) { const all = { ...(get('themesaves', {}) || {}) }; if (list.length) all[id] = list; else delete all[id]; set('themesaves', all); }
+  function mySavesHtml(t) {
+    const list = mySaves(t.id), when = (at) => new Date(at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    return `<div class="bnp-mysaveadd"><input type="text" data-mysavename maxlength="40" placeholder="Its name (or leave it: the time)" aria-label="This version’s name" spellcheck="false"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mysave>Save this version</button></div>
+      ${list.length ? `<ul class="bnp-mysaves">${list.map((s, i) => `<li><span><b>${esc(s.name || when(s.at))}</b><small>${s.name ? esc(when(s.at)) : ''}${s.base !== t.base ? `${s.name ? ' · ' : ''}on ${esc(nbcThemeName(s.base))}` : ''}</small></span><button type="button" class="bnp-pillbtn" data-mysaveback="${i}">Go back to it</button><button type="button" class="bnp-lookx" data-mysavedel="${i}" title="Delete this version" aria-label="Delete ${esc(s.name || 'this version')}">×</button></li>`).join('')}</ul>` : '<p class="bnp-note">None yet. Each one keeps every part of it, its base too; going back to one can be undone.</p>'}`;
+  }
+  const myCodeOf = (t) => ({ neopetsEnhanceTheme: 1, name: t.name, base: t.base, v: t.v || {}, looks: (S.looks || {})[`my:${t.id}`] || undefined, about: t.about || undefined });
+  const myFileOf = (t) => ({ ...myCodeOf(t), saves: mySaves(t.id) });
+  function myDownload(name, data) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
+    a.download = `${String(name).replace(/[\\/:*?"<>|]+/g, '').trim() || 'theme'}.json`;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  }
+  function myRestore(t, st) {   // (a theme of yours as it was: its parts and its base)
+    const moved = !!st.base && st.base !== t.base;
+    t.v = st.v || {};
+    if (st.base) t.base = st.base;
+    S.myThemes = [...S.myThemes];
+    if (myPreviewOf === t.id || S.wear === t.id) { if (moved) myOn(t, false); else myShowNow(t, true); }
+  }
+  function myImportOne(o) {   // (one theme from a file or a code: a new one of yours, as it came; nothing you have changes)
+    if (!o || typeof o !== 'object' || !/^[a-z]+$/.test(String(o.base || '')) || (o.v != null && (typeof o.v !== 'object' || Array.isArray(o.v)))) return null;
+    const named = String(o.name || 'A theme').slice(0, 34), taken = new Set((S.myThemes || []).map((x) => x.name));
+    let name = named;
+    for (let i = 2; taken.has(name); i++) name = `${named} (${i})`;   // (a name you have already: numbered)
+    const n = { id: `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, name, base: o.base, v: o.v || {} };
+    if (o.about && typeof o.about === 'object') n.about = { by: String(o.about.by || '').slice(0, 40), note: String(o.about.note || '').slice(0, 400) };
+    S.myThemes = [...(S.myThemes || []), n];
+    if (o.looks && typeof o.looks === 'object' && !Array.isArray(o.looks)) S.looks = { ...(S.looks || {}), [`my:${n.id}`]: o.looks };
+    if (Array.isArray(o.saves) && o.saves.length) mySavesSet(n.id, o.saves.filter((s) => s && typeof s === 'object' && s.v && typeof s.v === 'object' && !Array.isArray(s.v)).slice(0, 60).map((s) => ({ at: Number(s.at) || Date.now(), name: String(s.name || '').slice(0, 40), base: /^[a-z]+$/.test(String(s.base || '')) ? s.base : n.base, v: s.v })));
+    return n;
+  }
+  function myImportText(txt) {   // (a file or a code: one theme, or a file of them all → { first, n } or null)
+    let o = null;
+    try { o = JSON.parse(String(txt || '').trim()); } catch (_) { return null; }
+    const list = o && Array.isArray(o.neopetsEnhanceThemes) ? o.neopetsEnhanceThemes : [o];
+    let first = null, n = 0;
+    for (const x of list) { const t = myImportOne(x); if (t) { n++; if (!first) first = t; } }
+    return first ? { first, n } : null;
+  }
+  function myImported(r) {   // (brought in: open, and shown on the page)
+    myImp = false;
+    myImpPaint();
+    lookAt = `my:${r.first.id}`;
+    myTab = 'bar';
+    myPreview(lookAt);
+    changed(r.n > 1 ? `${r.n} themes are yours now: ${r.first.name} is open` : `${r.first.name} is one of yours now`);
+    hub.main.scrollTop = 0;
+  }
+  let myImp = false;
+  function myImpPaint() {   // (Import a theme: from a file, or a code pasted in)
+    if (!hub) return;
+    let el = hub.win.querySelector('.bnp-myimp');
+    if (!myImp) { if (el) el.remove(); return; }
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'bnp-lookpick bnp-myimp';
+      el.setAttribute('role', 'dialog');
+      el.setAttribute('aria-label', 'Import a theme');
+      hub.win.querySelector('.bnp-hub-body').append(el);
+    }
+    el.innerHTML = `<div class="bnp-lptop"><b>Import a theme</b><button type="button" class="bnp-lpx" data-myimpclose title="Close" aria-label="Close">×</button></div>
+      <div class="bnp-lpbody"><h5>From a file <span class="bnp-note">One saved with Save as a file (or Save all your themes)</span></h5>
+        <p class="bnp-lookback-row"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-myimpfile>Choose a file…</button><input type="file" data-myimpfilein accept=".json,application/json" hidden></p>
+        <h5>Or its code <span class="bnp-note">One copied with Copy its code</span></h5>
+        <textarea class="bnp-mycss" data-myimporttext rows="7" spellcheck="false" placeholder="Paste a theme’s code here"></textarea>
+        <p class="bnp-lookback-row"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-myimport>Add it</button></p>
+        <p class="bnp-note">It comes in as a new theme of yours: nothing you have changes. Its pictures come as their addresses and its Extra CSS with it, so only bring in themes from people you trust.</p></div>`;
+  }
+  // a picture's colours, in the editor: as it is, its hues turned, or all of it in one colour
+  function myTintShown(t, path) {   // (as the editor shows them; a theme's older settings read as the nearer of the two ways)
+    const o = myGet(t, path), [part] = path.split('.'), p = (t.v && t.v[part]) || {};
+    if (o && typeof o === 'object' && o.mode != null) return o;
+    if (o && typeof o === 'object' && o.hue != null) return { mode: 'colour', colour: hslHex(Number(o.hue) || 0, 0.55, 0.45), light: 0, contrast: 100 };
+    if (part === 'icons' && p.from && p.as !== 'own' && p.hue != null) return { mode: 'colour', colour: hslHex(Number(p.hue) || 0, 0.55, 0.45), light: 0, contrast: 100 };
+    if (part === 'logo' && (Number(p.hue) % 360 || (p.sat != null && Number(p.sat) !== 100) || (p.light != null && Number(p.light) !== 100))) {
+      const c = (n) => Math.max(-100, Math.min(100, Math.round(n)));
+      return { mode: 'hue', hue: (((Number(p.hue) || 0) + 180) % 360) - 180, sat: c((p.sat == null ? 100 : Number(p.sat)) - 100), light: c((p.light == null ? 100 : Number(p.light)) - 100) };
+    }
+    return { mode: '' };
+  }
+  function myTintTouch(t, path) {   // (a theme's older colour settings, the first time one is changed: written the new way)
+    const o = myGet(t, path);
+    if (o && typeof o === 'object' && o.mode != null) return;
+    const [part] = path.split('.'), p = { ...((t.v && t.v[part]) || {}) };
+    p.tint = { ...myTintShown(t, path) };
+    if (part === 'icons') for (const k of ['hue', 'keep', 'sat', 'grey', 'light', 'as']) delete p[k];
+    if (part === 'logo') for (const k of ['hue', 'sat', 'light']) delete p[k];
+    t.v = { ...t.v, [part]: p };
+  }
+  function myTintStart(t, path) {   // (Colour it's first colour: the colour that part has now, as the page shows it)
+    const part = path.split('.')[0], from = { bar: ['bar.mid', 'bar.top'], page: ['page.colour'], pop: ['pop.top'], foot: ['foot.colour', 'foot.top'], home: ['home.around'], icons: ['bar.line', 'pop.top', 'bar.top'], logo: ['bar.line', 'bar.top'] }[part] || [];
+    for (const p of from) { const c = nbHex(myGet(t, p) || myProbeColour(p)); if (c) return c; }
+    return '#3f8f4f';
+  }
+  function myTintHtml(t, path, it) {   // (it: 'it', or 'them' for the icons)
+    const o = myTintShown(t, path), mode = o.mode || '', they = it === 'them', head = they ? 'Their colours' : 'Its colours';
+    const seg = [['', they ? 'As they are' : 'As it is'], ['hue', they ? 'Change their hues' : 'Change its hues'], ['colour', they ? 'Colour them' : 'Colour it']]
+      .map(([v, l]) => `<button type="button" data-mytint="${path}:${v}" aria-pressed="${mode === v}">${l}</button>`).join('');
+    const sl = (k, name, min, max, unit, d) => { const v = o[k] == null ? d : Number(o[k]); return `<label class="bnp-myslide"><span>${name}</span><input type="range" min="${min}" max="${max}" value="${v}" data-myrange="${path}.${k}"><b>${min < 0 && v > 0 ? '+' : ''}${v}${unit}</b></label>`; };
+    const c = nbHex(o.colour) || myTintStart(t, path);
+    const body = mode === 'hue' ? `<div class="bnp-myslides">${sl('hue', 'Hue', -180, 180, '°', 0)}${sl('sat', 'Saturation', -100, 100, '', 0)}${sl('light', 'Lightness', -100, 100, '', 0)}</div>`
+      : mode === 'colour' ? `<div class="bnp-myslides"><div class="bnp-myc"><span>Its colour</span><button type="button" class="bnp-myswatch" data-mycol="${path}.colour" data-hex="${c}" style="--c:${c}" title="${c}" aria-label="Its colour: ${c}"></button></div>${sl('light', 'Lightness', -100, 100, '', 0)}${sl('contrast', 'Contrast', 0, 200, '%', 100)}</div>` : '';
+    const note = mode === 'map' ? '<span class="bnp-note">Coloured for this theme by Neopets Enhance: choose a way to change them.</span>' : '';
+    return `<div class="bnp-mytint"><span class="bnp-mytint-h">${head}</span><span class="bnp-seg" role="group" aria-label="${head}">${seg}</span>${note}${body}</div>`;
+  }
+  function myPrevs() {   // (the pattern boxes: each in its new colours; each picture's own size, or that it didn't load)
+    if (!hub || !lookAt) return;
+    const t = myKey(lookAt);
+    if (!t) return;
+    for (const info of hub.main.querySelectorAll('[data-mypicinfo]')) {
+      const p = info.dataset.mypicinfo, ks = p.split('.'), raw = myGet(t, p);
+      const u = p.startsWith('deco:') ? myPic(((myGet(t, 'deco') || []).find((x) => x && x.id === p.slice(5)) || {}).pic) : p === 'icons.set' ? (typeof raw === 'string' ? raw.replace(/\{name\}/g, 'community-icon') : '') : ks.length === 2 && ks[1] === 'pat' && MY_PAT_AT[ks[0]] ? myPatSrc(t, ks[0]) : myPic(raw);
+      if (!u) { info.textContent = ''; delete info.dataset.u; continue; }
+      if (info.dataset.u === u) continue;
+      info.dataset.u = u;
+      const im = new Image();
+      im.onload = () => { if (info.dataset.u !== u) return; info.textContent = `${im.naturalWidth} × ${im.naturalHeight}`; info.classList.remove('is-bad'); };
+      im.onerror = () => { if (info.dataset.u !== u) return; info.textContent = 'This picture didn’t load: check its address'; info.classList.add('is-bad'); };
+      im.src = u;
+    }
+    for (const box of hub.main.querySelectorAll('[data-mypatprev]')) {
+      const k = box.dataset.mypatprev, src = myPatSrc(t, k), o = myGet(t, `${k}.tint`), size = `${Math.min(Number(myGet(t, `${k}.size`)) || 150, 150)}px auto`;
+      if (!src) continue;
+      if (!tintOn(o) || (!o.mode && !isSvg(src))) { delete box.dataset.want; box.style.backgroundImage = `url("${cssUrl(src)}")`; box.style.backgroundSize = size; continue; }
+      const want = `${src}|${tintKey(o)}`;
+      box.dataset.want = want;
+      tintSmall(src, o).then((u) => { if (u && box.isConnected && box.dataset.want === want) { box.style.backgroundImage = `url("${cssUrl(u)}")`; box.style.backgroundSize = size; } }).catch(report);
+    }
   }
   // the colour picker: the boards' own, for a theme's colours
   let mcp = null;
   function myColourOpen(anchor) {
     myColourClose();
-    const path = anchor.dataset.mycol, t = myEditable(lookAt), start = nbHex(anchor.dataset.hex) || '#888888';
+    const path = anchor.dataset.mycol, paths = anchor.dataset.paths ? anchor.dataset.paths.split(',') : null, t = myEditable(lookAt), start = myHex(anchor.dataset.hex) || '#888888', tint = /^(.+\.tint)\./.exec(path), seeThrough = !tint;   // (a picture's colour is always solid)
     if (!t) return;
-    const own = nbJson('bnp-cprecent', []).filter((c) => nbHex(c)).slice(0, 10);
-    const sws = (cs) => cs.map((c) => `<button type="button" data-cpc="${c}" style="background:${c}" title="${c}" aria-label="${c}"></button>`).join('');
+    if (tint) myTintTouch(t, tint[1]);   // (a picture's colour: its older settings written the new way first)
+    const own = nbJson('bnp-cprecent', []).filter((c) => myHex(c)).slice(0, 10), theirs = myPalette(t).map((x) => x.hex).slice(0, 20);
+    const sws = (cs) => cs.map((c) => `<button type="button" data-cpc="${c}" style="--c:${c}" title="${c}" aria-label="${c}"></button>`).join('');
     const el = document.createElement('div');
-    el.className = 'bnp-cp';
+    el.className = 'bnp-cp bnp-mycp';
     el.setAttribute('role', 'dialog');
     el.setAttribute('aria-label', 'Its colour');
     el.innerHTML = `<div class="bnp-cp-sv" tabindex="0" role="slider" aria-label="How light, and how strong"><i></i></div>
       <div class="bnp-cp-hue" tabindex="0" role="slider" aria-label="Which colour" aria-valuemin="0" aria-valuemax="360"><i></i></div>
-      <div class="bnp-cp-row"><span class="bnp-cp-now" style="--was:${start}"><i></i></span><input type="text" class="bnp-cp-hex" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Its colour, as #rrggbb"></div>
+      ${seeThrough ? '<div class="bnp-cp-alpha" tabindex="0" role="slider" aria-label="How see-through" title="How see-through: solid on the right"><i></i></div>' : ''}
+      <div class="bnp-cp-row"><span class="bnp-cp-now" style="--was:${start}"><i></i></span><input type="text" class="bnp-cp-hex" maxlength="9" spellcheck="false" autocomplete="off" aria-label="Its colour, as #rrggbb, or #rrggbbaa when see-through">${window.EyeDropper ? `<button type="button" class="bnp-cp-drop" data-cp="drop" title="Take a colour from anywhere on the screen: Settings steps aside while you choose" aria-label="Eyedropper">${CP_DROP_SVG}</button>` : ''}</div>
+      ${theirs.length ? `<div class="bnp-cp-h">This theme’s colours</div><div class="bnp-cp-sws">${sws(theirs)}</div>` : ''}
       ${own.length ? `<div class="bnp-cp-h">Your recent ones</div><div class="bnp-cp-sws">${sws(own)}</div>` : ''}
       <div class="bnp-cp-foot"><button type="button" class="bnp-nbc-lb" data-cp="was">As it was</button><button type="button" class="bnp-cp-ok" data-cp="ok">Done</button></div>`;
     hub.win.append(el);
-    const sv = el.querySelector('.bnp-cp-sv'), hue = el.querySelector('.bnp-cp-hue'), hexIn = el.querySelector('.bnp-cp-hex'), nowSw = el.querySelector('.bnp-cp-now');
-    mcp = { el, anchor, path, t, start, hex: start, hsv: hexHsv(start), raf: 0 };
+    const sv = el.querySelector('.bnp-cp-sv'), hue = el.querySelector('.bnp-cp-hue'), alpha = el.querySelector('.bnp-cp-alpha'), hexIn = el.querySelector('.bnp-cp-hex'), nowSw = el.querySelector('.bnp-cp-now');
+    const [start6, startA] = hexA(start);
+    mcp = { el, anchor, path, paths, t, start, hex: start, hsv: hexHsv(start6), a: seeThrough ? startA : 1, raf: 0 };
     const paint = (fromHex) => {
       const [h, s, v] = mcp.hsv;
       sv.style.setProperty('--cp-h', String(Math.round(h)));
       sv.firstElementChild.style.left = `${s * 100}%`;
       sv.firstElementChild.style.top = `${(1 - v) * 100}%`;
       hue.firstElementChild.style.left = `${(h / 360) * 100}%`;
-      nowSw.style.background = mcp.hex;
+      if (alpha) { alpha.style.setProperty('--cp-c', hsvHex(h, s, v)); alpha.firstElementChild.style.left = `${mcp.a * 100}%`; }
+      nowSw.style.setProperty('--now', mcp.hex);
       if (!fromHex && document.activeElement !== hexIn) hexIn.value = mcp.hex;
     };
-    const set = (hex, hsv, fromHex) => {
-      mcp.hex = hex;
-      mcp.hsv = hsv || hexHsv(hex);
+    const set = (hex, hsv, fromHex) => {   // (hex: #rrggbb, or #rrggbbaa; see-through only where a colour may be)
+      const [h6, a] = hexA(hex);
+      if (!h6) return;
+      mcp.a = seeThrough ? a : 1;
+      mcp.hex = withA(h6, mcp.a);
+      mcp.hsv = hsv || hexHsv(h6);
       paint(fromHex);
-      anchor.style.backgroundColor = hex;
+      const swEl = anchor.querySelector(':scope > i') || anchor;
+      swEl.style.setProperty('--c', mcp.hex);
       anchor.classList.remove('is-base');
-      if (!mcp.raf) mcp.raf = requestAnimationFrame(() => { if (!mcp) return; mcp.raf = 0; mySet(mcp.t, mcp.path, mcp.hex); });
+      if (!mcp.raf) mcp.raf = requestAnimationFrame(() => { if (!mcp) return; mcp.raf = 0; myColourPut(); if (/\.tint\./.test(mcp.path)) { clearTimeout(myPrevs.t); myPrevs.t = setTimeout(myPrevs, 140); } });
     };
     const drag = (box, at) => (e) => {
       if (e.button !== 0) return;
@@ -11249,14 +12143,20 @@
       box.addEventListener('pointerup', up);
       box.addEventListener('pointercancel', up);
     };
-    sv.addEventListener('pointerdown', drag(sv, (x, y) => { const hsv = [mcp.hsv[0], x, 1 - y]; set(hsvHex(...hsv), hsv); }));
-    hue.addEventListener('pointerdown', drag(hue, (x) => { const hsv = [Math.min(359.9, x * 360), mcp.hsv[1], mcp.hsv[2]]; set(hsvHex(...hsv), hsv); }));
-    hexIn.addEventListener('input', () => { const h = nbHex(hexIn.value.trim().replace(/^(?!#)/, '#')); hexIn.classList.toggle('is-bad', !!hexIn.value.trim() && !h); if (h) set(h, null, true); });
+    sv.addEventListener('pointerdown', drag(sv, (x, y) => { const hsv = [mcp.hsv[0], x, 1 - y]; set(withA(hsvHex(...hsv), mcp.a), hsv); }));
+    hue.addEventListener('pointerdown', drag(hue, (x) => { const hsv = [Math.min(359.9, x * 360), mcp.hsv[1], mcp.hsv[2]]; set(withA(hsvHex(...hsv), mcp.a), hsv); }));
+    if (alpha) alpha.addEventListener('pointerdown', drag(alpha, (x) => set(withA(hsvHex(...mcp.hsv), Math.round(x * 100) / 100), mcp.hsv)));
+    hexIn.addEventListener('input', () => { const h = myHex(hexIn.value.trim().replace(/^(?!#)/, '#')); hexIn.classList.toggle('is-bad', !!hexIn.value.trim() && !h); if (h) set(h, null, true); });
     hexIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); myColourClose(); anchor.focus(); } });
     el.addEventListener('click', (e) => {
       const tg = e.target instanceof Element ? e.target : null, c = tg && tg.closest('[data-cpc]'), b = tg && tg.closest('[data-cp]');
       if (c) { set(c.dataset.cpc); return; }
       if (b && b.dataset.cp === 'ok') { myColourClose(); anchor.focus(); } else if (b && b.dataset.cp === 'was') set(mcp.start);
+      else if (b && b.dataset.cp === 'drop' && window.EyeDropper) {   // (Settings out of the way while a colour is taken from the page, or anywhere on the screen)
+        hub.win.classList.add('is-peek');
+        hub.veil.classList.add('is-peek');
+        new window.EyeDropper().open().then((res) => { const h = nbHex(res && res.sRGBHex); if (h && mcp) set(h); }).catch(() => { /* (Esc: nothing taken) */ }).finally(() => { if (!hub) return; hub.win.classList.remove('is-peek'); hub.veil.classList.remove('is-peek'); });
+      }
     });
     paint();
     const w = hub.win.getBoundingClientRect(), a = anchor.getBoundingClientRect(), pw = el.offsetWidth, ph = el.offsetHeight;
@@ -11266,10 +12166,15 @@
     el.style.top = `${Math.round(Math.max(56, Math.min(top, w.height - ph - 8)))}px`;
     sv.focus({ preventScroll: true });
   }
+  function myColourPut() {   // (the picker's colour, where it goes: one place, or every place a colour of the Palette is)
+    if (!mcp) return;
+    if (mcp.paths) { myHistPush(mcp.t, `palette:${mcp.paths.join()}`); mySetMany(mcp.t, mcp.paths.map((p) => [p, mcp.hex]), mcp.paths.some((p) => /\.tint\./.test(p))); }
+    else mySet(mcp.t, mcp.path, mcp.hex);
+  }
   function myColourClose() {
     if (!mcp) return;
     cancelAnimationFrame(mcp.raf);
-    if (mcp.hex !== mcp.start) { mySet(mcp.t, mcp.path, mcp.hex); nbJsonSet('bnp-cprecent', [mcp.hex, ...nbJson('bnp-cprecent', []).filter((c) => c !== mcp.hex)].slice(0, 10)); }
+    if (mcp.hex !== mcp.start) { myColourPut(); nbJsonSet('bnp-cprecent', [mcp.hex, ...nbJson('bnp-cprecent', []).filter((c) => c !== mcp.hex)].slice(0, 10)); }
     mcp.el.remove();
     mcp = null;
     if (hub && hubPage === 'themes') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
@@ -11294,29 +12199,245 @@
       el.setAttribute('aria-label', 'Choose a pattern');
       hub.win.querySelector('.bnp-hub-body').append(el);
     }
-    const area = (MY_PATS.find((x) => x[0] === myPick.part) || [])[1] || 'it';
-    el.innerHTML = `<div class="bnp-lptop"><b>A pattern for ${esc(area.replace(/^The /, 'the '))}</b><button type="button" class="bnp-lpx" data-mypickclose title="Close" aria-label="Close">×</button></div>
+    const area = (MY_PATS.find((x) => x[0] === myPick.part) || [])[1] || (myPick.part === 'home' ? 'Around the home page’s scene' : 'it');
+    el.innerHTML = `<div class="bnp-lptop"><b>${myPick.alt ? 'Another pattern, taking turns, for' : 'A pattern for'} ${esc(area.replace(/^The /, 'the '))}</b><button type="button" class="bnp-lpx" data-mypickclose title="Close" aria-label="Close">×</button></div>
       <div class="bnp-lpbody"><div class="bnp-mypats">${myPatList().map(([u, name]) => `<button type="button" class="bnp-mypatone" data-mypatuse="${esc(u)}"><span style="background-image:url('${esc(cssUrl(myPic(u) || fullUrl(u)))}')"></span><b>${esc(name)}</b></button>`).join('')}</div>
         ${themeData().sw && Object.keys(themeData().sw).length < 5 ? '<p class="bnp-note">More patterns come as each theme’s colours are read: open Themes once more in a moment.</p>' : ''}</div>
       <div class="bnp-lpurl"><input type="url" data-mypaturl placeholder="Or a picture’s address: https://images.neopets.com/…" aria-label="A picture’s address" spellcheck="false"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mypatadd>Use it</button></div>`;
   }
   function myEditClick(t, d) {   // (the editor's own buttons; true when it was one of them)
     const k = lookAt, mine = myEditable(k);
-    if (d.mytab) { myTab = d.mytab; myColourClose(); paintHub(); return true; }
-    if ('mynew' in d) { const n = myNew(); lookAt = `my:${n.id}`; myTab = 'colours'; myPreview(lookAt); changed(`${n.name}: it starts as ${nbcThemeName(n.base)} exactly`); hub.main.scrollTop = 0; return true; }
-    if (d.mycopy) { const n = myCopy(d.mycopy); if (n) { lookAt = `my:${n.id}`; myTab = 'colours'; myPreview(lookAt); changed(`${n.name}: yours to change`); hub.main.scrollTop = 0; } return true; }
+    if (d.mytab) { myTab = d.mytab; myTurn = null; myColourClose(); paintHub(); return true; }
+    if ('mynew' in d) { const n = myNew(); lookAt = `my:${n.id}`; myTab = 'bar'; myPreview(lookAt); changed(`${n.name}: it starts as ${nbcThemeName(n.base)} exactly`); hub.main.scrollTop = 0; return true; }
+    if (d.mycopy) { const n = myCopy(d.mycopy); if (n) { lookAt = `my:${n.id}`; myTab = 'bar'; myPreview(lookAt); changed(`${n.name}: yours to change`); hub.main.scrollTop = 0; } return true; }
     if ('mywear' in d) { myPreviewOf = ''; myWear(d.mywear); paintHub(); toast(d.mywear ? `${(myOf(d.mywear) || {}).name} is on (in this browser)` : 'Your Neopets theme again'); return true; }
     if (d.myren && mine) { const box = hub.main.querySelector('[data-myname]'); if (box) { mine.name = (box.value || '').trim().slice(0, 40) || mine.name; S.myThemes = [...S.myThemes]; changed('Named'); } return true; }
-    if ('mydel' in d && mine) { if (d.mydel !== 'sure') { t.dataset.mydel = 'sure'; t.textContent = 'Delete it for good?'; t.classList.add('is-sure'); return true; } const gone = mine; S.myThemes = S.myThemes.filter((x) => x.id !== gone.id); const lk = { ...(S.looks || {}) }; delete lk[`my:${gone.id}`]; S.looks = lk; if (S.wear === gone.id) myWear(''); myPreviewEnd(); lookAt = ''; changed(`${gone.name} is gone`); return true; }
+    if ('mydel' in d && mine) { if (d.mydel !== 'sure') { t.dataset.mydel = 'sure'; t.textContent = 'Delete it for good?'; t.classList.add('is-sure'); return true; } const gone = mine; S.myThemes = S.myThemes.filter((x) => x.id !== gone.id); const lk = { ...(S.looks || {}) }; delete lk[`my:${gone.id}`]; S.looks = lk; mySavesSet(gone.id, []); if (S.wear === gone.id) myWear(''); myPreviewEnd(); lookAt = ''; changed(`${gone.name} is gone`); return true; }
     if (d.mycol) { myColourOpen(t); return true; }
     if (d.myclear && mine) { mySet(mine, d.myclear, ''); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return true; }
-    if ('myicons' in d && mine) { const ic = { ...(mine.v.icons || {}) }; if (d.myicons) { ic.from = d.myicons; if (ic.hue == null) Object.assign(ic, { hue: 280, keep: 30, sat: 100, grey: 55, light: 0 }); } else delete ic.from; mine.v = { ...mine.v, icons: ic }; mySet(mine, 'icons.from', ic.from || ''); paintHub(); return true; }
-    if ('mylogo' in d && mine) { mySet(mine, 'logo.from', d.mylogo); paintHub(); return true; }
-    if (d.mypat) { myPick = { part: d.mypat }; myPickPaint(); return true; }
+    if ('myicons' in d && mine) { mySet(mine, 'icons.from', d.myicons || ''); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return true; }   // (another theme's icons: in their own colours, until you colour them)
+    if (d.mytint && mine) {   // (a picture's colours: as it is, its hues turned, or all of it in one colour; each way's settings kept for coming back to)
+      const [path, mode] = d.mytint.split(':');
+      if ((myTintShown(mine, path).mode || '') === mode) return true;
+      myTintTouch(mine, path);
+      const o = { ...(myGet(mine, path) || {}), mode };
+      if (mode === 'hue') for (const [k, v] of [['hue', 0], ['sat', 0], ['light', 0]]) if (o[k] == null) o[k] = v;
+      if (mode === 'colour') { if (!nbHex(o.colour)) o.colour = myTintStart(mine, path); if (o.light == null) o.light = 0; if (o.contrast == null) o.contrast = 100; }
+      mySet(mine, path, o);
+      const keep = hub.main.scrollTop;
+      paintHub();
+      hub.main.scrollTop = keep;
+      return true;
+    }
+    if ('mylogo' in d && mine) { mySet(mine, 'logo.pic', ''); mySet(mine, 'logo.from', d.mylogo); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return true; }
+    if (d.myclearpart && mine) {   // (a whole part of the page as its base has it again; Undo brings it back)
+      const parts = d.myclearpart.split(',');
+      if (!parts.some((p) => mine.v && mine.v[p])) { toast(`That’s ${nbcThemeName(mine.base)}’s already`); return true; }
+      myHistPush(mine, '');
+      const v = { ...(mine.v || {}) };
+      for (const p of parts) delete v[p];
+      mine.v = v;
+      S.myThemes = [...S.myThemes];
+      myShowNow(mine, true);
+      changed(`As ${nbcThemeName(mine.base)} has it again`, () => myHistStep(mine, true));
+      return true;
+    }
+    if (d.myset && mine) {   // (a choice among a few: how a picture sits, repeated or not, moving or still)
+      const i = d.myset.lastIndexOf(':');
+      mySet(mine, d.myset.slice(0, i), d.myset.slice(i + 1));
+      if (/\.move$/.test(d.myset.slice(0, i))) myMeasure(mine, d.myset.split('.')[0]);
+      const keep = hub.main.scrollTop;
+      paintHub();
+      hub.main.scrollTop = keep;
+      return true;
+    }
+    if ('myscene' in d && mine) { mySet(mine, 'home.scene', d.myscene); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return true; }
+    if ('myexport' in d && mine) {   // (the theme as a code: its parts, and who stands where)
+      const code = JSON.stringify({ neopetsEnhanceTheme: 1, name: mine.name, base: mine.base, v: mine.v || {}, looks: (S.looks || {})[k] || undefined });
+      navigator.clipboard.writeText(code).then(() => toast('Its code is copied: paste it anywhere to keep it, or give it to a friend')).catch(() => toast('It couldn’t be copied just now: try again'));
+      return true;
+    }
+    if ('myimport' in d) {   // (a theme's code, pasted in: one of yours, as it came)
+      const box = hub.win.querySelector('[data-myimporttext]'), r = myImportText(String((box && box.value) || ''));
+      if (!r) { toast('That isn’t a theme’s code: copy it again with Copy its code'); if (box) box.focus(); return true; }
+      myImported(r);
+      return true;
+    }
+    if ('myturnkeep' in d && mine) { myTurn = null; changed('Every colour turned: kept'); return true; }
+    if ('myturnback' in d && mine) { if (myTurn && myTurn.id === mine.id) { myTurn.hue = 0; myTurn.sat = 0; myTurn.light = 0; myTurnApply(mine); } myTurn = null; changed('Every colour as it was before'); return true; }
+    if ('myundo' in d && mine) { myHistStep(mine, true); return true; }
+    if ('myredo' in d && mine) { myHistStep(mine, false); return true; }
+    if ('myimportopen' in d) { myImp = true; myImpPaint(); return true; }
+    if ('myimpclose' in d) { myImp = false; myImpPaint(); return true; }
+    if ('myimpfile' in d) { const f = hub.win.querySelector('[data-myimpfilein]'); if (f) f.click(); return true; }
+    if ('myfile' in d && mine) { myDownload(mine.name, myFileOf(mine)); toast(`Saved as a file: ${mine.name}.json`); return true; }
+    if ('myfileall' in d) { const all = S.myThemes || []; if (all.length) { myDownload(`neopets-enhance-themes-${new Date().toISOString().slice(0, 10)}`, { neopetsEnhanceThemes: all.map(myFileOf) }); toast(`Saved: all ${all.length} of your themes, in one file`); } return true; }
+    if ('mysave' in d && mine) {   // (this build as it is now, kept: newest first)
+      const box = hub.main.querySelector('[data-mysavename]'), name = String((box && box.value) || '').trim().slice(0, 40);
+      mySavesSet(mine.id, [{ at: Date.now(), name, base: mine.base, v: JSON.parse(JSON.stringify(mine.v || {})) }, ...mySaves(mine.id)].slice(0, 60));
+      changed(name ? `Saved: ${name}` : 'Saved this version');
+      return true;
+    }
+    if ('mysaveback' in d && mine) {   // (back to a saved version; undone in a click)
+      const s = mySaves(mine.id)[Number(d.mysaveback)];
+      if (!s) return true;
+      const was = { v: mine.v, base: mine.base };
+      myHistPush(mine, '');
+      myRestore(mine, { v: JSON.parse(JSON.stringify(s.v || {})), base: s.base });
+      changed(`Back to ${s.name || 'that version'}`, () => { myRestore(mine, was); changed(); });
+      return true;
+    }
+    if ('mysavedel' in d && mine) {
+      const at = Number(d.mysavedel), list = mySaves(mine.id).slice(), [gone] = list.splice(at, 1);
+      if (!gone) return true;
+      mySavesSet(mine.id, list);
+      changed(`Deleted ${gone.name || 'that version'}`, () => { const now = mySaves(mine.id).slice(); now.splice(at, 0, gone); mySavesSet(mine.id, now); changed(); });
+      return true;
+    }
+    if (d.mypat) { myPick = { part: d.mypat, alt: d.alt === '1' }; myPickPaint(); return true; }
+    if (d.myaltshow && mine) { const [part, i] = d.myaltshow.split(':'), u = Number(i) < 0 ? String(myGet(mine, `${part}.pat`) || '') : (myGet(mine, `${part}.alts`) || [])[Number(i)]; if (u != null) { myVaryNow.set(`${mine.id}:alt:${part}`, u); myShowNow(mine, true); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; } return true; }
+    if (d.myaltdel && mine) { const [part, i] = d.myaltdel.split(':'), list = (myGet(mine, `${part}.alts`) || []).slice(); list.splice(Number(i), 1); mySet(mine, `${part}.alts`, list.length ? list : ''); myVaryNow.delete(`${mine.id}:alt:${part}`); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return true; }
+    if (d.mydecoadd && mine) { const id = `d${Date.now().toString(36)}`; myHistPush(mine, ''); myPut(mine, 'deco', [...(Array.isArray(myGet(mine, 'deco')) ? myGet(mine, 'deco') : []), { id, at: d.mydecoadd, spot: d.mydecoadd === 'bar' ? 'cc' : 'cb' }]); myFolds[`deco:${id}`] = true; saveNow(); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; const box = hub.main.querySelector(`[data-mydecopic="${id}"]`); if (box) box.focus(); return true; }
+    if (d.mydecodel && mine) { myHistPush(mine, ''); const list = (myGet(mine, 'deco') || []).filter((x) => x && x.id !== d.mydecodel); myPut(mine, 'deco', list.length ? list : ''); saveNow(); myShowNow(mine, false); changed('That picture is gone', () => myHistStep(mine, true)); return true; }
+    if (d.mydecoset && mine) { const [id, key, val] = d.mydecoset.split(':'); myDecoSet(mine, id, { [key]: key === 'w' ? (val === '120' ? 120 : val) : key === 'over' ? (val ? 1 : '') : val }, key); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return true; }
+    if (d.myuntake && mine) { myHistPush(mine, ''); const b = { ...((mine.v && mine.v.borrow) || {}) }; delete b[d.myuntake]; myPut(mine, 'borrow', Object.keys(b).length ? b : ''); saveNow(); myShowNow(mine, true); changed(`The ${MY_TAKE_NAME[d.myuntake]} is yours again`, () => myHistStep(mine, true)); return true; }
+    if (d.myfindgo != null && mine) { myFindGo(Number(d.myfindgo)); return true; }
     if ('mypickclose' in d) { myPick = null; myPickPaint(); return true; }
-    if (d.mypatuse && mine && myPick) { mySet(mine, `${myPick.part}.pat`, d.mypatuse); myPick = null; myPickPaint(); paintHub(); return true; }
-    if ('mypatadd' in d && mine && myPick) { const u = String((hub.win.querySelector('[data-mypaturl]') || {}).value || '').trim(); if (!/^https:\/\/\S+\.(png|gif|webp|jpe?g|svg)(\?\S*)?$/i.test(u)) { toast('A picture’s whole address, starting https://'); return true; } mySet(mine, `${myPick.part}.pat`, u); myPick = null; myPickPaint(); paintHub(); return true; }
+    const patPut = (u) => {   // (the picture chosen: the part's own, or one more taking turns with it)
+      const part = myPick.part;
+      if (myPick.alt) { const list = (Array.isArray(myGet(mine, `${part}.alts`)) ? myGet(mine, `${part}.alts`) : []).filter((x) => x !== u); mySet(mine, `${part}.alts`, [...list, u].slice(0, 12)); myVaryNow.set(`${mine.id}:alt:${part}`, u); myShowNow(mine, true); }
+      else { mySet(mine, `${part}.pat`, u); if (myGet(mine, `${part}.move`)) myMeasure(mine, part); }
+      myPick = null;
+      myPickPaint();
+      const keep = hub.main.scrollTop;
+      paintHub();
+      hub.main.scrollTop = keep;
+    };
+    if (d.mypatuse && mine && myPick) { patPut(d.mypatuse); return true; }
+    if ('mypatadd' in d && mine && myPick) { const u = String((hub.win.querySelector('[data-mypaturl]') || {}).value || '').trim(); if (!/^https:\/\/\S+\.(png|gif|webp|jpe?g|svg)(\?\S*)?$/i.test(u)) { toast('A picture’s whole address, starting https://'); return true; } patPut(u); return true; }
     return false;
+  }
+  function myMeasure(t, part) {   // (a part's picture, its own size: so it moves exactly one repeat at a time)
+    const u = myPatSrc(t, part);
+    if (!u) return;
+    const im = new Image();
+    im.onload = () => { if (!im.naturalWidth) return; mySet(t, `${part}.pw`, im.naturalWidth, true); mySet(t, `${part}.ph`, im.naturalHeight, true); };
+    im.src = u;
+  }
+  const MY_DECO_SPOTS = [['lt', '↖'], ['ct', '↑'], ['rt', '↗'], ['lc', '←'], ['cc', '•'], ['rc', '→'], ['lb', '↙'], ['cb', '↓'], ['rb', '↘']];
+  const MY_DECO_SPOT_NAMES = { lt: 'top left', ct: 'top middle', rt: 'top right', lc: 'left', cc: 'middle', rc: 'right', lb: 'bottom left', cb: 'bottom middle', rb: 'bottom right' };
+  function myDecoSet(t, id, patch, key) {   // (one decoration changed: kept, shown at once; a slider dragged is one step for Undo)
+    myHistPush(t, `deco:${id}:${key || ''}`);
+    const list = (Array.isArray(myGet(t, 'deco')) ? myGet(t, 'deco') : []).map((x) => (x && x.id === id ? Object.fromEntries(Object.entries({ ...x, ...patch }).filter(([, val]) => val !== '' && val != null)) : x));
+    myPut(t, 'deco', list);
+    clearTimeout(mySet.t);
+    mySet.t = setTimeout(saveNow, 700);
+    myShowNow(t, false);
+  }
+  const MY_TAKE = { bar: ['bar'], menus: ['menu', 'prof', 'news'], pop: ['pop'], page: ['page', 'link', 'box'], foot: ['foot'], home: ['home'], boards: ['boards'] };   // (each tab's part of the page, and the parts of a theme of yours it is)
+  const MY_TAKE_NAME = { bar: 'top bar', menus: 'menus', pop: 'pop-ups', page: 'page', foot: 'foot of the page', home: 'home page', boards: 'Neoboards' };
+  function myAreaOf(sel) {   // (a selector in a Neopets theme's sheet: the part of the page it dresses. Icons, the logo, Neopians and the theme's own extras: none)
+    const s = sel.trim();
+    if (/-icon|dropdown-arrow|nav-logo|footer-logo|slick-(?:prev|next)|nav-npc|hiddenTheme|npc-hiding|snowflake|themeMusic|greyTheme|toggleNeggs|firework/i.test(s)) return '';
+    if (/#board|boardPost|neoboardPen/i.test(s)) return 'boards';
+    if (/hp-|animated-bg/i.test(s)) return 'home';
+    if (/footer/i.test(s)) return 'foot';
+    if (/popup|togglePopup/i.test(s)) return 'pop';
+    if (/nav-dropdown|dropdown-triangle|nav-profile|navProfilePet|navnewsdropdown|alertstab|newstab|queststab|navquestsdropdown|tabActive|tabHidden|news-dropdown|quests-dropdown|alerts-none|news-tab|alerts-tab|quests-tab|nf-readmore|shopdropdown/i.test(s)) return 'menus';
+    if (/nav-top|nav-bottom|nav-text|nav-notif|nav-neofriends|alerts-notif|news-notif|quests-notif/i.test(s)) return 'bar';
+    if (/^(?:html|body)(?![\w-])|^a(?![\w-])/i.test(s)) return 'page';
+    return '';
+  }
+  function mySheetPart(css, base, area) {   // (a Neopets theme's sheet → its rules for one part of the page: a step stronger than the base's, pictures by their whole address, its animations with them)
+    css = css.replace(/\/\*[\s\S]*?\*\//g, '').replace(/@(?:import|charset)[^;{]*;/gi, '');
+    const out = [], names = new Set(), frames = new Map(), skip = () => { let depth = 1; while (i < css.length && depth) { if (css[i] === '{') depth++; else if (css[i] === '}') depth--; i++; } };
+    const abs = (body) => body.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/gi, (m, q, u) => { try { return `url("${new URL(u.trim(), base).href}")`; } catch (_) { return m; } });
+    let i = 0;
+    const walk = (media) => {
+      while (i < css.length) {
+        const open = css.indexOf('{', i), close = css.indexOf('}', i);
+        if (close >= 0 && (open < 0 || close < open)) { i = close + 1; return; }   // (the end of the block this is in)
+        if (open < 0) { i = css.length; return; }
+        const head = css.slice(i, open).trim();
+        i = open + 1;
+        if (/^@media/i.test(head)) { walk(head); continue; }
+        if (/^@(?:-webkit-)?keyframes/i.test(head)) { const st = i; skip(); frames.set(head.replace(/^@(?:-webkit-)?keyframes\s+/i, '').trim(), `${head} {${css.slice(st, i - 1)}}`); continue; }
+        if (head.startsWith('@')) { skip(); continue; }
+        const shut = css.indexOf('}', i), body = css.slice(i, shut < 0 ? css.length : shut);
+        i = shut < 0 ? css.length : shut + 1;
+        const sels = head.split(',').map((x) => x.trim()).filter((x) => x && myAreaOf(x) === area);
+        if (!sels.length) continue;
+        const decl = abs(body.trim());
+        for (const m of decl.matchAll(/animation(?:-name)?\s*:\s*([^;]+)/gi)) for (const w of m[1].split(/[\s,]+/)) if (/^[a-z_][\w-]*$/i.test(w)) names.add(w);
+        const rule = `${sels.map((x) => (/^html(?![\w-])/i.test(x) ? x.replace(/^html/i, ':root') : `:root ${x}`)).join(', ')} { ${decl} }`;
+        out.push(media ? `${media} { ${rule} }` : rule);
+      }
+    };
+    walk('');
+    for (const n of names) if (frames.has(n)) out.push(frames.get(n));
+    return out.join('\n');
+  }
+  async function myTake(t, area, from) {   // (np:folder → that Neopets theme's own rules for this part; my:id → that theme of yours's settings for it)
+    const [kind, id] = [from.slice(0, 2), from.slice(3)];
+    if (kind === 'my') {
+      const src = myOf(id);
+      if (!src) return;
+      myHistPush(t, '');
+      for (const p of MY_TAKE[area]) myPut(t, p, src.v && src.v[p] ? JSON.parse(JSON.stringify(src.v[p])) : '');
+      const b = { ...((t.v && t.v.borrow) || {}) }, sb = src.v && src.v.borrow && src.v.borrow[area];
+      if (sb) b[area] = { ...sb }; else delete b[area];
+      myPut(t, 'borrow', Object.keys(b).length ? b : '');
+      saveNow();
+      myShowNow(t, true);
+      changed(`The ${MY_TAKE_NAME[area]} is ${src.name}’s now`, () => myHistStep(t, true));
+      return;
+    }
+    const url = myBaseHref(id);
+    toast(`Reading ${nbcThemeName(id)}…`);
+    let css = '';
+    try { const r = await fetch(url, { credentials: 'omit' }); if (r.ok) css = mySheetPart(await r.text(), url, area); } catch (_) { /* */ }
+    if (!css) { toast(`${nbcThemeName(id)}’s ${MY_TAKE_NAME[area]} couldn’t be read just now: try again`); return; }
+    myHistPush(t, '');
+    for (const p of MY_TAKE[area]) myPut(t, p, '');   // (your own changes to it give way to it: Undo brings them back)
+    myPut(t, 'borrow', { ...((t.v && t.v.borrow) || {}), [area]: { from: id, css } });
+    saveNow();
+    myShowNow(t, true);
+    changed(`The ${MY_TAKE_NAME[area]} is ${nbcThemeName(id)}’s now: change anything over it`, () => myHistStep(t, true));
+  }
+  // Find an option: every colour, and every card, by name; one chosen opens its tab and shows it
+  const MY_PART_TAB = { bar: 'bar', menu: 'menus', prof: 'menus', news: 'menus', pop: 'pop', page: 'page', link: 'page', box: 'page', foot: 'foot', home: 'home', boards: 'boards' };
+  const MY_FIND = [['who', 'Characters at the foot of every page', 'At the foot of every page'], ['who', 'Characters in Settings’ corner', 'In Settings’ corner'], ['who', 'Characters in the Dailies window’s corner', 'In the Dailies window’s corner'], ['who', 'Who stands on its tile', 'On its tile'],
+    ['bar', 'Top bar pattern', 'Its pattern'], ['bar', 'Moving pattern: snow, rain, confetti', 'Its pattern'], ['bar', 'Patterns taking turns', 'Its pattern'], ['bar', 'Menu names’ font', 'Its writing'], ['bar', 'Clock', 'The clock'], ['bar', 'Counts on the icons', 'The counts'], ['bar', 'Top bar decorations', 'Decorations'], ['bar', 'Take the top bar from another theme', 'Decorations'],
+    ['logo', 'Logo', 'Its logo'], ['logo', 'Logo in the foot of the page', 'Its logo'], ['logo', 'Icons', 'Its icons'], ['logo', 'Icons one by one, or from another theme', 'Icons one by one'],
+    ['menus', 'Menus’ edge and corners', 'Menus'], ['menus', 'Menus’ font', 'Their writing'], ['menus', 'Profile menu', 'The profile menu'], ['menus', 'News, alerts and quests', 'News, alerts and quests'],
+    ['pop', 'Pop-ups’ edge and corners', 'Their colours'], ['pop', 'Pop-ups’ pattern', 'Their pattern'], ['pop', 'Pop-up titles’ font', 'Their titles'], ['pop', 'Pop-up decorations', 'Decorations'],
+    ['page', 'Page background pattern', 'Its background'], ['page', 'The pages’ box', 'The pages’ box'], ['page', 'Pages’ font', 'Its writing'], ['page', 'Pointer (cursor)', 'The pointer'], ['page', 'Scrollbar and selecting', 'Scrollbars and selecting'], ['page', 'Page decorations', 'Decorations'],
+    ['foot', 'Foot of the page’s pattern', 'Its pattern'], ['foot', 'Foot of the page’s font', 'Its writing'], ['foot', 'Foot of the page decorations', 'Decorations'],
+    ['home', 'Home page scene', 'Its scene'], ['home', 'Home page layers: sky, middle, ground, object', 'Its layers'], ['home', 'Around the home page’s scene', 'Around it'], ['home', 'Name plate', 'The name plate'],
+    ['palette', 'Every colour in one place', 'Its colours'], ['palette', 'Turn every colour at once (hue, saturation)', 'Turn them all'],
+    ['more', 'Rename, or make a copy', 'This theme'], ['more', 'Made by, and notes', 'This theme'], ['more', 'Its base theme', 'Built on'], ['more', 'Extra CSS', 'Extra CSS'], ['more', 'Saved versions', 'Saved versions'], ['more', 'Save as a file, or copy its code', 'Export']];
+  let myFindHits = [];
+  function myFindList(q) {
+    const all = [...MY_FIND.map(([tab, label, title]) => ({ tab, label, title })), ...MY_FIELDS.flatMap(([area, part, keys]) => keys.map(([k, name]) => ({ tab: MY_PART_TAB[part] || 'more', label: `${area}: ${name}`, col: `${part}.${k}` })))];
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    return all.filter((x) => words.every((w) => x.label.toLowerCase().includes(w))).slice(0, 14);
+  }
+  function myFindGo(i) {
+    const hit = myFindHits[i];
+    if (!hit) return;
+    myTab = hit.tab;
+    myTurn = null;
+    myColourClose();
+    paintHub();
+    requestAnimationFrame(() => {
+      let el = hit.col ? hub.main.querySelector(`[data-mycol="${hit.col}"]`) : null;
+      if (el) el = el.closest('.bnp-myc') || el;
+      if (!el && hit.title) { const h = [...hub.main.querySelectorAll('h5, summary')].find((x) => (x.firstChild && x.firstChild.textContent || '').trim() === hit.title); el = h && (h.tagName === 'H5' ? h.nextElementSibling || h : h.parentElement); }
+      if (!el) return;
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el.classList.add('bnp-found');
+      setTimeout(() => el.classList.remove('bnp-found'), 1800);
+    });
   }
   const lookChanged = (f) => !!(S.looks && S.looks[f] && Object.keys(S.looks[f]).length);
   function themesPage() {
@@ -11332,60 +12453,161 @@
       return `<div class="bnp-look${on ? ' is-now' : ''}">
         <button type="button" class="bnp-look-open" data-look="${esc(f)}" title="${esc(name)}: who stands where">
           <span class="bnp-look-band" style="background-color:${esc(sw ? sw.bg : '#ece8dc')};background-image:${esc(themeSwatchImg(sw))}"></span>
-          <span class="bnp-look-pair"><img src="${NPI}themes/h5/${esc(f)}/images/npc-left.png" alt="" loading="lazy"><img src="${NPI}themes/h5/${esc(f)}/images/npc-right.png" alt="" loading="lazy"></span>
+          <span class="bnp-look-pair">${['left', 'right'].map((s) => (lookTilePick(f, s) ? `<span class="bnp-look-fig" data-tilefig="${esc(f)}" data-side="${s}"></span>` : `<img src="${NPI}themes/h5/${esc(f)}/images/npc-${s}.png" alt="" loading="lazy">`)).join('')}</span>
           <span class="bnp-look-name"><b>${esc(name)}</b>${lookChanged(f) ? '<small>Changed</small>' : ''}</span>
         </button>
         ${act ? `<span class="bnp-look-foot">${act}</span>` : ''}
       </div>`;
     };
     const myTile = (t) => {   // (a theme of yours, or Neopets Enhance's: its pop-up colours and pattern, the first one on each side of its foot)
-      const k = `my:${t.id}`, on = worn === t.id, pop = (t.v && t.v.pop) || {}, pu = myPic(pop.pat);
-      const band = `background-color:${pop.top || '#ece8dc'};background-image:${[pu ? `url("${cssUrl(pu)}")` : '', pop.top && pop.bottom ? `linear-gradient(${pop.top}, ${pop.bottom})` : ''].filter(Boolean).join(', ') || 'none'};background-size:${Math.min(150, Number(pop.size) || 150)}px auto, auto;background-repeat:repeat, no-repeat`;
+      const k = `my:${t.id}`, on = worn === t.id, pop = (t.v && t.v.pop) || {};
       return `<div class="bnp-look is-mine${on ? ' is-now' : ''}">
         <button type="button" class="bnp-look-open" data-look="${esc(k)}" title="${esc(t.name)}">
-          <span class="bnp-look-band" style="${esc(band)}"></span>
-          <span class="bnp-look-pair"><span class="bnp-look-fig" data-tilefig="${esc(k)}:left"></span><span class="bnp-look-fig" data-tilefig="${esc(k)}:right"></span></span>
-          <span class="bnp-look-name"><b>${esc(t.name)}</b><small>${t.built ? 'Comes with Neopets Enhance' : `Yours, from ${esc(nbcThemeName(t.base))}`}${t.wip ? ' (Work in progress)' : ''}</small></span>
+          <span class="bnp-look-band" data-myband="${esc(t.id)}" style="background-size:${Math.min(150, Number(pop.size) || 150)}px auto, auto;background-repeat:repeat, no-repeat"></span>
+          <span class="bnp-look-pair"><span class="bnp-look-fig" data-tilefig="${esc(k)}" data-side="left"></span><span class="bnp-look-fig" data-tilefig="${esc(k)}" data-side="right"></span></span>
+          <span class="bnp-look-name"><b>${esc(t.name)}</b><small>${t.built ? 'Comes with Neopets Enhance' : `Yours, from ${esc(nbcThemeName(t.base))}`}${t.wip ? ' (Work in progress)' : ''}${t.about && t.about.by ? ` · by ${esc(t.about.by)}` : ''}</small></span>
         </button>
         <span class="bnp-look-foot">${on ? '<span class="bnp-look-on">✓ Wearing it</span>' : `<button type="button" class="bnp-look-put" data-mywear="${esc(t.id)}">Wear it</button>`}</span>
       </div>`;
     };
     return `<div class="bnp-mhead"><h2>Themes</h2><span class="bnp-note">Put one on, or open one to choose who stands at the foot of its pages and in this window’s corner. Themes of your own change everything else too.</span></div>
       <h6 class="bnp-looks-h">Neopets Enhance’s and yours <span class="bnp-note">Only in this browser: your Neopets account keeps its own theme</span></h6>
-      <div class="bnp-looks">${myAll().map(myTile).join('')}<button type="button" class="bnp-look-new" data-mynew><b>+</b><span>New theme</span><small>It starts as ${esc(nbcThemeName(acc) || 'your theme')}, for you to change</small></button></div>
+      <div class="bnp-looks">${myAll().map(myTile).join('')}<button type="button" class="bnp-look-new" data-mynew><b>+</b><span>New theme</span><small>It starts as ${esc(nbcThemeName(acc) || 'your theme')}, for you to change</small></button><button type="button" class="bnp-look-new" data-myimportopen><b class="bnp-look-newic" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11M7.5 9.5 12 14l4.5-4.5M4 15v4.5h16V15"/></svg></b><span>Import a theme</span><small>From a file, or a theme’s code</small></button></div>
+      ${(S.myThemes || []).length ? '<p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn" data-myfileall>Save all your themes as a file</button></p>' : ''}
       <h6 class="bnp-looks-h">Neopets’ own</h6>
       <div class="bnp-looks">${lookThemes().map(tile).join('')}</div>`;
   }
-  function lookTileFigs() {   // (your themes' tiles: the first one on each side of their foot)
+  function lookTileFigs() {   // (your themes' tiles: their pop-ups' colours and pattern, and the first one on each side of their foot)
     if (!hub) return;
+    for (const b of hub.main.querySelectorAll('[data-myband]')) mySwatchPaint(b, myOf(b.dataset.myband));
     for (const box of hub.main.querySelectorAll('[data-tilefig]')) {
       if (box.firstChild) continue;
-      const [, id, side] = box.dataset.tilefig.split(':'), sp = (lookOf(`my:${id}`)[side] || []).find((x) => x && x.p);
-      if (!sp) continue;
-      figBox(sp).then((b) => { if (b && box.isConnected && !box.firstChild) box.append(figFit(figEl(sp, b, side), b, sp, 74, 62)); }).catch(report);
+      const side = box.dataset.side, one = lookTileSpec(box.dataset.tilefig, side, lookTileOf(box.dataset.tilefig, side));
+      if (!one) continue;
+      figBox(one).then((b) => {   // (the foot of the page in small: its corner as the page has it, them cut and placed the same, as Neopets' own tiles are)
+        if (!b || !box.isConnected || box.firstChild) return;
+        const slot = document.createElement('span');
+        slot.className = `bnp-tileslot is-${side}`;
+        slot.append(footFig(one, b, side, false));
+        box.append(slot);
+      }).catch(report);
     }
   }
+  // who shows on a theme's tile: the one chosen for each side, or as it starts (a Neopets theme's own two; yours, the first on each side)
+  const lookTilePick = (f, side) => { const p = S.looks && S.looks[f] && S.looks[f].tile && S.looks[f].tile[side]; return p && p.p ? p : null; };
+  function lookTileAuto(f, side) {
+    if (!myKey(f)) return 'own';
+    const L = lookOf(f), first = (k) => (L[k] || []).find((x) => x && x.p);
+    return first(side) || L.both.filter((x) => x && x.p)[side === 'right' && !first('left') ? 1 : 0] || null;   // (none of its own on that side: Either side's)
+  }
+  const lookTileOf = (f, side) => lookTilePick(f, side) || lookTileAuto(f, side);
+  const lookTileSpec = (f, side, sp) => (sp === 'own' ? { p: `themes/h5/${(myKey(f) || {}).base || f}/images/npc-${side}.png`, t: side === 'right' ? 1 : 0 } : sp);   // (Neopets' own two, from the theme's own pictures)
+  function lookAdjHtml(L, where) {   // (one of them adjusted for their picture, under their own list: where = 'foot', 'corner' or 'board')
+    const sp = lookAdj && L[lookAdj.slot] && L[lookAdj.slot][lookAdj.i];
+    if (!sp || sp === 'own') { lookAdj = null; return ''; }
+    const inWin = lookAdj.slot === 'corner' || lookAdj.slot === 'board';
+    if (inWin ? where !== lookAdj.slot : where !== 'foot') return '';
+    if (inWin) return palAdjHtml(sp);
+    const sides = lookAdj.slot === 'both' ? ['left', 'right'] : [lookAdj.slot], out = lookAdj.slot === 'both' ? 5 : 10;
+    const sl = (k, name, min, max, v, unit, note) => `<label class="bnp-myslide"><span>${name}${note ? ` <small>${note}</small>` : ''}</span><input type="range" min="${min}" max="${max}" step="1" value="${v}" data-lookadjr="${k}"><b>${v}${unit}</b></label>`;
+    const box = sp.b || figKeep()[lookUrl(sp.p)], auto = box ? Math.round(footCut(sp, box) * 100) : 25;
+    return `<div class="bnp-lookadjust"><div class="bnp-lookadj-h"><b>${esc(sp.n || 'Someone')}</b><span class="bnp-note">At the foot of every page, ${lookAdj.slot === 'both' ? 'on either side' : `on the ${lookAdj.slot}`}: the page’s edge cuts them just as here</span></div>
+      <div class="bnp-adjfoot">${sides.map((s) => `<span class="bnp-adjslot is-${s}" data-adjslot="${s}"></span>`).join('')}<span class="bnp-adjband"></span></div>
+      <div class="bnp-myslides">${sl('z', 'Size', 40, 250, Math.round((sp.z == null ? 1 : Number(sp.z)) * 100), '%')}${sl('x', 'Past the side', -40, 60, sp.x == null ? out : Number(sp.x), '%', 'how much is past the page’s edge')}${sl('y', 'Below the edge', 0, 80, sp.y == null ? auto : Math.round(Number(sp.y) * 100), '%', sp.y == null ? 'as it starts' : '')}</div>
+      <p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn" data-lookadjm aria-pressed="${!!sp.m}">${sp.m ? 'Turned round' : 'Turn round'}</button><button type="button" class="bnp-pillbtn" data-lookadjreset>Back to how it was</button><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-lookadjdone>Done</button></p></div>`;
+  }
+  function palAdjHtml(sp) {   // (one in a window's corner: Settings' own corner shows them as they change; the Dailies window's, a window in small here)
+    const board = lookAdj.slot === 'board', cut = Math.round(palCut(sp) * 100);
+    const sl = (k, name, min, max, v, unit, note) => `<label class="bnp-myslide"><span>${name}${note ? ` <small>${note}</small>` : ''}</span><input type="range" min="${min}" max="${max}" step="1" value="${v}" data-lookadjr="${k}"><b>${v}${unit}</b></label>`;
+    return `<div class="bnp-lookadjust"><div class="bnp-lookadj-h"><b>${esc(sp.n || 'Someone')}</b><span class="bnp-note">${board ? 'In the Dailies window’s corner, as this window in small has them' : 'In Settings’ corner: this window’s own corner, below on the left, shows them as you change these'}</span></div>
+      ${board ? '<div class="bnp-adjwin"><div class="bnp-adjwinbody"><i></i><i></i><i></i><i></i><i></i></div><div class="popup-footer__2020 bnp-hub-foot bnp-adjwinfoot"><span class="button-default__2020 button-yellow__2020 bnp-done" aria-hidden="true">Done</span><div class="popup-footer-pattern__2020"></div></div></div>' : ''}
+      <div class="bnp-myslides">${sl('z', 'Size', 40, 250, Math.round((sp.z == null ? 1 : Number(sp.z)) * 100), '%', 'never past their picture’s own size')}${sl('x', 'Past the side', -20, 60, sp.x == null ? 0 : Number(sp.x), '%', 'how much is past the window’s edge')}${sl('y', 'Below the edge', 0, 80, cut, '%', sp.y == null ? 'as it starts' : '')}</div>
+      <p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn" data-lookadjm aria-pressed="${!!sp.m}">${sp.m ? 'Turned round' : 'Turn round'}</button><button type="button" class="bnp-pillbtn" data-lookadjreset>Back to how it was</button><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-lookadjdone>Done</button></p></div>`;
+  }
+  function lookAdjPaint() {   // (the adjuster's corner: them in it, as the page or the window will have them)
+    if (!hub || !lookAdj || !lookAt) { palAdjEnd(); return; }
+    const sp = (lookOf(lookAt)[lookAdj.slot] || [])[lookAdj.i];
+    if (sp && lookAdj.slot === 'corner') { winPal.forced = true; winPal('corner', false, sp); return; }   // (Settings' own corner: them, while they're adjusted)
+    palAdjEnd();
+    if (sp && lookAdj.slot === 'board') {
+      const foot = hub.main.querySelector('.bnp-adjwinfoot');
+      if (foot) figBox(sp).then((box) => { if (!box || !foot.isConnected) return; for (const o of foot.querySelectorAll('.bnp-pal')) o.remove(); foot.prepend(palFig(sp, box).el); }).catch(report);
+      return;
+    }
+    const wrap = hub.main.querySelector('.bnp-adjfoot');
+    if (!sp || !wrap) return;
+    const foot = document.querySelector('.footer__2020'), cs = foot && getComputedStyle(foot), band = wrap.querySelector('.bnp-adjband');
+    if (cs && band) { band.style.backgroundColor = cs.backgroundColor; band.style.backgroundImage = cs.backgroundImage; band.style.backgroundSize = cs.backgroundSize; band.style.backgroundPosition = cs.backgroundPosition; band.style.backgroundRepeat = cs.backgroundRepeat; band.style.borderTop = `${cs.borderTopWidth} ${cs.borderTopStyle} ${cs.borderTopColor}`; }   // (the foot as the page has it)
+    wrap.style.backgroundColor = getComputedStyle(document.body).backgroundColor;
+    wrap.style.backgroundImage = getComputedStyle(document.body).backgroundImage;
+    figBox(sp).then((box) => {
+      if (!box || !wrap.isConnected) return;
+      for (const s of wrap.querySelectorAll('[data-adjslot]')) { s.textContent = ''; s.append(footFig(sp, box, s.dataset.adjslot, lookAdj.slot === 'both')); }
+      const y = hub.main.querySelector('[data-lookadjr="y"]');
+      if (y && sp.y == null) { const a = Math.round(footCut(sp, box) * 100); y.value = String(a); y.parentElement.querySelector('b').textContent = `${a}%`; }
+    }).catch(report);
+  }
+  function lookAdjSet(patch) {   // (their settings changed: kept, the corner shown again, and the page's own foot if they stand there now)
+    const f = lookAt, list = lookOf(f)[lookAdj.slot].slice(), sp = { ...list[lookAdj.i], ...patch };
+    for (const k of Object.keys(patch)) if (patch[k] == null) delete sp[k];
+    list[lookAdj.i] = sp;
+    lookSet(f, lookAdj.slot, list);
+    clearTimeout(lookAdjSet.t);
+    lookAdjSet.t = setTimeout(saveNow, 600);
+    lookAdjPaint();
+    if (f === nbcTheme() && lookAdj.slot !== 'corner' && lookAdj.slot !== 'board') for (const el of $$('.footer-npcs__2020 .bnp-fig')) if (el.dataset.p === sp.p) { const side = el.classList.contains('is-left') ? 'left' : 'right'; figBox(sp).then((box) => { if (box && el.isConnected) el.replaceWith(footFig(sp, box, side, el.classList.contains('is-drawn'))); }).catch(report); }
+  }
+  const VARY_PARTS = { foot: 'The foot of the page', bar: 'The top bar', page: 'The page', pop: 'Pop-ups and windows', logo: 'The logo' };
+  function lookVaryHtml(f) {   // (a theme of Neopets Enhance's with several looks for a part: which of them take turns)
+    const m = myKey(f), vary = m && m.v && m.v.vary;
+    if (!vary || typeof vary !== 'object') return '';
+    const rows = Object.entries(vary).filter(([, list]) => Array.isArray(list) && list.length > 1).map(([part, list]) => {
+      const on = myVaryOn(m, part, list).map((x) => x.id), now = myVaryNow.get(`${m.id}:${part}`);
+      return `<div class="bnp-tilerow"><h6>${esc(VARY_PARTS[part] || part)}</h6><div class="bnp-tilechips">${list.map((x) => `<button type="button" class="bnp-tilechip bnp-varychip" data-myvary="${esc(part)}:${esc(x.id)}" aria-pressed="${on.includes(x.id)}" title="${esc(x.name)}"><span class="bnp-varyprev" style="background-image:url('${esc(cssUrl(myPic(x.prev)))}')"></span><b>${esc(x.name)}</b>${now === x.id ? '<small>On this page</small>' : ''}</button>`).join('')}</div></div>`;
+    }).join('');
+    return rows ? `<h5>Its looks <span class="bnp-note">The ticked ones take turns: a different one on each page, at random</span></h5><div class="bnp-card">${rows}</div>` : '';
+  }
+  function lookTileHtml(f) {   // (its tile in Themes: who stands on each side of it)
+    const L = lookOf(f), seen = new Set(), all = [];
+    for (const k of ['left', 'right', 'both', 'corner', 'board']) for (const sp of L[k] || []) if (sp && sp.p && !seen.has(sp.p)) { seen.add(sp.p); all.push(sp); }
+    lookTileAll = all;
+    const row = (side) => {
+      const ch = lookTilePick(f, side);
+      return `<div class="bnp-tilerow"><h6>${side === 'left' ? 'Left' : 'Right'}</h6><div class="bnp-tilechips">
+        <button type="button" class="bnp-tilechip" data-tilepick="${side}:auto" aria-pressed="${!ch}"><span class="bnp-lookfig" data-tilechipfig="${side}:auto"></span><b>As it starts</b></button>
+        ${all.map((sp, i) => `<button type="button" class="bnp-tilechip" data-tilepick="${side}:${i}" aria-pressed="${!!ch && ch.p === sp.p}" title="${esc(sp.n || 'Someone')}"><span class="bnp-lookfig" data-tilechipfig="${side}:${i}"></span><b>${esc(sp.n || 'Someone')}</b></button>`).join('')}
+      </div></div>`;
+    };
+    return `<details class="bnp-card bnp-fold bnp-foldcard" data-fold="tile"${myFolds.tile ? ' open' : ''}><summary>On its tile <span class="bnp-note">Who stands on each side of this theme’s tile in Themes</span></summary>${myFolds.tile ? row('left') + row('right') : ''}</details>`;
+  }
+  const palSwitch = (k, label) => `<label class="bnp-switch bnp-palsw"><input type="checkbox" data-feat="${k}"${S.features[k] ? ' checked' : ''}><span>${label}<small>${S.features[k] ? 'On for every theme; off, this corner stays empty. (The same switch as in General › Windows.)' : 'Off for every theme: this corner stays empty, and the list below waits for when it’s on again.'}</small></span></label>`;   // (a window's corner, on or off, right where its list is)
   function lookPage(f) {
     const m = myKey(f), t = m ? [f, m.name, 0] : lookThemes().find((x) => x[0] === f) || [f, nbcThemeName(f), 0], L = lookOf(f), now = themeAccount(), mine = (S.looks && S.looks[f]) || {};
     const ownName = m ? `${nbcThemeName(m.base)}’s own` : 'Neopets’ own';
-    const card = (sp, slot, i) => `<span class="bnp-lookcard${sp === 'own' ? ' is-own' : ''}"><span class="bnp-lookfig" data-fig="${slot}:${i}"></span><b>${sp === 'own' ? ownName : esc(sp.n || 'Someone')}</b>
+    const adjOn = (slot, i) => !!lookAdj && lookAdj.slot === slot && lookAdj.i === i;
+    const card = (sp, slot, i) => `<span class="bnp-lookcard${sp === 'own' ? ' is-own' : ''}${adjOn(slot, i) ? ' is-adjusting' : ''}" draggable="true" data-lookcard="${slot}:${i}"><span class="bnp-lookfig" data-fig="${slot}:${i}"></span><b>${sp === 'own' ? ownName : esc(sp.n || 'Someone')}</b>
+      ${sp !== 'own' ? `<button type="button" class="bnp-pillbtn bnp-lookadjbtn" data-lookadj="${slot}:${i}" aria-pressed="${adjOn(slot, i)}" title="${slot === 'corner' ? 'Their size and place in Settings’ corner' : slot === 'board' ? 'Their size and place in the Dailies window’s corner' : 'Their size and place at the foot of the page'}">${sp.z != null || sp.x != null || sp.y != null || sp.m ? 'Adjusted' : 'Adjust'}</button>` : ''}
       <button type="button" class="bnp-lookx" data-lookdel="${slot}:${i}" title="Take out" aria-label="Take ${sp === 'own' ? 'Neopets’ own' : esc(sp.n || 'them')} out">×</button></span>`;
-    const row = (slot) => `<div class="bnp-lookrow">${L[slot].map((sp, i) => card(sp, slot, i)).join('')}<button type="button" class="bnp-lookadd" data-lookadd="${slot}"><b>+</b>Add someone</button></div>`;
+    const row = (slot) => `<div class="bnp-lookrow" data-lookrow="${slot}">${L[slot].map((sp, i) => card(sp, slot, i)).join('')}<button type="button" class="bnp-lookadd" data-lookadd="${slot}"><b>+</b>Add someone</button></div>`;
     return `<button type="button" class="bnp-backpill" data-lookback><span aria-hidden="true">‹</span>Every theme</button>
       <div class="bnp-mhead bnp-lookhead"><h2>${esc(t[1])}</h2>${m ? myActs(m) : !S.wear && f === now ? '<span class="bnp-look-on">✓ Yours now</span>' : t[2] ? `<button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-lookon="${t[2]}">Put it on</button>` : ''}</div>
       ${m ? myEditHtml(f) : ''}${m && myTab !== 'who' ? '' : `
-      <h5>At the foot of every page <span class="bnp-note">Left and right, where Neopets has its two. With more than one, a different one on each page, at random.</span></h5>
+      <h5>At the foot of every page <span class="bnp-note">Left and right, where Neopets has its two. With more than one, a different one on each page, at random. Drag anyone to another place or list.</span></h5>
       <div class="bnp-card"><div class="bnp-lookcols">${[['left', 'Left'], ['right', 'Right']].map(([k, l]) => `<div class="bnp-lookcol"><h6>${l}</h6>${row(k)}</div>`).join('')}</div>
-        ${mine.left || mine.right ? '<p class="bnp-note"><button type="button" class="bnp-linkbtn" data-lookreset="foot">Back to Neopets’ own</button></p>' : ''}</div>
-      <h5>In this window’s corner <span class="bnp-note">With more than one, the next one each time Settings opens.</span></h5>
-      <div class="bnp-card">${row('corner')}
-        ${mine.corner ? '<p class="bnp-note"><button type="button" class="bnp-linkbtn" data-lookreset="corner">Back to how it started</button></p>' : ''}
-        ${S.features.hubPal ? '' : '<p class="bnp-note">The corner is off: General › Windows.</p>'}</div>`}`;
+        <div class="bnp-lookcol bnp-lookeither"><h6>Either side <span class="bnp-note">On whichever side a page picks, as they’re drawn: facing out sometimes</span></h6>${row('both')}</div>
+        ${mine.left || mine.right || mine.both ? '<p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn" data-lookreset="foot">Back to how it started</button></p>' : ''}${lookAdjHtml(L, 'foot')}</div>
+      <h5>In Settings’ corner <span class="bnp-note">With more than one, the next one each time Settings opens. Adjust: this window’s own corner shows them as you change them.</span></h5>
+      <div class="bnp-card${S.features.hubPal ? '' : ' is-off'}">${palSwitch('hubPal', 'Someone in Settings’ corner')}${row('corner')}
+        ${mine.corner ? '<p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn" data-lookreset="corner">Back to how it started</button></p>' : ''}${lookAdjHtml(L, 'corner')}</div>
+      <h5>In the Dailies window’s corner <span class="bnp-note">A list of its own: with more than one, the next one each time the Dailies window opens.</span></h5>
+      <div class="bnp-card${S.features.boardPal ? '' : ' is-off'}">${palSwitch('boardPal', 'Someone in the Dailies window’s corner')}${row('board')}
+        ${mine.board ? '<p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn" data-lookreset="board">Back to how it started</button></p>' : ''}${lookAdjHtml(L, 'board')}</div>
+      ${lookVaryHtml(f)}${lookTileHtml(f)}`}`;
   }
   function myActs(m) {   // (a theme of yours: wear it or take it off; Neopets Enhance's: a copy to change; yours: its name, or gone)
     const on = S.wear === m.id;
-    return `<span class="bnp-lookacts">${on ? '<span class="bnp-look-on">✓ Wearing it</span><button type="button" class="bnp-linkbtn" data-mywear="">Take it off</button>' : `<button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mywear="${esc(m.id)}">Wear it</button>`}
-      ${m.built ? `<button type="button" class="bnp-linkbtn" data-mycopy="${esc(m.id)}">Make your own copy</button>` : `<input type="text" data-myname value="${esc(m.name)}" maxlength="40" aria-label="Its name" spellcheck="false"><button type="button" class="bnp-linkbtn" data-myren>Rename</button><button type="button" class="bnp-linkbtn" data-mydel>Delete…</button>`}</span>
+    return `<span class="bnp-lookacts">${on ? '<span class="bnp-look-on">✓ Wearing it</span><button type="button" class="bnp-pillbtn" data-mywear="">Take it off</button>' : `<button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mywear="${esc(m.id)}">Wear it</button>`}
+      ${m.built ? `<button type="button" class="bnp-pillbtn" data-mycopy="${esc(m.id)}">Make your own copy</button>` : '<button type="button" class="bnp-pillbtn is-danger bnp-mydelbtn" data-mydel title="Delete this theme (it asks once more)">Delete…</button>'}</span>
       <p class="bnp-note bnp-mylead">${m.built ? `Comes with Neopets Enhance${m.wip ? ' (work in progress: more to come)' : ''}. ` : `Starts from ${esc(nbcThemeName(m.base))}. `}${on ? '' : 'Shown on this page while it’s open here; your own theme comes back when you leave.'}</p>`;
   }
   function lookFigs() {   // (each card's figure, once its picture is known)
@@ -11396,7 +12618,13 @@
       const [slot, i] = box.dataset.fig.split(':'), sp = L[slot] && L[slot][Number(i)];
       if (!sp) continue;
       const one = sp === 'own' ? { p: `themes/h5/${(myKey(lookAt) || {}).base || lookAt}/images/npc-${slot}.png`, t: slot === 'right' ? 1 : 0 } : sp;
-      figBox(one).then((b) => { if (b && box.isConnected && !box.firstChild) box.append(figFit(figEl(one, b, slot === 'right' ? 'right' : 'left'), b, one, 92, 84)); }).catch(report);
+      figBox(one).then((b) => { if (b && box.isConnected && !box.firstChild) box.append(figFit(figEl(one, b, slot === 'both' ? '' : slot === 'right' ? 'right' : 'left'), b, one, 92, 84)); }).catch(report);
+    }
+    for (const box of hub.main.querySelectorAll('.bnp-lookfig[data-tilechipfig]')) {   // (On its tile: each choice as the tile would show it)
+      if (box.firstChild) continue;
+      const [side, i] = box.dataset.tilechipfig.split(':'), one = lookTileSpec(lookAt, side, i === 'auto' ? lookTileAuto(lookAt, side) : lookTileAll[Number(i)]);
+      if (!one) continue;
+      figBox(one).then((b) => { if (b && box.isConnected && !box.firstChild) box.append(figFit(figEl(one, b, side), b, one, 62, 56)); }).catch(report);
     }
   }
   function lookAdd(sp) {   // (someone chosen in the picker: in that list, at its end)
@@ -11405,11 +12633,11 @@
     lookSet(f, slot, [...lookOf(f)[slot], sp]);
     lookPick = null;
     lookPickPaint();
-    lookDone(`${sp.n || 'They'} ${slot === 'corner' ? 'will stand in the corner' : `will stand at the foot, on the ${slot}`}`);
+    lookDone(`${sp.n || 'They'} ${slot === 'corner' ? 'will stand in Settings’ corner' : slot === 'board' ? 'will stand in the Dailies window’s corner' : slot === 'both' ? 'will stand at the foot, on either side' : `will stand at the foot, on the ${slot}`}`);
   }
   function lookDone(msg) {   // (kept; this page's foot and corner as they are now, when it's your theme)
     changed(msg);
-    if (lookAt === nbcTheme()) { footPals(); hubPal(); }
+    if (lookAt === nbcTheme()) { footPals(); hubPal(); boardPal(); }
   }
   // the picker: everyone there is, by where they're from; a character with several looks shows them all
   function lookPickPaint() {
@@ -11423,7 +12651,7 @@
       el.setAttribute('aria-label', 'Add someone');
       hub.win.querySelector('.bnp-hub-body').append(el);
     }
-    const P = lookPick, q = (P.q || '').trim().toLowerCase().replace(/^the /, ''), where = { left: 'at the foot, on the left', right: 'at the foot, on the right', corner: 'in this window’s corner' }[P.slot];
+    const P = lookPick, q = (P.q || '').trim().toLowerCase().replace(/^the /, ''), where = { left: 'at the foot, on the left', right: 'at the foot, on the right', both: 'at the foot, on either side', corner: 'in Settings’ corner', board: 'in the Dailies window’s corner' }[P.slot];
     const list = LOOK_LIB.map((c, i) => [c, i]).filter(([c]) => (!P.from || lookFrom(c) === P.from) && (!q || c[0].toLowerCase().replace(/^the /, '').includes(q) || c[0].toLowerCase().includes(q)));
     const tile = (c, i, j, label, sub, n = 0) => `<button type="button" class="bnp-lpone" data-lp${j == null ? 'char' : 'pose'}="${i}${j == null ? '' : `:${j}`}">${n > 1 ? `<span class="bnp-lpn" title="${n} looks to choose from">${n} looks</span>` : ''}<span class="bnp-lookfig" data-lpfig="${i}:${j == null ? 0 : j}"></span><b>${esc(label)}</b><small>${esc(sub)}</small></button>`;
     let body;
@@ -11453,34 +12681,139 @@
         const box = e.target, [i, j] = box.dataset.lpfig.split(':').map(Number), pz = LOOK_LIB[i] && LOOK_LIB[i][2][j];
         if (!pz) continue;
         const sp = { p: pz[1], t: pz[2] || 0, c: pz[3] || 0 };
-        figBox(sp).then((b) => { if (b && box.isConnected && !box.firstChild) box.append(figFit(figEl(sp, b, 'left'), b, sp, 96, 88)); }).catch(report);
+        figBox(sp).then((b) => { if (b && box.isConnected && !box.firstChild) box.append(figFit(figEl(sp, b, lookPick && lookPick.slot === 'both' ? '' : 'left'), b, sp, 96, 88)); }).catch(report);
       }
     }, { root: el.querySelector('.bnp-lpbody'), rootMargin: '120px' });
     for (const b of el.querySelectorAll('[data-lpfig]')) lookIo.observe(b);
   }
+  function lookMove(f, to, at, after) {   // (someone moved: within their list, or to another; Neopets' own two only between left and right)
+    lookAdj = null;   // (the lists' places change: the adjuster closes)
+    const k = lookAt, L = lookOf(k), src = L[f.slot].slice(), [sp] = src.splice(f.i, 1);
+    if (sp == null) return;
+    const was = { [f.slot]: L[f.slot], [to]: L[to] }, same = to === f.slot, dst = same ? src : L[to].slice();
+    if (!(sp === 'own' && !same && dst.includes('own'))) {   // (Neopets' own there already: only gone from where it was)
+      let j = at == null ? dst.length : at + (after ? 1 : 0);
+      if (same && at != null && at > f.i) j -= 1;   // (later in its own list: one fewer before it now)
+      dst.splice(Math.max(0, Math.min(dst.length, j)), 0, sp);
+    }
+    if (!same) lookSet(k, f.slot, src);
+    lookSet(k, to, dst);
+    const who = sp === 'own' ? 'Neopets’ own' : sp.n || 'They';
+    changed(same ? '' : `${who} will stand ${{ left: 'at the foot, on the left', right: 'at the foot, on the right', both: 'at the foot, on either side', corner: 'in Settings’ corner', board: 'in the Dailies window’s corner' }[to]}`, same ? undefined : () => { for (const [s, l] of Object.entries(was)) lookSet(k, s, l); lookDone(); });
+    if (k === nbcTheme()) { footPals(); hubPal(); boardPal(); }
+  }
+  (function lookDrag() {   // (Themes: someone dragged to another place in their list, or to another list)
+    let from = null;
+    const clear = () => { if (hub) hub.win.querySelectorAll('.bnp-lookcard.drop-before, .bnp-lookcard.drop-after, .bnp-lookrow.drop-into').forEach((x) => x.classList.remove('drop-before', 'drop-after', 'drop-into')); };
+    const spot = (e) => {
+      if (!from || !(e.target instanceof Element)) return null;
+      const row = e.target.closest('.bnp-hub [data-lookrow]');
+      if (!row) return null;
+      const slot = row.dataset.lookrow, card = e.target.closest('[data-lookcard]');
+      if (from.own && slot !== 'left' && slot !== 'right') return null;   // (Neopets' own two stand only where Neopets has them)
+      if (card && card.dataset.lookcard === `${from.slot}:${from.i}`) return null;   // (over itself)
+      if (card) { const r = card.getBoundingClientRect(); return { slot, row, card, after: e.clientX > r.left + r.width / 2 }; }
+      return { slot, row, card: null };
+    };
+    document.addEventListener('dragstart', (e) => {
+      const c = e.target instanceof Element && e.target.closest('.bnp-hub [data-lookcard]');
+      if (!c) return;
+      const [slot, i] = c.dataset.lookcard.split(':');
+      from = { slot, i: Number(i), own: c.classList.contains('is-own') };
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', (c.querySelector('b') || c).textContent); } catch (_) { /* */ }
+      c.classList.add('is-drag');
+    });
+    document.addEventListener('dragover', (e) => {
+      if (!from) return;
+      const s = spot(e);
+      clear();
+      if (!s) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (s.card) s.card.classList.add(s.after ? 'drop-after' : 'drop-before'); else s.row.classList.add('drop-into');
+    });
+    document.addEventListener('drop', (e) => {
+      if (!from) return;
+      const s = spot(e), f = from;
+      clear();
+      if (!s) return;
+      e.preventDefault();
+      from = null;
+      lookMove(f, s.slot, s.card ? Number(s.card.dataset.lookcard.split(':')[1]) : null, s.card ? s.after : false);
+    });
+    document.addEventListener('dragend', () => { if (!from) return; from = null; clear(); if (hub) hub.win.querySelectorAll('.bnp-lookcard.is-drag').forEach((x) => x.classList.remove('is-drag')); });
+  })();
   document.addEventListener('click', (e) => {   // (Themes' buttons, and the picker's)
     if (!hub || !(e.target instanceof Element) || !hub.win.contains(e.target)) return;
     if (lookPick && e.target.closest('.bnp-rail [data-page], .bnp-rail [data-kind], .bnp-subtabs [data-page]')) { lookPick = null; lookPickPaint(); }   // (another page: the picker closes)
+    if (myImp && e.target.closest('.bnp-rail [data-page], .bnp-rail [data-kind], .bnp-subtabs [data-page]')) { myImp = false; myImpPaint(); }
     if (myPreviewOf && e.target.closest('.bnp-rail [data-page], .bnp-rail [data-kind]')) myPreviewEnd();   // (another page: your own theme again)
-    const t = e.target.closest('[data-look], [data-lookback], [data-lookadd], [data-lookdel], [data-lookreset], [data-lookon], [data-lpclose], [data-lpfrom], [data-lpchar], [data-lppose], [data-lpback], [data-lpadd], [data-lookgo], [data-mywear], [data-mynew], [data-mycopy], [data-myren], [data-mydel], [data-mytab], [data-mycol], [data-myclear], [data-myicons], [data-mylogo], [data-mypat], [data-mypickclose], [data-mypatuse], [data-mypatadd]');
+    const t = e.target.closest('[data-look], [data-lookback], [data-lookadd], [data-lookdel], [data-lookreset], [data-lookon], [data-lpclose], [data-lpfrom], [data-lpchar], [data-lppose], [data-lpback], [data-lpadd], [data-lookgo], [data-mywear], [data-mynew], [data-mycopy], [data-myren], [data-mydel], [data-mytab], [data-mycol], [data-myclear], [data-myicons], [data-mylogo], [data-mypat], [data-mypickclose], [data-mypatuse], [data-mypatadd], [data-mytint], [data-tilepick], [data-myvary], [data-lookadj], [data-lookadjm], [data-lookadjreset], [data-lookadjdone], [data-myset], [data-myscene], [data-myexport], [data-myimport], [data-myimportopen], [data-myimpclose], [data-myimpfile], [data-myfile], [data-myfileall], [data-mysave], [data-mysaveback], [data-mysavedel], [data-myundo], [data-myredo], [data-myclearpart], [data-myturnkeep], [data-myturnback], [data-myaltshow], [data-myaltdel], [data-mydecoadd], [data-mydecodel], [data-mydecoset], [data-myuntake], [data-myfindgo]');
     if (!t) return;
     const d = t.dataset;
     if ('lookgo' in d) { goPage('themes'); return; }
+    if (d.lookadj) {   // (their size and place: the adjuster opens under the lists, or closes)
+      const [slot, i] = d.lookadj.split(':');
+      lookAdj = lookAdj && lookAdj.slot === slot && lookAdj.i === Number(i) ? null : { slot, i: Number(i) };
+      const keep = hub.main.scrollTop;
+      paintHub();
+      hub.main.scrollTop = keep;
+      const panel = hub.main.querySelector('.bnp-lookadjust');
+      if (panel) panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      return;
+    }
+    if (lookAdj && ('lookadjm' in d || 'lookadjreset' in d || 'lookadjdone' in d)) {
+      if ('lookadjm' in d) { const sp = lookOf(lookAt)[lookAdj.slot][lookAdj.i]; lookAdjSet({ m: sp.m ? null : 1 }); }
+      if ('lookadjreset' in d) lookAdjSet({ z: null, x: null, y: null, m: null });
+      if ('lookadjdone' in d) lookAdj = null;
+      changed();
+      return;
+    }
+    if (d.myvary) {   // (a look that takes turns, or doesn't; one always does. Ticked: shown now)
+      const [part, id] = d.myvary.split(':'), m = myKey(lookAt), list = (m && m.v && m.v.vary && m.v.vary[part]) || [];
+      if (!list.length) return;
+      const on = myVaryOn(m, part, list).map((x) => x.id), adding = !on.includes(id), next = adding ? [...on, id] : on.filter((x) => x !== id);
+      if (!next.length) { toast('One of them always takes its turn'); return; }
+      const all = { ...(S.looks || {}) }, mine = { ...(all[lookAt] || {}) }, vary = { ...(mine.vary || {}) };
+      if (next.length === list.length) delete vary[part]; else vary[part] = next;
+      if (Object.keys(vary).length) mine.vary = vary; else delete mine.vary;
+      if (Object.keys(mine).length) all[lookAt] = mine; else delete all[lookAt];
+      S.looks = all;
+      const k = `${m.id}:${part}`;
+      if (adding) myVaryNow.set(k, id); else if (myVaryNow.get(k) === id) myVaryNow.delete(k);
+      myShowNow(m, false);
+      changed();
+      return;
+    }
+    if (d.tilepick) {   // (who stands on one side of its tile: chosen, or as it starts)
+      const [side, i] = d.tilepick.split(':'), f = lookAt, sp = i === 'auto' ? null : lookTileAll[Number(i)];
+      if (i !== 'auto' && !sp) return;
+      const all = { ...(S.looks || {}) }, mine = { ...(all[f] || {}) }, tile = { ...(mine.tile || {}) };
+      if (sp) tile[side] = { p: sp.p, n: sp.n, t: sp.t || 0, c: sp.c || 0, ...(sp.b ? { b: sp.b } : {}), ...(sp.k ? { k: sp.k } : {}) }; else delete tile[side];
+      if (Object.keys(tile).length) mine.tile = tile; else delete mine.tile;
+      if (Object.keys(mine).length) all[f] = mine; else delete all[f];
+      S.looks = all;
+      changed();
+      return;
+    }
     if (myEditClick(t, d)) return;
-    if (d.look) { lookAt = d.look; myTab = 'who'; lookPick = null; lookPickPaint(); if (myKey(lookAt)) myPreview(lookAt); else myPreviewEnd(); paintHub(); hub.main.scrollTop = 0; return; }
-    if ('lookback' in d) { lookAt = ''; lookPick = null; myPick = null; lookPickPaint(); myPickPaint(); myColourClose(); myPreviewEnd(); paintHub(); return; }
+    if (d.look) { lookAt = d.look; myTab = 'who'; lookPick = null; lookAdj = null; lookPickPaint(); if (myKey(lookAt)) myPreview(lookAt); else myPreviewEnd(); paintHub(); hub.main.scrollTop = 0; return; }
+    if ('lookback' in d) { lookAt = ''; lookPick = null; myPick = null; lookAdj = null; lookPickPaint(); myPickPaint(); myColourClose(); myPreviewEnd(); paintHub(); return; }
     if (d.lookon) { const p = themePick(Number(d.lookon)); if (hubPage === 'themes') paintHub(); p.then(() => { if (hubPage === 'themes') paintHub(); }).catch(report); return; }
     if (d.lookadd) { lookPick = { slot: d.lookadd, q: '', from: '', char: null, focus: true }; lookPickPaint(); return; }
     if (d.lookdel) {
+      lookAdj = null;
       const [slot, i] = d.lookdel.split(':'), list = lookOf(lookAt)[slot].slice(), [gone] = list.splice(Number(i), 1);
       const was = lookOf(lookAt)[slot];
       lookSet(lookAt, slot, list);
       changed(`${gone === 'own' ? 'Neopets’ own' : (gone && gone.n) || 'They'} won’t stand there now`, () => { lookSet(lookAt, slot, was); lookDone(); });
-      if (lookAt === nbcTheme()) { footPals(); hubPal(); }
+      if (lookAt === nbcTheme()) { footPals(); hubPal(); boardPal(); }
       return;
     }
     if (d.lookreset) {
-      const f = lookAt, slots = d.lookreset === 'foot' ? ['left', 'right'] : ['corner'], was = slots.map((s) => lookOf(f)[s]);
+      lookAdj = null;
+      const f = lookAt, slots = d.lookreset === 'foot' ? ['left', 'right', 'both'] : [d.lookreset === 'board' ? 'board' : 'corner'], was = slots.map((s) => lookOf(f)[s]);
       for (const s of slots) lookSet(f, s, lookStart(f)[s]);
       lookDone();
       toast(d.lookreset === 'foot' ? 'Neopets’ own two again' : 'As it started again', () => { slots.forEach((s, n) => lookSet(f, s, was[n])); lookDone(); });
@@ -11509,18 +12842,106 @@
       lookAdd({ p: own === u ? u : own, n: n || decodeURIComponent(u.split('/').pop().replace(/\.\w+(\?.*)?$/, '')).replace(/[_-]+/g, ' ').slice(0, 40), t: 0, c: 0 });
     }
   });
+  document.addEventListener('input', (e) => {   // (the adjuster's sliders: someone's size and place at the foot of the page, as you move them)
+    const el = e.target instanceof Element ? e.target.closest('[data-lookadjr]') : null;
+    if (!el || !lookAdj || !lookAt) return;
+    const n = Number(el.value), k = el.dataset.lookadjr, lab = el.parentElement.querySelector('b');
+    if (lab) lab.textContent = `${n}%`;
+    if (k === 'y') { const note = el.parentElement.querySelector('small'); if (note) note.textContent = ''; }
+    lookAdjSet({ [k]: k === 'x' ? n : n / 100 });
+  });
+  document.addEventListener('change', async (e) => {   // (Import a theme: its file)
+    const el = e.target instanceof Element ? e.target : null;
+    if (!el || !hub || !el.matches('[data-myimpfilein]')) return;
+    const file = el.files && el.files[0];
+    el.value = '';
+    if (!file) return;
+    let r = null;
+    try { r = myImportText(await file.text()); } catch (_) { /* */ }
+    if (!r) { toast('That file isn’t a theme: save one with Save as a file'); return; }
+    myImported(r);
+  });
+  document.addEventListener('input', (e) => {   // (a decoration's sliders, as you move them; Find an option, as you type)
+    const el = e.target instanceof Element ? e.target : null, t = el && myEditable(lookAt);
+    if (!t || !hub) return;
+    if (el.matches('[data-mydecor]')) {
+      const [id, key] = el.dataset.mydecor.split(':'), n = Number(el.value), lab = el.parentElement.querySelector('b');
+      if (lab) lab.textContent = `${n}px`;
+      myDecoSet(t, id, { [key]: n }, key);
+    }
+    if (el.matches('[data-myfind]')) {
+      const q = el.value.trim(), box = hub.main.querySelector('[data-myfindres]');
+      myFindHits = q.length >= 2 ? myFindList(q) : [];   // (only once two letters are typed)
+      if (!box) return;
+      box.hidden = !myFindHits.length && q.length < 2;
+      box.innerHTML = myFindHits.length ? myFindHits.map((x, i) => `<button type="button" data-myfindgo="${i}"><b>${esc(MY_TABS.find((tb) => tb[0] === x.tab)[1])}</b>${esc(x.label)}</button>`).join('') : q.length >= 2 ? '<span class="bnp-note">Nothing by that name</span>' : '';
+    }
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && e.target instanceof Element && e.target.matches('[data-myfind]') && e.target.value) { e.preventDefault(); e.stopPropagation(); e.target.value = ''; const box = hub && hub.main.querySelector('[data-myfindres]'); if (box) box.hidden = true; } }, true);
+  document.addEventListener('input', (e) => {   // (Turn them all: every colour round the wheel together, as you move it)
+    const el = e.target instanceof Element ? e.target.closest('[data-myturn]') : null, t = el && myEditable(lookAt);
+    if (!t) return;
+    if (!myTurn || myTurn.id !== t.id) myTurnStart(t);
+    const n = Number(el.value), lab = el.parentElement.querySelector('b'), row = hub.main.querySelector('[data-myturnrow]');
+    myTurn[el.dataset.myturn] = n;
+    if (lab) lab.textContent = `${n > 0 ? '+' : ''}${n}${el.dataset.myturn === 'hue' ? '°' : ''}`;
+    if (row) row.hidden = false;
+    cancelAnimationFrame(myTurnApply.raf);
+    myTurnApply.raf = requestAnimationFrame(() => myTurnApply(t));
+  });
+  document.addEventListener('change', (e) => {   // (Turn them all: the pictures too, or not)
+    const el = e.target instanceof Element ? e.target.closest('[data-myturnpics]') : null, t = el && myEditable(lookAt);
+    if (!t) return;
+    if (!myTurn || myTurn.id !== t.id) myTurnStart(t);
+    myTurn.pics = el.checked;
+    const row = hub.main.querySelector('[data-myturnrow]');
+    if (row) row.hidden = false;
+    myTurnApply(t);
+  });
+  let myCssT = 0;
+  document.addEventListener('input', (e) => {   // (a theme of yours: its extra CSS, on the page as you type)
+    const el = e.target instanceof Element ? e.target.closest('[data-mycss]') : null, t = el && myEditable(lookAt);
+    if (!t) return;
+    clearTimeout(myCssT);
+    myCssT = setTimeout(() => mySet(t, 'css', el.value), 250);
+  });
+  document.addEventListener('toggle', (e) => {   // (a folded part of Themes: remembered open or shut while Settings is open)
+    const el = e.target;
+    if (!(el instanceof HTMLDetailsElement) || !el.dataset.fold || !hub || !hub.win.contains(el)) return;
+    const was = !!myFolds[el.dataset.fold];
+    myFolds[el.dataset.fold] = el.open;
+    if (el.dataset.fold === 'tile' && el.open && !was) { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }   // (its pictures only once it's open)
+  }, true);
   document.addEventListener('input', (e) => {   // (a theme of yours: its sliders, as you move them)
     const el = e.target instanceof Element ? e.target.closest('[data-myrange]') : null, t = el && myEditable(lookAt);
     if (!t) return;
-    const n = Number(el.value), lab = el.parentElement.querySelector('b');
-    if (lab) lab.textContent = `${n}${lab.textContent.replace(/^-?[\d.]+/, '')}`;
-    mySet(t, el.dataset.myrange, n);
+    const n = Number(el.value), lab = el.parentElement.querySelector('b'), path = el.dataset.myrange, tint = /^(.+\.tint)\./.exec(path);
+    if (lab) lab.textContent = `${Number(el.min) < 0 && n > 0 ? '+' : ''}${n}${lab.textContent.replace(/^\+?-?[\d.]+/, '')}`;
+    if (tint) myTintTouch(t, tint[1]);
+    mySet(t, path, n);
+    if (tint || /\.size$/.test(path)) { clearTimeout(myPrevs.t); myPrevs.t = setTimeout(myPrevs, 140); }   // (its box, in its new colours)
   });
-  document.addEventListener('change', (e) => {   // (a theme of yours: its icons as they are, or its base)
+  document.addEventListener('change', (e) => {   // (a theme of yours: its base, how its pictures blend, a switch, a picture's address)
     const el = e.target instanceof Element ? e.target : null, t = el && myEditable(lookAt);
     if (!t) return;
-    if (el.matches('[data-myasis]')) { mySet(t, 'icons.as', el.checked ? 'own' : ''); paintHub(); }
-    if (el.matches('[data-mybase]') && /^[a-z]+$/.test(el.value)) { t.base = el.value; S.myThemes = [...S.myThemes]; saveNow(); if (myPreviewOf === t.id || S.wear === t.id) myOn(t, false); paintHub(); }
+    if (el.matches('[data-myselect]')) mySet(t, el.dataset.myselect, el.value);
+    if (el.matches('[data-mydecopic]')) { const v = el.value.trim(); if (v && !/^https:\/\/\S+$/.test(v)) { toast('A picture’s whole address, starting https://'); return; } myDecoSet(t, el.dataset.mydecopic, { pic: v }, 'pic'); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
+    if (el.matches('[data-mytake]') && el.value) { const v = el.value; el.value = ''; myTake(t, el.dataset.mytake, v).then(() => { if (hub && hubPage === 'themes') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; } }).catch(report); }
+    if (el.matches('[data-myabout]')) { t.about = { ...(t.about || {}), [el.dataset.myabout]: el.value.trim().slice(0, el.dataset.myabout === 'by' ? 40 : 400) }; if (!t.about.by && !t.about.note) delete t.about; S.myThemes = [...S.myThemes]; saveNow(); }
+    if (el.matches('[data-myfont]')) { const k = el.dataset.myfont; if (el.value === '*') myFolds[`font:${k}`] = true; else { delete myFolds[`font:${k}`]; mySet(t, `font.${k}`, el.value); } const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
+    if (el.matches('[data-myfontname]')) { const v = el.value.trim(); if (v && !myFontOk(v)) { toast('A font’s name as Google Fonts writes it: letters, numbers and spaces'); return; } mySet(t, `font.${el.dataset.myfontname}`, v); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
+    if (el.matches('[data-myiconfrom]') && el.value) { mySet(t, `icons.urls.${el.dataset.myiconfrom}`, myIconUrl(el.value, el.dataset.myiconfrom)); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }   // (one icon, another theme's)
+    if (el.matches('[data-mycheck]')) mySet(t, el.dataset.mycheck, el.checked ? 1 : '');
+    if (el.matches('[data-mytext]')) {
+      const path = el.dataset.mytext, v = el.value.trim(), set = /\.set$/.test(path);
+      if (v && (!/^https:\/\/\S+$/.test(v) || (set && !v.includes('{name}')))) { toast(set ? 'A whole address, starting https://, with {name} where each icon’s name goes' : 'A picture’s whole address, starting https://'); return; }
+      mySet(t, path, v);
+      const keep = hub.main.scrollTop;
+      paintHub();
+      hub.main.scrollTop = keep;
+    }
+    if (el.matches('[data-mycheck]') && /\.off$/.test(el.dataset.mycheck)) { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
+    if (el.matches('[data-mybase]') && /^[a-z]+$/.test(el.value)) { myHistPush(t, ''); t.base = el.value; S.myThemes = [...S.myThemes]; saveNow(); if (myPreviewOf === t.id || S.wear === t.id) myOn(t, false); paintHub(); }
   });
   document.addEventListener('input', (e) => {   // (the picker's search: as you type)
     if (!lookPick || !(e.target instanceof Element) || !e.target.matches('.bnp-lookpick [data-lpq]')) return;
@@ -11558,7 +12979,7 @@
   }
   const hubTabbed = (p) => p[2] === 'menu' || (p[2] === 'folder' && p[0] !== 'dailies');
   function hubPageHtml(p) {   // (a page of these settings: a Menus or Folders one with its tabs on top)
-    const pages = { themes: () => { const h = themesPage(); queueMicrotask(() => { lookFigs(); lookTileFigs(); }); return h; }, general: () => featuresPage('general'), neomail: () => featuresPage('neomail'), shops: () => featuresPage('shops'), otherpages: otherPagesPage, dailies: dailiesHubPage, backup: backupPage, clock: clockPage, reminders: remPage, randomevents: rePage, avatars: avPage, items: itemsHubPage, neoboards: nbHubPage, tabs: tabsPage };
+    const pages = { themes: () => { const h = themesPage(); queueMicrotask(() => { lookFigs(); lookTileFigs(); myPrevs(); lookAdjPaint(); }); return h; }, general: () => featuresPage('general'), neomail: () => featuresPage('neomail'), shops: () => featuresPage('shops'), otherpages: otherPagesPage, dailies: dailiesHubPage, backup: backupPage, clock: clockPage, reminders: remPage, randomevents: rePage, avatars: avPage, items: itemsHubPage, neoboards: nbHubPage, tabs: tabsPage };
     const tabs = hubTabbed(p) ? `<div class="bnp-subtabs" role="tablist" aria-label="${p[2] === 'menu' ? 'Menus' : 'Folders'}">${hubTabs(p[2]).map(([k, n]) => `<button type="button" role="tab" data-page="${k}" aria-selected="${k === p[0]}">${esc(n)}</button>`).join('')}</div>` : '';
     return tabs + (p[2] === 'menu' ? menuPage(p[0]) : pages[p[0]] ? pages[p[0]]() : folderPage(p[0]));
   }
@@ -11683,7 +13104,7 @@
       <div class="bnp-card">
         ${sw('on', 'Reminders', 'All of them, on or off.')}
         <div class="bnp-remhow"${R.on ? '' : ' hidden'}>
-          ${sw('popup', 'A pop-up on the page', 'In the corner under the top bar, in your theme: Go, In 10 minutes, or × to close it (⚙ opens these settings).')}
+          ${sw('popup', 'A pop-up on the page', 'In the corner under the top bar, in your theme: Go, Remind me in 10 minutes, or × to close it (⚙ opens these settings). Closed on one tab, it goes from all of them; opening the Dailies board puts the dailies’ ones away.')}
           ${sw('sound', 'A sound', 'A little chime (the Snowager’s is icy). Browsers let a page play one only after you’ve clicked on it.')}
           ${sw('desktop', 'A desktop notice', 'It shows even when Neopets is in a tab you aren’t looking at. Click it to go there.')}
           ${sw('quiet', 'Quiet hours', 'No sounds or desktop notices then (pop-ups still wait on the page). Your own clock:', ` <span class="bnp-inl">from ${sel('quietFrom', hours)} to ${sel('quietTo', hours)}</span>`)}
@@ -13522,6 +14943,7 @@
       ['general', `<div class="bnp-card"><h4>Windows</h4>
         <div class="bnp-f"><span>Their footers</span><span class="bnp-seg" role="group">${[['pop', 'Like Neopets’ pop-ups'], ['page', 'Like the foot of the page']].map(([v, l]) => `<button type="button" data-featv="hubFoot:${v}" aria-pressed="${(f.hubFoot || 'pop') === v}">${l}</button>`).join('')}</span></div>
         ${sw('hubPal', 'A Neopian in Settings’ corner', palNote())}
+        ${sw('boardPal', 'A Neopian in the Dailies window’s corner', palNote('board'))}
       </div>`],
       ['shops', `<div class="bnp-card"><h4>Shops</h4>
         ${sw('shopDock', 'The Shop Dock', 'Your favourite shops in a little window, each as its shopkeeper: open it from the Shops menu and it stays open on every page until you close it. It fits itself beside the page; drag it anywhere else, fold it up, or close it. ✎ chooses your shops and sets how it looks; drag tiles into your own order.')}
@@ -13586,6 +15008,7 @@
       if (k === 'fquest') paintFq();
       if (k === 'scView') { if (S.features.scView) scPage(); else scOff(); }
       if (k === 'hubPal') hubPal();
+      if (k === 'boardPal') boardPal();
       if (k === 'nmPopup' && !S.features.nmPopup) nmwClose();
       if (t.type !== 'text') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
     }, t.type === 'text' ? 400 : 0);
@@ -13639,7 +15062,7 @@
     }
     const k = t.dataset.bk;
     if (k === 'save') {
-      const data = { app: 'beta-nav', v: 3, at: Date.now(), settings: S, open: OPEN, nb: { marks: nbMarks(), people: nbPeople() } };   // (with your Neoboards bookmarks and people)
+      const data = { app: 'beta-nav', v: 3, at: Date.now(), settings: S, open: OPEN, nb: { marks: nbMarks(), people: nbPeople() }, themesaves: get('themesaves', {}) };   // (with your Neoboards bookmarks and people, and your themes' saved versions)
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
       a.download = `beta-nav-backup-${new Date().toISOString().slice(0, 10)}.json`;
@@ -13671,7 +15094,9 @@
       if (data.open && typeof data.open === 'object') { OPEN = data.open; set('open', OPEN); }
       const nbPut = (nb) => { if (!nb || typeof nb !== 'object') return; if (Array.isArray(nb.marks)) set('nbmarks', nb.marks); if (nb.people && typeof nb.people === 'object' && !Array.isArray(nb.people)) { set('nbpeople', nb.people); NBP = null; } };
       nbPut(data.nb);
-      changed('Restored', () => { S = before; OPEN = openBefore; set('open', OPEN); nbPut(nbBefore); changed(); });
+      const savesBefore = get('themesaves', {});
+      if (data.themesaves && typeof data.themesaves === 'object' && !Array.isArray(data.themesaves)) set('themesaves', data.themesaves);
+      changed('Restored', () => { S = before; OPEN = openBefore; set('open', OPEN); nbPut(nbBefore); set('themesaves', savesBefore); changed(); });
     } catch (_) { toast(`That file isn’t a ${APP} backup`); }
   });
   (function chipDrag() {   // (dragging chips to reorder boards and dailies)
@@ -13740,7 +15165,7 @@
       v: CHROME_V, at: Date.now(), css, js,
       top: grab('#navtop__2020', true), bottom: grab('#navbottom__2020', true), side: grab('#navprofiledropdown__2020', true),
       news: grab('#navnewsdropdown__2020', true), money: grab('.navsub-right__2020'), footer: grab('#footer__2020', true),
-      bg: ['backgroundColor', 'backgroundImage', 'backgroundSize', 'backgroundRepeat', 'backgroundPosition', 'backgroundAttachment'].map((p) => bs[p]),
+      bg: myWorn() && prev && Array.isArray(prev.bg) ? prev.bg : ['backgroundColor', 'backgroundImage', 'backgroundSize', 'backgroundRepeat', 'backgroundPosition', 'backgroundAttachment'].map((p) => bs[p]),   // (under a theme of yours: your account's own, kept from before; yours draws itself)
       box: { bg: box.backgroundColor, img: box.backgroundImage, size: box.backgroundSize, rep: box.backgroundRepeat, pos: box.backgroundPosition, radius: box.borderTopLeftRadius, side: `${box.borderLeftWidth} ${box.borderLeftStyle} ${box.borderLeftColor}`, shadow: box.boxShadow },
     };
     if (snap.top && snap.side) set('chrome', snap);
@@ -13755,7 +15180,8 @@
       : `background: ${clear(box.bg) ? '#fff' : box.bg} !important;`;
     return `
       html.bnp-oldwait body, html.bnp-qrwait td.content { visibility: hidden !important; }
-      html.bnp-old body { margin: 0 !important; background-color: ${bgc || '#fff'} !important; background-image: ${bgi || 'none'} !important; background-size: ${bgs || 'auto'} !important; background-repeat: ${bgr || 'repeat'} !important; background-position: ${bgp || '0 0'} !important; background-attachment: ${bga || 'scroll'} !important; }
+      html.bnp-old body { margin: 0 !important; }
+      html:not(.bnp-my).bnp-old body { margin: 0 !important; background-color: ${bgc || '#fff'} !important; background-image: ${bgi || 'none'} !important; background-size: ${bgs || 'auto'} !important; background-repeat: ${bgr || 'repeat'} !important; background-position: ${bgp || '0 0'} !important; background-attachment: ${bga || 'scroll'} !important; }
       html.bnp-old #header, html.bnp-old #footer, html.bnp-old #ban, html.bnp-old td.sidebar, html.bnp-old #pushdown_banner { display: none !important; }
       html.bnp-old #main { position: relative !important; top: 0 !important; left: 0 !important; width: 1080px !important; max-width: calc(100vw - 16px) !important; min-height: calc(100vh - 110px); margin: 10px auto 0 !important; padding: 104px 0 64px !important; box-sizing: border-box !important; ${boxBg} border: 0 !important; border-left: ${box.side || '0 none'} !important; border-right: ${box.side || '0 none'} !important; border-radius: ${box.radius || '0'} !important; box-shadow: ${box.shadow || 'none'} !important; }
       html.bnp-old #navtop__2020, html.bnp-old #navbottom__2020, html.bnp-old #navprofiledropdown__2020, html.bnp-old #navnewsdropdown__2020, html.bnp-old #footer__2020 { text-align: left; }
@@ -14119,6 +15545,15 @@
     #navSearchH5 .bnp-scope-bar + input[type="text"] { margin-left: 0; }
     .nav-dropdown__2020.bnp-scopes { position: absolute; z-index: 5; top: 100%; left: 0; width: 220px; margin: 0; padding: 0 0 2px; border-radius: 6px; box-shadow: 0 8px 22px rgba(0, 0, 0, .3); text-align: left; overflow: visible; max-height: none; }
     .nav-dropdown__2020.bnp-scopes[hidden] { display: none !important; }
+    .bnp-recentbtn { flex: none; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0 7px; border: 0; background: none; color: inherit; cursor: pointer; }   /* (your last searches: only from here) */
+    .bnp-recentbtn[hidden] { display: none !important; }
+    .bnp-recentbtn .bnp-scopechev { margin-top: 4px; }
+    .bnp-recentbtn:hover .bnp-scopechev, .bnp-recentbtn[aria-expanded="true"] .bnp-scopechev { opacity: 1; }
+    .bnp-recentbtn:focus-visible { outline: 2px solid color-mix(in srgb, currentColor 55%, transparent); outline-offset: -3px; }
+    .bnp-search .bnp-recentbtn { height: 100%; }
+    #navSearchH5 .bnp-recentbtn { position: relative; z-index: 1; height: 38px; margin: auto 0 auto -2px; padding: 0 9px; border: 2px inset rgb(118, 118, 118); border-left: 0; background: #fff; color: #333; }
+    .nav-dropdown__2020.bnp-recents li { grid-template-columns: minmax(0, 1fr); padding-left: 12px; }
+    .nav-dropdown__2020.bnp-recents h4 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .nav-dropdown__2020.bnp-scopes h5 { margin: 0; padding: 7px 10px 3px; font: 10.5px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; letter-spacing: .08em; opacity: .7; }
     .nav-dropdown__2020.bnp-scopes a { display: block; cursor: pointer; outline: none; }
     .nav-dropdown__2020.bnp-scopes a:focus li { background-color: var(--bnp-sub, rgba(128, 128, 128, .25)); }
@@ -14129,6 +15564,7 @@
     .nav-dropdown__2020 .dropdown-icon.bnp-swatch.is-unknown { background-color: color-mix(in srgb, currentColor 22%, transparent); }
     .nav-dropdown__2020 ul li.bnp-sub.bnp-theme { grid-template-columns: 24px minmax(0, 1fr) auto; }
     .nav-dropdown__2020 ul li.bnp-theme.bnp-cur::after { content: "✓"; padding-right: 4px; font: bold 13pt Arial, sans-serif; }
+    .nav-dropdown__2020 ul li.bnp-theme.bnp-theme-mine { border-bottom-style: double; border-bottom-width: 6px; }   /* (Neopets Enhance's and yours above, your account's below) */
     .nav-dropdown__2020 ul li.bnp-theme.is-busy::after { content: ""; justify-self: end; width: 12px; height: 12px; margin-right: 4px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: bnp-turn .7s linear infinite; }
     @keyframes bnp-turn { to { transform: rotate(360deg); } }
     .bnp-pagesay { position: fixed; left: 0; right: 0; bottom: 24px; z-index: 2147483000; width: fit-content; max-width: calc(100vw - 32px); margin: 0 auto; padding: 9px 18px 11px; border: 3px solid color-mix(in srgb, var(--bnp-accent, #fed123) 65%, #000 15%); border-radius: 13px; background: var(--bnp-accent, #fed123); color: var(--bnp-accent-text, #363636); box-shadow: 0 10px 26px rgba(0, 0, 0, .25); box-sizing: border-box; font: 13px/1.35 "MuseoSansRounded700", Arial, sans-serif; text-align: center; }
@@ -14334,8 +15770,9 @@
     .bnp-notice b { flex: none; font: 15px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
     .bnp-notice button { flex: none; width: 26px; height: 26px; margin: 0; padding: 0; border: 0; border-radius: 6px; background: none; color: inherit; font: 20px/1 Arial, sans-serif; cursor: pointer; opacity: .6; }
     .bnp-notice button:hover { opacity: 1; background: rgba(0, 0, 0, .08); }
-    .bnp-linkbtn { margin: 0; padding: 0; border: 0; background: none; color: inherit; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; text-decoration: underline; cursor: pointer; opacity: .85; }
-    .bnp-linkbtn:hover { opacity: 1; }
+    .bnp-linkbtn, .bnp-nbc-lb { display: inline-flex; align-items: center; gap: 5px; height: 26px; margin: 0; padding: 0 12px; border: 1px solid #d3ccb7; border-radius: 999px; background: #faf9f5; box-shadow: 0 2px 0 #e4dece; box-sizing: border-box; color: #4a4536; font: 12.5px/1 "MuseoSansRounded700", Arial, sans-serif; text-decoration: none; white-space: nowrap; vertical-align: middle; cursor: pointer; }   /* (never plain words: a small pill, as Neopets' own buttons are) */
+    .bnp-linkbtn:hover, .bnp-linkbtn:focus-visible, .bnp-nbc-lb:hover:not(:disabled), .bnp-nbc-lb:focus-visible { border-color: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent, #fed123)) 70%, #000); background: var(--bnp-bar, var(--bnp-accent, #fed123)); color: var(--bnp-bar-ink, var(--bnp-accent-text, #363636)); text-decoration: none; }
+    .bnp-linkbtn:disabled, .bnp-nbc-lb:disabled { opacity: .5; cursor: default; }
     /* Nav Settings */
     .bnp-veil { position: fixed; inset: 0; z-index: 2147483000; background: rgba(12, 14, 20, .34); backdrop-filter: blur(3px) saturate(.85); opacity: 0; pointer-events: none; transition: opacity .2s; }
     .bnp-veil.open { opacity: 1; pointer-events: auto; }
@@ -14350,21 +15787,126 @@
     .bnp-hub .bnp-hub-head .popup-header-pattern__2020, .bnp-hub .bnp-hub-foot .popup-footer-pattern__2020 { border-radius: 0; }
     .bnp-hub .bnp-x { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 40px; height: 35px; padding: 0; display: flex; align-items: center; justify-content: center; }
     .bnp-hub .bnp-x .popup-exit-icon { width: 18px; height: 20px; margin: 0; }
+    .bnp-hub .bnp-headbtn { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 35px; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; color: #4a3b0c; }   /* (beside the X, as Neopets' own round buttons) */
+    .bnp-hub .bnp-max { right: 54px; }
+    .bnp-hub .bnp-peek { right: 100px; }
+    .bnp-hub .bnp-headbtn svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+    .bnp-hub .bnp-max .is-in, .bnp-hub.is-max .bnp-max .is-out { display: none; }
+    .bnp-hub.is-max .bnp-max .is-in { display: inline; }
+    .bnp-hub.is-max { left: 8px !important; top: 8px !important; right: auto !important; bottom: auto !important; transform: none !important; width: calc(100vw - 16px) !important; height: calc(100vh - 16px) !important; }   /* (full screen: the whole window, a little edge left) */
+    .bnp-hub.is-max .bnp-hub-head { cursor: default; }
+    .bnp-hub.is-max .bnp-hub-body { grid-template-columns: 196px minmax(0, 1fr); }
+    .bnp-hub.is-peek, .bnp-veil.is-peek { opacity: 0 !important; pointer-events: none !important; transition: opacity .16s; }   /* (a peek at the page) */
+    .bnp-peekback { position: fixed; z-index: 2147483002; left: 50%; bottom: 22px; transform: translateX(-50%); width: auto; min-width: 190px; height: 40px; padding: 0 22px; box-shadow: 0 6px 22px rgba(0, 0, 0, .35); font: 15px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3px; cursor: pointer; }
+    .bnp-peekback[hidden] { display: none !important; }
+    .bnp-hub .bnp-myswatch, .bnp-hub .bnp-mypalone i, .bnp-hub .bnp-mycp .bnp-cp-sws button { background: linear-gradient(var(--c, transparent), var(--c, transparent)), repeating-conic-gradient(#d9d4c4 0% 25%, #fff 0% 50%) 50% / 10px 10px !important; }   /* (a colour over a chequer: see-through ones show as see-through) */
+    .bnp-hub .bnp-mycp .bnp-cp-now { background: repeating-conic-gradient(#d9d4c4 0% 25%, #fff 0% 50%) 50% / 10px 10px; }
+    .bnp-hub .bnp-mycp .bnp-cp-now::after { content: ""; position: absolute; inset: 0 0 0 50%; background: var(--now, transparent); }
+    .bnp-cp-alpha { position: relative; height: 14px; margin: -2px 2px 10px; border-radius: 7px; background: linear-gradient(to right, transparent, var(--cp-c, #000)), repeating-conic-gradient(#d9d4c4 0% 25%, #fff 0% 50%) 50% / 10px 10px; cursor: pointer; touch-action: none; }
+    .bnp-cp-alpha > i { position: absolute; top: -3px; width: 8px; height: 20px; margin-left: -4px; border: 2px solid #fff; border-radius: 4px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .5); box-sizing: border-box; pointer-events: none; }
+    .bnp-hub .bnp-myfont { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e3ddca; }
+    .bnp-hub .bnp-myfont .bnp-myslides { flex-basis: 100%; margin-top: 0; }
+    .bnp-hub .bnp-myfont input[type="text"] { width: 220px; height: 30px; margin: 0; padding: 0 10px; border: 1px solid #cfc7b0; border-radius: 9px; font: 13px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-myfontprev { padding: 4px 12px; border-radius: 9px; background: #f3f0e6; color: #363636; font: 17px "Cafeteria", Arial, sans-serif; letter-spacing: .3px; }
+    .bnp-hub .bnp-myalts { margin-top: 12px; }
+    .bnp-hub .bnp-myh6 .bnp-note { margin-left: 6px; text-transform: none; letter-spacing: 0; font-family: "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-myaltrow { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; }
+    .bnp-hub .bnp-myalt { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .bnp-hub .bnp-myaltpic { width: 96px; height: 60px; margin: 0; padding: 0; border: 2px solid #e3ddca; border-radius: 9px; background: #ece8dc center / auto 100% repeat; cursor: pointer; }
+    .bnp-hub .bnp-myalt.is-now .bnp-myaltpic { border-color: var(--bnp-bar, var(--bnp-accent)); box-shadow: 0 0 0 2px var(--bnp-bar, var(--bnp-accent)); }
+    .bnp-hub .bnp-myalt small { color: #8a8270; font: 10.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-myaltpic small { display: inline-block; padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, .92); color: #5d5845; font: 10px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-myalt .bnp-lookx { top: -7px; right: -7px; }
+    .bnp-hub .bnp-myaltadd { width: 96px; min-height: 60px; }
+    .bnp-hub .bnp-mytake { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 18px; }
+    .bnp-hub .bnp-mytake select { max-width: 360px; }
+    .bnp-hub .bnp-mydeco { margin-top: 8px; border: 1px solid #e3ddca; border-radius: 10px; background: #fff; }
+    .bnp-hub .bnp-mydeco > summary { align-items: center; padding: 6px 10px; }
+    .bnp-hub .bnp-mydeco > .bnp-myplace { margin: 0 10px 10px; }
+    .bnp-hub .bnp-mydecothumb { flex: none; width: 54px; height: 34px; border-radius: 6px; background: #ece8dc center / contain no-repeat; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }
+    .bnp-hub .bnp-myspots { display: inline-grid; grid-template-columns: repeat(3, 30px); gap: 3px; }
+    .bnp-hub .bnp-myspots button { width: 30px; height: 26px; margin: 0; padding: 0; border: 1px solid #d3ccb7; border-radius: 7px; background: #faf9f5; color: #4a4536; font: 14px/1 Arial, sans-serif; cursor: pointer; }
+    .bnp-hub .bnp-myspots button[aria-pressed="true"] { border-color: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 70%, #000); background: var(--bnp-bar, var(--bnp-accent)); color: var(--bnp-bar-ink, #fff); }
+    .bnp-hub .bnp-myfind { position: relative; }
+    .bnp-hub .bnp-myfind input { width: 200px; height: 30px; margin: 0; padding: 0 12px; border: 1px solid #cfc7b0; border-radius: 999px; background: #fff; font: 13px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-myfindres { position: absolute; z-index: 7; top: calc(100% + 4px); left: 0; display: grid; width: 340px; max-height: 320px; overflow-y: auto; padding: 4px; border: 1px solid #cfc7b0; border-radius: 10px; background: #fff; box-shadow: 0 8px 24px rgba(0, 0, 0, .2); }
+    .bnp-hub .bnp-myfindres[hidden] { display: none; }
+    .bnp-hub .bnp-myfindres button { display: grid; gap: 1px; margin: 0; padding: 6px 9px; border: 0; border-radius: 7px; background: none; color: #363636; font: 13px "MuseoSansRounded500", Arial, sans-serif; text-align: left; cursor: pointer; }
+    .bnp-hub .bnp-myfindres button b { color: #8a8270; font: 10.5px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+    .bnp-hub .bnp-myfindres button:hover, .bnp-hub .bnp-myfindres button:focus-visible { background: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 12%, #fff); }
+    .bnp-hub .bnp-found { outline: 3px solid var(--bnp-bar, var(--bnp-accent)); outline-offset: 4px; border-radius: 10px; transition: outline-color .3s; }
+    .bnp-hub .bnp-myabout { margin-top: 10px; }
+    .bnp-hub .bnp-myabout input, .bnp-hub .bnp-myabout textarea { flex: 1 1 320px; max-width: 560px; margin: 0; padding: 6px 10px; border: 1px solid #cfc7b0; border-radius: 9px; background: #fff; color: #363636; font: 13px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-mypal { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 8px; }
+    .bnp-hub .bnp-mypalone { display: grid; grid-template-columns: 42px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 9px; align-items: center; margin: 0; padding: 7px 9px; border: 1px solid #e3ddca; border-radius: 10px; background: #fff; color: #363636; text-align: left; cursor: pointer; }
+    .bnp-hub .bnp-mypalone:hover, .bnp-hub .bnp-mypalone:focus-visible { border-color: var(--bnp-bar, var(--bnp-accent)); }
+    .bnp-hub .bnp-mypalone i { grid-row: 1 / 3; width: 42px; height: 42px; border-radius: 9px; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .18), inset 0 0 0 4px rgba(255, 255, 255, .45); }
+    .bnp-hub .bnp-mypalone b { font: 12.5px Consolas, "Courier New", monospace; }
+    .bnp-hub .bnp-mypalone small { overflow: hidden; color: #8a8270; font: 11px "MuseoSansRounded500", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-hub [data-myturnrow][hidden] { display: none; }
+    .bnp-hub .bnp-mywarn { display: inline-block; margin-left: 7px; padding: 1px 7px; border-radius: 999px; background: #fdecc8; color: #8a4b00; font: 10.5px/1.5 "MuseoSansRounded700", Arial, sans-serif; vertical-align: 1px; cursor: help; }   /* (writing too close to what it's on) */
+    .bnp-hub .bnp-mypicinfo { display: block; margin-top: 3px; color: #8a8270; font: 11.5px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-mypicinfo:empty { display: none; }
+    .bnp-hub .bnp-mypicinfo.is-bad { color: #b03a2e; font-family: "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-myurl { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+    .bnp-hub .bnp-myurl .bnp-mypicinfo { flex-basis: 100%; }
+    .bnp-hub .bnp-mypatgo .bnp-mypicinfo { margin-top: 0; }
+    .bnp-hub .bnp-mysep { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e3ddca; }
+    .bnp-hub .bnp-myback, .bnp-hub .bnp-hub-body p.bnp-myback { margin-top: 16px; }
+    .bnp-hub .bnp-myback .bnp-pillbtn + .bnp-pillbtn { margin-left: 8px; }
+    .bnp-hub .bnp-mylayer + .bnp-mylayer { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e3ddca; }
+    .bnp-hub .bnp-mylayer .bnp-switch { margin-top: 6px; }
+    .bnp-hub .bnp-myicons { grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)) !important; }
+    .bnp-hub .bnp-myicon { grid-template-columns: 34px 118px minmax(0, 1fr) 150px !important; }
+    .bnp-hub .bnp-myicon select { min-width: 0; height: 30px; }
+    .bnp-hub .bnp-mytools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 12px 0 12px; }
+    .bnp-hub .bnp-subtabs.bnp-mytabs { margin: 0 0 14px; }   /* (the tabs: their own row, never riding up under Undo and Redo) */
+    .bnp-hub .bnp-mytools .bnp-pillbtn span { font: 16px/1 Arial, sans-serif; }
+    .bnp-hub .bnp-mytools .bnp-pillbtn.is-off { opacity: .45; }
+    .bnp-hub .bnp-mytools .bnp-note { margin-left: 4px; }
+    @media (max-width: 760px) { .bnp-hub .bnp-peek { display: none; } }
     .bnp-hub .bnp-hub-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 178px minmax(0, 1fr); padding: 0; overflow: hidden; background: #fff; text-align: left; }
     .bnp-hub .bnp-hub-body p { width: auto; margin: 0 0 8px; position: static; }
     .bnp-hub .bnp-hub-foot { flex: none; position: relative; display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 10px 16px; border-radius: 0; }
     .bnp-hub .bnp-done { width: auto; min-width: 140px; }
     .popup-footer__2020.bnp-pagefoot { background: var(--bnp-pf-bg, #fed123); border-top: var(--bnp-pf-line, 0); }
     .popup-footer__2020.bnp-pagefoot .popup-footer-pattern__2020 { background-color: transparent; background-image: var(--bnp-pf-img); background-size: var(--bnp-pf-size, auto); background-position: var(--bnp-pf-pos, center top); background-repeat: var(--bnp-pf-repeat, repeat); }
-    .bnp-hub .bnp-pal { position: absolute; left: 6px; bottom: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+    .bnp-hub .bnp-pal { position: absolute; left: 6px; bottom: 0; z-index: 1; overflow: hidden; pointer-events: none; --out: 0%; transform: translateX(var(--out)); }
+    .bnp-board.bnp-has-pal .bnb-main { padding-bottom: calc(var(--bnp-pal-rise, 0px) + 22px); }   /* (the Dailies' last row scrolls up past them) */
+    .bnp-hub .bnp-adjwin { position: relative; display: flex; flex-direction: column; height: 250px; margin: 2px 0 4px; overflow: hidden; border: var(--bnp-border, 3px solid #4d4d4d); border-radius: 13px; background: #fff; }   /* (the Dailies window in small, its corner as it is) */
+    .bnp-hub .bnp-adjwinbody { flex: 1; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 10px; padding: 14px 16px; overflow: hidden; }
+    .bnp-hub .bnp-adjwinbody i { width: 120px; height: 92px; border: 2px solid #ece8dc; border-radius: 12px; background: #fff; }
+    .bnp-hub .bnp-adjwinfoot { min-height: 58px; }
+    .bnp-hub .bnp-adjwinfoot .bnp-done { pointer-events: none; }
     /* a Neopian standing on an edge: the foot of the page, Settings' corner, the Themes cards */
     .bnp-fig { position: relative; display: block; flex: none; overflow: hidden; pointer-events: none; }
     .bnp-fig img { position: absolute; display: block; max-width: none; max-height: none; height: auto; margin: 0; padding: 0; border: 0; }
     .bnp-fig.is-turned { transform: scaleX(-1); }
     .footer-npcs__2020 .bnp-footpal { background-image: none !important; }
-    .footer-npcs__2020 .bnp-fig { position: absolute; bottom: 0; height: 100%; }
-    .footer-npcs__2020 .bnp-fig.is-left { left: 0; }
-    .footer-npcs__2020 .bnp-fig.is-right { right: 0; }
+    html.bnp-my .np-theme-remove, html.bnp-my #greyThemeGreyifyButton, html.bnp-my #hiddenThemeNegg, html.bnp-my #hiddenThemeNeggCounter, html.bnp-my .hiddenThemeNeggBasket, html.bnp-my .npc-hidingTheme, html.bnp-my .npc-hidingTheme2, html.bnp-my .toggleNeggsTheme, html.bnp-my #themeMusicTrigger, html.bnp-my .snowflake, html.bnp-my .hp-bg-firework { display: none !important; }   /* (what your account's Neopets theme adds with its script, Grey Day's Greyify and the like: not part of a theme of yours) */
+    html.bnp-my.greyThemeFilter, html.bnp-my .greyThemeFilter { filter: none !important; -webkit-filter: none !important; }
+    .footer-npcs__2020 { overflow-x: clip; }   /* (a figure partly off the page, as Neopets' own are: never a scrollbar) */
+    .footer-npcs__2020 .bnp-fig, .bnp-hub .bnp-adjslot .bnp-fig, .bnp-hub .bnp-tileslot .bnp-fig { position: absolute; bottom: 0; height: 100%; --out: 0%; transform: translateX(var(--out)); }
+    .footer-npcs__2020 .bnp-fig.is-turned, .bnp-hub .bnp-adjslot .bnp-fig.is-turned, .bnp-hub .bnp-tileslot .bnp-fig.is-turned { transform: translateX(var(--out)) scaleX(-1); }
+    .footer-npcs__2020 .bnp-fig.is-left, .bnp-hub .bnp-adjslot .bnp-fig.is-left, .bnp-hub .bnp-tileslot .bnp-fig.is-left { left: 0; --out: -10%; }
+    .footer-npcs__2020 .bnp-fig.is-right, .bnp-hub .bnp-adjslot .bnp-fig.is-right, .bnp-hub .bnp-tileslot .bnp-fig.is-right { right: 0; --out: 10%; }
+    .footer-npcs__2020 .bnp-fig.is-drawn.is-left, .bnp-hub .bnp-adjslot .bnp-fig.is-drawn.is-left { --out: -5%; }
+    .footer-npcs__2020 .bnp-fig.is-drawn.is-right, .bnp-hub .bnp-adjslot .bnp-fig.is-drawn.is-right { --out: 5%; }
+    .bnp-hub .bnp-tileslot { position: absolute; bottom: 0; width: 200px; height: 167px; transform: scale(.371); }   /* (the page's foot corner, 200 × 167, in a tile's 74 × 62) */
+    .bnp-hub .bnp-tileslot.is-left { left: 0; transform-origin: left bottom; }
+    .bnp-hub .bnp-tileslot.is-right { right: 0; transform-origin: right bottom; }
+    .bnp-hub .bnp-lookadjbtn { height: 22px; margin-top: 2px; padding: 0 10px; font-size: 11.5px; }
+    .bnp-hub .bnp-lookadjbtn[aria-pressed="true"] { border-color: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 70%, #000); background: var(--bnp-bar, var(--bnp-accent)); color: var(--bnp-bar-ink, #fff); }
+    .bnp-hub .bnp-lookcard.is-adjusting { border-color: var(--bnp-bar, var(--bnp-accent)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 35%, transparent); }
+    .bnp-hub .bnp-lookadjust { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e3ddca; }
+    .bnp-hub .bnp-lookadj-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: 8px; }
+    .bnp-hub .bnp-lookadj-h b { color: #363636; font: 14px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-adjfoot { position: relative; height: 230px; overflow: hidden; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15); background: #ddd 0 0 / auto repeat; }
+    .bnp-hub .bnp-adjband { position: absolute; left: 0; right: 0; bottom: 0; height: 92px; background: #888; }
+    .bnp-hub .bnp-adjslot { position: absolute; z-index: 1; bottom: 0; width: 200px; height: 167px; }
+    .bnp-hub .bnp-adjslot.is-left { left: 0; }
+    .bnp-hub .bnp-adjslot.is-right { right: 0; }
+    .bnp-hub .bnp-myslide span small { color: #8a8270; font: 11.5px "MuseoSansRounded500", Arial, sans-serif; }
     /* Settings › Themes: a tile for every theme, as Neopets dresses its pop-ups */
     .bnp-hub .bnp-looks { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 14px; margin-top: 6px; }
     .bnp-hub .bnp-look { position: relative; display: flex; flex-direction: column; border: 1px solid #d3ccb7; border-radius: 13px; background: #faf9f5; box-shadow: 0 3px 0 #e4dece; color: #363636; overflow: hidden; transition: transform .12s, box-shadow .12s; }
@@ -14381,8 +15923,8 @@
     .bnp-hub .bnp-look.is-now { border-color: var(--bnp-bar, var(--bnp-accent)); box-shadow: 0 0 0 2px var(--bnp-bar, var(--bnp-accent)), 0 3px 0 #e4dece; }
     .bnp-hub .bnp-look-band { display: block; height: 46px; background: center / auto 100% repeat; border-bottom: 2px solid rgba(0, 0, 0, .14); }
     .bnp-hub .bnp-look-pair { position: absolute; top: 6px; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-end; height: 62px; padding: 0 4px; pointer-events: none; }
-    .bnp-hub .bnp-look-pair img { width: 74px; height: 62px; object-fit: contain; object-position: bottom; }
-    .bnp-hub .bnp-look-pair img + img { object-position: bottom right; }
+    .bnp-hub .bnp-look-pair > img { width: 74px; height: 62px; object-fit: contain; object-position: bottom; }   /* (Neopets' own two only: never the picture inside one of ours) */
+    .bnp-hub .bnp-look-pair > img + img { object-position: bottom right; }
     .bnp-hub .bnp-look-name { display: grid; gap: 1px; padding: 22px 11px 7px; }
     .bnp-hub .bnp-look-name b { font: 15px/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3px; }
     .bnp-hub .bnp-look-name small { color: #757575; font: 11.5px "MuseoSansRounded500", Arial, sans-serif; }
@@ -14391,10 +15933,17 @@
     .bnp-hub .bnp-backpill span { font: 19px/1 "MuseoSansRounded700", Arial, sans-serif; margin-top: -2px; }
     .bnp-hub .bnp-backpill:hover, .bnp-hub .bnp-backpill:focus-visible { border-color: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 70%, #000); background: var(--bnp-bar, var(--bnp-accent)); color: var(--bnp-bar-ink, #fff); }
     .bnp-hub .bnp-backpill:active { transform: translateY(1px); box-shadow: 0 1px 0 #e4dece; }
+    .bnp-hub .bnp-pillbtn { display: inline-flex; align-items: center; gap: 6px; height: 30px; margin: 0; padding: 0 14px; border: 1px solid #d3ccb7; border-radius: 999px; background: #faf9f5; box-shadow: 0 2px 0 #e4dece; color: #4a4536; font: 13px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; cursor: pointer; }   /* (a button that's a button: never words that might be a link) */
+    .bnp-hub .bnp-pillbtn:hover, .bnp-hub .bnp-pillbtn:focus-visible { border-color: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 70%, #000); background: var(--bnp-bar, var(--bnp-accent)); color: var(--bnp-bar-ink, #fff); }
+    .bnp-hub .bnp-pillbtn:active { transform: translateY(1px); box-shadow: 0 1px 0 #e4dece; }
+    .bnp-hub .bnp-pillbtn.is-danger:hover, .bnp-hub .bnp-pillbtn.is-danger:focus-visible, .bnp-hub .bnp-pillbtn.is-sure { border-color: #a52a1f; background: #c0392b; color: #fff; }
+    .bnp-hub .bnp-lookback-row, .bnp-hub .bnp-hub-body p.bnp-lookback-row { margin: 12px 0 0; }   /* (a row of buttons: the pop-up body's own p margin never squeezes it against what's above) */
     .bnp-hub .bnp-lookhead h2 { margin: 0; }
     .bnp-hub .bnp-lookcols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .bnp-hub .bnp-lookcol { min-width: 0; }
     .bnp-hub .bnp-lookcol h6 { margin: 0 0 6px; color: #5d5845; font: 12px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+    .bnp-hub .bnp-lookeither { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e3ddca; }
+    .bnp-hub .bnp-lookcol h6 .bnp-note { margin-left: 6px; font: 12px "MuseoSansRounded500", Arial, sans-serif; text-transform: none; letter-spacing: 0; }
     .bnp-hub .bnp-lookrow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
     .bnp-hub .bnp-lookcard { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 108px; padding: 6px 6px 8px; border: 1px solid #e3ddca; border-radius: 10px; background: #fff; text-align: center; }
     .bnp-hub .bnp-lookcard b { width: 100%; overflow: hidden; color: #363636; font: 12px/1.25 "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
@@ -14410,7 +15959,22 @@
     .bnp-hub .bnp-looks-h:first-of-type { margin-top: 6px; }
     .bnp-hub .bnp-looks-h .bnp-note { margin-left: 8px; text-transform: none; letter-spacing: 0; font-family: "MuseoSansRounded500", Arial, sans-serif; }
     .bnp-hub .bnp-look-fig { position: relative; display: flex; align-items: flex-end; width: 74px; height: 62px; overflow: hidden; }
-    .bnp-hub .bnp-look-fig + .bnp-look-fig { justify-content: flex-end; }
+    .bnp-hub .bnp-look-fig + .bnp-look-fig, .bnp-hub .bnp-look-fig[data-side="right"] { justify-content: flex-end; }
+    .bnp-hub .bnp-look-pair > img:last-child { object-position: bottom right; }
+    .bnp-hub .bnp-palsw { margin: 0 0 12px; padding-bottom: 10px; border-bottom: 1px solid #e3ddca; }
+    .bnp-hub .bnp-card.is-off .bnp-lookrow { opacity: .45; }
+    .bnp-hub .bnp-tilerow + .bnp-tilerow { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e3ddca; }
+    .bnp-hub .bnp-tilerow h6 { margin: 0 0 6px; color: #5d5845; font: 12px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+    .bnp-hub .bnp-tilechips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .bnp-hub .bnp-tilechip { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 80px; margin: 0; padding: 4px 4px 6px; border: 2px solid #e3ddca; border-radius: 10px; background: #fff; color: #363636; cursor: pointer; }
+    .bnp-hub .bnp-tilechip .bnp-lookfig { width: 66px; height: 58px; border-bottom: 0; }
+    .bnp-hub .bnp-tilechip b { width: 100%; overflow: hidden; font: 11px/1.25 "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-hub .bnp-tilechip:hover { border-color: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 55%, #e3ddca); }
+    .bnp-hub .bnp-tilechip[aria-pressed="true"] { border-color: var(--bnp-bar, var(--bnp-accent)); background: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 12%, #fff); }
+    .bnp-hub .bnp-varychip { width: 168px; }
+    .bnp-hub .bnp-varyprev { display: block; width: 100%; height: 50px; border-radius: 7px; background: #e9e4d4 center bottom / auto 100% repeat-x; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14); }
+    .bnp-hub .bnp-varychip small { color: #757575; font: 11px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-tilechip[aria-pressed="true"]::after { content: "✓"; position: absolute; top: -7px; right: -7px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--bnp-bar, var(--bnp-accent)); color: var(--bnp-bar-ink, #fff); font: bold 12px/1 Arial, sans-serif; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); }
     .bnp-hub .bnp-look-new { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 160px; padding: 10px; border: 2px dashed #cfc7b0; border-radius: 13px; background: none; box-shadow: none; color: #6b6553; cursor: pointer; text-align: center; }
     .bnp-hub .bnp-look-new b { font: 30px/1 "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-hub .bnp-look-new span { font: 15px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3px; }
@@ -14439,6 +16003,48 @@
     .bnp-hub .bnp-myslide span { color: #4a4536; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-hub .bnp-myslide b { color: #6b6553; font: 12px "MuseoSansRounded500", Arial, sans-serif; text-align: right; }
     .bnp-hub .bnp-myslide input { grid-column: 1 / -1; width: 100%; margin: 0; accent-color: var(--bnp-bar, var(--bnp-accent)); }
+    .bnp-hub .bnp-mytint { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e3ddca; }
+    .bnp-hub details.bnp-fold { margin-top: 10px; }
+    .bnp-hub details.bnp-fold > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 6px 0; color: #4a4536; font: 13px "MuseoSansRounded700", Arial, sans-serif; list-style: none; cursor: pointer; }
+    .bnp-hub details.bnp-fold > summary::-webkit-details-marker { display: none; }
+    .bnp-hub details.bnp-fold > summary::before { content: "▸"; display: inline-block; width: 12px; color: #8a8270; transition: transform .15s; }
+    .bnp-hub details.bnp-fold[open] > summary::before { transform: rotate(90deg); }
+    .bnp-hub details.bnp-foldcard { margin-top: 18px; }
+    .bnp-hub details.bnp-foldcard > summary { font-size: 14px; }
+    .bnp-hub .bnp-myplace { margin-top: 2px; padding: 0 0 4px 14px; border-left: 2px solid #e3ddca; }
+    .bnp-hub .bnp-myrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; }
+    .bnp-hub .bnp-myurl { margin-top: 12px; }
+    .bnp-hub .bnp-myurl input, .bnp-hub .bnp-myicon input { min-width: 0; height: 30px; margin: 0; padding: 0 10px; border: 1px solid #cfc7b0; border-radius: 9px; background: #fff; color: #363636; font: 12.5px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-myurl input { flex: 1 1 320px; max-width: 560px; }
+    .bnp-hub .bnp-myh6 { margin: 14px 0 6px; color: #5d5845; font: 12px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+    .bnp-hub .bnp-myicons { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 6px 16px; margin-top: 4px; }
+    .bnp-hub .bnp-myicon { display: grid; grid-template-columns: 34px 132px minmax(0, 1fr); align-items: center; gap: 8px; }
+    .bnp-hub .bnp-myicon i { width: 34px; height: 34px; border-radius: 8px; background: #ece8dc center / 80% no-repeat; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .1); }
+    .bnp-hub .bnp-myicon span { color: #4a4536; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-mybtns { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .bnp-hub .bnp-mysaveadd { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .bnp-hub .bnp-mysaveadd input { flex: 1 1 220px; max-width: 360px; height: 30px; margin: 0; padding: 0 10px; border: 1px solid #cfc7b0; border-radius: 9px; background: #fff; color: #363636; font: 13px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-mysaves { display: grid; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
+    .bnp-hub .bnp-mysaves li { position: relative; display: flex; align-items: center; gap: 10px; margin: 0; padding: 7px 40px 7px 12px; border: 1px solid #e3ddca; border-radius: 10px; background: #fff; }
+    .bnp-hub .bnp-mysaves li > span { display: grid; flex: 1; min-width: 0; }
+    .bnp-hub .bnp-mysaves b { overflow: hidden; color: #363636; font: 13px "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-hub .bnp-mysaves small { color: #8a8270; font: 11.5px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-mysaves .bnp-pillbtn { height: 26px; font-size: 12px; }
+    .bnp-hub .bnp-mysaves .bnp-lookx { top: 50%; right: 9px; transform: translateY(-50%); }
+    .bnp-hub .bnp-look-newic { display: grid; place-items: center; height: 30px; }
+    .bnp-hub .bnp-myimp .bnp-lpbody h5:first-child { margin-top: 2px; }
+    .bnp-hub .bnp-lookpick.bnp-myimp { inset: 56px auto auto 50%; transform: translateX(-50%); width: min(640px, calc(100% - 24px)); max-height: calc(100% - 72px); }   /* (as big as what's in it) */
+    .bnp-hub .bnp-mycss { display: block; width: 100%; box-sizing: border-box; margin: 0; padding: 10px 12px; border: 1px solid #cfc7b0; border-radius: 10px; background: #fff; color: #363636; font: 12.5px/1.45 Consolas, "Courier New", monospace; resize: vertical; }
+    .bnp-hub .bnp-myscene i { background-size: cover !important; }
+    .bnp-hub .bnp-mytint-h { color: #4a4536; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-mytint .bnp-myslides { flex-basis: 100%; margin-top: 2px; }
+    .bnp-hub .bnp-mypatbox small { padding: 2px 9px; border-radius: 999px; background: rgba(255, 255, 255, .9); color: #5d5845; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-lookcard[draggable="true"] { cursor: grab; }
+    .bnp-hub .bnp-lookcard[draggable="true"]:active { cursor: grabbing; }
+    .bnp-hub .bnp-lookcard.is-drag { opacity: .4; }
+    .bnp-hub .bnp-lookcard.drop-before { box-shadow: -4px 0 0 #2c5aa0; }
+    .bnp-hub .bnp-lookcard.drop-after { box-shadow: 4px 0 0 #2c5aa0; }
+    .bnp-hub .bnp-lookrow.drop-into { border-radius: 12px; background: #e3edfb; outline: 2px dashed #2c5aa0; outline-offset: 4px; }
     .bnp-hub .bnp-mysets { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 8px; }
     .bnp-hub .bnp-myset, .bnp-hub .bnp-mylogo { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin: 0; padding: 8px 10px; border: 1px solid #e3ddca; border-radius: 10px; background: #fff; color: #363636; text-align: left; cursor: pointer; }
     .bnp-hub .bnp-myset span { display: flex; gap: 4px; padding: 4px 6px; border-radius: 8px; background: #2c2357; }
@@ -14475,13 +16081,14 @@
     .bnp-hub .bnp-lpurl input[type="text"] { flex: 0 1 160px; }
     @media (max-width: 760px) { .bnp-hub .bnp-lookcols { grid-template-columns: 1fr; } }
     .bnp-hub .bnp-pal img { position: absolute; display: block; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; }
-    .bnp-hub .bnp-pal.is-turned { transform: scaleX(-1); }
+    .bnp-hub .bnp-pal.is-turned { transform: translateX(var(--out)) scaleX(-1); }
     .bnp-hub.bnp-has-pal .bnp-hub-foot { padding-left: calc(var(--bnp-pal-w, 0px) + 18px); }
     .bnp-hub.bnp-has-pal .bnp-rail { padding-bottom: calc(var(--bnp-pal-rise, 0px) + 12px); }
     @media (max-width: 760px), (max-height: 560px) {
       .bnp-hub .bnp-pal { display: none; }
       .bnp-hub.bnp-has-pal .bnp-hub-foot { padding-left: 16px; }
       .bnp-hub.bnp-has-pal .bnp-rail { padding-bottom: 12px; }
+      .bnp-board.bnp-has-pal .bnb-main { padding-bottom: 22px; }
     }
     .bnp-hub .bnp-rail { overflow-y: auto; padding: 10px 10px 12px; border-right: 1px solid #e6e2d6; background: #faf9f5; }
     .bnp-hub .bnp-rail h5 { margin: 12px 0 4px; padding: 4px 10px 5px; border-radius: 8px; background: var(--bnp-bar, var(--bnp-accent, #5d5590)); box-shadow: 0 2px 0 color-mix(in srgb, var(--bnp-bar, var(--bnp-accent, #5d5590)) 68%, #000); color: var(--bnp-bar-ink, #fff); font: 11.5px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; letter-spacing: .09em; }   /* (each group's name on your theme's own bar colour, its writing white: the groups stand right out) */
@@ -14503,7 +16110,7 @@
     .bnp-hub .bnp-subtabs button { margin: 0; padding: 5px 13px 6px; border: 2px solid #e3dfd2; border-radius: 999px; background: #fff; color: #4a4536; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
     .bnp-hub .bnp-subtabs button:hover { border-color: #c9c3ae; }
     .bnp-hub .bnp-subtabs button[aria-selected="true"] { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #000 15%); background: var(--bnp-accent); color: var(--bnp-accent-text); }
-    .bnp-hub .bnp-jumps { position: sticky; top: -14px; z-index: 3; display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 0 -18px 4px; padding: 8px 18px; border-bottom: 1px solid #ece7d5; background: rgba(255, 255, 255, .96); }
+    .bnp-hub .bnp-jumps { position: sticky; top: -14px; z-index: 3; display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 0 -18px 4px; padding: 8px 18px; border-bottom: 1px solid #ece7d5; background: #fff; }
     .bnp-hub .bnp-jumps button { margin: 0; padding: 2px 10px 3px; border: 1px solid #e3dfd2; border-radius: 999px; background: #faf9f5; color: #5c5845; font: 12px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
     .bnp-hub .bnp-jumps button:hover { border-color: #a39e8a; color: #000; }
     .bnp-hub .bnp-hits { display: grid; gap: 4px; }
@@ -14735,7 +16342,7 @@
     .bnp-fq .bnp-fq-find .bnp-ico { flex: none; display: inline-block; width: 16px; height: 16px; background: center / contain no-repeat; }
     .bnp-fq-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 9px; }
     .bnp-fq .bnp-fq-foot .bnp-small { display: inline-block; width: auto; margin: 0; padding: 2px 14px 5px; font-size: 11pt; line-height: 1.3; text-decoration: none; }
-    .bnp-fq .bnp-fq-foot .bnp-linkbtn { margin: 0; padding: 0; border: 0; background: none; color: #6f6a58; font: 12px "MuseoSansRounded700", Arial, sans-serif; text-decoration: underline; cursor: pointer; }
+    .bnp-fq .bnp-fq-foot .bnp-linkbtn { font-size: 12px; }
     .bnp-fq .bnp-fq-pill { position: relative; top: 0; display: block; width: 50px; height: 50px; margin: 0; padding: 0; border: 3px solid var(--bnp-accent); border-radius: 50%; background: #fff; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); cursor: pointer; transition: top .15s, box-shadow .15s; }
     .bnp-fq .bnp-fq-pill:hover { top: -2px; box-shadow: 0 7px 16px rgba(0, 0, 0, .32); }
     .bnp-fq .bnp-fq-pill .bnp-fq-face { width: 100%; height: 100%; border: 0; box-shadow: none; }
@@ -14953,6 +16560,8 @@
     .bnp-avfav.is-on, .bnp-avfav:hover { color: #e8a317; }
     .bnp-avwear { margin: 0 0 8px; padding: 6px 12px; border-radius: 10px; background: #fff4c2; color: #3a3a22; font: 13px "MuseoSansRounded700", Arial, sans-serif; text-align: center; }
     .bnp-hub .bnp-relist h5 { margin: 14px 0 6px; }
+    .bnp-hub .bnp-relist { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 600px), 1fr)); column-gap: 12px; align-items: start; }   /* (a wide window: the events side by side, each at most its own box's width, so its land's picture always fills it) */
+    .bnp-hub .bnp-relist > :not(.bnp-re) { grid-column: 1 / -1; }
     .bnp-hub .bnp-remore { margin-top: 10px; }
     .bnp-hub .bnp-reempty { display: flex; align-items: center; gap: 14px; margin: 0 0 12px; padding: 12px 16px; border: 1px dashed #d9d3bf; border-radius: 12px; background: #fdfbf3; }
     .bnp-hub .bnp-reempty p { margin: 0; font-size: 13.5px; }
@@ -14960,7 +16569,7 @@
     /* one random event: a little copy of Neopets' own box, made from its land's own picture (804×150: the land's colour band
        across the top, its scene at the left, the colour of its words after): the band from its top right, the scene behind the
        character, the words on the colour from its bottom right */
-    .bnp-hub .bnp-re { margin: 0 0 8px; overflow: hidden; border: 2px solid #4a4a42; border-radius: 10px; background: #fdf9e6; }
+    .bnp-hub .bnp-re { max-width: 808px; margin: 0 0 8px; overflow: hidden; border: 2px solid #4a4a42; border-radius: 10px; background: #fdf9e6; }   /* (never wider than Neopets' own box: its land's picture is 804 across) */
     .bnp-hub .bnp-re-band { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; min-height: 22px; padding: 2px 4px 2px 10px; border-bottom: 1px solid rgba(0, 0, 0, .45); background: var(--re-bg, none) 100% 0 / 804px 150px no-repeat, linear-gradient(#9cad45, #6d7f24); color: #fff; font: 12px/1.3 "MuseoSansRounded700", Arial, sans-serif; text-shadow: 0 -1px 0 #2e2a1e, 0 1px 0 #2e2a1e, -1px 0 0 #2e2a1e, 1px 0 0 #2e2a1e, -1px -1px 0 #2e2a1e, 1px -1px 0 #2e2a1e, -1px 1px 0 #2e2a1e, 1px 1px 0 #2e2a1e; }
     .bnp-hub .bnp-re-band a { color: #fff; text-decoration: underline; text-decoration-color: rgba(255, 255, 255, .5); }
     .bnp-hub .bnp-re-band a:hover { text-decoration-color: #fff; }
@@ -15170,9 +16779,7 @@
     .bnp-nbc-chk { display: grid; place-items: center; }
     .bnp-nbc-chk input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
     .bnp-nbc-foot { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 9px 14px; border-top: 1px solid #efeadb; background: #faf9f5; }
-    .bnp-nbc-lb { margin: 0; padding: 0; border: 0; background: none; color: #2c5aa0; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
-    .bnp-nbc-lb:hover:not(:disabled) { text-decoration: underline; }
-    .bnp-nbc-lb:disabled { color: #b5b0a0; cursor: default; }
+
     .bnp-nbc .bnp-nbc-done { width: auto; margin: 0 0 0 auto; padding: 3px 26px 7px; font-size: 13pt; }
     .bnp-nbc-probe { position: absolute; left: -9999px; top: 0; visibility: hidden; pointer-events: none; }
     @media (max-width: 760px) { .bnp-nbc-body { grid-template-columns: 1fr; overflow-y: auto; } .bnp-nbc-side { overflow: visible; border-right: 0; border-bottom: 1px solid #efeadb; } .bnp-nbc-list { overflow: visible; } .bnp-nbc-row { grid-template-columns: 34px minmax(0, 1fr); } .bnp-nbc-end { grid-column: 2; } }
@@ -15350,7 +16957,8 @@
     .bnp-hub .bnp-card > .bnp-switch + .bnp-switch { padding-top: 10px; border-top: 1px solid #efeadb; }
     .bnp-hub .bnp-toast { display: inline-flex; align-items: center; gap: 10px; margin-right: auto; padding: 5px 12px; border-radius: 999px; background: rgba(0, 0, 0, .78); color: #fff; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-hub .bnp-toast[hidden] { display: none; }
-    .bnp-hub .bnp-toast .bnp-linkbtn { color: #ffe066; }
+    .bnp-hub .bnp-toast .bnp-linkbtn { height: 24px; border-color: rgba(255, 255, 255, .35); background: rgba(255, 255, 255, .12); box-shadow: none; color: #ffe066; }
+    .bnp-hub .bnp-toast .bnp-linkbtn:hover, .bnp-hub .bnp-toast .bnp-linkbtn:focus-visible { border-color: #ffe066; background: #ffe066; color: #222; }
     /* the Dailies board: the same pop-up, its tiles in Neopets' own dailies pictures */
     .bnp-hub.bnp-board { width: min(1080px, calc(100vw - 24px)); height: min(800px, calc(100vh - 24px)); --bqr-head: var(--bnp-accent); --bqr-headink: var(--bnp-accent-text); --bqr-line: color-mix(in srgb, var(--bnp-accent) 70%, #000 8%); }
     .bnp-board .bnb-body { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; background: #fff; text-align: left; }
@@ -15542,7 +17150,7 @@
       for (const k of ['fquest', 'fqfold']) GM_addValueChangeListener(KEY + k, (n, o, v, remote) => { if (remote) paintFq(); });   // (your faerie quest, changed in another tab)
     } catch (_) { /* */ }
   }
-  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
+  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
   if (FRAME) { lookFrame(); return; }   // (the "Your look" window's page: Neoboard Settings alone, in the boards' look)
   // A page this makes over is never seen first as it was: the top bar is made over as soon as it's all there (Neopets puts it, the side
   // menu and their drop-downs before the page's own box, so that's before anything is drawn), and a page whose own layout changes much
