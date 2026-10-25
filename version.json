@@ -1,11 +1,11 @@
 {
- "version": "3.6",
- "date": "2026-10-24",
+ "version": "3.7",
+ "date": "2026-10-25",
  "notes": [
-  "Themes: looks, other versions inside one theme (a colour swap, light and dark, a whole new design), shown one at a time, a different one each page, or by the time of day",
-  "Themes: Show me opens a menu or a pop-up on the page; a gradient page background; your own pictures saved for every part",
-  "Neoboards: the topic bar can stay put; New posts? always says what it found",
-  "Avatars: show every retired one, only yours, or none",
-  "Updates: a note like this one whenever a new version is out"
+  "Themes: the look you pick stays on; new night and day looks; turned colours turn the patterns, icons and logo too; a fresh start on any Neopets theme",
+  "Themes: your colours show under covering patterns, and the top bar keeps its pattern on the Neopian Times, Altador Cup, Mystery Island and more",
+  "Theme builder: cards that fold away, swatches beside their names, the base theme’s colours in the picker, and colours that now work on their own",
+  "Settings: Back up and Updates together under Enhance, with every version’s notes",
+  "Fixes: icons and the gear after changing themes; How it works folds on Random events and Avatars; the avatar bar follows No retired"
  ]
 }
