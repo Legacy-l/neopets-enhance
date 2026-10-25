@@ -1,11 +1,11 @@
 {
- "version": "3.7",
+ "version": "3.8",
  "date": "2026-10-25",
  "notes": [
-  "Themes: the look you pick stays on; new night and day looks; turned colours turn the patterns, icons and logo too; a fresh start on any Neopets theme",
-  "Themes: your colours show under covering patterns, and the top bar keeps its pattern on the Neopian Times, Altador Cup, Mystery Island and more",
-  "Theme builder: cards that fold away, swatches beside their names, the base theme’s colours in the picker, and colours that now work on their own",
-  "Settings: Back up and Updates together under Enhance, with every version’s notes",
-  "Fixes: icons and the gear after changing themes; How it works folds on Random events and Avatars; the avatar bar follows No retired"
+  "NeoChat: your Neomail as conversations, in your theme: a window over any page or a page of its own, with an archive, alerts, sounds and desktop notices",
+  "NeoChat Themes: NeoChat in your site theme’s colours or a look of your own, every part of it, with a live preview and starters",
+  "Dailies: a calmer board, Pictures and Your layout views, your own icons and pictures, and a bar on each daily’s page",
+  "Trading Post: lots as tall as what’s in them, every item in a lot, the lowest Instant Buy kept for Create a Trade, several lots at once",
+  "Neomail’s header in your theme every time, and a small Neomail bar; Settings with page icons and a current-page dot; and more"
  ]
 }
