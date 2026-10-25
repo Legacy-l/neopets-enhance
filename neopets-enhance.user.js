@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      3.5
+// @version      3.6
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Shop Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -22,6 +22,7 @@
 // @connect      sunnyneo.com
 // @connect      itemdb.com.br
 // @connect      lebron-values.netlify.app
+// @connect      raw.githubusercontent.com
 // @run-at       document-start
 // ==/UserScript==
 
@@ -370,7 +371,7 @@
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false,
     scopes: true, search: false, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: false, oldLookups: false, qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true,
-    dailyBtn: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, avIcon: 'worn', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, nm2: true, nmPopup: true, stocks: true, stockSell: 60, fillAll: true, dailyFill: true, questGo: true,
+    updNote: true, dailyBtn: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, avIcon: 'worn', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, nm2: true, nmPopup: true, stocks: true, stockSell: 60, fillAll: true, dailyFill: true, questGo: true,
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,
@@ -3389,7 +3390,7 @@
   const NB_TOPICS = 40;   // (topics a page on a board)
   const nbKind = () => { const p = location.pathname; return /^\/neoboards\/(index\.phtml)?$/.test(p) ? 'index' : p === '/neoboards/boardlist.phtml' ? 'board' : p === '/neoboards/topic.phtml' ? 'topic' : p === '/neoboards/create_topic.phtml' ? 'create' : ''; };
   const nbOn = () => !!(S.features.nb2 && nbKind());
-  const NB_DEF = { bar: true, pages: true, marks: true, live: 300, boardLive: 0, acts: true, who: 'hover', links: true, pics: 'np', mutes: 'fold', avatars: 'normal', pet: 's', drafts: true, keys: true, pen: true, mine: true, peek: true, inplace: true, mineTint: true, per: 40 };
+  const NB_DEF = { bar: true, stick: true, pages: true, marks: true, live: 300, boardLive: 0, acts: true, who: 'hover', links: true, pics: 'np', mutes: 'fold', avatars: 'normal', pet: 's', drafts: true, keys: true, pen: true, mine: true, peek: true, inplace: true, mineTint: true, per: 40 };
   const nbOpt = () => Object.assign({}, NB_DEF, S.nb || {});
   // (your theme, as its own parts wear it: pop-up headers and their pattern, the menus' colours and frames, the pet box, and the boards' own bars and links)
   const NB_VARS = { acc: '--nb-acc', ink: '--nb-ink', pic: '--nb-pat', patsz: '--nb-patsz', patpos: '--nb-patpos', frame: '--nb-frame', panel: '--nb-panel', pink: '--nb-pink', rule: '--nb-rule', pop: '--nb-pop', bar: '--nb-bar', barInk: '--nb-bar-ink', blink: '--nb-blink' };
@@ -4179,9 +4180,9 @@
       creatorName: reClean((nav && nav.querySelector('.topicCreator')) ? nav.querySelector('.topicCreator').textContent : ''),
       holder: posts.length ? posts[0].parentElement : null,
     };
-    const seen = nbSeen()[id], me = nbMe();
+    const base = nbVisitBase(id, nbSeen()[id]), me = nbMe();
     posts.forEach((li, i) => nbPost(li, nbHere.start + i, me));
-    nbNewLine(posts, seen);
+    nbNewLine(posts, base);
     if (nav) nbTopicHead(nav);
     nbNote();
     if (me && nbHere.creator === me) { const r = nbHere.seenTo != null ? nbHere.seenTo : nbHere.maxK; nbMineAdd([{ id, t: nbHere.title, b: board, bn: nbHere.bn, ...nbOp(), r, rc: r, v: Date.now() }]); }   // (one you started: in ★ Bookmarks, marked Yours)
@@ -4196,6 +4197,7 @@
   function nbSticky() {
     const head = $('#boardTopic .topicNavTop');
     if (!head || typeof IntersectionObserver !== 'function' || $('[data-bnp="nbsticky"]')) return;
+    if (!nbOpt().stick) { const n = $('#navtop__2020'); document.documentElement.style.setProperty('--nb-jumpgap', `${Math.round((n ? Math.max(0, n.getBoundingClientRect().bottom) : 0) + 14)}px`); return; }   // (off: no bar at the top, and a post jumped to stops just under Neopets' own)
     const bar = document.createElement('div');
     bar.className = 'bnp-nbsticky';
     bar.setAttribute('data-bnp', 'nbsticky');
@@ -4217,6 +4219,12 @@
       bar.hidden = !gone;
     }, { rootMargin: '-72px 0px 0px 0px' });
     io.observe(head);
+    bar.bnpIo = io;
+  }
+  function nbStickyRedo() {   // (the switch changed: the bar gone, or there again)
+    const b = $('[data-bnp="nbsticky"]');
+    if (b) { if (b.bnpIo) b.bnpIo.disconnect(); b.remove(); }
+    if (nbHere && nbHere.kind === 'topic') nbSticky();
   }
   function nbStickyPaint() {
     const bar = $('[data-bnp="nbsticky"]'), h = nbHere;
@@ -4251,15 +4259,26 @@
     const page = next === 1 ? 1 : Math.floor((next - 1) / NB_PER) + 1, start = next === 1 ? 0 : next;
     let known = null;
     try { const k = JSON.parse(sessionStorage.getItem('bnp-nbr') || '{}'); if (k[id] != null) known = Number(k[id]); } catch (_) { /* */ }
+    const top = nums.length ? Math.max(...nums) : 0;
     return {
       next, page, start, last: !hasNext, maxK: start + count - 1,
       seenTo: Math.max(start + count - 1, !hasNext && known != null ? known : 0),
+      exists: Math.max(start + count - 1, known != null ? known : 0, top >= 2 ? (top - 1) * NB_PER + 1 : 0),   // (the furthest post known to be there now, read or not: for "new since you last read" next time)
       pages: hasNext ? Math.max(page + 1, ...nums, known != null ? Math.max(1, Math.ceil(known / NB_PER)) : 0) : page,
     };
   }
-  function nbNewLine(posts, seen) {   // (a line where what you haven't read starts)
-    if (!nbOpt().marks || !seen) return;
-    const first = posts.find((li) => Number(li.dataset.k) > (seen.r || 0));
+  const NB_VISIT_GAP = 30 * 60000;   // (a topic left this long: the next look at it is a new visit)
+  function nbVisitBase(id, rec) {   // (your last read of a topic as it was when this visit to it began: pages read since, in this same visit, never count as new)
+    const all = nbJson('bnp-nbvisit', {}) || {}, now = Date.now(), v = all[id];
+    const base = v && now - (v.t || 0) < NB_VISIT_GAP ? v.b : rec ? { r: rec.r || 0, n: rec.n || 0 } : 0;
+    all[id] = { b: base, t: now };
+    for (const k of Object.keys(all)) if (now - ((all[k] || {}).t || 0) > NB_VISIT_GAP) delete all[k];
+    nbJsonSet('bnp-nbvisit', all);
+    return base || null;
+  }
+  function nbNewLine(posts, base) {   // (a line where what's come since you last read starts: posts past both how far you'd read and how far the topic went then)
+    if (!nbOpt().marks || !base) return;
+    const from = Math.max(base.r || 0, base.n || 0), first = posts.find((li) => Number(li.dataset.k) > from);
     if (first && Number(first.dataset.k) > 0) { const line = document.createElement('div'); line.className = 'bnp-nbnewline'; line.setAttribute('data-bnp', 'nbnewline'); line.textContent = 'New since you last read'; first.before(line); }
   }
 
@@ -4512,7 +4531,7 @@
       const next = nbNextOf(href);
       const lis = [...doc.querySelectorAll('.boardPostByline')].map((b) => b.parentElement).filter((li) => li && li.tagName === 'LI');
       if (!lis.length) throw new Error('no posts there');
-      const holder = h.holder, seen = nbSeen()[h.topic], me = nbMe();
+      const holder = h.holder, base = nbVisitBase(h.topic, nbSeen()[h.topic]), me = nbMe();
       for (const x of holder.querySelectorAll(':scope > li[data-k], :scope > .reply-ad-wrapper, :scope > [data-bnp="nbnewline"]')) x.remove();   // (a page put in place has no advert slots: they can't fill there)
       const at = holder.querySelector(':scope > .topicNavBottom') || holder.querySelector(':scope > form') || null;
       const added = lis.map((li) => document.importNode(li, true));
@@ -4525,7 +4544,7 @@
       if (botNew && bot) bot.replaceWith(document.importNode(botNew, true));
       Object.assign(h, nbPaging($('#boardTopic .topicNavTop .pageNav'), h.topic, next, added.length));
       added.forEach((li, i) => nbPost(li, h.start + i, me));
-      nbNewLine(added, seen);
+      nbNewLine(added, base);
       const nav = $('#boardTopic .topicNavTop'), th = nav && nav.querySelector('[data-bnp="nbth"]');
       if (th) th.remove();
       if (nav) nbTopicHead(nav);
@@ -4776,9 +4795,10 @@
     const h = nbHere;
     if (!h.topic) return;
     const now = Date.now(), seen = nbSeen(), was = seen[h.topic] || {}, r = Math.max(was.r || 0, h.seenTo != null ? h.seenTo : h.maxK);
+    const n = Math.max(was.n || 0, h.exists || 0, r);   // (how far the topic went, as far as you know: what's past it next time is new)
     const me = nbMe(), posted = !!was.me || (!!me && $$('#boardTopic li[data-k]').some((li) => li.dataset.author === me));   // (a topic you've posted in: "you posted" on its board)
-    if (r !== was.r || posted !== !!was.me || now - (was.at || 0) > 3600000) {
-      seen[h.topic] = posted ? { r, at: now, me: 1 } : { r, at: now };
+    if (r !== was.r || n !== (was.n || 0) || posted !== !!was.me || now - (was.at || 0) > 3600000) {
+      seen[h.topic] = posted ? { r, n, at: now, me: 1 } : { r, n, at: now };
       const ids = Object.keys(seen);
       if (ids.length > 900) ids.sort((a, b) => (seen[a].at || 0) - (seen[b].at || 0)).slice(0, ids.length - 800).forEach((x) => delete seen[x]);
       nbJsonSet('bnp-nbseen', seen);
@@ -4814,8 +4834,8 @@
     if (h.checking || !h.topic) return;
     h.checking = true;
     h.checkedAt = Date.now();
-    const btn = $('[data-nbhb="check"]');
-    if (btn) btn.classList.add('is-busy');
+    const btns = $$('[data-nbhb="check"]');   // (the topic's own, and the bar's: both say they're looking)
+    for (const b of btns) { b.classList.add('is-busy'); const sp = b.querySelector('span'); if (sp && byHand) { sp.dataset.was = sp.textContent; sp.textContent = 'Looking…'; } }
     try {
       const doc = await nbFetch(`/neoboards/topic.phtml?topic=${h.topic}${h.next > 1 ? `&next=${h.next}` : ''}`);
       const lis = [...doc.querySelectorAll('.boardPostByline')].map((b) => b.parentElement).filter((li) => li && li.tagName === 'LI');
@@ -4832,8 +4852,8 @@
       }
       if (more) h.last = false;
       if (fresh.length || more) nbLivePill(fresh.length, first, more);
-      else if (byHand) nbSay('No new posts yet');
-    } catch (_) { if (byHand) nbSay('The topic didn’t load just now: try again'); } finally { h.checking = false; if (btn) btn.classList.remove('is-busy'); }
+      if (byHand) nbSay(fresh.length ? `${fresh.length} new post${fresh.length === 1 ? '' : 's'}${more ? ', and newer ones on the next page' : ''}` : more ? 'Newer posts on the next page' : 'No new posts yet');   // (pressed: a word either way, so you know it looked)
+    } catch (_) { if (byHand) nbSay('The topic didn’t load just now: try again'); } finally { h.checking = false; for (const b of btns) { b.classList.remove('is-busy'); const sp = b.querySelector('span'); if (sp && sp.dataset.was) { sp.textContent = sp.dataset.was; delete sp.dataset.was; } } }
   }
   function nbLivePill(n, first, more) {
     if (first && first.getBoundingClientRect().top < innerHeight - 40 && !more) return;   // (already in sight)
@@ -5518,6 +5538,7 @@
       <div class="bnp-card"${hide}>
         <div class="bnp-f"><span>New posts</span>${seg('live', [[0, 'When you reload'], [30, '30 sec'], [60, '1 min'], [120, '2 min'], [300, '5 min'], [600, '10 min'], [900, '15 min'], [1800, '30 min']])}</div>
         <p class="bnp-note">About how often a topic’s last page looks for new posts while you’re on it (never on the dot: each wait is a little longer or shorter). They come in under the others. Back on the tab after longer than that, it looks at once.</p>
+        ${sw('stick', 'The topic’s bar at the top as you scroll', 'Its name, its pages, the size of the words, Bookmark, New posts? and Reply, in a bar that stays at the top of the window. Off: they stay at the top of the topic, and scroll away with it.')}
         ${sw('acts', 'Things to do under each post', 'Quote, Reply (@their name), and the poster’s own buttons: Neomail, their trades, auctions, shop and gallery; ⋯ to follow, mute or tag them.')}
         <div class="bnp-f"><span>Poster’s buttons</span>${seg('who', [['all', 'Always'], ['hover', 'When you point at a post'], ['click', 'Behind their name']])}</div>
         <p class="bnp-note">Behind their name: a little button with their name opens them, just for that post (on a phone or tablet, pointing works the same way).</p>
@@ -5586,7 +5607,7 @@
   }
   function nbHubChange(t) {
     if (t.dataset.feat === 'nb2') { S.features.nb2 = t.checked; changed(t.checked ? 'Neoboards 2 is on: it shows on the next board page' : 'Neoboards 2 is off'); return true; }
-    if (t.dataset.nbo) { S.nb = { ...(S.nb || {}), [t.dataset.nbo]: t.checked }; if (t.dataset.nbo === 'mineTint') { nbcApply(); nbcPaint(); } changed(); return true; }
+    if (t.dataset.nbo) { S.nb = { ...(S.nb || {}), [t.dataset.nbo]: t.checked }; if (t.dataset.nbo === 'mineTint') { nbcApply(); nbcPaint(); } if (t.dataset.nbo === 'stick') nbStickyRedo(); changed(); return true; }
     if (t.dataset.nbpf || t.dataset.nbpm) { const n = t.dataset.nbpf || t.dataset.nbpm, k = t.dataset.nbpf ? 'f' : 'm'; nbSetWho(n, t.checked ? { [k]: 1, [k === 'f' ? 'm' : 'f']: 0 } : { [k]: 0 }); changed(); nbPeopleApply(); return true; }
     return false;
   }
@@ -8724,6 +8745,82 @@
   const myOf = (id) => myAll().find((t) => t.id === id) || null;
   const myWorn = () => (S.wear ? myOf(S.wear) : null);
   const myKey = (k) => (String(k || '').startsWith('my:') ? myOf(String(k).slice(3)) : null);
+  // A theme's looks: other versions of it inside it (a colour swap, a dark one, only its menus different, or a whole new design).
+  // Each keeps only what it changes from the main look (null: that part as the base theme has it). Which shows on a page: one chosen,
+  // one at random each page, or the one whose time of day it is
+  const myLooks = (t) => (t && Array.isArray(t.vars) ? t.vars.filter((x) => x && typeof x === 'object' && x.id) : []);
+  const myLookOf = (t, id) => myLooks(t).find((x) => x.id === id) || null;
+  const myPlain = (o) => !!o && typeof o === 'object' && !Array.isArray(o);
+  function myMerge(a, b) {   // (b over a: objects merged all the way down, null takes a part away, anything else replaces it)
+    const out = { ...(myPlain(a) ? a : {}) };
+    for (const [k, val] of Object.entries(myPlain(b) ? b : {})) {
+      if (val === null) delete out[k];
+      else if (myPlain(val) && myPlain(out[k])) out[k] = myMerge(out[k], val);
+      else out[k] = val;
+    }
+    return out;
+  }
+  function myDiff(a, b) {   // (what b changes from a: only what differs; null where b has taken a part of a away)
+    const A = myPlain(a) ? a : {}, B = myPlain(b) ? b : {}, out = {};
+    for (const k of new Set([...Object.keys(A), ...Object.keys(B)])) {
+      if (!(k in B)) { out[k] = null; continue; }
+      const x = A[k], y = B[k];
+      if (myPlain(x) && myPlain(y)) { const d = myDiff(x, y); if (Object.keys(d).length) out[k] = d; }
+      else if (JSON.stringify(x) !== JSON.stringify(y)) out[k] = y;
+    }
+    return out;
+  }
+  function myAs(t, id) {   // (a theme as one of its looks: a theme in its own right, its main look with this one's over it; '' or none: the theme itself)
+    const x = id ? myLookOf(t, id) : null;
+    return x ? { ...t, base: x.base || t.base, v: myMerge(t.v || {}, x.v || {}), varId: x.id, varOf: t } : t;
+  }
+  const myLookMins = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '')); return m && Number(m[1]) < 24 && Number(m[2]) < 60 ? Number(m[1]) * 60 + Number(m[2]) : null; };
+  function myLookNow(t) {   // (the look this page has, by its rules: one chosen, one at random (once a page), or the one whose time it is)
+    const looks = myLooks(t);
+    if (!looks.length) return '';
+    const sh = myPlain(t.varShow) ? t.varShow : {}, ids = ['', ...looks.map((x) => x.id)];
+    if (sh.mode === 'turns') {
+      const on = (Array.isArray(sh.turns) ? sh.turns : ids).filter((id) => ids.includes(id)), from = on.length ? on : ids, key = `${t.id}:look`;
+      let one = myVaryNow.get(key);
+      if (!from.includes(one)) { one = from[Math.floor(Math.random() * from.length)]; myVaryNow.set(key, one); }
+      return one || '';
+    }
+    if (sh.mode === 'time') {
+      const at = new Date(), now = at.getHours() * 60 + at.getMinutes(), times = myPlain(sh.times) ? sh.times : {};
+      const timed = ids.map((id) => [id, myLookMins(times[id || 'main'])]).filter(([, m]) => m != null).sort((a, b) => b[1] - a[1]);
+      if (!timed.length) return '';
+      return (timed.find(([, m]) => m <= now) || timed[0])[0];   // (before the first one's time today: the last one's, from yesterday)
+    }
+    return ids.includes(sh.one) ? sh.one : '';
+  }
+  let myLookEdit = { id: '', look: '' };   // (Themes: the look of one of your themes being changed; '' its main look)
+  function myLive(t) {   // (a theme of yours as the page shows it now: the look being changed in Themes, or the one its rules pick)
+    if (!t || !myLooks(t).length) return t;
+    return myAs(t, myLookEdit.id === t.id ? myLookEdit.look : myLookNow(t));
+  }
+  let myWorkKept = null;
+  const myWorkKey = (t, x) => `${t.id}|${x.id}|${t.base}|${x.base || ''}|${JSON.stringify(t.v || {})}|${JSON.stringify(x.v || {})}`;
+  function myWork(t) {   // (what Themes changes: the theme itself, or the look of it you're changing, as a theme whose changes are kept as that look's)
+    const x = t && myLookEdit.id === t.id && myLookEdit.look ? myLookOf(t, myLookEdit.look) : null;
+    if (!x) return t;
+    const key = myWorkKey(t, x);
+    if (!myWorkKept || myWorkKept.t !== t || myWorkKept.key !== key) myWorkKept = { t, key, w: myAs(t, x.id) };
+    return myWorkKept.w;
+  }
+  const myReal = (t) => (t && t.varOf) || t;
+  function myLookSync(w) {   // (a look being changed: kept as only what it changes from the main look)
+    const t = w.varOf, x = t && myLookOf(t, w.varId);
+    if (!x) return;
+    x.v = myDiff(t.v || {}, w.v || {});
+    if (w.base && w.base !== t.base) x.base = w.base; else delete x.base;
+    if (myWorkKept && myWorkKept.w === w) myWorkKept.key = myWorkKey(t, x);
+  }
+  function myLookHas(w, path) {   // (this look's own: set in it, or taken away in it)
+    const x = w && w.varOf && myLookOf(w.varOf, w.varId);
+    let o = x && x.v;
+    for (const k of path.split('.')) { if (!myPlain(o) || !(k in o)) return false; o = o[k]; }
+    return true;
+  }
   function myPic(p) {   // (a picture named in a theme: one of the art above, a Neopets path, an address; none for anything else)
     if (!p) return '';
     if (MY_PICS[p]) return MY_PICS[p];
@@ -8744,6 +8841,7 @@
     if (one) myVaryNow.set(k, one.id);
     return one;
   }
+  const myPageGrad = (p) => (p && p.top && p.bottom ? `linear-gradient(180deg, ${p.top}, ${p.bottom})` : '');   // (the page's gradient: top to bottom of the window, behind its pattern)
   function myCss(t) {   // (the theme's own look, over its base's)
     const v = (t && t.v) || {}, out = [];
     const rule = (sel, ...decls) => { const d = decls.filter((x) => x && !/undefined|null|NaN/.test(x)); if (d.length) out.push(`${myRoot(sel)} { ${d.join('; ')}; }`); };
@@ -8766,7 +8864,8 @@
       if (!w || !h) return;
       const dx = /left/i.test(o.move) ? -w : /right/i.test(o.move) ? w : 0, dy = /down/i.test(o.move) ? h : o.move === 'up' ? -h : 0;
       const dur = Math.max(0.2, Math.hypot(dx, dy) / Math.max(1, Number(o.speed) || 40)), at = (x, y) => `calc(${ax} + ${Math.round((Number(o.x) || 0) + x)}px) calc(${ay} + ${Math.round((Number(o.y) || 0) + y)}px)`;
-      out.push(`@keyframes bnp-move-${part} { from { background-position: ${at(0, 0)}; } to { background-position: ${at(dx, dy)}; } }`);
+      const still = part === 'page' && myPageGrad(o) ? ', 0 0' : '';   // (the page's gradient stays where it is as its pattern moves)
+      out.push(`@keyframes bnp-move-${part} { from { background-position: ${at(0, 0)}${still}; } to { background-position: ${at(dx, dy)}${still}; } }`);
       out.push(`@media (prefers-reduced-motion: no-preference) { ${myRoot(sels)} { animation: bnp-move-${part} ${dur.toFixed(2)}s linear infinite; } }`);
     };
     const { link = {}, bar = {}, logo = {}, page = {}, menu = {}, prof = {}, news = {}, pop = {}, foot = {}, boards = {}, home = {}, box = {}, font = {} } = v;
@@ -8777,6 +8876,8 @@
     }
     if (has(box.colour) || has(pats.box) || placed(box)) rule('#container__2020', has(box.colour) && `background-color: ${box.colour}`, has(pats.box) ? `background-image: ${pic(pats.box)}` : has(box.colour) && 'background-image: none', ...place(box, 150, ['50%', '0%'], has(pats.box)));
     if (has(box.line) || has(box.glow) || box.round != null) rule('#container__2020', box.round != null && `border-radius: ${Math.round(Number(box.round) || 0)}px`, (has(box.line) || has(box.glow)) && `box-shadow: ${[has(box.line) && `0 0 0 ${Math.round(box.lineW == null ? 3 : Number(box.lineW))}px ${box.line}`, has(box.glow) && `0 0 18px 2px ${box.glow}`].filter(Boolean).join(', ')}`);
+    if (has(box.text)) rule('#container__2020', `color: ${box.text}`);   // (the pages' own writing: light on a dark box of yours)
+    if (has(box.title)) rule('.page-title__2020, .page-title__2020 h1', `color: ${box.title}`);
     if (pop.lineW != null) rule('.togglePopup__2020', `border-width: ${Math.round(Number(pop.lineW) || 0)}px`, 'border-style: solid');
     if (pop.round != null) { const r = Math.round(Number(pop.round) || 0); rule('.togglePopup__2020', `border-radius: ${r}px`); rule('.popup-header__2020, .popup-header-pattern__2020', `border-radius: ${r}px ${r}px 0 0`); rule('.popup-footer__2020, .popup-footer-pattern__2020', `border-radius: 0 0 ${r}px ${r}px`); }
     if (menu.lineW != null) rule('.nav-dropdown__2020', `border-width: ${Math.round(Number(menu.lineW) || 0)}px`, 'border-style: solid');
@@ -8813,7 +8914,11 @@
     else if (footPic) rule('.footer-logo__2020', `background-image: url("${cssUrl(footPic)}") !important`, 'filter: none');
     if (logo.size != null || logo.x || logo.y) rule('.nav-logo__2020', `transform: translate(${Number(logo.x) || 0}px, ${Number(logo.y) || 0}px) scale(${(Number(logo.size) || 100) / 100})`, 'transform-origin: left center');   // (its size and place in the bar: a logo of your own may want them)
     // the page
-    if (has(page.colour) || has(pats.page) || placed(page) || page.blend) rule('body', has(page.colour) && `background-color: ${page.colour}`, has(pats.page) && `background-image: ${pic(pats.page)}`, ...place(page, 150, ['0%', '0%'], has(pats.page)), page.blend && `background-blend-mode: ${page.blend}`);
+    const pageGrad = myPageGrad(page);
+    if (pageGrad) {   // (two layers: its pattern over a gradient that fills the window, still as the page scrolls)
+      const pl = place(page, 150, ['0%', '0%'], true), val = (prop, d) => { const x = pl.find((y) => y && y.startsWith(`${prop}:`)); return x ? x.slice(prop.length + 1).trim() : d; }, two = has(pats.page);
+      rule('body', has(page.colour) && `background-color: ${page.colour}`, `background-image: ${two ? `${pic(pats.page)}, ` : ''}${pageGrad}`, `background-size: ${two ? `${val('background-size', 'auto')}, ` : ''}100% 100%`, `background-position: ${two ? `${val('background-position', '0% 0%')}, ` : ''}0 0`, `background-repeat: ${two ? `${val('background-repeat', 'repeat')}, ` : ''}no-repeat`, `background-attachment: ${two ? `${page.fixed ? 'fixed' : 'scroll'}, ` : ''}fixed`, page.blend && `background-blend-mode: ${two ? `${page.blend}, ` : ''}normal`);
+    } else if (has(page.colour) || has(pats.page) || placed(page) || page.blend) rule('body', has(page.colour) && `background-color: ${page.colour}`, has(pats.page) && `background-image: ${pic(pats.page)}`, ...place(page, 150, ['0%', '0%'], has(pats.page)), page.blend && `background-blend-mode: ${page.blend}`);
     // the menus
     if (has(menu.bg)) {
       rule('.nav-dropdown__2020', `background-color: ${menu.bg}`, has(menu.text) && `color: ${menu.text}`, has(menu.border) && `border: 2px solid ${menu.border}`);
@@ -9105,7 +9210,7 @@
         got.forEach((u, i) => { if (u) css.push(`${myRoot(MY_ICON_PARTS[i][1])} { background-image: url("${cssUrl(u)}") !important; }`); });
       }
       const pats = await Promise.all(tints.map((k) => tinted(myPatSrc(t, k), t.v[k].tint)));
-      tints.forEach((k, i) => { if (pats[i]) css.push(`${myRoot(MY_PAT_AT[k])} { background-image: url("${cssUrl(pats[i])}") !important; }`); });
+      tints.forEach((k, i) => { if (pats[i]) css.push(`${myRoot(MY_PAT_AT[k])} { background-image: url("${cssUrl(pats[i])}")${k === 'page' && myPageGrad(t.v.page) ? `, ${myPageGrad(t.v.page)}` : ''} !important; }`); });   // (the page's gradient kept under its recoloured pattern)
       if (logoTint) { const u = await tinted(myLogoSrc(t), logoTint); if (u) css.push(`${myRoot(lg.foot ? '.nav-logo__2020' : '.nav-logo__2020, .footer-logo__2020')} { background-image: url("${cssUrl(u)}") !important; }`); }
       if (ask !== myIconsAsk) { made.forEach((u) => URL.revokeObjectURL(u)); return; }   // (another asked for meanwhile: these were never shown)
       let st = document.getElementById('bnp-my-icons');
@@ -9142,12 +9247,13 @@
     const root = document.documentElement;
     root.classList.add('bnp-my');
     root.setAttribute('data-bnp-my', t.id);
+    const L = myLive(t);   // (its look on this page)
     let st = document.getElementById('bnp-my-style');
     if (!st) { st = document.createElement('style'); st.id = 'bnp-my-style'; (document.head || root).append(st); }
-    st.textContent = myCss(t);
-    myFonts(t);
-    const want = myBaseHref(t.base);
-    const fix = (l) => { if (!l.hasAttribute('data-bnp-was')) l.setAttribute('data-bnp-was', l.href); if (themeOfUrl(l.href) !== t.base) l.href = want; };
+    st.textContent = myCss(L);
+    myFonts(L);
+    const want = myBaseHref(L.base);
+    const fix = (l) => { if (!l.hasAttribute('data-bnp-was')) l.setAttribute('data-bnp-was', l.href); if (themeOfUrl(l.href) !== L.base) l.href = want; };
     if (early && document.readyState === 'loading') {   // (the page's own sheet, swapped as it comes: before anything is drawn)
       themeLinks().forEach(fix);
       const o = new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeName === 'LINK' && THEME_RE.test(n.href || '')) fix(n); });
@@ -9155,10 +9261,10 @@
       document.addEventListener('DOMContentLoaded', () => { o.disconnect(); themeLinks().forEach(fix); }, { once: true });
     } else {
       const at = themeLinks().pop(), was = at && (at.getAttribute('data-bnp-was') || at.href);
-      if (at && themeOfUrl(at.href) !== t.base) themeSwap(want).then(() => { const l = themeLinks().pop(); if (l && was) l.setAttribute('data-bnp-was', was); themeChanged(); }).catch(report);
+      if (at && themeOfUrl(at.href) !== L.base) themeSwap(want).then(() => { const l = themeLinks().pop(); if (l && was) l.setAttribute('data-bnp-was', was); themeChanged(); }).catch(report);
       else if (at && was) at.setAttribute('data-bnp-was', was);
     }
-    myIcons(t);
+    myIcons(L);
   }
   function myOff(back = true) {   // (back to your account's own theme on this page; back: its own sheet too)
     const root = document.documentElement;
@@ -11159,6 +11265,32 @@
     hub.win.focus({ preventScroll: true });
   }
   let peekBack = null, peekWas = null;
+  function myShowMe(what) {   // (Show me: Settings steps aside, and a menu or a pop-up opens on the page in this theme's look)
+    if (!hub) return;
+    myColourClose();
+    hubPeek(true);
+    closeDropdowns();
+    if (what === 'pop') {
+      let el = document.querySelector('[data-bnp="popsample"]');
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'togglePopup__2020 bnp-popsample';
+        el.setAttribute('data-bnp', 'popsample');
+        el.innerHTML = '<div class="popup-header__2020"><h3>A pop-up</h3><div class="popup-exit button-default__2020 button-red__2020" data-popsamplex title="Close it" role="button" tabindex="0"><div class="popup-exit-icon"></div></div><div class="popup-header-pattern__2020"></div></div><div class="popup-body__2020"><p>Neopets’ pop-ups look like this in your theme: their top and foot, their edge, the title and the inside.</p></div><div class="popup-footer__2020"><div class="popup-footer-pattern__2020"></div></div>';
+        el.addEventListener('click', (e) => { if (e.target instanceof Element && e.target.closest('[data-popsamplex]')) el.remove(); });
+        document.body.append(el);
+      }
+      return;
+    }
+    const id = { menu: 'communitydropdown__2020', prof: 'navprofiledropdown__2020', news: 'navnewsdropdown__2020' }[what], dd = id && document.getElementById(id);
+    if (!dd) { toast('That menu isn’t on this page'); return; }
+    scrollTo({ top: 0 });
+    myShowMe.dd = dd;   // (shut again when Settings comes back)
+    setTimeout(() => {   // (after this click is over, so the page's own "a click elsewhere" doesn't shut it at once)
+      try { PAGE.toggleNavDropdown__2020(dd); } catch (_) { dd.style.display = 'block'; dd.classList.add('nav-dropdown-active'); }
+      try { PAGE.toggleDropdownArrow(`arrow-${id}`); } catch (_) { /* */ }
+    }, 60);
+  }
   function hubPeek(on) {   // (Settings out of sight for a moment: the page as it is now, the part you're changing scrolled into view)
     if (!hub) return;
     hub.win.classList.toggle('is-peek', on);
@@ -11183,6 +11315,15 @@
     } else {
       if (peekBack) peekBack.hidden = true;
       if (peekWas) { scrollTo({ top: peekWas.y }); peekWas = null; }
+      const sample = document.querySelector('[data-bnp="popsample"]');
+      if (sample) sample.remove();   // (Show me's pop-up, gone with it)
+      const dd = myShowMe.dd;
+      if (dd) {   // (a menu Show me opened: shut again, as Neopets shuts it, or by hand)
+        myShowMe.dd = null;
+        const shade = document.getElementById('navdropdownshade__2020');
+        if (shade && shade.style.display === 'block') closeDropdowns();
+        else if (dd.isConnected && dd.style.display === 'block') { dd.style.display = 'none'; dd.classList.remove('nav-dropdown-active'); }
+      }
     }
   }
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && hub && hub.win.classList.contains('is-peek')) { e.preventDefault(); e.stopPropagation(); hubPeek(false); } }, true);
@@ -11196,6 +11337,7 @@
     myImp = false;
     myImpPaint();
     myColourClose();
+    myLookEditEnd();
     myPreviewEnd();
     hub.win.classList.remove('open');
     hub.veil.classList.remove('open');
@@ -11384,7 +11526,8 @@
   const firstPals = (f) => { const v = HUB_PALS[f]; return !v ? [] : (Array.isArray(v[0]) ? v : [v]).map(palSpec); };
   function lookStart(f) {   // (how a theme's lists start: Neopets' own two at the foot and the first picks in each window's corner; a theme of yours, as it was made)
     const m = myKey(f), lk = (m && m.looks) || {};
-    if (m) return { left: lk.left || [], right: lk.right || [], both: lk.both || [], corner: lk.corner || [], board: lk.board || lk.corner || [] };
+    if (m && m.built) return { left: lk.left || [], right: lk.right || [], both: lk.both || [], corner: lk.corner || [], board: lk.board || lk.corner || [] };
+    if (m) return { left: ['own'], right: ['own'], both: [], corner: firstPals(m.base), board: firstPals(m.base) };   // (one of yours starts as its base exactly: its own two at the foot, its first pick in each corner)
     return { left: ['own'], right: ['own'], both: [], corner: firstPals(f), board: firstPals(f) };
   }
   function lookOf(f) {   // (a theme's lists: yours, or as they start)
@@ -11392,7 +11535,7 @@
     return { left: one('left'), right: one('right'), both: one('both'), corner: one('corner'), board: one('board') };
   }
   function lookSet(f, slot, list) {   // (one list changed and kept; as it starts again, nothing kept)
-    const mt = myEditable(f);
+    const mt = myReal(myEditable(f));
     if (mt) myHistPush(mt, 'looks');   // (a theme of yours: who stands where is part of it, so Undo has it too)
     const all = { ...(S.looks || {}) }, mine = { ...(all[f] || {}) };
     if (JSON.stringify(list) === JSON.stringify(lookStart(f)[slot])) delete mine[slot]; else mine[slot] = list;
@@ -11807,8 +11950,8 @@
     ['The profile menu', 'prof', [['top', 'Top'], ['bottom', 'Bottom'], ['item', 'Its rows'], ['small', 'Small writing'], ['link', 'Links'], ['box', 'Pet box'], ['boxLine', 'Pet box’s edge'], ['clock', 'Its clock']]],
     ['News, alerts and quests', 'news', [['bg', 'Background'], ['panel', 'Panels'], ['tab', 'Tabs not chosen'], ['line', 'Lines'], ['head', 'Headings'], ['text', 'Writing'], ['link', 'Links'], ['visited', 'Links you’ve read']]],
     ['Pop-ups and windows', 'pop', [['top', 'Top'], ['bottom', 'Bottom'], ['line', 'Edge'], ['glow', 'Glow round them'], ['headLine', 'Line under the top'], ['footLine', 'Line over the foot'], ['body', 'Inside'], ['title', 'Titles'], ['titleEdge', 'Titles’ outline'], ['titleShadow', 'Titles’ shadow']]],
-    ['The page', 'page', [['colour', 'Background'], ['scroll', 'Scrollbar'], ['scrollTrack', 'Scrollbar’s track'], ['select', 'Writing you select: behind it'], ['selectText', 'Writing you select']]],
-    ['The pages’ box', 'box', [['colour', 'Its colour'], ['line', 'Its edge'], ['glow', 'Its glow']]],
+    ['The page', 'page', [['colour', 'Background'], ['top', 'Top: with Bottom, a gradient'], ['bottom', 'Bottom'], ['scroll', 'Scrollbar'], ['scrollTrack', 'Scrollbar’s track'], ['select', 'Writing you select: behind it'], ['selectText', 'Writing you select']]],
+    ['The pages’ box', 'box', [['colour', 'Its colour'], ['line', 'Its edge'], ['glow', 'Its glow'], ['text', 'Its writing'], ['title', 'Page titles']]],
     ['Links', 'link', [['colour', 'Links'], ['hover', 'Pointed at']]],
     ['The foot of the page', 'foot', [['colour', 'Background'], ['top', 'Top: with Bottom, a gradient'], ['bottom', 'Bottom'], ['line', 'Line over it'], ['glow', 'Glow over it'], ['text', 'Writing'], ['textGlow', 'Writing’s glow']]],
     ['The home page', 'home', [['around', 'Around its scene'], ['plate', 'Name plate'], ['plateLine', 'Name plate’s edge'], ['plateText', 'Name plate’s writing']]],
@@ -11835,7 +11978,7 @@
   }
   const myFieldName = (path) => { const [part, k] = path.split('.'), a = MY_FIELDS.find((x) => x[1] === part), f = a && a[2].find((x) => x[0] === k); return f ? f[1] : k; };
   const MY_PATS = [['bar', 'The top bar', 'Over the top bar’s colours'], ['page', 'The page', 'Behind everything'], ['pop', 'Pop-ups and windows', 'Their tops and feet'], ['foot', 'The foot of the page', 'Under the links'], ['home', 'Around the home page’s scene', ''], ['box', 'The pages’ box', '']];
-  const MY_ON = { 'bar.text': ['bar.mid', 'bar.top'], 'bar.clockText': ['bar.clock'], 'bar.badgeText': ['bar.badge'], 'menu.text': ['menu.bg'], 'prof.item': ['prof.top'], 'prof.small': ['prof.top'], 'news.text': ['news.bg'], 'news.head': ['news.panel', 'news.bg'], 'pop.title': ['pop.top'], 'foot.text': ['foot.colour', 'foot.top'], 'home.plateText': ['home.plate'] };   // (writing → what it's read on: "Hard to read" when the two are too close)
+  const MY_ON = { 'bar.text': ['bar.mid', 'bar.top'], 'bar.clockText': ['bar.clock'], 'bar.badgeText': ['bar.badge'], 'menu.text': ['menu.bg'], 'prof.item': ['prof.top'], 'prof.small': ['prof.top'], 'news.text': ['news.bg'], 'news.head': ['news.panel', 'news.bg'], 'pop.title': ['pop.top'], 'foot.text': ['foot.colour', 'foot.top'], 'home.plateText': ['home.plate'], 'box.text': ['box.colour'], 'box.title': ['box.colour'] };   // (writing → what it's read on: "Hard to read" when the two are too close)
   const MY_ON_HELP = { 'bar.text': 'bar.textGlow', 'pop.title': 'pop.titleEdge', 'foot.text': 'foot.textGlow' };   // (a glow or an outline round the writing: it reads anyway)
   const MY_PROBE = {   // (where each colour shows on the page: read from it, so a colour you haven't changed starts as it looks. "!": always one made for the purpose)
     'bar.top': ['.nav-top__2020', 'bgimg0'], 'bar.mid': ['.nav-top__2020', 'bgimg1'], 'bar.bottom': ['.nav-top__2020', 'bgimgN'], 'bar.line': ['.nav-top__2020', 'borderBottomColor'], 'bar.glow': ['.nav-top__2020', 'shadow'],
@@ -11848,14 +11991,14 @@
     'news.bg': ['#navnewsdropdown__2020', 'bgimg0'], 'news.panel': ['!.tabActive__2020', 'bgimg0'], 'news.tab': ['!.tabHidden__2020', 'bgimg0'], 'news.line': ['!#newstab__2020 ul li', 'borderBottomColor'], 'news.head': ['!#newstab__2020 ul li h4', 'color'], 'news.text': ['!.news-tab-content__2020 p', 'color'], 'news.link': ['!#newstab__2020 ul li a', 'color'],
     'pop.top': ['.popup-header__2020', 'bgimg0'], 'pop.bottom': ['.popup-header__2020', 'bgimgN'], 'pop.title': ['.popup-header__2020 h3', 'color'], 'pop.titleShadow': ['.popup-header__2020 h3', 'tshadow'], 'pop.line': ['.togglePopup__2020', 'borderTopColor'], 'pop.glow': ['.togglePopup__2020', 'shadow'],
     'pop.headLine': ['!.popup-header__2020', 'borderBottomColor'], 'pop.footLine': ['!.popup-footer__2020', 'borderTopColor'], 'pop.body': ['!.popup-body__2020', 'backgroundColor'],
-    'page.colour': ['body', 'backgroundColor'], 'link.colour': ['!a', 'color'],
+    'page.colour': ['body', 'backgroundColor'], 'page.top': ['body', 'backgroundColor'], 'page.bottom': ['body', 'backgroundColor'], 'link.colour': ['!a', 'color'], 'box.colour': ['#container__2020', 'backgroundColor'], 'box.text': ['#container__2020', 'color'], 'box.title': ['!.page-title__2020 h1', 'color'],
     'foot.colour': ['.footer__2020', 'backgroundColor'], 'foot.top': ['.footer__2020', 'bgimg0'], 'foot.bottom': ['.footer__2020', 'bgimgN'], 'foot.line': ['.footer__2020', 'borderTopColor'], 'foot.glow': ['.footer__2020', 'shadow'], 'foot.text': ['.footer-copyright__2020', 'color'], 'foot.textGlow': ['.footer-copyright__2020', 'tshadow'],
     'home.around': ['!.hp-bg-grid__2020', 'backgroundColor'], 'home.plate': ['!.hp-carousel-nameplate', 'bgimg0'], 'home.plateText': ['!.hp-carousel-nameplate', 'color'],
     'boards.bar': ['!#boardIndex h3', 'backgroundColor'], 'boards.link': ['!#boardIndex ul li h4', 'color'],
   };
   let myTab = 'who', myPreviewOf = '', myPick = null;   // (the editor's section; the theme being shown while you change it; the picture picker: { part })
   const myFolds = {};   // (Themes' folded parts: which you've opened, while Settings stays open)
-  const myEditable = (k) => { const t = myKey(k); return t && !t.built ? t : null; };
+  const myEditable = (k) => { const t = myKey(k); return t && !t.built ? myWork(t) : null; };   // (one of yours: the look of it being changed)
   function myProbeColour(path) {   // (a colour as the page shows it now)
     const [sel0, prop] = MY_PROBE[path] || [];
     if (!sel0) return '';
@@ -11890,15 +12033,17 @@
   }
   function rgbToHex(c) { const m = /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?/.exec(c || ''); if (!m) return c || ''; if (m[4] != null && Number(m[4]) === 0) return ''; return `#${[m[1], m[2], m[3]].map((x) => Math.round(Number(x)).toString(16).padStart(2, '0')).join('')}`; }
   function myGet(t, path) { let o = t && t.v; for (const k of path.split('.')) { if (!o || typeof o !== 'object') return undefined; o = o[k]; } return o; }
-  const MY_PAIRS = [['bar.top', 'bar.bottom'], ['prof.top', 'prof.bottom'], ['pop.top', 'pop.bottom'], ['foot.top', 'foot.bottom']];   // (a gradient's two ends: one changed, the other kept as it looks)
+  const MY_PAIRS = [['bar.top', 'bar.bottom'], ['prof.top', 'prof.bottom'], ['pop.top', 'pop.bottom'], ['foot.top', 'foot.bottom'], ['page.top', 'page.bottom']];   // (a gradient's two ends: one changed, the other kept as it looks)
   // Undo and Redo for a theme of yours: how it was before each change (its parts, its base, who stands where), while this page is open
   const myHist = new Map();
+  const myHistKey = (t) => (t.varId ? `${t.id}~${t.varId}` : t.id);   // (each look of a theme: its own steps)
+  const myHistSnap = (t) => JSON.stringify(t.varOf ? { v: t.v || {}, base: t.base } : { v: t.v || {}, base: t.base, looks: (S.looks || {})[`my:${t.id}`] || null, vars: t.vars || null, varShow: t.varShow || null });
   function myHistPush(t, key) {
-    let h = myHist.get(t.id);
-    if (!h) myHist.set(t.id, (h = { past: [], next: [], key: '', at: 0 }));
+    let h = myHist.get(myHistKey(t));
+    if (!h) myHist.set(myHistKey(t), (h = { past: [], next: [], key: '', at: 0 }));
     const now = Date.now();
     if (key && key === h.key && now - h.at < 900) { h.at = now; return; }   // (a slider dragged, a colour picked as it moves: one step)
-    h.past.push(JSON.stringify({ v: t.v || {}, base: t.base, looks: (S.looks || {})[`my:${t.id}`] || null }));
+    h.past.push(myHistSnap(t));
     if (h.past.length > 100) h.past.shift();
     h.next = [];
     h.key = key;
@@ -11906,13 +12051,12 @@
     myHistPaint(t);
   }
   function myHistStep(t, back) {
-    const h = myHist.get(t.id), from = h && (back ? h.past : h.next), to = h && (back ? h.next : h.past);
+    const h = myHist.get(myHistKey(t)), from = h && (back ? h.past : h.next), to = h && (back ? h.next : h.past);
     if (!from || !from.length) { toast(back ? 'Nothing to undo' : 'Nothing to redo'); return; }
-    to.push(JSON.stringify({ v: t.v || {}, base: t.base, looks: (S.looks || {})[`my:${t.id}`] || null }));
-    const st = JSON.parse(from.pop()), all = { ...(S.looks || {}) };
+    to.push(myHistSnap(t));
+    const st = JSON.parse(from.pop());
     h.key = '';
-    if (st.looks) all[`my:${t.id}`] = st.looks; else delete all[`my:${t.id}`];
-    S.looks = all;
+    if (!t.varOf) { const all = { ...(S.looks || {}) }; if (st.looks) all[`my:${t.id}`] = st.looks; else delete all[`my:${t.id}`]; S.looks = all; }
     myColourClose();
     myRestore(t, st);
     lookAdj = null;
@@ -11922,7 +12066,7 @@
   }
   function myHistPaint(t) {   // (the two buttons: faded when there's nothing that way)
     if (!hub) return;
-    const h = myHist.get(t.id);
+    const h = myHist.get(myHistKey(t));
     for (const [k, list] of [['myundo', h && h.past], ['myredo', h && h.next]]) { const b = hub.main.querySelector(`[data-${k}]`); if (b) b.classList.toggle('is-off', !list || !list.length); }
   }
   function myPut(t, path, val) {   // (one part of a theme of yours, however deep, set or gone; a part left empty goes too)
@@ -11932,6 +12076,7 @@
     for (const k of ks) { chain.push([o, k]); o[k] = { ...(o[k] && typeof o[k] === 'object' ? o[k] : {}) }; o = o[k]; }
     if (val == null || val === '') delete o[last]; else o[last] = val;
     for (const [up, k] of chain.reverse()) { if (Object.keys(up[k]).length) break; delete up[k]; }
+    if (t.varOf) myLookSync(t);   // (a look: kept as what it changes)
   }
   function mySetMany(t, entries, icons) {   // ([[path, value], …] at once: one save and one redraw for them all)
     for (const [p, val] of entries) myPut(t, p, val);
@@ -11947,12 +12092,13 @@
     mySet.t = setTimeout(saveNow, 700);   // (a slider dragged: one save when you let go, never one a step)
     myShowNow(t, /^(icons|logo)\.|\.(tint|pat)(\.|$)/.test(path));
   }
-  function myShowNow(t, icons) {   // (the theme being changed, on the page as it is now)
-    if (myPreviewOf !== t.id && S.wear !== t.id) return;
-    const st = document.getElementById('bnp-my-style');
-    if (st) st.textContent = myCss(t);
-    myFonts(t);
-    if (icons) { clearTimeout(myShowNow.t); myShowNow.t = setTimeout(() => myIcons(t), 160); }
+  function myShowNow(t, icons) {   // (the theme being changed, on the page as it is now: the look of it being changed)
+    const real = myReal(t);
+    if (myPreviewOf !== real.id && S.wear !== real.id) return;
+    const L = myLive(real), st = document.getElementById('bnp-my-style');
+    if (st) st.textContent = myCss(L);
+    myFonts(L);
+    if (icons) { clearTimeout(myShowNow.t); myShowNow.t = setTimeout(() => myIcons(L), 160); }
     themeHeadKept = null;
     themeBarKept = null;
     themeFootKept = undefined;
@@ -11983,7 +12129,7 @@
   function myCopy(id) {   // (one of yours made from another: every part of it, and who stands where)
     const src = myOf(id);
     if (!src) return null;
-    const t = { id: `t${Date.now().toString(36)}`, name: `${src.name} (yours)`, base: src.base, v: JSON.parse(JSON.stringify(src.v || {})) };
+    const t = { id: `t${Date.now().toString(36)}`, name: `${src.name} (yours)`, base: src.base, v: JSON.parse(JSON.stringify(src.v || {})), ...(myLooks(src).length ? { vars: JSON.parse(JSON.stringify(src.vars)) } : {}), ...(src.varShow ? { varShow: JSON.parse(JSON.stringify(src.varShow)) } : {}) };
     S.myThemes = [...(S.myThemes || []), t];
     const L = lookOf(`my:${src.id}`);
     S.looks = { ...(S.looks || {}), [`my:${t.id}`]: { left: L.left, right: L.right, both: L.both, corner: L.corner, board: L.board } };
@@ -12021,15 +12167,105 @@
     for (const part of MY_TURN_PICS) if (part === 'icons' || part === 'logo' || myPatSrc(t, part)) entries.push([`${part}.tint`, myTurn.pics && !still ? { ...o } : myTurn.tints[part]]);
     mySetMany(t, entries, true);
   }
+  const MY_TAB_PARTS = { bar: ['bar'], logo: ['logo', 'icons'], menus: ['menu', 'prof', 'news'], pop: ['pop'], page: ['page', 'link', 'box'], foot: ['foot'], home: ['home'], boards: ['boards'] };
+  const MY_TAB_FONT = { bar: 'bar', menus: 'menu', pop: 'title', page: 'page', foot: 'foot' };
+  function myTabChanged(t, tab) {   // (anything of this tab's part of the page set: its tab shows it; a look's tabs, what it changes)
+    const x = t.varOf ? myLookOf(t.varOf, t.varId) : null, v = (x ? x.v : t.v) || {}, f = MY_TAB_FONT[tab], set = (val) => val === null || (myPlain(val) ? Object.keys(val).length > 0 : val != null && val !== '');
+    if (tab === 'who') return !x && lookChanged(`my:${t.id}`);
+    if (tab === 'more') return x ? 'css' in v || !!x.base : !!(v.css || (t.about && (t.about.by || t.about.note)));
+    if (tab === 'palette') return false;
+    return (MY_TAB_PARTS[tab] || []).some((p) => set(v[p])) || !!(f && myPlain(v.font) && (set(v.font[f]) || set(v.font[`${f}Size`]))) || v.font === null || !!(myPlain(v.borrow) && set(v.borrow[tab])) || (Array.isArray(v.deco) && v.deco.some((d) => d && d.at === tab)) || (x && v.deco === null);
+  }
+  // Its looks, in Themes: the one you're changing, another made (a copy, two colours swapped, light and dark swapped, its colours turned, or its
+  // base fresh), and which the page has (one, one at random each page, or by the time of day)
+  let myLookMake = null, myLookShowOpen = false;
+  const MY_LOOK_FROM = [['copy', 'A copy of the main look'], ['swap', 'Two colours swapped'], ['dark', 'Light and dark swapped'], ['turn', 'Its colours turned'], ['fresh', 'Its base, fresh']];
+  const MY_LOOK_PARTS = [['bar', 'Top bar'], ['menus', 'Menus'], ['pop', 'Pop-ups'], ['page', 'Page'], ['foot', 'Foot of the page'], ['home', 'Home page'], ['boards', 'Neoboards']];
+  function myLookEditEnd() {   // (done changing a theme's looks: the page has the look its rules pick again)
+    const id = myLookEdit.id;
+    myLookEdit = { id: '', look: '' };
+    myLookMake = null;
+    myLookShowOpen = false;
+    const w = myWorn();
+    if (id && w && w.id === id && myLooks(w).length && myPreviewOf !== id) myOn(w, false);
+  }
+  function myLookEditStart(t) {   // (a theme of yours opened in Themes: its main look shown while you change it)
+    myLookEditEnd();
+    if (!t || t.built) return;
+    myLookEdit = { id: t.id, look: '' };
+    if (S.wear === t.id && myLooks(t).length) myOn(t, false);
+  }
+  function myLookShowSay(t) {   // (which look the page has, in a few words)
+    const sh = myPlain(t.varShow) ? t.varShow : {};
+    if (sh.mode === 'turns') return 'a different one each page';
+    if (sh.mode === 'time') return 'by the time of day';
+    const x = myLookOf(t, sh.one);
+    return x ? x.name || 'a look' : 'the main look';
+  }
+  function myLooksBar(t) {   // (its looks: which you're changing, another made, and which the page has)
+    const looks = myLooks(t), cur = myLookEdit.id === t.id && myLookOf(t, myLookEdit.look) ? myLookEdit.look : '', x = cur ? myLookOf(t, cur) : null;
+    return `<div class="bnp-mylooks"><span class="bnp-mytint-h">Its looks</span><span class="bnp-seg" role="group" aria-label="The look you’re changing">${[['', 'Main look'], ...looks.map((l) => [l.id, l.name || 'A look'])].map(([id, n]) => `<button type="button" data-mylook="${esc(id)}" aria-pressed="${cur === id}">${esc(n)}</button>`).join('')}</span><button type="button" class="bnp-pillbtn" data-mylooknew aria-expanded="${!!myLookMake}">+ Another look</button>${looks.length ? `<button type="button" class="bnp-pillbtn" data-mylookshow aria-expanded="${myLookShowOpen}">On the page: ${esc(myLookShowSay(t))}</button>` : '<span class="bnp-note">Other versions of this theme: a colour swap, a dark one, only its menus different, or a whole new design</span>'}</div>
+      ${x ? `<div class="bnp-mylookbar"><span class="bnp-note">You’re changing <b>${esc(x.name || 'this look')}</b>: what you don’t change here comes from the main look (its swatches are faded). Who stands where is the same in every look.</span><input type="text" data-mylookname value="${esc(x.name || '')}" maxlength="30" aria-label="This look’s name" spellcheck="false"><button type="button" class="bnp-pillbtn" data-mylookren>Rename</button><button type="button" class="bnp-pillbtn" data-mylookcopy>Make a copy</button><button type="button" class="bnp-pillbtn is-danger" data-mylookdel>Delete…</button></div>` : ''}
+      ${myLookMake ? myLookMakeHtml(t) : ''}${myLookShowOpen && looks.length ? myLookShowHtml(t) : ''}`;
+  }
+  function myLookShowHtml(t) {   // (which look the page has: one, one at random each page, or by the time of day)
+    const sh = myPlain(t.varShow) ? t.varShow : {}, mode = sh.mode === 'turns' || sh.mode === 'time' ? sh.mode : 'one', all = [['', 'Main look'], ...myLooks(t).map((l) => [l.id, l.name || 'A look'])];
+    const turns = Array.isArray(sh.turns) ? sh.turns : all.map(([id]) => id), times = myPlain(sh.times) ? sh.times : {}, one = myLookOf(t, sh.one) ? sh.one : '';
+    const body = mode === 'one' ? `<span class="bnp-seg" role="group" aria-label="The look on the page">${all.map(([id, n]) => `<button type="button" data-mylookone="${esc(id)}" aria-pressed="${one === id}">${esc(n)}</button>`).join('')}</span>`
+      : mode === 'turns' ? `<span class="bnp-mylookchips">${all.map(([id, n]) => `<button type="button" class="bnp-rechip" data-mylookturn="${esc(id)}" aria-pressed="${turns.includes(id)}">${esc(n)}</button>`).join('')}</span><p class="bnp-note">The ticked ones take turns: a different one on each page, at random.</p>`
+      : `<div class="bnp-mylooktimes">${all.map(([id, n]) => `<label class="bnp-f"><span>${esc(n)}</span><input type="time" data-mylooktime="${esc(id || 'main')}" value="${esc(times[id || 'main'] || '')}" aria-label="${esc(n)}: from"></label>`).join('')}</div><p class="bnp-note">Your computer’s time. Each one starts at its time and stays until the next one’s: a day look from 7 in the morning and a night look from 7 in the evening, say. One without a time doesn’t show.</p>`;
+    return `<div class="bnp-card bnp-mylookshow"><div class="bnp-myrow"><span class="bnp-mytint-h">On the page</span><span class="bnp-seg" role="group">${[['one', 'One look'], ['turns', 'A different one each page'], ['time', 'By the time of day']].map(([k, l]) => `<button type="button" data-mylookmode="${k}" aria-pressed="${mode === k}">${l}</button>`).join('')}</span></div>${body}<p class="bnp-note">While you change a look here, the page shows that one.</p></div>`;
+  }
+  function myLookColours(t, parts) {   // ([path, colour] for every colour of these parts of the page: its own, or as the page shows it)
+    const out = [];
+    for (const [, part, keys] of MY_FIELDS) {
+      if (parts.length && !parts.includes(MY_PART_TAB[part])) continue;
+      for (const [k] of keys) { const p = `${part}.${k}`, c = myHex(myGet(t, p) || myProbeColour(p)); if (c) out.push([p, c]); }
+    }
+    return out;
+  }
+  function myLookCounts(t, parts) { const n = new Map(); for (const [, c] of myLookColours(t, parts)) { const h = hexA(c)[0]; n.set(h, (n.get(h) || 0) + 1); } return [...n].sort((a, b) => b[1] - a[1]).slice(0, 14); }   // (its colours, the most used first)
+  function myLookMakeHtml(t) {
+    const m = myLookMake, from = m.from || 'copy', parts = Array.isArray(m.parts) ? m.parts : [], cols = from === 'swap' ? myLookCounts(t, parts) : [];
+    if (from === 'swap') { if (!cols.some(([c]) => c === m.a)) m.a = (cols[0] || [])[0] || ''; if (!cols.some(([c]) => c === m.b) || m.b === m.a) m.b = (cols.find(([c]) => c !== m.a) || [])[0] || ''; }
+    const chip = (which, c, n) => `<button type="button" class="bnp-mylookcol${m[which] === c ? ' is-on' : ''}" data-mylookcol="${which}:${c}" aria-pressed="${m[which] === c}" title="${c}: in ${n} place${n === 1 ? '' : 's'}" aria-label="${c}" style="--c:${c}"></button>`;
+    const say = { copy: 'Exactly the main look to start with, for you to change anything: only what you change is this look’s own.', swap: 'Wherever the first colour is, the second; and the other way round: the main colour as the accent and the accent as the main one, say.', dark: 'Every colour’s light and dark turned over: a dark look of a light theme, or a light look of a dark one. Its pictures stay as they are.', turn: 'Every colour turned round the colour wheel by the same amount.', fresh: `${esc(nbcThemeName(t.base))} itself, with nothing of yours: a whole new design from the start, still part of this theme. (Its base can be another theme too: Built on, at the top.)` }[from];
+    return `<div class="bnp-card bnp-mylookmake"><h4>Another look</h4>
+      <label class="bnp-f"><span>Its name</span><input type="text" data-mylooknewname value="${esc(m.name || '')}" maxlength="30" spellcheck="false"></label>
+      <div class="bnp-myrow"><span class="bnp-mytint-h">It starts as</span><span class="bnp-seg" role="group">${MY_LOOK_FROM.map(([k, l]) => `<button type="button" data-mylookmakefrom="${k}" aria-pressed="${from === k}">${l}</button>`).join('')}</span></div>
+      ${from === 'swap' ? (cols.length > 1 ? `<div class="bnp-myrow"><span class="bnp-mytint-h">This colour</span><span class="bnp-mylookcols">${cols.map(([c, n]) => chip('a', c, n)).join('')}</span></div><div class="bnp-myrow"><span class="bnp-mytint-h">With this one</span><span class="bnp-mylookcols">${cols.map(([c, n]) => chip('b', c, n)).join('')}</span></div>` : '<p class="bnp-note">There aren’t two colours there to swap.</p>') : ''}
+      ${from === 'turn' ? `<div class="bnp-myslides"><label class="bnp-myslide"><span>How far round</span><input type="range" min="-180" max="180" value="${Number(m.hue) || 0}" data-mylookhue><b>${(Number(m.hue) || 0) > 0 ? '+' : ''}${Number(m.hue) || 0}°</b></label></div>` : ''}
+      ${['swap', 'dark', 'turn'].includes(from) ? `<div class="bnp-myrow"><span class="bnp-mytint-h">Where</span><span class="bnp-mylookchips"><button type="button" class="bnp-rechip" data-mylookpart="" aria-pressed="${!parts.length}">Everywhere</button>${MY_LOOK_PARTS.map(([k, l]) => `<button type="button" class="bnp-rechip" data-mylookpart="${k}" aria-pressed="${parts.includes(k)}">${l}</button>`).join('')}</span></div>` : ''}
+      <p class="bnp-note">${say}</p>
+      <p class="bnp-lookback-row"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mylookmake>Make it</button><button type="button" class="bnp-pillbtn" data-mylookcancel>Not now</button></p></div>`;
+  }
+  function myLookFrom(t, m) {   // (a new look's own changes, as asked, from the main look)
+    const parts = Array.isArray(m.parts) ? m.parts : [];
+    if (m.from === 'fresh') return Object.fromEntries(Object.keys(t.v || {}).map((k) => [k, null]));
+    if (m.from !== 'swap' && m.from !== 'dark' && m.from !== 'turn') return {};
+    const w = { id: t.id, base: t.base, v: JSON.parse(JSON.stringify(t.v || {})) };
+    const fn = m.from === 'turn' ? tintFn({ mode: 'hue', hue: Number(m.hue) || 0, sat: 0, light: 0 }, { hue: 0, lum: 0.5 }) : null;
+    for (const [p, c] of myLookColours(t, parts)) {
+      const [h6, a] = hexA(c);
+      let n = '';
+      if (m.from === 'swap') n = h6 === m.a ? m.b : h6 === m.b ? m.a : '';
+      else if (m.from === 'dark') { const [h, sat, l] = rgbHsl(hexUnit(h6)); n = hslHex(h, sat, 1 - l); }
+      else { const r = fn(hexUnit(h6)); n = r ? unitHex(r) : ''; }
+      if (n && n !== h6) myPut(w, p, withA(n, a));
+    }
+    return myDiff(t.v || {}, w.v);
+  }
+
   const MY_MOVES = { down: 'falling', up: 'rising', left: 'drifting left', right: 'drifting right', downleft: 'falling to the left', downright: 'falling to the right' };
   function myEditHtml(k) {   // (one of your themes, a tab for each part of the page: all of that part in one place. Characters is the page above)
-    const t = myKey(k);
-    if (!t) return '';
+    const t0 = myKey(k);
+    if (!t0) return '';
+    const t = t0.built ? t0 : myWork(t0);   // (the look of it being changed: its main look, or another)
     if (!MY_TABS.some(([v]) => v === myTab)) myTab = 'who';
-    let bar = `<div class="bnp-subtabs bnp-mytabs" role="tablist">${MY_TABS.map(([v, l]) => `<button type="button" role="tab" data-mytab="${v}" aria-selected="${myTab === v}">${l}</button>`).join('')}</div>`;
+    let bar = `<div class="bnp-subtabs bnp-mytabs" role="tablist">${MY_TABS.map(([v, l]) => { const ch = !t.built && myTabChanged(t, v); return `<button type="button" role="tab" data-mytab="${v}" aria-selected="${myTab === v}"${ch ? ' title="You’ve changed this part"' : ''}>${l}${ch ? '<i class="bnp-mytabdot" aria-hidden="true"></i>' : ''}</button>`; }).join('')}</div>`;
     if (t.built) return myTab === 'who' ? bar : `${bar}<div class="bnp-card"><p class="bnp-note">${esc(t.name)} comes with Neopets Enhance, so its colours, pictures and icons stay as they are. Make your own copy to change any of them: it starts exactly the same.</p><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mycopy="${esc(t.id)}">Make your own copy</button></div>`;
-    const hist = myHist.get(t.id), tools = `<div class="bnp-mytools"><button type="button" class="bnp-pillbtn${hist && hist.past.length ? '' : ' is-off'}" data-myundo title="Undo (Ctrl+Z)"><span aria-hidden="true">↶</span>Undo</button><button type="button" class="bnp-pillbtn${hist && hist.next.length ? '' : ' is-off'}" data-myredo title="Redo (Ctrl+Y)"><span aria-hidden="true">↷</span>Redo</button><span class="bnp-myfind"><input type="search" data-myfind placeholder="Find an option…" aria-label="Find an option in this theme" spellcheck="false" autocomplete="off"><span class="bnp-myfindres" data-myfindres hidden></span></span><span class="bnp-note">Everything is kept as you change it. To see the page itself: the eye at the top.</span></div>`;
-    bar = tools + bar;
+    const hist = myHist.get(myHistKey(t)), tools = `<div class="bnp-mytools"><button type="button" class="bnp-pillbtn${hist && hist.past.length ? '' : ' is-off'}" data-myundo title="Undo (Ctrl+Z)"><span aria-hidden="true">↶</span>Undo</button><button type="button" class="bnp-pillbtn${hist && hist.next.length ? '' : ' is-off'}" data-myredo title="Redo (Ctrl+Y)"><span aria-hidden="true">↷</span>Redo</button><span class="bnp-myfind"><input type="search" data-myfind placeholder="Find an option…" aria-label="Find an option in this theme" spellcheck="false" autocomplete="off"><span class="bnp-myfindres" data-myfindres hidden></span></span><span class="bnp-note">Everything is kept as you change it. To see the page itself: the eye at the top.</span></div>`;
+    bar = tools + myLooksBar(t0) + bar;
     if (myTab === 'who') return bar;
     const baseName = esc(nbcThemeName(t.base)), probed = new Map();
     const probe = (p) => { if (!probed.has(p)) probed.set(p, myProbeColour(p)); return probed.get(p); };
@@ -12044,8 +12280,8 @@
       return r < 3 ? `<span class="bnp-mywarn" title="This writing and what it’s on are close: ${r.toFixed(1)} to 1 (3 to 1 or more reads well)">Hard to read</span>` : '';
     };
     const sw = (path, name = myFieldName(path)) => {
-      const val = myGet(t, path), shown = val || probe(path);
-      return `<div class="bnp-myc"><span>${esc(name)}${hard(path)}</span><button type="button" class="bnp-myswatch${val ? '' : ' is-base'}" data-mycol="${path}" data-hex="${esc(shown || '#888888')}" style="--c:${esc(shown || 'transparent')}" title="${val ? esc(val) : `As ${baseName} has it`}" aria-label="${esc(name)}: ${val ? esc(val) : 'as its base has it'}"></button>${val ? `<button type="button" class="bnp-myx" data-myclear="${path}" title="Back to ${baseName}’s" aria-label="Back to its base’s">×</button>` : ''}</div>`;
+      const val = myGet(t, path), shown = val || probe(path), own = t.varOf ? myLookHas(t, path) : !!val, fromMain = !!t.varOf && !!val && !own;   // (a look: its own, or the main look's)
+      return `<div class="bnp-myc"><span>${esc(name)}${hard(path)}</span><button type="button" class="bnp-myswatch${val ? '' : ' is-base'}${fromMain ? ' is-main' : ''}" data-mycol="${path}" data-hex="${esc(shown || '#888888')}" style="--c:${esc(shown || 'transparent')}" title="${val ? `${esc(val)}${fromMain ? ': the main look’s' : ''}` : `As ${baseName} has it`}" aria-label="${esc(name)}: ${val ? esc(val) : 'as its base has it'}"></button>${own ? `<button type="button" class="bnp-myx" data-myclear="${path}" title="${t.varOf ? 'Back to the main look’s' : `Back to ${baseName}’s`}" aria-label="${t.varOf ? 'Back to the main look’s' : 'Back to its base’s'}">×</button>` : ''}</div>`;
     };
     const cols = (part, keys) => `<div class="bnp-mycols">${keys.map((k2) => sw(`${part}.${k2}`)).join('')}</div>`;
     const fontRow = (k2, sample) => {   // (a part's writing: its font and size)
@@ -12053,14 +12289,19 @@
       const opts = `<option value=""${f ? '' : ' selected'}>As it is</option><optgroup label="Neopets’ own">${MY_FONTS.map(([n, l]) => `<option value="${n}"${f === n ? ' selected' : ''}>${esc(l)}</option>`).join('')}</optgroup><optgroup label="More, from Google Fonts">${MY_GFONTS.map((n) => `<option value="${esc(n)}"${f === n ? ' selected' : ''}>${esc(n)}</option>`).join('')}</optgroup><option value="*"${mine ? ' selected' : ''}>Another Google Font, by its name…</option>`;
       return `<div class="bnp-myfont"><label class="bnp-f"><span>Its font</span><select class="bnp-inline" data-myfont="${k2}">${opts}</select></label>${mine || myFolds[`font:${k2}`] ? `<label class="bnp-f"><span>Its name</span><input type="text" data-myfontname="${k2}" value="${esc(mine ? f : '')}" placeholder="As Google Fonts writes it: Cinzel" spellcheck="false" autocomplete="off"></label>` : ''}
         <span class="bnp-myfontprev" style="${myFontOk(f) ? `font-family:'${esc(f)}', Cafeteria, sans-serif;` : ''}${sz ? `font-size:${Math.round(Number(sz))}px` : ''}">${esc(sample)}</span>
-        <div class="bnp-myslides">${slider(`font.${k2}Size`, 'Its size', 8, 40, 'px', 16)}</div>${sz != null ? `<button type="button" class="bnp-pillbtn bnp-small" data-myclear="font.${k2}Size">Its size as it is</button>` : '<p class="bnp-note">Its size: as it is, until you move it.</p>'}</div>`;
+        <div class="bnp-myslides">${slider(`font.${k2}Size`, 'Its size', 8, 40, 'px', 16, 'As it is')}</div>${sz != null ? `<button type="button" class="bnp-pillbtn bnp-small" data-myclear="font.${k2}Size">Its size as it is</button>` : ''}</div>`;
     };
     const card = (title, note, body) => `<h5>${title}${note ? ` <span class="bnp-note">${note}</span>` : ''}</h5><div class="bnp-card">${body}</div>`;
     const lead = (s) => `<p class="bnp-note bnp-mylead">${s}</p>`;
-    const back = (parts, what) => `<p class="bnp-lookback-row bnp-myback"><button type="button" class="bnp-pillbtn" data-myclearpart="${parts}">Back to ${baseName}’s ${what}</button></p>`;
-    const slider = (path, name, min, max, unit, d) => { const v = myGet(t, path), n = v == null ? d : Number(v); return `<label class="bnp-myslide"><span>${esc(name)}</span><input type="range" min="${min}" max="${max}" value="${esc(n)}" data-myrange="${path}"><b>${min < 0 && n > 0 ? '+' : ''}${esc(n)}${unit}</b></label>`; };
+    const back = (parts, what) => `<p class="bnp-lookback-row bnp-myback"><button type="button" class="bnp-pillbtn" data-myclearpart="${parts}">Back to ${t.varOf ? 'the main look' : baseName}’s ${what}</button></p>`;
+    const whole = (area, parts, what, title) => card(title, `Take all of it from another theme, or have ${t.varOf ? 'the main look' : baseName}’s again`, `${take(area)}${back(parts, what)}`);
+    const slider = (path, name, min, max, unit, d, unset) => { const v = myGet(t, path), n = v == null ? d : Number(v); return `<label class="bnp-myslide"><span>${esc(name)}</span><input type="range" min="${min}" max="${max}" value="${esc(n)}" data-myrange="${path}" data-unit="${esc(unit)}"><b>${v == null && unset ? esc(unset) : `${min < 0 && n > 0 ? '+' : ''}${esc(n)}${unit}`}</b></label>`; };
     const segs = (path, opts) => { const cur = String(myGet(t, path) || ''); return `<span class="bnp-seg" role="group">${opts.map(([v, l]) => `<button type="button" data-myset="${path}:${v}" aria-pressed="${cur === v}">${l}</button>`).join('')}</span>`; };
-    const field = (path, label, ph, note) => { const v = myGet(t, path); return `<label class="bnp-f bnp-myurl"><span>${label}</span><input type="url" data-mytext="${path}" value="${esc(typeof v === 'string' && /^https:/.test(v) ? v : '')}" placeholder="${ph}" spellcheck="false" autocomplete="off"><small class="bnp-mypicinfo" data-mypicinfo="${path}"></small></label>${note ? `<p class="bnp-note">${note}</p>` : ''}`; };
+    const picStrip = (cur, attr) => {   // (your saved pictures, a click away: the first eight, the rest behind "more")
+      const pics = myPics();
+      return pics.length ? `<span class="bnp-mypicstrip"><span class="bnp-mytint-h">Yours</span>${pics.map((x) => `<button type="button" class="bnp-mypicthumb${x.u === cur ? ' is-on' : ''}" data-mypicuse="${esc(x.u)}" ${attr} title="${esc(picName(x.u))}" aria-label="Use ${esc(picName(x.u))}" aria-pressed="${x.u === cur}" style="background-image:url('${esc(cssUrl(x.u))}')"></button>`).join('')}${pics.length > 8 ? `<button type="button" class="bnp-pillbtn bnp-mypicmore" data-mypicmore="${pics.length - 8}">+${pics.length - 8} more</button>` : ''}</span>` : '';
+    };
+    const field = (path, label, ph, note, pics) => { const v = myGet(t, path); return `<label class="bnp-f bnp-myurl"><span>${label}</span><input type="url" data-mytext="${path}" value="${esc(typeof v === 'string' && /^https:/.test(v) ? v : '')}" placeholder="${ph}" spellcheck="false" autocomplete="off"><small class="bnp-mypicinfo" data-mypicinfo="${path}"></small></label>${pics ? picStrip(typeof v === 'string' ? v : '', `data-path="${path}"`) : ''}${note ? `<p class="bnp-note">${note}</p>` : ''}`; };
     const placeHtml = (part, o = {}) => {   // (how a part's picture sits: its size, where, repeated or not, how strong, blended how)
       const fit = String(myGet(t, `${part}.fit`) || ''), rep = String(myGet(t, `${part}.repeat`) || '');
       const said = [{ '': `${Number(myGet(t, `${part}.size`)) || 150}px wide`, own: 'as drawn', height: 'filling the height', width: 'filling the width', cover: 'covering it all', contain: 'fitting inside' }[fit] || '', { '': 'all over', x: 'across', y: 'down', none: 'once' }[rep] || ''].join(', ');
@@ -12079,7 +12320,9 @@
     const patRow = (part) => {   // (a part's picture: Neopets' own patterns or yours, by its address)
       const p = myGet(t, `${part}.pat`), u = myPic(p), src = myPatSrc(t, part);
       return `<div class="bnp-mypat"><span class="bnp-mypatbox" data-mypatprev="${part}" style="${src ? `background-image:url('${esc(cssUrl(src))}');background-size:${Math.min(Number(myGet(t, `${part}.size`)) || 150, 150)}px auto` : ''}">${u ? '' : `<small>${src ? `${baseName}’s own` : 'None'}</small>`}</span>
-        <span class="bnp-mypatgo"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mypat="${part}">Choose a pattern…</button>${p ? `<button type="button" class="bnp-pillbtn" data-myclear="${part}.pat">Back to ${baseName}’s</button>` : ''}<small class="bnp-mypicinfo" data-mypicinfo="${part}.pat"></small></span></div>${altsHtml(part)}`;
+        <span class="bnp-mypatgo"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mypat="${part}">Choose a pattern…</button>${p ? `<button type="button" class="bnp-pillbtn" data-myclear="${part}.pat">Back to ${baseName}’s</button>` : ''}<small class="bnp-mypicinfo" data-mypicinfo="${part}.pat"></small>
+          <span class="bnp-myurlrow"><input type="url" class="bnp-myurlin" data-mypaturlin="${part}" value="${typeof p === 'string' && /^https:/.test(p) ? esc(p) : ''}" placeholder="Or a picture’s address: https://images.neopets.com/…" aria-label="Its picture’s address" spellcheck="false"><button type="button" class="bnp-pillbtn" data-mypaturlgo="${part}">Use it</button><button type="button" class="bnp-pillbtn" data-mypicsave="${part}" title="Keep it in Your pictures, for any pattern in any of your themes">Save</button></span>
+          ${picStrip(typeof p === 'string' ? p : '', `data-part="${part}"`)}</span></div>${altsHtml(part)}`;
     };
     const altsHtml = (part) => {   // (other pictures taking turns with it: a different one on each page)
       const alts = Array.isArray(myGet(t, `${part}.alts`)) ? myGet(t, `${part}.alts`) : [], now = myPatNow(t, part) || '';
@@ -12099,7 +12342,7 @@
       const row = (d) => {
         const said = [MY_DECO_SPOT_NAMES[d.spot || 'cb'] || '', d.w === 'h' ? 'its height' : Number(d.w) > 0 ? `${Math.round(Number(d.w))}px wide` : 'its own size', d.over ? 'in front' : 'behind'].join(', ');
         return `<details class="bnp-fold bnp-mydeco" data-fold="deco:${d.id}"${myFolds[`deco:${d.id}`] ? ' open' : ''}><summary><i class="bnp-mydecothumb" style="${myPic(d.pic) ? `background-image:url('${esc(cssUrl(myPic(d.pic)))}')` : ''}"></i><span>${myPic(d.pic) ? esc(said) : 'A new one: its picture first'}</span></summary><div class="bnp-myplace">
-          <label class="bnp-f bnp-myurl"><span>Its picture</span><input type="url" data-mydecopic="${d.id}" value="${esc(d.pic || '')}" placeholder="https://…" spellcheck="false" autocomplete="off"><small class="bnp-mypicinfo" data-mypicinfo="deco:${d.id}"></small></label>
+          <label class="bnp-f bnp-myurl"><span>Its picture</span><input type="url" data-mydecopic="${d.id}" value="${esc(d.pic || '')}" placeholder="https://…" spellcheck="false" autocomplete="off"><small class="bnp-mypicinfo" data-mypicinfo="deco:${d.id}"></small></label>${picStrip(d.pic || '', `data-deco="${d.id}"`)}
           <div class="bnp-myrow"><span class="bnp-mytint-h">Where</span><span class="bnp-myspots" role="group" aria-label="Where">${MY_DECO_SPOTS.map(([k2, ic]) => `<button type="button" data-mydecoset="${d.id}:spot:${k2}" aria-pressed="${(d.spot || 'cb') === k2}" title="${MY_DECO_SPOT_NAMES[k2]}">${ic}</button>`).join('')}</span></div>
           <div class="bnp-myslides">${dsl(d, 'x', 'Left and right', -900, 900, 0)}${dsl(d, 'y', 'Up and down', -400, 400, 0)}${Number(d.w) > 0 ? dsl(d, 'w', 'Its width', 8, 1600, 120) : ''}</div>
           <div class="bnp-myrow"><span class="bnp-mytint-h">Its size</span>${dseg(d, 'w', [['', 'Its own'], ['120', 'A width'], ['h', 'The part’s height']])}</div>
@@ -12118,7 +12361,7 @@
         ${card('The clock', 'Neopian Standard Time', cols('bar', ['clock', 'clockLine', 'clockText']))}
         ${card('The counts', 'The little numbers on its icons: new alerts, news, quests, friends online', cols('bar', ['badge', 'badgeText']))}
         ${decoCard('bar', 'Pictures of your own on the bar: a crest, a garland, art at its ends')}
-        ${take('bar')}${back('bar', 'top bar')}`;
+        ${whole('bar', 'bar', 'top bar', 'The whole top bar')}`;
     }
     if (myTab === 'logo') {
       const lg = (t.v && t.v.logo) || {}, own = typeof lg.pic === 'string' && /^https:/.test(lg.pic), foot = String(lg.foot || '');
@@ -12127,45 +12370,45 @@
       const from = sets.map(([f, name]) => `<option value="${esc(f)}">${esc(name)}</option>`).join('');
       const iconRow = (file) => { const u = typeof mineIc[file] === 'string' ? mineIc[file] : '', cur = u || (ic.set ? ic.set.replace(/\{name\}/g, file) : '') || myIconUrl(ic.from || t.base, file); return `<div class="bnp-myicon"><i style="background-image:url('${esc(cssUrl(cur))}')"></i><span>${esc(MY_ICON_NAMES[file] || file)}</span><input type="url" data-mytext="icons.urls.${file}" value="${esc(u)}" placeholder="https://…" spellcheck="false" autocomplete="off" aria-label="${esc(MY_ICON_NAMES[file] || file)}: a picture’s address"><select class="bnp-inline" data-myiconfrom="${file}" aria-label="${esc(MY_ICON_NAMES[file] || file)}: another theme’s"><option value="">Another theme’s…</option>${from}</select></div>`; };
       const files = MY_ICON_PARTS.map(([f]) => f);
-      return `${bar}${card('Its logo', 'Any theme’s Neopets logo, or your own picture', `<div class="bnp-mysets">${['', ...sets.map((x) => x[0])].map((f) => { const nm = f ? nbcThemeName(f) : `${nbcThemeName(t.base)}’s own`, on = !own && (lg.from || '') === f; return `<button type="button" class="bnp-mylogo${on ? ' is-on' : ''}" data-mylogo="${esc(f)}" aria-pressed="${on}"><i style="background-image:url('${esc(cssUrl(myLogoOf(f || t.base)))}')"></i><b>${esc(nm)}</b></button>`; }).join('')}</div>
-          ${field('logo.pic', 'Your own logo', 'https://…', 'Neopets shows its logo at 133 × 45: a picture of about 266 × 90 stays crisp on sharp screens.')}
+      return `${bar}${card('Its logo', 'Any theme’s Neopets logo, or your own picture', `<div class="bnp-mysets is-logos">${['', ...sets.map((x) => x[0]).filter((f) => f !== t.base)].map((f) => { const nm = f ? nbcThemeName(f) : `${nbcThemeName(t.base)}’s own`, on = !own && ((lg.from || '') === f || (!f && lg.from === t.base)); return `<button type="button" class="bnp-mylogo${on ? ' is-on' : ''}" data-mylogo="${esc(f)}" aria-pressed="${on}"><i style="background-image:url('${esc(cssUrl(myLogoOf(f || t.base)))}')"></i><b>${esc(nm)}</b></button>`; }).join('')}</div>
+          ${field('logo.pic', 'Your own logo', 'https://…', 'Neopets shows its logo at 133 × 45: a picture of about 266 × 90 stays crisp on sharp screens.', true)}
           <div class="bnp-myslides">${slider('logo.size', 'Its size', 40, 220, '%', 100)}${slider('logo.x', 'Left and right', -80, 200, 'px', 0)}${slider('logo.y', 'Up and down', -40, 40, 'px', 0)}</div>
           ${myTintHtml(t, 'logo.tint', 'it')}
           <div class="bnp-myrow bnp-mysep"><span class="bnp-mytint-h">In the foot of the page</span>${segs('logo.foot', [['', 'The same logo'], ['own', 'A picture of its own'], ['none', 'None']])}</div>
-          ${foot === 'own' ? field('logo.footPic', 'Its picture', 'https://…', 'Shown at 160 × 54 at the foot of every page.') : ''}`)}
-        ${card('Its icons', 'Any theme’s icons, in their own colours or in new ones', `<div class="bnp-mysets">${setRow('', `${nbcThemeName(t.base)}’s own`, !ic.from)}${sets.map(([f, name]) => setRow(f, name, ic.from === f)).join('')}</div>${myTintHtml(t, 'icons.tint', 'them')}`)}
+          ${foot === 'own' ? field('logo.footPic', 'Its picture', 'https://…', 'Shown at 160 × 54 at the foot of every page.', true) : ''}`)}
+        ${card('Its icons', 'Any theme’s icons, in their own colours or in new ones', `<div class="bnp-mysets is-icons">${setRow('', `${nbcThemeName(t.base)}’s own`, !ic.from || ic.from === t.base)}${sets.filter(([f]) => f !== t.base).map(([f, name]) => setRow(f, name, ic.from === f)).join('')}</div>${myTintHtml(t, 'icons.tint', 'them')}`)}
         ${card('Icons one by one', 'Each by a picture’s address, or another theme’s: an SVG stays crisp at any size', `${field('icons.set', 'A whole set', 'https://…/{name}.svg', '{name} becomes each icon’s own name (community-icon, games-icon…). An icon below with its own address wins over the set. New colours (above) reach pictures from other sites only if those sites allow it.')}
           <h6 class="bnp-myh6">The top bar</h6><div class="bnp-myicons">${files.slice(0, 10).map(iconRow).join('')}</div>
           <details class="bnp-fold" data-fold="icons:more"${myFolds['icons:more'] ? ' open' : ''}><summary>The pet box and the home page’s arrows</summary><div class="bnp-myicons">${files.slice(10, 14).map(iconRow).join('')}</div></details>
           <details class="bnp-fold" data-fold="icons:prof"${myFolds['icons:prof'] ? ' open' : ''}><summary>The profile menu’s ${files.length - 14} icons</summary><div class="bnp-myicons">${files.slice(14).map(iconRow).join('')}</div></details>`)}
-        ${back('logo,icons', 'logo and icons')}`;
+        ${card('All of the logo and icons', `As ${baseName} has them, in a click`, back('logo,icons', 'logo and icons'))}`;
     }
     if (myTab === 'menus') {
-      return `${bar}${lead('The drop-downs from the top bar. Open one on the page with the eye at the top to see it.')}
+      return `${bar}${lead('The drop-downs from the top bar.')}<p class="bnp-lookback-row bnp-myshowme"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-myshow="menu">Show me a menu</button><button type="button" class="bnp-pillbtn" data-myshow="prof">The profile menu</button><button type="button" class="bnp-pillbtn" data-myshow="news">News and alerts</button><span class="bnp-note">Settings steps aside and it opens on the page; Back to Settings brings you here again.</span></p>
         ${card('Menus', 'Community, Games, Explore, Shop, NC Mall', `${cols('menu', ['bg', 'text', 'line', 'hover', 'border'])}<div class="bnp-myslides">${slider('menu.lineW', 'Edge’s thickness', 0, 10, 'px', 2)}${slider('menu.round', 'Corners’ roundness', 0, 30, 'px', 0)}</div>`)}
         ${card('Their writing', 'Every menu’s, the profile menu’s and the news’', fontRow('menu', 'Community Central · Neomail · Neoboards'))}
         ${card('The profile menu', 'Your pet, and the links under it', cols('prof', ['top', 'bottom', 'item', 'small', 'link', 'box', 'boxLine', 'clock']))}
         ${card('News, alerts and quests', 'The bell’s drop-down', cols('news', ['bg', 'panel', 'tab', 'line', 'head', 'text', 'link', 'visited']))}
-        ${take('menus')}${back('menu,prof,news', 'menus')}`;
+        ${whole('menus', 'menu,prof,news', 'menus', 'All the menus')}`;
     }
     if (myTab === 'pop') {
-      return `${bar}${lead('Neopets’ pop-ups, and every window of Neopets Enhance’s: this one shows them as you change them.')}
+      return `${bar}${lead('Neopets’ pop-ups, and every window of Neopets Enhance’s: this one shows them as you change them.')}<p class="bnp-lookback-row bnp-myshowme"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-myshow="pop">Show me a pop-up</button><span class="bnp-note">One of Neopets’ own, open on the page in this theme; Back to Settings brings you here again.</span></p>
         ${card('Their colours', 'Their tops and feet, edge, glow and the inside', `${cols('pop', ['top', 'bottom', 'line', 'glow', 'headLine', 'footLine', 'body'])}<div class="bnp-myslides">${slider('pop.lineW', 'Edge’s thickness', 0, 10, 'px', 3)}${slider('pop.round', 'Corners’ roundness', 0, 40, 'px', 15)}</div>`)}
         ${card('Their pattern', 'Over their tops and feet', picture('pop', { strength: true }))}
         ${card('Their titles', '', `${cols('pop', ['title', 'titleEdge', 'titleShadow'])}${fontRow('title', 'Settings · Dailies · Quick Ref')}`)}
         ${decoCard('pop', 'Pictures on every pop-up’s top: this window’s too')}
-        ${take('pop')}${back('pop', 'pop-ups')}`;
+        ${whole('pop', 'pop', 'pop-ups', 'All the pop-ups')}`;
     }
     if (myTab === 'page') {
       const ptr = (path, label) => field(path, label, 'https://… (32 × 32 at most)', '');
-      return `${bar}${card('Its background', 'Behind everything', `${cols('page', ['colour'])}${picture('page', { fixed: true })}`)}
-        ${card('The pages’ box', 'What each page sits in. As each page has it (the Inventory’s tan, say) until you choose', `${cols('box', ['colour', 'line', 'glow'])}<div class="bnp-myslides">${slider('box.lineW', 'Edge’s thickness', 0, 12, 'px', 3)}${slider('box.round', 'Corners’ roundness', 0, 40, 'px', 0)}</div>${picture('box', { strength: false, noblend: true })}`)}
+      return `${bar}${card('Its background', 'Behind everything: one colour, or Top and Bottom for a gradient filling the window; its pattern over it', `${cols('page', ['colour', 'top', 'bottom'])}${picture('page', { fixed: true })}`)}
+        ${card('The pages’ box', 'What each page sits in. As each page has it (the Inventory’s tan, say) until you choose', `${cols('box', ['colour', 'line', 'glow', 'text', 'title'])}<div class="bnp-myslides">${slider('box.lineW', 'Edge’s thickness', 0, 12, 'px', 3)}${slider('box.round', 'Corners’ roundness', 0, 40, 'px', 0)}</div>${picture('box', { strength: false, noblend: true })}`)}
         ${card('Links', 'In the pages’ own writing', cols('link', ['colour', 'hover']))}
         ${card('Its writing', 'The pages’ own words: some pages are laid out for theirs, so try a few', fontRow('page', 'Welcome to your Inventory!'))}
         ${card('The pointer', 'A picture of your own as the mouse pointer, as Haunted Woods has: 32 × 32 at most', `${ptr('page.cursor', 'Everywhere')}${ptr('page.cursorLink', 'Over links and buttons')}<div class="bnp-myslides">${slider('page.cursorX', 'Its tip: from the left', 0, 31, 'px', 0)}${slider('page.cursorY', 'Its tip: from the top', 0, 31, 'px', 0)}</div>`)}
         ${card('Scrollbars and selecting', 'The page’s scrollbar, and writing you select', cols('page', ['scroll', 'scrollTrack', 'select', 'selectText']))}
         ${decoCard('page', 'Pictures on the page itself, at its top: behind the pages’ box, or in front')}
-        ${take('page')}${back('page,link,box', 'page')}`;
+        ${whole('page', 'page,link,box', 'page', 'The whole page')}`;
     }
     if (myTab === 'foot') {
       return `${bar}${card('Its colours', 'One colour, or Top and Bottom for a gradient; then a line and a glow over it', cols('foot', ['colour', 'top', 'bottom', 'line', 'glow']))}
@@ -12173,25 +12416,26 @@
         ${card('Its writing', 'The links and the small print', `${cols('foot', ['text', 'textGlow'])}${fontRow('foot', 'Terms of Use · Privacy Policy · Support')}`)}
         <p class="bnp-lookback-row bnp-myback"><button type="button" class="bnp-pillbtn" data-mytab="who">Who stands at the foot: Characters</button><button type="button" class="bnp-pillbtn" data-mytab="logo">Its logo: Logo and icons</button></p>
         ${decoCard('foot', 'Pictures on the foot of the page, beside who stands there')}
-        ${take('foot')}${back('foot', 'foot of the page')}`;
+        ${whole('foot', 'foot', 'foot of the page', 'The whole foot of the page')}`;
     }
     if (myTab === 'home') {
       const scene = String(myGet(t, 'home.scene') || ''), own = /^https:/.test(scene);
-      const layer = (k2, name, note) => `<div class="bnp-mylayer"><h6 class="bnp-myh6">${name} <span class="bnp-note">${note}</span></h6>${field(`home.${k2}.pat`, 'Its picture', 'https://…', '')}<label class="bnp-switch"><input type="checkbox" data-mycheck="home.${k2}.off"${myGet(t, `home.${k2}.off`) ? ' checked' : ''}><span>Nothing here</span></label>${myGet(t, `home.${k2}.pat`) ? placeHtml(`home.${k2}`, { noblend: true }) : ''}</div>`;
+      const layer = (k2, name, note) => `<div class="bnp-mylayer"><h6 class="bnp-myh6">${name} <span class="bnp-note">${note}</span></h6>${field(`home.${k2}.pat`, 'Its picture', 'https://…', '', true)}<label class="bnp-switch"><input type="checkbox" data-mycheck="home.${k2}.off"${myGet(t, `home.${k2}.off`) ? ' checked' : ''}><span>Nothing here</span></label>${myGet(t, `home.${k2}.pat`) ? placeHtml(`home.${k2}`, { noblend: true }) : ''}</div>`;
       return `${bar}${card('Its scene', 'One picture at the top of the home page, behind your pets', `<div class="bnp-mysets">${[['', `${nbcThemeName(t.base)}’s own`], ...MY_SCENES].map(([k2, l]) => `<button type="button" class="bnp-mylogo bnp-myscene${!own && scene === k2 ? ' is-on' : ''}" data-myscene="${esc(k2)}" aria-pressed="${!own && scene === k2}"><i${k2 ? ` style="background-image:url('${esc(cssUrl(myPic(k2)))}')"` : ''}></i><b>${esc(l)}</b></button>`).join('')}</div>
-          ${field('home.scene', 'Or a picture’s address', 'https://…', 'Neopets’ own scenes are 1080 × 600; yours shows at the size below, its edges fading into what’s around it.')}
+          ${field('home.scene', 'Or a picture’s address', 'https://…', 'Neopets’ own scenes are 1080 × 600; yours shows at the size below, its edges fading into what’s around it.', true)}
           ${scene ? `<div class="bnp-myslides">${slider('home.w', 'Its width', 300, 2000, 'px', 1080)}${slider('home.h', 'Its height', 150, 1000, 'px', 600)}</div>` : ''}`)}
         <details class="bnp-card bnp-fold bnp-foldcard" data-fold="home:layers"${myFolds['home:layers'] ? ' open' : ''}><summary>Its layers <span class="bnp-note">Or as Neopets’ own home pages are made: a sky, a middle, the ground and an object, each a picture of its own</span></summary>
           ${scene ? '<p class="bnp-note">With a scene above, the scene is the sky, and the layers you leave empty go.</p>' : ''}
           ${layer('top', 'The sky', 'At the top, behind everything')}${layer('mid', 'The middle', 'Over the sky')}${layer('bottom', 'The ground', 'At the bottom')}${layer('obj', 'An object', 'Over them all: a moon, a fireplace')}</details>
         ${card('Around it', 'The rest of the home page’s background', `${cols('home', ['around'])}${picture('home')}`)}
         ${card('The name plate', 'Each pet’s name, under the scene', cols('home', ['plate', 'plateLine', 'plateText']))}
-        ${take('home')}${back('home', 'home page')}`;
+        ${whole('home', 'home', 'home page', 'The whole home page')}`;
     }
     if (myTab === 'boards') {
       return `${bar}${lead('The Neoboards: their bars, buttons and links. The boards’ own looks in Neoboard Settings go over these.')}
         ${card('Neoboards', '', cols('boards', ['bar', 'button', 'link', 'hover']))}
-        ${take('boards')}${back('boards', 'Neoboards')}`;
+        ${card('The boards’ own colours', 'Each part of the boards on its own: bars, frames, posts, names, writing, markers', `<p class="bnp-lookback-row"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small bnp-nbc-go" data-myboardcols>${NB_SVG.palette}<span>${S.wear === t.id ? 'Change board colours' : 'Wear it, and change board colours'}</span></button></p><p class="bnp-note">The boards’ colours belong to the theme you’re wearing${S.wear === t.id ? '' : ', so this puts this theme on first'}. They go over the four above.</p>`)}
+        ${whole('boards', 'boards', 'Neoboards', 'All of the Neoboards')}`;
     }
     if (myTab === 'palette') {
       const used = myPalette(t), turn = myTurn && myTurn.id === t.id ? myTurn : null;
@@ -12204,15 +12448,15 @@
           <p class="bnp-note">The colours it can read from the page turn with the rest; a few (those for pointing at things) stay as they are until you choose them.</p>`)}`;
     }
     // more: this theme itself, its base, extra CSS, saved versions and the theme as a file
-    const about = (t.about && typeof t.about === 'object') ? t.about : {};
-    return `${bar}${card('This theme', '', `<p class="bnp-lookacts"><input type="text" data-myname value="${esc(t.name)}" maxlength="40" aria-label="Its name" spellcheck="false"><button type="button" class="bnp-pillbtn" data-myren>Rename</button><button type="button" class="bnp-pillbtn" data-mycopy="${esc(t.id)}">Make a copy</button></p>
+    const about = (t0.about && typeof t0.about === 'object') ? t0.about : {};
+    return `${bar}${card('This theme', '', `<p class="bnp-lookacts"><input type="text" data-myname value="${esc(t0.name)}" maxlength="40" aria-label="Its name" spellcheck="false"><button type="button" class="bnp-pillbtn" data-myren>Rename</button><button type="button" class="bnp-pillbtn" data-mycopy="${esc(t0.id)}">Make a copy</button></p>
       <label class="bnp-f bnp-myabout"><span>Made by</span><input type="text" data-myabout="by" value="${esc(about.by || '')}" maxlength="40" placeholder="Your name, if you’ll share it" spellcheck="false" autocomplete="off"></label>
       <label class="bnp-f bnp-myabout"><span>About it</span><textarea data-myabout="note" maxlength="400" rows="2" placeholder="What it is, where its pictures are from…">${esc(about.note || '')}</textarea></label>
       <p class="bnp-note">These go with it when you save it as a file or copy its code. Delete is at the top, beside Wear it.</p>`)}
       ${card('Built on', 'Everything you haven’t changed comes from this theme', `<label class="bnp-f"><span>Its base</span><select class="bnp-inline" data-mybase>${lookThemes().map(([f, name]) => `<option value="${esc(f)}"${t.base === f ? ' selected' : ''}>${esc(name)}</option>`).join('')}</select></label>`)}
       ${card('Extra CSS', 'For anything the other tabs don’t reach', `<textarea class="bnp-mycss" data-mycss rows="12" spellcheck="false" placeholder=":root .nav-top__2020 { … }">${esc(String(myGet(t, 'css') || ''))}</textarea>
         <p class="bnp-note">Over everything else in this theme, on every page, as you type. Start a rule with :root to win over the theme it’s built on.</p>`)}
-      ${card('Saved versions', 'This build as it is now, kept to come back to: as many as you like', mySavesHtml(t))}
+      ${card('Saved versions', 'This build as it is now, its looks with it, kept to come back to: as many as you like', mySavesHtml(t0))}
       ${card('Export', 'To keep somewhere safe, or to give to a friend', `<p class="bnp-lookback-row bnp-mybtns"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-myfile>Save as a file</button><button type="button" class="bnp-pillbtn" data-myexport>Copy its code</button></p>
         <p class="bnp-note">The file has all of it: colours, pictures (as their addresses), icons, Extra CSS, who stands where, and its saved versions. The code is the same without the saved versions, short enough to paste anywhere. To bring one in: Import a theme, on the Themes page.</p>`)}`;
   }
@@ -12224,7 +12468,7 @@
     return `<div class="bnp-mysaveadd"><input type="text" data-mysavename maxlength="40" placeholder="Its name (or leave it: the time)" aria-label="This version’s name" spellcheck="false"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mysave>Save this version</button></div>
       ${list.length ? `<ul class="bnp-mysaves">${list.map((s, i) => `<li><span><b>${esc(s.name || when(s.at))}</b><small>${s.name ? esc(when(s.at)) : ''}${s.base !== t.base ? `${s.name ? ' · ' : ''}on ${esc(nbcThemeName(s.base))}` : ''}</small></span><button type="button" class="bnp-pillbtn" data-mysaveback="${i}">Go back to it</button><button type="button" class="bnp-lookx" data-mysavedel="${i}" title="Delete this version" aria-label="Delete ${esc(s.name || 'this version')}">×</button></li>`).join('')}</ul>` : '<p class="bnp-note">None yet. Each one keeps every part of it, its base too; going back to one can be undone.</p>'}`;
   }
-  const myCodeOf = (t) => ({ neopetsEnhanceTheme: 1, name: t.name, base: t.base, v: t.v || {}, looks: (S.looks || {})[`my:${t.id}`] || undefined, about: t.about || undefined });
+  const myCodeOf = (t) => ({ neopetsEnhanceTheme: 1, name: t.name, base: t.base, v: t.v || {}, vars: myLooks(t).length ? t.vars : undefined, varShow: t.varShow || undefined, looks: (S.looks || {})[`my:${t.id}`] || undefined, about: t.about || undefined });
   const myFileOf = (t) => ({ ...myCodeOf(t), saves: mySaves(t.id) });
   function myDownload(name, data) {
     const a = document.createElement('a');
@@ -12235,12 +12479,18 @@
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 10000);
   }
-  function myRestore(t, st) {   // (a theme of yours as it was: its parts and its base)
+  function myRestore(t, st) {   // (a theme of yours as it was: its parts, its base and its looks; or one of its looks as it was)
     const moved = !!st.base && st.base !== t.base;
     t.v = st.v || {};
     if (st.base) t.base = st.base;
+    if (t.varOf) myLookSync(t);
+    else {
+      if ('vars' in st) { if (Array.isArray(st.vars) && st.vars.length) t.vars = st.vars; else delete t.vars; if (myLookEdit.id === t.id && myLookEdit.look && !myLookOf(t, myLookEdit.look)) myLookEdit.look = ''; }
+      if ('varShow' in st) { if (st.varShow) t.varShow = st.varShow; else delete t.varShow; }
+    }
     S.myThemes = [...S.myThemes];
-    if (myPreviewOf === t.id || S.wear === t.id) { if (moved) myOn(t, false); else myShowNow(t, true); }
+    const r = myReal(t);
+    if (myPreviewOf === r.id || S.wear === r.id) { if (moved || !t.varOf) myOn(r, false); else myShowNow(t, true); }
   }
   function myImportOne(o) {   // (one theme from a file or a code: a new one of yours, as it came; nothing you have changes)
     if (!o || typeof o !== 'object' || !/^[a-z]+$/.test(String(o.base || '')) || (o.v != null && (typeof o.v !== 'object' || Array.isArray(o.v)))) return null;
@@ -12249,9 +12499,11 @@
     for (let i = 2; taken.has(name); i++) name = `${named} (${i})`;   // (a name you have already: numbered)
     const n = { id: `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, name, base: o.base, v: o.v || {} };
     if (o.about && typeof o.about === 'object') n.about = { by: String(o.about.by || '').slice(0, 40), note: String(o.about.note || '').slice(0, 400) };
+    if (Array.isArray(o.vars)) { const vars = o.vars.filter((x) => myPlain(x) && typeof x.id === 'string' && myPlain(x.v)).slice(0, 30).map((x) => ({ id: x.id.slice(0, 24), name: String(x.name || 'A look').slice(0, 30), ...(/^[a-z]+$/.test(String(x.base || '')) ? { base: x.base } : {}), v: x.v })); if (vars.length) n.vars = vars; }   // (its looks)
+    if (myPlain(o.varShow)) { const sh = o.varShow; n.varShow = { ...(['turns', 'time'].includes(sh.mode) ? { mode: sh.mode } : {}), ...(typeof sh.one === 'string' ? { one: sh.one } : {}), ...(Array.isArray(sh.turns) ? { turns: sh.turns.filter((x) => typeof x === 'string') } : {}), ...(myPlain(sh.times) ? { times: Object.fromEntries(Object.entries(sh.times).filter(([, x]) => myLookMins(x) != null)) } : {}) }; }
     S.myThemes = [...(S.myThemes || []), n];
     if (o.looks && typeof o.looks === 'object' && !Array.isArray(o.looks)) S.looks = { ...(S.looks || {}), [`my:${n.id}`]: o.looks };
-    if (Array.isArray(o.saves) && o.saves.length) mySavesSet(n.id, o.saves.filter((s) => s && typeof s === 'object' && s.v && typeof s.v === 'object' && !Array.isArray(s.v)).slice(0, 60).map((s) => ({ at: Number(s.at) || Date.now(), name: String(s.name || '').slice(0, 40), base: /^[a-z]+$/.test(String(s.base || '')) ? s.base : n.base, v: s.v })));
+    if (Array.isArray(o.saves) && o.saves.length) mySavesSet(n.id, o.saves.filter((s) => s && typeof s === 'object' && s.v && typeof s.v === 'object' && !Array.isArray(s.v)).slice(0, 60).map((s) => ({ at: Number(s.at) || Date.now(), name: String(s.name || '').slice(0, 40), base: /^[a-z]+$/.test(String(s.base || '')) ? s.base : n.base, v: s.v, ...(Array.isArray(s.vars) ? { vars: s.vars } : {}), ...(myPlain(s.varShow) ? { varShow: s.varShow } : {}) })));
     return n;
   }
   function myImportText(txt) {   // (a file or a code: one theme, or a file of them all → { first, n } or null)
@@ -12265,6 +12517,7 @@
   function myImported(r) {   // (brought in: open, and shown on the page)
     myImp = false;
     myImpPaint();
+    myLookEditStart(r.first);
     lookAt = `my:${r.first.id}`;
     myTab = 'bar';
     myPreview(lookAt);
@@ -12311,6 +12564,7 @@
     if (part === 'icons') for (const k of ['hue', 'keep', 'sat', 'grey', 'light', 'as']) delete p[k];
     if (part === 'logo') for (const k of ['hue', 'sat', 'light']) delete p[k];
     t.v = { ...t.v, [part]: p };
+    if (t.varOf) myLookSync(t);
   }
   function myTintStart(t, path) {   // (Colour it's first colour: the colour that part has now, as the page shows it)
     const part = path.split('.')[0], from = { bar: ['bar.mid', 'bar.top'], page: ['page.colour'], pop: ['pop.top'], foot: ['foot.colour', 'foot.top'], home: ['home.around'], icons: ['bar.line', 'pop.top', 'bar.top'], logo: ['bar.line', 'bar.top'] }[part] || [];
@@ -12330,8 +12584,9 @@
   }
   function myPrevs() {   // (the pattern boxes: each in its new colours; each picture's own size, or that it didn't load)
     if (!hub || !lookAt) return;
-    const t = myKey(lookAt);
-    if (!t) return;
+    const t0 = myKey(lookAt);
+    if (!t0) return;
+    const t = t0.built ? t0 : myWork(t0);
     for (const info of hub.main.querySelectorAll('[data-mypicinfo]')) {
       const p = info.dataset.mypicinfo, ks = p.split('.'), raw = myGet(t, p);
       const u = p.startsWith('deco:') ? myPic(((myGet(t, 'deco') || []).find((x) => x && x.id === p.slice(5)) || {}).pic) : p === 'icons.set' ? (typeof raw === 'string' ? raw.replace(/\{name\}/g, 'community-icon') : '') : ks.length === 2 && ks[1] === 'pat' && MY_PAT_AT[ks[0]] ? myPatSrc(t, ks[0]) : myPic(raw);
@@ -12446,6 +12701,23 @@
     if (hub && hubPage === 'themes') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
   }
   // the pattern picker: every theme's own patterns, and the Void Within's, or one by its address
+  const PIC_URL = /^https:\/\/\S+\.(png|gif|webp|jpe?g|svg)(\?\S*)?$/i;   // (a picture's whole address)
+  const PIC_URL_SAY = 'A picture’s whole address, starting https:// and ending .png, .gif, .webp or .jpg';
+  // Your pictures: every address you've used or saved for a pattern, kept for any pattern of any theme of yours (newest first)
+  const MY_PICS_MAX = 60;
+  const picName = (u) => { let f = String(u).split('/').pop().replace(/\.\w+(\?.*)?$/, ''); try { f = decodeURIComponent(f); } catch (_) { /* (an odd address: as it is) */ } return f.replace(/[_-]+/g, ' ').trim() || 'A picture'; };
+  function myPics() {   // (the first time: the addresses already in your themes)
+    let list = get('mypics', null);
+    if (!Array.isArray(list)) {
+      const found = [];
+      for (const t of S.myThemes || []) for (const part of ['bar', 'page', 'pop', 'foot', 'home', 'box']) for (const u of [myGet(t, `${part}.pat`), ...(Array.isArray(myGet(t, `${part}.alts`)) ? myGet(t, `${part}.alts`) : [])]) if (typeof u === 'string' && PIC_URL.test(u) && !found.includes(u)) found.push(u);
+      list = found.map((u) => ({ u, at: Date.now() }));
+      set('mypics', list);
+    }
+    return list.filter((x) => x && typeof x.u === 'string' && PIC_URL.test(x.u));
+  }
+  function myPicKeep(u) { if (PIC_URL.test(u)) set('mypics', [{ u, at: Date.now() }, ...myPics().filter((x) => x.u !== u)].slice(0, MY_PICS_MAX)); }
+  function myPicForget(u) { set('mypics', myPics().filter((x) => x.u !== u)); }
   function myPatList() {
     const out = [['tvw:void', 'The Void Within: the void']];
     for (const [f, name, id] of lookThemes()) {
@@ -12467,20 +12739,20 @@
     }
     const area = (MY_PATS.find((x) => x[0] === myPick.part) || [])[1] || (myPick.part === 'home' ? 'Around the home page’s scene' : 'it');
     el.innerHTML = `<div class="bnp-lptop"><b>${myPick.alt ? 'Another pattern, taking turns, for' : 'A pattern for'} ${esc(area.replace(/^The /, 'the '))}</b><button type="button" class="bnp-lpx" data-mypickclose title="Close" aria-label="Close">×</button></div>
-      <div class="bnp-lpbody"><div class="bnp-mypats">${myPatList().map(([u, name]) => `<button type="button" class="bnp-mypatone" data-mypatuse="${esc(u)}"><span style="background-image:url('${esc(cssUrl(myPic(u) || fullUrl(u)))}')"></span><b>${esc(name)}</b></button>`).join('')}</div>
+      <div class="bnp-lpbody">${myPics().length ? `<h6 class="bnp-myh6">Your pictures <span class="bnp-note">Every address you’ve used or saved, for any pattern</span></h6><div class="bnp-mypats">${myPics().map((x) => `<span class="bnp-mypatwrap"><button type="button" class="bnp-mypatone" data-mypatuse="${esc(x.u)}"><span style="background-image:url('${esc(cssUrl(x.u))}')"></span><b>${esc(picName(x.u))}</b></button><button type="button" class="bnp-lookx" data-mypicdel="${esc(x.u)}" title="Forget it here (a theme using it keeps it)" aria-label="Forget ${esc(picName(x.u))}">×</button></span>`).join('')}</div><h6 class="bnp-myh6">Neopets’ own, and Neopets Enhance’s</h6>` : ''}<div class="bnp-mypats">${myPatList().map(([u, name]) => `<button type="button" class="bnp-mypatone" data-mypatuse="${esc(u)}"><span style="background-image:url('${esc(cssUrl(myPic(u) || fullUrl(u)))}')"></span><b>${esc(name)}</b></button>`).join('')}</div>
         ${themeData().sw && Object.keys(themeData().sw).length < 5 ? '<p class="bnp-note">More patterns come as each theme’s colours are read: open Themes once more in a moment.</p>' : ''}</div>
       <div class="bnp-lpurl"><input type="url" data-mypaturl placeholder="Or a picture’s address: https://images.neopets.com/…" aria-label="A picture’s address" spellcheck="false"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mypatadd>Use it</button></div>`;
   }
   function myEditClick(t, d) {   // (the editor's own buttons; true when it was one of them)
     const k = lookAt, mine = myEditable(k);
     if (d.mytab) { myTab = d.mytab; myTurn = null; myColourClose(); paintHub(); return true; }
-    if ('mynew' in d) { const n = myNew(); lookAt = `my:${n.id}`; myTab = 'bar'; myPreview(lookAt); changed(`${n.name}: it starts as ${nbcThemeName(n.base)} exactly`); hub.main.scrollTop = 0; return true; }
-    if (d.mycopy) { const n = myCopy(d.mycopy); if (n) { lookAt = `my:${n.id}`; myTab = 'bar'; myPreview(lookAt); changed(`${n.name}: yours to change`); hub.main.scrollTop = 0; } return true; }
+    if ('mynew' in d) { const n = myNew(); myLookEditStart(n); lookAt = `my:${n.id}`; myTab = 'bar'; myPreview(lookAt); changed(`${n.name}: it starts as ${nbcThemeName(n.base)} exactly`); hub.main.scrollTop = 0; return true; }
+    if (d.mycopy) { const n = myCopy(d.mycopy); if (n) { myLookEditStart(n); lookAt = `my:${n.id}`; myTab = 'bar'; myPreview(lookAt); changed(`${n.name}: yours to change`); hub.main.scrollTop = 0; } return true; }
     if ('mywear' in d) { myPreviewOf = ''; myWear(d.mywear); paintHub(); toast(d.mywear ? `${(myOf(d.mywear) || {}).name} is on (in this browser)` : 'Your Neopets theme again'); return true; }
-    if (d.myren && mine) { const box = hub.main.querySelector('[data-myname]'); if (box) { mine.name = (box.value || '').trim().slice(0, 40) || mine.name; S.myThemes = [...S.myThemes]; changed('Named'); } return true; }
-    if ('mydel' in d && mine) { if (d.mydel !== 'sure') { t.dataset.mydel = 'sure'; t.textContent = 'Delete it for good?'; t.classList.add('is-sure'); return true; } const gone = mine; S.myThemes = S.myThemes.filter((x) => x.id !== gone.id); const lk = { ...(S.looks || {}) }; delete lk[`my:${gone.id}`]; S.looks = lk; mySavesSet(gone.id, []); if (S.wear === gone.id) myWear(''); myPreviewEnd(); lookAt = ''; changed(`${gone.name} is gone`); return true; }
+    if (d.myren && mine) { const box = hub.main.querySelector('[data-myname]'), r = myReal(mine); if (box) { r.name = (box.value || '').trim().slice(0, 40) || r.name; S.myThemes = [...S.myThemes]; changed('Named'); } return true; }
+    if ('mydel' in d && mine) { if (d.mydel !== 'sure') { t.dataset.mydel = 'sure'; t.textContent = 'Delete it for good?'; t.classList.add('is-sure'); return true; } const gone = myReal(mine); myLookEdit = { id: '', look: '' }; S.myThemes = S.myThemes.filter((x) => x.id !== gone.id); const lk = { ...(S.looks || {}) }; delete lk[`my:${gone.id}`]; S.looks = lk; mySavesSet(gone.id, []); if (S.wear === gone.id) myWear(''); myPreviewEnd(); lookAt = ''; changed(`${gone.name} is gone`); return true; }
     if (d.mycol) { myColourOpen(t); return true; }
-    if (d.myclear && mine) { mySet(mine, d.myclear, ''); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return true; }
+    if (d.myclear && mine) { if (mine.varOf) { const mv = myGet(mine.varOf, d.myclear); mySet(mine, d.myclear, mv == null ? '' : JSON.parse(JSON.stringify(mv))); } else mySet(mine, d.myclear, ''); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return true; }
     if ('myicons' in d && mine) { mySet(mine, 'icons.from', d.myicons || ''); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return true; }   // (another theme's icons: in their own colours, until you colour them)
     if (d.mytint && mine) {   // (a picture's colours: as it is, its hues turned, or all of it in one colour; each way's settings kept for coming back to)
       const [path, mode] = d.mytint.split(':');
@@ -12498,6 +12770,19 @@
     if ('mylogo' in d && mine) { mySet(mine, 'logo.pic', ''); mySet(mine, 'logo.from', d.mylogo); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return true; }
     if (d.myclearpart && mine) {   // (a whole part of the page as its base has it again; Undo brings it back)
       const parts = d.myclearpart.split(',');
+      if (mine.varOf) {   // (a look: those parts as the main look has them again)
+        const main = mine.varOf.v || {};
+        if (!parts.some((p) => JSON.stringify((mine.v || {})[p]) !== JSON.stringify(main[p]))) { toast('That’s the main look’s already'); return true; }
+        myHistPush(mine, '');
+        const v = { ...(mine.v || {}) };
+        for (const p of parts) { if (main[p] !== undefined) v[p] = JSON.parse(JSON.stringify(main[p])); else delete v[p]; }
+        mine.v = v;
+        myLookSync(mine);
+        S.myThemes = [...S.myThemes];
+        myShowNow(mine, true);
+        changed('As the main look has it again', () => myHistStep(mine, true));
+        return true;
+      }
       if (!parts.some((p) => mine.v && mine.v[p])) { toast(`That’s ${nbcThemeName(mine.base)}’s already`); return true; }
       myHistPush(mine, '');
       const v = { ...(mine.v || {}) };
@@ -12519,7 +12804,7 @@
     }
     if ('myscene' in d && mine) { mySet(mine, 'home.scene', d.myscene); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return true; }
     if ('myexport' in d && mine) {   // (the theme as a code: its parts, and who stands where)
-      const code = JSON.stringify({ neopetsEnhanceTheme: 1, name: mine.name, base: mine.base, v: mine.v || {}, looks: (S.looks || {})[k] || undefined });
+      const code = JSON.stringify(myCodeOf(myReal(mine)));
       navigator.clipboard.writeText(code).then(() => toast('Its code is copied: paste it anywhere to keep it, or give it to a friend')).catch(() => toast('It couldn’t be copied just now: try again'));
       return true;
     }
@@ -12536,21 +12821,22 @@
     if ('myimportopen' in d) { myImp = true; myImpPaint(); return true; }
     if ('myimpclose' in d) { myImp = false; myImpPaint(); return true; }
     if ('myimpfile' in d) { const f = hub.win.querySelector('[data-myimpfilein]'); if (f) f.click(); return true; }
-    if ('myfile' in d && mine) { myDownload(mine.name, myFileOf(mine)); toast(`Saved as a file: ${mine.name}.json`); return true; }
+    if ('myfile' in d && mine) { myDownload(mine.name, myFileOf(myReal(mine))); toast(`Saved as a file: ${mine.name}.json`); return true; }
     if ('myfileall' in d) { const all = S.myThemes || []; if (all.length) { myDownload(`neopets-enhance-themes-${new Date().toISOString().slice(0, 10)}`, { neopetsEnhanceThemes: all.map(myFileOf) }); toast(`Saved: all ${all.length} of your themes, in one file`); } return true; }
     if ('mysave' in d && mine) {   // (this build as it is now, kept: newest first)
       const box = hub.main.querySelector('[data-mysavename]'), name = String((box && box.value) || '').trim().slice(0, 40);
-      mySavesSet(mine.id, [{ at: Date.now(), name, base: mine.base, v: JSON.parse(JSON.stringify(mine.v || {})) }, ...mySaves(mine.id)].slice(0, 60));
+      const r = myReal(mine);
+      mySavesSet(r.id, [{ at: Date.now(), name, base: r.base, v: JSON.parse(JSON.stringify(r.v || {})), ...(myLooks(r).length ? { vars: JSON.parse(JSON.stringify(r.vars)) } : {}), ...(r.varShow ? { varShow: JSON.parse(JSON.stringify(r.varShow)) } : {}) }, ...mySaves(r.id)].slice(0, 60));
       changed(name ? `Saved: ${name}` : 'Saved this version');
       return true;
     }
     if ('mysaveback' in d && mine) {   // (back to a saved version; undone in a click)
-      const s = mySaves(mine.id)[Number(d.mysaveback)];
+      const r = myReal(mine), s = mySaves(r.id)[Number(d.mysaveback)];
       if (!s) return true;
-      const was = { v: mine.v, base: mine.base };
-      myHistPush(mine, '');
-      myRestore(mine, { v: JSON.parse(JSON.stringify(s.v || {})), base: s.base });
-      changed(`Back to ${s.name || 'that version'}`, () => { myRestore(mine, was); changed(); });
+      const was = { v: r.v, base: r.base, vars: r.vars || null, varShow: r.varShow || null };
+      myHistPush(r, '');
+      myRestore(r, { v: JSON.parse(JSON.stringify(s.v || {})), base: s.base, ...('vars' in s ? { vars: JSON.parse(JSON.stringify(s.vars || null)) } : {}), ...('varShow' in s ? { varShow: JSON.parse(JSON.stringify(s.varShow || null)) } : {}) });
+      changed(`Back to ${s.name || 'that version'}`, () => { myRestore(r, was); changed(); });
       return true;
     }
     if ('mysavedel' in d && mine) {
@@ -12579,8 +12865,146 @@
       paintHub();
       hub.main.scrollTop = keep;
     };
-    if (d.mypatuse && mine && myPick) { patPut(d.mypatuse); return true; }
-    if ('mypatadd' in d && mine && myPick) { const u = String((hub.win.querySelector('[data-mypaturl]') || {}).value || '').trim(); if (!/^https:\/\/\S+\.(png|gif|webp|jpe?g|svg)(\?\S*)?$/i.test(u)) { toast('A picture’s whole address, starting https://'); return true; } patPut(u); return true; }
+    if (d.mypatuse && mine && myPick) { if (myPics().some((x) => x.u === d.mypatuse)) myPicKeep(d.mypatuse); patPut(d.mypatuse); return true; }
+    if ('mypatadd' in d && mine && myPick) { const u = String((hub.win.querySelector('[data-mypaturl]') || {}).value || '').trim(); if (!PIC_URL.test(u)) { toast(PIC_URL_SAY); return true; } myPicKeep(u); patPut(u); return true; }
+    if (d.mypicuse && mine && (d.part || d.path || d.deco)) {   // (one of your pictures, a click from where it goes: a pattern, the logo, a scene, a layer, a decoration)
+      if (d.deco) myDecoSet(mine, d.deco, { pic: d.mypicuse }, 'pic');
+      else {
+        const path = d.path || `${d.part}.pat`, part = /^(\w+)\.pat$/.exec(path);
+        mySet(mine, path, d.mypicuse);
+        if (part && myGet(mine, `${part[1]}.move`)) myMeasure(mine, part[1]);
+      }
+      myPicKeep(d.mypicuse);
+      const keep = hub.main.scrollTop;
+      paintHub();
+      hub.main.scrollTop = keep;
+      return true;
+    }
+    if (d.mypicmore) { const strip = t.closest('.bnp-mypicstrip'), all = !strip.classList.contains('is-all'); strip.classList.toggle('is-all', all); t.textContent = all ? 'Fewer' : `+${d.mypicmore} more`; return true; }
+    if ('myboardcols' in d && mine) { if (S.wear !== mine.id) { myPreviewOf = ''; myWear(mine.id); } closeHub(); nbcOpen(); return true; }
+    if (d.mypicsave) {   // (kept for later, not used yet)
+      const box = hub.main.querySelector(`[data-mypaturlin="${d.mypicsave}"]`), u = String((box && box.value) || '').trim();
+      if (!PIC_URL.test(u)) { if (box) box.focus(); toast(PIC_URL_SAY); return true; }
+      myPicKeep(u);
+      toast('Saved in Your pictures: for any pattern, in any of your themes');
+      const keep = hub.main.scrollTop;
+      paintHub();
+      hub.main.scrollTop = keep;
+      const again = hub.main.querySelector(`[data-mypaturlin="${d.mypicsave}"]`);
+      if (again) again.value = u;
+      return true;
+    }
+    if (d.mypicdel) {   // (forgotten from the list; a theme that uses it keeps it)
+      myPicForget(d.mypicdel);
+      const keep = hub.main.scrollTop;
+      paintHub();
+      hub.main.scrollTop = keep;
+      myPickPaint();
+      return true;
+    }
+    const real = myReal(mine);
+    if ('mylook' in d && real) {   // (another look to change: the page shows it meanwhile)
+      myLookEdit = { id: real.id, look: myLookOf(real, d.mylook) ? d.mylook : '' };
+      myLookMake = null;
+      myColourClose();
+      if (myPreviewOf === real.id || S.wear === real.id) { myOn(real, false); themeChanged(); }
+      const keep = hub.main.scrollTop;
+      paintHub();
+      hub.main.scrollTop = keep;
+      return true;
+    }
+    if ('mylooknew' in d && real) {   // (another look: made from the main look, so the page shows the main look meanwhile)
+      if (myLookMake) myLookMake = null;
+      else {
+        if (myLookEdit.look) { myLookEdit = { id: real.id, look: '' }; if (myPreviewOf === real.id || S.wear === real.id) { myOn(real, false); themeChanged(); } }
+        myLookMake = { from: 'copy', name: `Look ${myLooks(real).length + 2}`, parts: [], hue: 180, a: '', b: '' };
+      }
+      myLookShowOpen = false;
+      const keep = hub.main.scrollTop;
+      paintHub();
+      hub.main.scrollTop = keep;
+      return true;
+    }
+    if ('mylookshow' in d && real) { myLookShowOpen = !myLookShowOpen; myLookMake = null; const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return true; }
+    if (myLookMake && (d.mylookmakefrom || d.mylookcol || 'mylookpart' in d)) {
+      if (d.mylookmakefrom) myLookMake.from = d.mylookmakefrom;
+      if (d.mylookcol) { const [w, c] = d.mylookcol.split(':'); myLookMake[w] = c; }
+      if ('mylookpart' in d) { const p = d.mylookpart, list = Array.isArray(myLookMake.parts) ? myLookMake.parts : []; myLookMake.parts = !p ? [] : list.includes(p) ? list.filter((x) => x !== p) : [...list, p]; }
+      const keep = hub.main.scrollTop;
+      paintHub();
+      hub.main.scrollTop = keep;
+      return true;
+    }
+    if ('mylookcancel' in d) { myLookMake = null; const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return true; }
+    if ('mylookmake' in d && real && myLookMake) {
+      const m = myLookMake;
+      if (m.from === 'swap' && (!m.a || !m.b || m.a === m.b)) { toast('Choose two different colours to swap'); return true; }
+      const id = `l${Date.now().toString(36)}`, name = String(m.name || '').trim().slice(0, 30) || `Look ${myLooks(real).length + 2}`;
+      myHistPush(real, '');
+      real.vars = [...myLooks(real), { id, name, v: myLookFrom(real, m) }];
+      S.myThemes = [...S.myThemes];
+      myLookMake = null;
+      myLookEdit = { id: real.id, look: id };
+      if (myPreviewOf === real.id || S.wear === real.id) { myOn(real, false); themeChanged(); }
+      changed(`${name}: made. What you change now goes to it`, () => myHistStep(real, true));
+      return true;
+    }
+    if ('mylookren' in d && real) { const x = myLookOf(real, myLookEdit.look), box = hub.main.querySelector('[data-mylookname]'); if (x && box) { x.name = (box.value || '').trim().slice(0, 30) || x.name; S.myThemes = [...S.myThemes]; changed('Named'); } return true; }
+    if ('mylookcopy' in d && real) {
+      const x = myLookOf(real, myLookEdit.look);
+      if (!x) return true;
+      const id = `l${Date.now().toString(36)}`;
+      myHistPush(real, '');
+      real.vars = [...myLooks(real), { id, name: `${x.name || 'A look'} (2)`.slice(0, 30), ...(x.base ? { base: x.base } : {}), v: JSON.parse(JSON.stringify(x.v || {})) }];
+      myLookEdit = { id: real.id, look: id };
+      S.myThemes = [...S.myThemes];
+      if (myPreviewOf === real.id || S.wear === real.id) { myOn(real, false); themeChanged(); }
+      changed('A copy of it: what you change now goes to the copy', () => myHistStep(real, true));
+      return true;
+    }
+    if ('mylookdel' in d && real) {
+      const x = myLookOf(real, myLookEdit.look);
+      if (!x) return true;
+      if (d.mylookdel !== 'sure') { t.dataset.mylookdel = 'sure'; t.textContent = 'Delete it for good?'; t.classList.add('is-sure'); return true; }
+      myHistPush(real, '');
+      real.vars = myLooks(real).filter((l) => l.id !== x.id);
+      if (!real.vars.length) delete real.vars;
+      if (myPlain(real.varShow)) { const sh = { ...real.varShow }; if (sh.one === x.id) delete sh.one; if (Array.isArray(sh.turns)) sh.turns = sh.turns.filter((i) => i !== x.id); if (myPlain(sh.times)) { sh.times = { ...sh.times }; delete sh.times[x.id]; } real.varShow = sh; }
+      myLookEdit = { id: real.id, look: '' };
+      S.myThemes = [...S.myThemes];
+      if (myPreviewOf === real.id || S.wear === real.id) { myOn(real, false); themeChanged(); }
+      changed(`${x.name || 'That look'} is gone`, () => myHistStep(real, true));
+      return true;
+    }
+    if ((d.mylookmode || 'mylookone' in d || 'mylookturn' in d) && real) {   // (which look the page has)
+      const sh = { ...(myPlain(real.varShow) ? real.varShow : {}) };
+      if (d.mylookmode) {
+        if (d.mylookmode === 'one') delete sh.mode; else sh.mode = d.mylookmode;
+        if (sh.mode === 'time' && !(myPlain(sh.times) && Object.keys(sh.times).length)) { const first = myLooks(real)[0]; sh.times = { main: '07:00', ...(first ? { [first.id]: '19:00' } : {}) }; }   // (a day and a night to start with)
+      }
+      if ('mylookone' in d) { delete sh.mode; if (d.mylookone) sh.one = d.mylookone; else delete sh.one; }
+      if ('mylookturn' in d) {
+        const all = ['', ...myLooks(real).map((l) => l.id)], cur = Array.isArray(sh.turns) ? sh.turns.filter((i) => all.includes(i)) : all, id = d.mylookturn, next = cur.includes(id) ? cur.filter((i) => i !== id) : [...cur, id];
+        if (!next.length) { toast('One of them always shows'); return true; }
+        sh.turns = next;
+      }
+      real.varShow = sh;
+      S.myThemes = [...S.myThemes];
+      changed();
+      return true;
+    }
+    if (d.myshow) { myShowMe(d.myshow); return true; }
+    if (d.mypaturlgo && mine) {   // (a picture by its address, typed right by the pattern: no picker)
+      const part = d.mypaturlgo, box = hub.main.querySelector(`[data-mypaturlin="${part}"]`), u = String((box && box.value) || '').trim();
+      if (!PIC_URL.test(u)) { if (box) box.focus(); toast(PIC_URL_SAY); return true; }
+      myPicKeep(u);
+      mySet(mine, `${part}.pat`, u);
+      if (myGet(mine, `${part}.move`)) myMeasure(mine, part);
+      const keep = hub.main.scrollTop;
+      paintHub();
+      hub.main.scrollTop = keep;
+      return true;
+    }
     return false;
   }
   function myMeasure(t, part) {   // (a part's picture, its own size: so it moves exactly one repeat at a time)
@@ -12672,14 +13096,15 @@
   }
   // Find an option: every colour, and every card, by name; one chosen opens its tab and shows it
   const MY_PART_TAB = { bar: 'bar', menu: 'menus', prof: 'menus', news: 'menus', pop: 'pop', page: 'page', link: 'page', box: 'page', foot: 'foot', home: 'home', boards: 'boards' };
-  const MY_FIND = [['who', 'Characters at the foot of every page', 'At the foot of every page'], ['who', 'Characters in Settings’ corner', 'In Settings’ corner'], ['who', 'Characters in the Dailies window’s corner', 'In the Dailies window’s corner'], ['who', 'Who stands on its tile', 'On its tile'],
-    ['bar', 'Top bar pattern', 'Its pattern'], ['bar', 'Moving pattern: snow, rain, confetti', 'Its pattern'], ['bar', 'Patterns taking turns', 'Its pattern'], ['bar', 'Menu names’ font', 'Its writing'], ['bar', 'Clock', 'The clock'], ['bar', 'Counts on the icons', 'The counts'], ['bar', 'Top bar decorations', 'Decorations'], ['bar', 'Take the top bar from another theme', 'Decorations'],
+  const MY_FIND = [['who', 'Characters at the foot of every page', 'At the foot of every page'], ['who', 'Characters in Settings’ corner', 'In Settings’ corner'], ['who', 'Characters in the Dailies window’s corner', 'In the Dailies window’s corner'], ['who', 'Who stands on its tile', 'On its tile'], ['who', 'Someone by their picture’s address', 'At the foot of every page'],
+    ['bar', 'Top bar pattern', 'Its pattern'], ['bar', 'Moving pattern: snow, rain, confetti', 'Its pattern'], ['bar', 'Patterns taking turns', 'Its pattern'], ['bar', 'Menu names’ font', 'Its writing'], ['bar', 'Clock', 'The clock'], ['bar', 'Counts on the icons', 'The counts'], ['bar', 'Top bar decorations', 'Decorations'], ['bar', 'Take the top bar from another theme', 'The whole top bar'], ['bar', 'Your pictures: pictures you’ve saved', 'Its pattern'],
     ['logo', 'Logo', 'Its logo'], ['logo', 'Logo in the foot of the page', 'Its logo'], ['logo', 'Icons', 'Its icons'], ['logo', 'Icons one by one, or from another theme', 'Icons one by one'],
-    ['menus', 'Menus’ edge and corners', 'Menus'], ['menus', 'Menus’ font', 'Their writing'], ['menus', 'Profile menu', 'The profile menu'], ['menus', 'News, alerts and quests', 'News, alerts and quests'],
-    ['pop', 'Pop-ups’ edge and corners', 'Their colours'], ['pop', 'Pop-ups’ pattern', 'Their pattern'], ['pop', 'Pop-up titles’ font', 'Their titles'], ['pop', 'Pop-up decorations', 'Decorations'],
-    ['page', 'Page background pattern', 'Its background'], ['page', 'The pages’ box', 'The pages’ box'], ['page', 'Pages’ font', 'Its writing'], ['page', 'Pointer (cursor)', 'The pointer'], ['page', 'Scrollbar and selecting', 'Scrollbars and selecting'], ['page', 'Page decorations', 'Decorations'],
-    ['foot', 'Foot of the page’s pattern', 'Its pattern'], ['foot', 'Foot of the page’s font', 'Its writing'], ['foot', 'Foot of the page decorations', 'Decorations'],
-    ['home', 'Home page scene', 'Its scene'], ['home', 'Home page layers: sky, middle, ground, object', 'Its layers'], ['home', 'Around the home page’s scene', 'Around it'], ['home', 'Name plate', 'The name plate'],
+    ['menus', 'Menus’ edge and corners', 'Menus'], ['menus', 'Menus’ font', 'Their writing'], ['menus', 'Profile menu', 'The profile menu'], ['menus', 'News, alerts and quests', 'News, alerts and quests'], ['menus', 'Take the menus from another theme', 'All the menus'],
+    ['pop', 'Pop-ups’ edge and corners', 'Their colours'], ['pop', 'Pop-ups’ pattern', 'Their pattern'], ['pop', 'Pop-up titles’ font', 'Their titles'], ['pop', 'Pop-up decorations', 'Decorations'], ['pop', 'Take the pop-ups from another theme', 'All the pop-ups'],
+    ['page', 'Page background pattern', 'Its background'], ['page', 'The pages’ box', 'The pages’ box'], ['page', 'Pages’ font', 'Its writing'], ['page', 'Pointer (cursor)', 'The pointer'], ['page', 'Scrollbar and selecting', 'Scrollbars and selecting'], ['page', 'Page decorations', 'Decorations'], ['page', 'Take the page from another theme', 'The whole page'],
+    ['foot', 'Foot of the page’s pattern', 'Its pattern'], ['foot', 'Foot of the page’s font', 'Its writing'], ['foot', 'Foot of the page decorations', 'Decorations'], ['foot', 'Take the foot of the page from another theme', 'The whole foot of the page'],
+    ['home', 'Home page scene', 'Its scene'], ['home', 'Home page layers: sky, middle, ground, object', 'Its layers'], ['home', 'Around the home page’s scene', 'Around it'], ['home', 'Name plate', 'The name plate'], ['home', 'Take the home page from another theme', 'The whole home page'],
+    ['boards', 'The boards’ own colours: Change board colours', 'The boards’ own colours'], ['boards', 'Take the Neoboards from another theme', 'All of the Neoboards'],
     ['palette', 'Every colour in one place', 'Its colours'], ['palette', 'Turn every colour at once (hue, saturation)', 'Turn them all'],
     ['more', 'Rename, or make a copy', 'This theme'], ['more', 'Made by, and notes', 'This theme'], ['more', 'Its base theme', 'Built on'], ['more', 'Extra CSS', 'Extra CSS'], ['more', 'Saved versions', 'Saved versions'], ['more', 'Save as a file, or copy its code', 'Export']];
   let myFindHits = [];
@@ -12731,7 +13156,7 @@
         <button type="button" class="bnp-look-open" data-look="${esc(k)}" title="${esc(t.name)}">
           <span class="bnp-look-band" data-myband="${esc(t.id)}" style="background-size:${Math.min(150, Number(pop.size) || 150)}px auto, auto;background-repeat:repeat, no-repeat"></span>
           <span class="bnp-look-pair"><span class="bnp-look-fig" data-tilefig="${esc(k)}" data-side="left"></span><span class="bnp-look-fig" data-tilefig="${esc(k)}" data-side="right"></span></span>
-          <span class="bnp-look-name"><b>${esc(t.name)}</b><small>${t.built ? 'Comes with Neopets Enhance' : `Yours, from ${esc(nbcThemeName(t.base))}`}${t.wip ? ' (Work in progress)' : ''}${t.about && t.about.by ? ` · by ${esc(t.about.by)}` : ''}</small></span>
+          <span class="bnp-look-name"><b>${esc(t.name)}</b><small>${t.built ? 'Comes with Neopets Enhance' : `Yours, from ${esc(nbcThemeName(t.base))}`}${t.wip ? ' (Work in progress)' : ''}${myLooks(t).length ? ` · ${myLooks(t).length + 1} looks` : ''}${t.about && t.about.by ? ` · by ${esc(t.about.by)}` : ''}</small></span>
         </button>
         <span class="bnp-look-foot">${on ? '<span class="bnp-look-on">✓ Wearing it</span>' : `<button type="button" class="bnp-look-put" data-mywear="${esc(t.id)}">Wear it</button>`}</span>
       </div>`;
@@ -12763,7 +13188,7 @@
   const lookTilePick = (f, side) => { const p = S.looks && S.looks[f] && S.looks[f].tile && S.looks[f].tile[side]; return p && p.p ? p : null; };
   function lookTileAuto(f, side) {
     if (!myKey(f)) return 'own';
-    const L = lookOf(f), first = (k) => (L[k] || []).find((x) => x && x.p);
+    const L = lookOf(f), first = (k) => (L[k] || []).find((x) => x === 'own' || (x && x.p));
     return first(side) || L.both.filter((x) => x && x.p)[side === 'right' && !first('left') ? 1 : 0] || null;   // (none of its own on that side: Either side's)
   }
   const lookTileOf = (f, side) => lookTilePick(f, side) || lookTileAuto(f, side);
@@ -12846,6 +13271,13 @@
     };
     return `<details class="bnp-card bnp-fold bnp-foldcard" data-fold="tile"${myFolds.tile ? ' open' : ''}><summary>On its tile <span class="bnp-note">Who stands on each side of this theme’s tile in Themes</span></summary>${myFolds.tile ? row('left') + row('right') : ''}</details>`;
   }
+  const lookUrlHtml = (slots) => `<div class="bnp-myurlrow" data-lookurlrow><input type="url" class="bnp-myurlin" data-lookurlin placeholder="Or someone by their picture’s address: https://images.neopets.com/…" aria-label="Someone by their picture’s address" spellcheck="false"><input type="text" class="bnp-myurlname" data-lookurlname placeholder="Their name" aria-label="Their name" maxlength="40">${slots.length > 1 ? `<span class="bnp-seg" role="group" aria-label="Which side">${slots.map(([s, l], i) => `<button type="button" data-lookurlslot="${s}" aria-pressed="${i === 0}">${l}</button>`).join('')}</span>` : ''}<button type="button" class="bnp-pillbtn" data-lookurlgo="${slots[0][0]}">Add</button></div>`;   // (someone by their picture's address, right in the list's card: no picker)
+  function lookUrlSpec(u, n) {   // (someone by their picture's address: Neopets' own pictures kept short, as the list keeps them; no name given, one from the file's)
+    const own = u.replace(/^https:\/\/images\.neopets\.com\//, '');
+    let file = u.split('/').pop().replace(/\.\w+(\?.*)?$/, '');
+    try { file = decodeURIComponent(file); } catch (_) { /* (an odd address: as it is) */ }
+    return { p: own === u ? u : own, n: n || file.replace(/[_-]+/g, ' ').slice(0, 40), t: 0, c: 0 };
+  }
   const palSwitch = (k, label) => `<label class="bnp-switch bnp-palsw"><input type="checkbox" data-feat="${k}"${S.features[k] ? ' checked' : ''}><span>${label}<small>${S.features[k] ? 'On for every theme; off, this corner stays empty. (The same switch as in General › Windows.)' : 'Off for every theme: this corner stays empty, and the list below waits for when it’s on again.'}</small></span></label>`;   // (a window's corner, on or off, right where its list is)
   function lookPage(f) {
     const m = myKey(f), t = m ? [f, m.name, 0] : lookThemes().find((x) => x[0] === f) || [f, nbcThemeName(f), 0], L = lookOf(f), now = themeAccount(), mine = (S.looks && S.looks[f]) || {};
@@ -12861,12 +13293,13 @@
       <h5>At the foot of every page <span class="bnp-note">Left and right, where Neopets has its two. With more than one, a different one on each page, at random. Drag anyone to another place or list.</span></h5>
       <div class="bnp-card"><div class="bnp-lookcols">${[['left', 'Left'], ['right', 'Right']].map(([k, l]) => `<div class="bnp-lookcol"><h6>${l}</h6>${row(k)}</div>`).join('')}</div>
         <div class="bnp-lookcol bnp-lookeither"><h6>Either side <span class="bnp-note">On whichever side a page picks, as they’re drawn: facing out sometimes</span></h6>${row('both')}</div>
+        ${lookUrlHtml([['left', 'Left'], ['right', 'Right'], ['both', 'Either side']])}
         ${mine.left || mine.right || mine.both ? '<p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn" data-lookreset="foot">Back to how it started</button></p>' : ''}${lookAdjHtml(L, 'foot')}</div>
       <h5>In Settings’ corner <span class="bnp-note">With more than one, the next one each time Settings opens. Adjust: this window’s own corner shows them as you change them.</span></h5>
-      <div class="bnp-card${S.features.hubPal ? '' : ' is-off'}">${palSwitch('hubPal', 'Someone in Settings’ corner')}${row('corner')}
+      <div class="bnp-card${S.features.hubPal ? '' : ' is-off'}">${palSwitch('hubPal', 'Someone in Settings’ corner')}${row('corner')}${lookUrlHtml([['corner', '']])}
         ${mine.corner ? '<p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn" data-lookreset="corner">Back to how it started</button></p>' : ''}${lookAdjHtml(L, 'corner')}</div>
       <h5>In the Dailies window’s corner <span class="bnp-note">A list of its own: with more than one, the next one each time the Dailies window opens.</span></h5>
-      <div class="bnp-card${S.features.boardPal ? '' : ' is-off'}">${palSwitch('boardPal', 'Someone in the Dailies window’s corner')}${row('board')}
+      <div class="bnp-card${S.features.boardPal ? '' : ' is-off'}">${palSwitch('boardPal', 'Someone in the Dailies window’s corner')}${row('board')}${lookUrlHtml([['board', '']])}
         ${mine.board ? '<p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn" data-lookreset="board">Back to how it started</button></p>' : ''}${lookAdjHtml(L, 'board')}</div>
       ${lookVaryHtml(f)}${lookTileHtml(f)}`}`;
   }
@@ -12874,7 +13307,7 @@
     const on = S.wear === m.id;
     return `<span class="bnp-lookacts">${on ? '<span class="bnp-look-on">✓ Wearing it</span><button type="button" class="bnp-pillbtn" data-mywear="">Take it off</button>' : `<button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-mywear="${esc(m.id)}">Wear it</button>`}
       ${m.built ? `<button type="button" class="bnp-pillbtn" data-mycopy="${esc(m.id)}">Make your own copy</button>` : '<button type="button" class="bnp-pillbtn is-danger bnp-mydelbtn" data-mydel title="Delete this theme (it asks once more)">Delete…</button>'}</span>
-      <p class="bnp-note bnp-mylead">${m.built ? `Comes with Neopets Enhance${m.wip ? ' (work in progress: more to come)' : ''}. ` : `Starts from ${esc(nbcThemeName(m.base))}. `}${on ? '' : 'Shown on this page while it’s open here; your own theme comes back when you leave.'}</p>`;
+      <p class="bnp-note bnp-mylead">${m.built ? `Comes with Neopets Enhance${m.wip ? ' (work in progress: more to come)' : ''}. ` : `<label class="bnp-mybaseline">Built on <select class="bnp-inline" data-mybase aria-label="The theme it’s built on: everything you haven’t changed comes from it">${lookThemes().map(([f, name]) => `<option value="${esc(f)}"${myWork(m).base === f ? ' selected' : ''}>${esc(name)}</option>`).join('')}</select></label> `}${on ? '' : 'Shown on this page while it’s open here; your own theme comes back when you leave.'}</p>`;
   }
   function lookFigs() {   // (each card's figure, once its picture is known)
     if (!hub || !lookAt) return;
@@ -13015,7 +13448,7 @@
     if (lookPick && e.target.closest('.bnp-rail [data-page], .bnp-rail [data-kind], .bnp-subtabs [data-page]')) { lookPick = null; lookPickPaint(); }   // (another page: the picker closes)
     if (myImp && e.target.closest('.bnp-rail [data-page], .bnp-rail [data-kind], .bnp-subtabs [data-page]')) { myImp = false; myImpPaint(); }
     if (myPreviewOf && e.target.closest('.bnp-rail [data-page], .bnp-rail [data-kind]')) myPreviewEnd();   // (another page: your own theme again)
-    const t = e.target.closest('[data-look], [data-lookback], [data-lookadd], [data-lookdel], [data-lookreset], [data-lookon], [data-lpclose], [data-lpfrom], [data-lpchar], [data-lppose], [data-lpback], [data-lpadd], [data-lookgo], [data-mywear], [data-mynew], [data-mycopy], [data-myren], [data-mydel], [data-mytab], [data-mycol], [data-myclear], [data-myicons], [data-mylogo], [data-mypat], [data-mypickclose], [data-mypatuse], [data-mypatadd], [data-mytint], [data-tilepick], [data-myvary], [data-lookadj], [data-lookadjm], [data-lookadjreset], [data-lookadjdone], [data-myset], [data-myscene], [data-myexport], [data-myimport], [data-myimportopen], [data-myimpclose], [data-myimpfile], [data-myfile], [data-myfileall], [data-mysave], [data-mysaveback], [data-mysavedel], [data-myundo], [data-myredo], [data-myclearpart], [data-myturnkeep], [data-myturnback], [data-myaltshow], [data-myaltdel], [data-mydecoadd], [data-mydecodel], [data-mydecoset], [data-myuntake], [data-myfindgo]');
+    const t = e.target.closest('[data-look], [data-lookback], [data-lookadd], [data-lookdel], [data-lookreset], [data-lookon], [data-lpclose], [data-lpfrom], [data-lpchar], [data-lppose], [data-lpback], [data-lpadd], [data-lookgo], [data-mywear], [data-mynew], [data-mycopy], [data-myren], [data-mydel], [data-mytab], [data-mycol], [data-myclear], [data-myicons], [data-mylogo], [data-mypat], [data-mypickclose], [data-mypatuse], [data-mypatadd], [data-mypaturlgo], [data-lookurlgo], [data-lookurlslot], [data-mypicuse], [data-mypicsave], [data-mypicdel], [data-mypicmore], [data-myboardcols], [data-myshow], [data-mylook], [data-mylooknew], [data-mylookshow], [data-mylookmode], [data-mylookone], [data-mylookturn], [data-mylookren], [data-mylookcopy], [data-mylookdel], [data-mylookmakefrom], [data-mylookcol], [data-mylookpart], [data-mylookmake], [data-mylookcancel], [data-mytint], [data-tilepick], [data-myvary], [data-lookadj], [data-lookadjm], [data-lookadjreset], [data-lookadjdone], [data-myset], [data-myscene], [data-myexport], [data-myimport], [data-myimportopen], [data-myimpclose], [data-myimpfile], [data-myfile], [data-myfileall], [data-mysave], [data-mysaveback], [data-mysavedel], [data-myundo], [data-myredo], [data-myclearpart], [data-myturnkeep], [data-myturnback], [data-myaltshow], [data-myaltdel], [data-mydecoadd], [data-mydecodel], [data-mydecoset], [data-myuntake], [data-myfindgo]');
     if (!t) return;
     const d = t.dataset;
     if ('lookgo' in d) { goPage('themes'); return; }
@@ -13064,8 +13497,8 @@
       return;
     }
     if (myEditClick(t, d)) return;
-    if (d.look) { lookAt = d.look; myTab = 'who'; lookPick = null; lookAdj = null; lookPickPaint(); if (myKey(lookAt)) myPreview(lookAt); else myPreviewEnd(); paintHub(); hub.main.scrollTop = 0; return; }
-    if ('lookback' in d) { lookAt = ''; lookPick = null; myPick = null; lookAdj = null; lookPickPaint(); myPickPaint(); myColourClose(); myPreviewEnd(); paintHub(); return; }
+    if (d.look) { myLookEditStart(myKey(d.look)); lookAt = d.look; myTab = 'who'; lookPick = null; lookAdj = null; lookPickPaint(); if (myKey(lookAt)) myPreview(lookAt); else myPreviewEnd(); paintHub(); hub.main.scrollTop = 0; return; }
+    if ('lookback' in d) { lookAt = ''; lookPick = null; myPick = null; lookAdj = null; lookPickPaint(); myPickPaint(); myColourClose(); myLookEditEnd(); myPreviewEnd(); paintHub(); return; }
     if (d.lookon) { const p = themePick(Number(d.lookon)); if (hubPage === 'themes') paintHub(); p.then(() => { if (hubPage === 'themes') paintHub(); }).catch(report); return; }
     if (d.lookadd) { lookPick = { slot: d.lookadd, q: '', from: '', char: null, focus: true }; lookPickPaint(); return; }
     if (d.lookdel) {
@@ -13083,6 +13516,14 @@
       for (const s of slots) lookSet(f, s, lookStart(f)[s]);
       lookDone();
       toast(d.lookreset === 'foot' ? 'Neopets’ own two again' : 'As it started again', () => { slots.forEach((s, n) => lookSet(f, s, was[n])); lookDone(); });
+      return;
+    }
+    if (d.lookurlslot) { const row = t.closest('[data-lookurlrow]'); for (const b of row.querySelectorAll('[data-lookurlslot]')) b.setAttribute('aria-pressed', String(b === t)); row.querySelector('[data-lookurlgo]').dataset.lookurlgo = d.lookurlslot; return; }   // (which side the address goes to)
+    if (d.lookurlgo) {   // (someone by their picture's address, typed in the list's own card)
+      const row = t.closest('[data-lookurlrow]'), box = row.querySelector('[data-lookurlin]'), u = String(box.value || '').trim();
+      if (!PIC_URL.test(u)) { box.focus(); toast(PIC_URL_SAY); return; }
+      lookPick = { slot: d.lookurlgo };
+      lookAdd(lookUrlSpec(u, String(row.querySelector('[data-lookurlname]').value || '').trim()));
       return;
     }
     if (!lookPick) return;
@@ -13103,10 +13544,14 @@
     }
     if ('lpadd' in d) {
       const box = hub.win.querySelector('[data-lpurl]'), u = String(box.value || '').trim(), n = String(hub.win.querySelector('[data-lpname]').value || '').trim();
-      if (!/^https:\/\/\S+\.(png|gif|webp|jpe?g|svg)(\?\S*)?$/i.test(u)) { box.focus(); toast('A picture’s whole address, starting https:// and ending .png, .gif, .webp or .jpg'); return; }
-      const own = u.replace(/^https:\/\/images\.neopets\.com\//, '');
-      lookAdd({ p: own === u ? u : own, n: n || decodeURIComponent(u.split('/').pop().replace(/\.\w+(\?.*)?$/, '')).replace(/[_-]+/g, ' ').slice(0, 40), t: 0, c: 0 });
+      if (!PIC_URL.test(u)) { box.focus(); toast(PIC_URL_SAY); return; }
+      lookAdd(lookUrlSpec(u, n));
     }
+  });
+  document.addEventListener('keydown', (e) => {   // (Enter in an address box by a pattern or a list: as its button)
+    if (e.key !== 'Enter' || !hub || !(e.target instanceof Element) || !e.target.matches('[data-mypaturlin], [data-lookurlin], [data-lookurlname]')) return;
+    const go = e.target.closest('.bnp-myurlrow').querySelector('[data-mypaturlgo], [data-lookurlgo]');
+    if (go) { e.preventDefault(); go.click(); }
   });
   document.addEventListener('input', (e) => {   // (the adjuster's sliders: someone's size and place at the foot of the page, as you move them)
     const el = e.target instanceof Element ? e.target.closest('[data-lookadjr]') : null;
@@ -13144,6 +13589,12 @@
     }
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && e.target instanceof Element && e.target.matches('[data-myfind]') && e.target.value) { e.preventDefault(); e.stopPropagation(); e.target.value = ''; const box = hub && hub.main.querySelector('[data-myfindres]'); if (box) box.hidden = true; } }, true);
+  document.addEventListener('input', (e) => {   // (another look being made: its name, and how far round its colours turn)
+    const el = e.target instanceof Element ? e.target : null;
+    if (!el || !myLookMake || !hub) return;
+    if (el.matches('[data-mylooknewname]')) myLookMake.name = el.value;
+    if (el.matches('[data-mylookhue]')) { myLookMake.hue = Number(el.value); const b = el.parentElement.querySelector('b'); if (b) b.textContent = `${myLookMake.hue > 0 ? '+' : ''}${myLookMake.hue}°`; }
+  });
   document.addEventListener('input', (e) => {   // (Turn them all: every colour round the wheel together, as you move it)
     const el = e.target instanceof Element ? e.target.closest('[data-myturn]') : null, t = el && myEditable(lookAt);
     if (!t) return;
@@ -13182,7 +13633,7 @@
     const el = e.target instanceof Element ? e.target.closest('[data-myrange]') : null, t = el && myEditable(lookAt);
     if (!t) return;
     const n = Number(el.value), lab = el.parentElement.querySelector('b'), path = el.dataset.myrange, tint = /^(.+\.tint)\./.exec(path);
-    if (lab) lab.textContent = `${Number(el.min) < 0 && n > 0 ? '+' : ''}${n}${lab.textContent.replace(/^\+?-?[\d.]+/, '')}`;
+    if (lab) lab.textContent = `${Number(el.min) < 0 && n > 0 ? '+' : ''}${n}${el.dataset.unit != null ? el.dataset.unit : lab.textContent.replace(/^\+?-?[\d.]+/, '')}`;
     if (tint) myTintTouch(t, tint[1]);
     mySet(t, path, n);
     if (tint || /\.size$/.test(path)) { clearTimeout(myPrevs.t); myPrevs.t = setTimeout(myPrevs, 140); }   // (its box, in its new colours)
@@ -13191,9 +13642,10 @@
     const el = e.target instanceof Element ? e.target : null, t = el && myEditable(lookAt);
     if (!t) return;
     if (el.matches('[data-myselect]')) mySet(t, el.dataset.myselect, el.value);
-    if (el.matches('[data-mydecopic]')) { const v = el.value.trim(); if (v && !/^https:\/\/\S+$/.test(v)) { toast('A picture’s whole address, starting https://'); return; } myDecoSet(t, el.dataset.mydecopic, { pic: v }, 'pic'); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
+    if (el.matches('[data-mydecopic]')) { const v = el.value.trim(); if (v && !/^https:\/\/\S+$/.test(v)) { toast('A picture’s whole address, starting https://'); return; } myDecoSet(t, el.dataset.mydecopic, { pic: v }, 'pic'); if (v) myPicKeep(v); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
     if (el.matches('[data-mytake]') && el.value) { const v = el.value; el.value = ''; myTake(t, el.dataset.mytake, v).then(() => { if (hub && hubPage === 'themes') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; } }).catch(report); }
-    if (el.matches('[data-myabout]')) { t.about = { ...(t.about || {}), [el.dataset.myabout]: el.value.trim().slice(0, el.dataset.myabout === 'by' ? 40 : 400) }; if (!t.about.by && !t.about.note) delete t.about; S.myThemes = [...S.myThemes]; saveNow(); }
+    if (el.matches('[data-myabout]')) { const r = myReal(t); r.about = { ...(r.about || {}), [el.dataset.myabout]: el.value.trim().slice(0, el.dataset.myabout === 'by' ? 40 : 400) }; if (!r.about.by && !r.about.note) delete r.about; S.myThemes = [...S.myThemes]; saveNow(); }
+    if (el.matches('[data-mylooktime]')) { const r = myReal(t), sh = { ...(myPlain(r.varShow) ? r.varShow : {}) }, times = { ...(myPlain(sh.times) ? sh.times : {}) }; if (myLookMins(el.value) != null) times[el.dataset.mylooktime] = el.value; else delete times[el.dataset.mylooktime]; sh.times = times; r.varShow = sh; S.myThemes = [...S.myThemes]; saveNow(); }
     if (el.matches('[data-myfont]')) { const k = el.dataset.myfont; if (el.value === '*') myFolds[`font:${k}`] = true; else { delete myFolds[`font:${k}`]; mySet(t, `font.${k}`, el.value); } const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
     if (el.matches('[data-myfontname]')) { const v = el.value.trim(); if (v && !myFontOk(v)) { toast('A font’s name as Google Fonts writes it: letters, numbers and spaces'); return; } mySet(t, `font.${el.dataset.myfontname}`, v); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
     if (el.matches('[data-myiconfrom]') && el.value) { mySet(t, `icons.urls.${el.dataset.myiconfrom}`, myIconUrl(el.value, el.dataset.myiconfrom)); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }   // (one icon, another theme's)
@@ -13202,12 +13654,13 @@
       const path = el.dataset.mytext, v = el.value.trim(), set = /\.set$/.test(path);
       if (v && (!/^https:\/\/\S+$/.test(v) || (set && !v.includes('{name}')))) { toast(set ? 'A whole address, starting https://, with {name} where each icon’s name goes' : 'A picture’s whole address, starting https://'); return; }
       mySet(t, path, v);
+      if (v && !/^(icons\.|page\.cursor)/.test(path)) myPicKeep(v);   // (a picture of yours, kept for any part: never the icons or the pointer)
       const keep = hub.main.scrollTop;
       paintHub();
       hub.main.scrollTop = keep;
     }
     if (el.matches('[data-mycheck]') && /\.off$/.test(el.dataset.mycheck)) { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
-    if (el.matches('[data-mybase]') && /^[a-z]+$/.test(el.value)) { myHistPush(t, ''); t.base = el.value; S.myThemes = [...S.myThemes]; saveNow(); if (myPreviewOf === t.id || S.wear === t.id) myOn(t, false); paintHub(); }
+    if (el.matches('[data-mybase]') && /^[a-z]+$/.test(el.value)) { myHistPush(t, ''); t.base = el.value; if (t.varOf) myLookSync(t); S.myThemes = [...S.myThemes]; saveNow(); const r = myReal(t); if (myPreviewOf === r.id || S.wear === r.id) myOn(r, false); paintHub(); }
   });
   document.addEventListener('input', (e) => {   // (the picker's search: as you type)
     if (!lookPick || !(e.target instanceof Element) || !e.target.matches('.bnp-lookpick [data-lpq]')) return;
@@ -13789,10 +14242,11 @@
   // The page in Nav Settings: how many you have, then every avatar by kind (or A to Z, or newest), yours in colour, the rest faded
   let avView = null, avSeenBefore = null;   // (its choices; the newest avatar you'd seen before this visit: newer ones say "New")
   function avPrefs() {
-    if (!avView) { const p = get('avview', null) || {}; avView = { show: ['all', 'need', 'have'].includes(p.show) ? p.show : 'all', order: ['kind', 'az', 'new'].includes(p.order) ? p.order : 'kind', view: p.view === 'list' ? 'list' : 'tiles', kind: 0, q: '', open: 0 }; }
+    if (!avView) { const p = get('avview', null) || {}; avView = { show: ['all', 'need', 'have'].includes(p.show) ? p.show : 'all', order: ['kind', 'az', 'new'].includes(p.order) ? p.order : 'kind', view: p.view === 'list' ? 'list' : 'tiles', ret: ['all', 'mine', 'none'].includes(p.ret) ? p.ret : 'all', kind: 0, q: '', open: 0 }; }
     return avView;
   }
-  const avPrefsSave = () => set('avview', { show: avView.show, order: avView.order, view: avView.view });
+  const avPrefsSave = () => set('avview', { show: avView.show, order: avView.order, view: avView.view, ret: avView.ret });
+  const avRetOk = (a) => { const r = avPrefs().ret; return a.m !== 9 || r === 'all' || (r === 'mine' && a.have); };   // (the retired ones: all, only yours (the rest can't be got any more), or none, in the view and its counts)
   const avAgo = (t) => { const m = Math.max(0, Math.round((Date.now() - t) / 60000)); return m < 1 ? 'just now' : m < 60 ? `${m} minute${m === 1 ? '' : 's'} ago` : m < 1440 ? `${Math.round(m / 60)} hour${Math.round(m / 60) === 1 ? '' : 's'} ago` : `${Math.round(m / 1440)} day${Math.round(m / 1440) === 1 ? '' : 's'} ago`; };
   function avItem(a) {   // (the item to look for on the Shop Wizard: SunnyNeo puts it in quotes, 'Bony Grarrl Club', or "an item with the word 'Carrot' in its name"; or "play with a Tycoon Game Case")
     if (!a.c.some((c) => c === 13 || c === 7 || c === 12)) return null;
@@ -13826,20 +14280,22 @@
     }
     const can = D.list.filter((a) => a.m !== 9), ret = D.list.filter((a) => a.m === 9);
     const haveCan = can.filter((a) => a.have).length, haveRet = ret.filter((a) => a.have).length, pct = can.length ? Math.floor((haveCan / can.length) * 100) : 0;
-    const nNew = avSeenBefore == null ? 0 : D.list.filter((a) => a.i > avSeenBefore).length;
+    const nNew = avSeenBefore == null ? 0 : D.list.filter((a) => a.i > avSeenBefore && avRetOk(a)).length;
+    const retSay = v.ret === 'none' ? '' : v.ret === 'mine' ? (haveRet ? ` · ${haveRet} retired one${haveRet === 1 ? '' : 's'} of yours` : '') : ret.length ? ` · ${haveRet} of the ${ret.length} retired ones` : '';
     const own = D.O ? '' : `<p class="bnp-note bnp-avown">${avOwnBusy ? 'Reading which ones are yours from Neoboard Settings…' : avOwnErr === 'login' ? 'Log in to Neopets to see which ones are yours.' : avOwnErr ? 'Neoboard Settings couldn’t be read just now. <button type="button" class="bnp-linkbtn" data-avdo="own">Try again</button>' : 'Which ones are yours comes from Neoboard Settings.'}</p>`;
-    const seg = (key, opts) => `<span class="bnp-seg" role="group">${opts.map(([k, label, tip]) => `<button type="button" data-${key}="${k}" aria-pressed="${v[{ avs: 'show', avo: 'order', avv: 'view' }[key]] === k}"${tip ? ` title="${tip}"` : ''}>${label}</button>`).join('')}</span>`;
+    const seg = (key, opts) => `<span class="bnp-seg" role="group">${opts.map(([k, label, tip]) => `<button type="button" data-${key}="${k}" aria-pressed="${v[{ avs: 'show', avo: 'order', avv: 'view', avr: 'ret' }[key]] === k}"${tip ? ` title="${tip}"` : ''}>${label}</button>`).join('')}</span>`;
     return `${head}
       <div class="bnp-avsum">
         <div class="bnp-avsum-big"><b>${haveCan.toLocaleString()}</b><span>of ${can.length.toLocaleString()}</span></div>
         <div class="bnp-avsum-right">
           <div class="bnp-avsum-bar"><i style="width:${pct}%"></i></div>
-          <small>${pct}% of the ones you can still get${ret.length ? ` · ${haveRet} of the ${ret.length} retired ones` : ''}${D.O && (D.O.dl || []).length ? ` · plus the ${(D.O.dl || []).length} everyone has` : ''}${D.extra.length ? ` · ${D.extra.length} more of yours SunnyNeo doesn’t list` : ''}</small>
+          <small>${pct}% of the ones you can still get${retSay}${D.O && (D.O.dl || []).length ? ` · plus the ${(D.O.dl || []).length} everyone has` : ''}${D.extra.length ? ` · ${D.extra.length} more of yours SunnyNeo doesn’t list` : ''}</small>
         </div>
       </div>
       ${own}${avBusy ? `<p class="bnp-note bnp-avown">Looking for new avatars on SunnyNeo…</p>` : avErr ? `<p class="bnp-note bnp-avown">SunnyNeo’s list couldn’t be checked just now (${esc(avErr)}).</p>` : ''}
       <div class="bnp-retools bnp-avtools">
         ${seg('avs', [['all', 'All'], ['need', 'Still to get', 'The ones you don’t have yet (not the retired ones)'], ['have', 'Yours']])}
+        ${seg('avr', [['all', 'All retired', 'Every retired avatar: yours, and the ones that can’t be got any more'], ['mine', 'My retired', 'Only the retired ones you have: the rest can’t be got any more'], ['none', 'No retired', 'No retired ones at all, here or in the counts']])}
         ${seg('avo', [['kind', 'By kind'], ['az', 'A–Z'], ['new', 'Newest']])}
         ${seg('avv', [['tiles', 'Tiles'], ['list', 'List', 'Each one with how to get it']])}
         <input type="search" class="bnp-research" data-av-q value="${esc(v.q)}" placeholder="Find an avatar…" aria-label="Find an avatar" spellcheck="false">
@@ -13850,14 +14306,14 @@
   }
   function avChips(D, nNew) {   // (a kind: yours of it / all of it; one in several kinds counts under its main one, as its part of the page does)
     const v = avPrefs(), n = new Map(), h = new Map();
-    for (const a of D.list) { n.set(a.m, (n.get(a.m) || 0) + 1); if (a.have) h.set(a.m, (h.get(a.m) || 0) + 1); }
+    for (const a of D.list) { if (!avRetOk(a)) continue; n.set(a.m, (n.get(a.m) || 0) + 1); if (a.have) h.set(a.m, (h.get(a.m) || 0) + 1); }
     const chip = (k, label, count, tip) => `<button type="button" class="bnp-rechip" data-avk="${k}" aria-pressed="${v.kind === k}"${tip ? ` title="${esc(tip)}"` : ''}>${esc(label)}${count ? ` <em>${count}</em>` : ''}</button>`;
     return chip(0, 'Every kind', '') + (nNew ? chip(-1, 'New', nNew, 'New on SunnyNeo’s list since you last looked') : '')
-      + AV_KINDS.filter(([c]) => n.get(c)).map(([c, label, tip]) => chip(c, label, `${h.get(c) || 0}/${n.get(c)}`, tip)).join('');
+      + AV_KINDS.filter(([c]) => n.get(c)).map(([c, label, tip]) => chip(c, label, c === 9 && v.ret === 'mine' ? String(h.get(c) || 0) : `${h.get(c) || 0}/${n.get(c)}`, tip)).join('');   // (only your retired ones: just how many)
   }
   function avShown(D) {   // (what the page shows: your choices, the search; in its order)
     const v = avPrefs(), q = goNorm(v.q || '');
-    let rows = D.list;
+    let rows = D.list.filter(avRetOk);
     if (v.show === 'have') rows = rows.filter((a) => a.have);
     else if (v.show === 'need') rows = rows.filter((a) => !a.have && a.m !== 9);
     if (v.kind === -1) rows = rows.filter((a) => avSeenBefore != null && a.i > avSeenBefore);
@@ -13875,8 +14331,8 @@
       for (const [c, label, tip] of AV_KINDS) {
         const part = rows.filter((a) => a.m === c);
         if (!part.length) continue;
-        const all = D.list.filter((a) => a.m === c), have = all.filter((a) => a.have).length;
-        html += `<h5 class="bnp-avsec"><span>${esc(label)}</span><span class="bnp-note">${esc(tip)}</span><em>${have} / ${all.length}</em></h5>${wrap(part)}`;
+        const all = D.list.filter((a) => a.m === c && avRetOk(a)), have = all.filter((a) => a.have).length;
+        html += `<h5 class="bnp-avsec"><span>${esc(label)}</span><span class="bnp-note">${esc(tip)}</span><em>${c === 9 && v.ret === 'mine' ? have : `${have} / ${all.length}`}</em></h5>${wrap(part)}`;
       }
     } else html = wrap(rows);
     if (v.show !== 'need' && !v.q && v.kind === 0 && D.extra.length) {   // (yours that SunnyNeo doesn't list: still yours)
@@ -13927,7 +14383,7 @@
     if (!hub || hubPage !== 'avatars') return;
     const D = avData(), list = hub.main.querySelector('[data-g="avlist"]'), chips = hub.main.querySelector('[data-g="avchips"]');
     if (!D || !list) { avRepaint(); return; }
-    chips.innerHTML = avChips(D, avSeenBefore == null ? 0 : D.list.filter((a) => a.i > avSeenBefore).length);
+    chips.innerHTML = avChips(D, avSeenBefore == null ? 0 : D.list.filter((a) => a.i > avSeenBefore && avRetOk(a)).length);
     list.innerHTML = avListHtml(D);
     avPlaceCard();
   }
@@ -13958,6 +14414,7 @@
     if (t.dataset.avs) { v.show = t.dataset.avs; v.open = 0; avPrefsSave(); avRepaint(); return; }
     if (t.dataset.avo) { v.order = t.dataset.avo; v.open = 0; avPrefsSave(); avRepaint(); return; }
     if (t.dataset.avv) { v.view = t.dataset.avv; v.open = 0; avPrefsSave(); avRepaint(); return; }
+    if (t.dataset.avr) { v.ret = t.dataset.avr; if (v.ret === 'none' && v.kind === 9) v.kind = 0; v.open = 0; avPrefsSave(); avRepaint(); return; }
     if (t.dataset.avk != null) { const k = Number(t.dataset.avk); v.kind = v.kind === k ? 0 : k; v.open = 0; avPaintList(); return; }
     if (t.dataset.avx != null) { v.open = 0; const c = hub.main.querySelector('[data-g="avcard"]'); if (c) c.remove(); hub.main.querySelectorAll('.bnp-avt[aria-expanded="true"]').forEach((x) => x.setAttribute('aria-expanded', 'false')); return; }
     if (t.dataset.av != null) {
@@ -15282,22 +15739,27 @@
 
   // ---- back up ----
   function backupPage() {
+    const u = get('upd', {}) || {}, newer = !!u.v && verNewer(u.v, myVersion());
     return `<div class="bnp-mhead"><h2>Back up</h2><span class="bnp-note">Your menus, folders and features live only in this browser’s Tampermonkey: keep a copy, or take them to another browser.</span></div>
+      <div class="bnp-card"><h4>Updates</h4><p class="bnp-note">You have ${esc(APP)} ${esc(myVersion())}${u.v ? ` · the newest is ${esc(u.v)}${newer ? '' : ': yours'}` : ''}. Tampermonkey updates it by itself about once a day (its own setting, under Settings › Script Update there); this tells you sooner.</p>
+        <label class="bnp-switch"><input type="checkbox" data-feat="updNote"${S.features.updNote !== false ? ' checked' : ''}><span>Tell me when an update comes out<small>A note under the bar with Update now, looked for a few times a day (a tiny file on GitHub).</small></span></label>
+        <p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn" data-updnow>Look for one now</button>${newer ? `<a class="button-default__2020 button-yellow__2020 bnp-small" href="${UPD_SCRIPT}" target="_blank" rel="noopener">Update to ${esc(u.v)}</a>` : ''}</p></div>
       <div class="bnp-card"><h4>Save a backup</h4><p class="bnp-note">One small file with all of it.</p><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-bk="save">Save a backup</button></div>
       <div class="bnp-card"><h4>Restore a backup</h4><p class="bnp-note">A backup file from here: its settings replace these (Undo after, for a few seconds).</p><input type="file" accept=".json,application/json" data-bk="file" hidden><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-bk="restore">Restore a backup…</button></div>
       <div class="bnp-card"><h4>Start over</h4><p class="bnp-note">Every menu back to how it started and the features to their first settings (your boards stay picked).</p><button type="button" class="button-default__2020 button-red__2020 bnp-small" data-bk="reset">Start over</button></div>`;
   }
   document.addEventListener('click', (e) => {   // (the hub's other buttons: folder shortcuts, chips, backup)
     if (!hub || !(e.target instanceof Element) || !hub.win.contains(e.target)) return;
-    const t = e.target.closest('[data-dset], [data-bk], [data-unchip], [data-dcdel], [data-rset], [data-rcdel], button[data-re], [data-rek], [data-redel], button[data-tb], [data-avs], [data-avo], [data-avv], [data-avk], [data-avx], button[data-av], [data-avdo], button[data-game], button[data-itk], button[data-its], button[data-ittest], button[data-itnc], button[data-nbh], button[data-nbov], [data-tablk], button[data-featv]');
+    const t = e.target.closest('[data-updnow], [data-dset], [data-bk], [data-unchip], [data-dcdel], [data-rset], [data-rcdel], button[data-re], [data-rek], [data-redel], button[data-tb], [data-avs], [data-avr], [data-avo], [data-avv], [data-avk], [data-avx], button[data-av], [data-avdo], button[data-game], button[data-itk], button[data-its], button[data-ittest], button[data-itnc], button[data-nbh], button[data-nbov], [data-tablk], button[data-featv]');
     if (!t) return;
     if (t.dataset.nbh || t.dataset.nbov) { nbHubClick(t); return; }
+    if ('updnow' in t.dataset) { t.disabled = true; t.textContent = 'Looking…'; updCheck(true).then((u) => { toast(!u ? 'GitHub couldn’t be reached just now: try again' : verNewer(u.v, myVersion()) ? `${APP} ${u.v} is out` : 'You have the newest'); if (hub && hubPage === 'backup') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; } }).catch(report); return; }   // (Updates: looked for now)
     if (t.dataset.featv) { const [k, v] = t.dataset.featv.split(':'); S.features[k] = v; changed(); for (const h of $$('.bnp-hub-head')) { try { themeWin(h.parentElement); } catch (_) { /* */ } } return; }   // (a choice of pills: this one)
     if (t.dataset.tablk) { S.features.tabLookup = t.dataset.tablk; lookupPick = null; changed(); tabsApply(true); return; }   // (a lookup's tab picture: this one, from now on)
     if (t.dataset.itk || t.dataset.its || t.dataset.itnc || 'ittest' in t.dataset) { itemsHubClick(t); return; }
     if (t.dataset.game) { const on = gameToggle(t.dataset.game); changed(`${gameName(t.dataset.game)} is ${on ? 'in My Games' : 'out of My Games'}`); return; }
     if (t.dataset.tb) { tabsClick(t); return; }
-    if (['avs', 'avo', 'avv', 'avk', 'avx', 'av', 'avdo'].some((k) => k in t.dataset)) { avHubClick(t); return; }
+    if (['avs', 'avr', 'avo', 'avv', 'avk', 'avx', 'av', 'avdo'].some((k) => k in t.dataset)) { avHubClick(t); return; }
     if (t.dataset.re || t.dataset.rek != null || t.dataset.redel) { reHubClick(t); return; }
     if (t.dataset.dset) { folderShortcut(t); return; }
     if (t.dataset.rset) { remShortcut(t); return; }
@@ -15328,7 +15790,7 @@
     }
     const k = t.dataset.bk;
     if (k === 'save') {
-      const data = { app: 'beta-nav', v: 3, at: Date.now(), settings: S, open: OPEN, nb: { marks: nbMarks(), people: nbPeople() }, themesaves: get('themesaves', {}) };   // (with your Neoboards bookmarks and people, and your themes' saved versions)
+      const data = { app: 'beta-nav', v: 3, at: Date.now(), settings: S, open: OPEN, nb: { marks: nbMarks(), people: nbPeople() }, themesaves: get('themesaves', {}), mypics: get('mypics', []) };   // (with your Neoboards bookmarks and people, your themes' saved versions and Your pictures)
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
       a.download = `beta-nav-backup-${new Date().toISOString().slice(0, 10)}.json`;
@@ -15360,9 +15822,10 @@
       if (data.open && typeof data.open === 'object') { OPEN = data.open; set('open', OPEN); }
       const nbPut = (nb) => { if (!nb || typeof nb !== 'object') return; if (Array.isArray(nb.marks)) set('nbmarks', nb.marks); if (nb.people && typeof nb.people === 'object' && !Array.isArray(nb.people)) { set('nbpeople', nb.people); NBP = null; } };
       nbPut(data.nb);
-      const savesBefore = get('themesaves', {});
+      const savesBefore = get('themesaves', {}), picsBefore = get('mypics', null);
       if (data.themesaves && typeof data.themesaves === 'object' && !Array.isArray(data.themesaves)) set('themesaves', data.themesaves);
-      changed('Restored', () => { S = before; OPEN = openBefore; set('open', OPEN); nbPut(nbBefore); set('themesaves', savesBefore); changed(); });
+      if (Array.isArray(data.mypics)) set('mypics', data.mypics.filter((x) => x && typeof x.u === 'string' && PIC_URL.test(x.u)).slice(0, MY_PICS_MAX));
+      changed('Restored', () => { S = before; OPEN = openBefore; set('open', OPEN); nbPut(nbBefore); set('themesaves', savesBefore); if (picsBefore) set('mypics', picsBefore); changed(); });
     } catch (_) { toast(`That file isn’t a ${APP} backup`); }
   });
   (function chipDrag() {   // (dragging chips to reorder boards and dailies)
@@ -16042,6 +16505,10 @@
     .bnp-notice b { flex: none; font: 15px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
     .bnp-notice button { flex: none; width: 26px; height: 26px; margin: 0; padding: 0; border: 0; border-radius: 6px; background: none; color: inherit; font: 20px/1 Arial, sans-serif; cursor: pointer; opacity: .6; }
     .bnp-notice button:hover { opacity: 1; background: rgba(0, 0, 0, .08); }
+    .bnp-notice.bnp-updnote { flex-wrap: wrap; row-gap: 6px; }   /* (an update: its buttons, and what's new under them) */
+    .bnp-notice.bnp-updnote button.bnp-linkbtn { width: auto; height: 26px; padding: 0 12px; border: 1px solid #d3ccb7; border-radius: 999px; background: #faf9f5; box-shadow: 0 2px 0 #e4dece; color: #4a4536; font: 12.5px/1 "MuseoSansRounded700", Arial, sans-serif; opacity: 1; }
+    .bnp-notice.bnp-updnote a.bnp-small { flex: none; width: auto; height: auto; margin: 0; padding: 3px 16px 5px; text-decoration: none; }
+    .bnp-updnote .bnp-updnotes { flex: 1 1 100%; margin: 2px 0 0; padding: 0 0 0 20px; font-size: 12.5px; }
     .bnp-linkbtn, .bnp-nbc-lb { display: inline-flex; align-items: center; gap: 5px; height: 26px; margin: 0; padding: 0 12px; border: 1px solid #d3ccb7; border-radius: 999px; background: #faf9f5; box-shadow: 0 2px 0 #e4dece; box-sizing: border-box; color: #4a4536; font: 12.5px/1 "MuseoSansRounded700", Arial, sans-serif; text-decoration: none; white-space: nowrap; vertical-align: middle; cursor: pointer; }   /* (never plain words: a small pill, as Neopets' own buttons are) */
     .bnp-linkbtn:hover, .bnp-linkbtn:focus-visible, .bnp-nbc-lb:hover:not(:disabled), .bnp-nbc-lb:focus-visible { border-color: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent, #fed123)) 70%, #000); background: var(--bnp-bar, var(--bnp-accent, #fed123)); color: var(--bnp-bar-ink, var(--bnp-accent-text, #363636)); text-decoration: none; }
     .bnp-linkbtn:disabled, .bnp-nbc-lb:disabled { opacity: .5; cursor: default; }
@@ -16077,6 +16544,29 @@
     .bnp-cp-alpha { position: relative; height: 14px; margin: -2px 2px 10px; border-radius: 7px; background: linear-gradient(to right, transparent, var(--cp-c, #000)), repeating-conic-gradient(#d9d4c4 0% 25%, #fff 0% 50%) 50% / 10px 10px; cursor: pointer; touch-action: none; }
     .bnp-cp-alpha > i { position: absolute; top: -3px; width: 8px; height: 20px; margin-left: -4px; border: 2px solid #fff; border-radius: 4px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .5); box-sizing: border-box; pointer-events: none; }
     .bnp-hub .bnp-myfont { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e3ddca; }
+    .bnp-hub .bnp-card > .bnp-myfont:first-child { margin-top: 0; padding-top: 0; border-top: 0; }   /* (first in its card: no line over it) */
+    .bnp-hub .bnp-card > .bnp-mypat:not(:first-child) { margin-top: 14px; padding-top: 14px; border-top: 1px solid #e3ddca; }   /* (a picture under colours or sliders: apart from them) */
+    .bnp-hub .bnp-card .bnp-myback { margin: 10px 0 0; }
+    .bnp-hub .bnp-mytabs .bnp-mytabdot { display: inline-block; width: 7px; height: 7px; margin: 0 0 1px 7px; border-radius: 50%; background: currentColor; opacity: .6; vertical-align: middle; }   /* (a part you've changed) */
+    .bnp-hub .bnp-mypicstrip:not(.is-all) .bnp-mypicthumb:nth-of-type(n+9) { display: none; }
+    .bnp-hub .bnp-mybaseline select { margin: 0 2px 0 4px; }
+    .bnp-hub .bnp-myshowme { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 4px 0 14px; }
+    .bnp-hub .bnp-myshowme .bnp-note { flex: 1 1 220px; margin: 0; }
+    .togglePopup__2020.bnp-popsample { position: fixed !important; left: 50% !important; top: 50% !important; right: auto !important; bottom: auto !important; z-index: 2147482990 !important; display: block !important; width: min(460px, calc(100vw - 32px)) !important; max-width: none !important; height: auto !important; margin: 0 !important; transform: translate(-50%, -50%) !important; }   /* (Show me's pop-up: one of Neopets' own, in the middle of the window) */
+    .bnp-popsample .popup-body__2020 { display: block !important; padding: 18px 22px !important; font: 14px/1.5 "MuseoSansRounded500", Arial, sans-serif; text-align: center; }
+    .bnp-popsample .popup-exit { cursor: pointer; }
+    .bnp-hub .bnp-mylooks { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 10px; }   /* (its looks: which you're changing) */
+    .bnp-hub .bnp-mylooks > .bnp-note { flex: 1 1 260px; margin: 0; }
+    .bnp-hub .bnp-mylookbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: -2px 0 12px; padding: 9px 12px; border: 1px solid color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 40%, #e3ddca); border-radius: 11px; background: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 10%, #fff); }
+    .bnp-hub .bnp-mylookbar > .bnp-note { flex: 1 1 100%; margin: 0; color: #4a4536; }
+    .bnp-hub .bnp-mylookbar input[type="text"], .bnp-hub .bnp-mylookmake input[type="text"], .bnp-hub .bnp-mylooktimes input { height: 30px; margin: 0; padding: 0 10px; border: 1px solid #cfc7b0; border-radius: 9px; background: #fff; color: #363636; font: 13px "MuseoSansRounded500", Arial, sans-serif; box-sizing: border-box; }
+    .bnp-hub .bnp-mylookbar input[type="text"] { width: 170px; }
+    .bnp-hub .bnp-mylookcols, .bnp-hub .bnp-mylookchips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .bnp-hub .bnp-mylookcol { width: 28px; height: 28px; margin: 0; padding: 0; border: 2px solid rgba(0, 0, 0, .18); border-radius: 8px; background: linear-gradient(var(--c), var(--c)), repeating-conic-gradient(#d9d4c4 0% 25%, #fff 0% 50%) 50% / 10px 10px; cursor: pointer; }
+    .bnp-hub .bnp-mylookcol.is-on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--bnp-bar, var(--bnp-accent)); }
+    .bnp-hub .bnp-mylooktimes { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 4px 0; }
+    .bnp-hub .bnp-mylookmake .bnp-myrow, .bnp-hub .bnp-mylookshow .bnp-myrow { margin: 8px 0; }
+    .bnp-hub .bnp-myswatch.is-main { opacity: .5; }   /* (a look's colour that's the main look's) */
     .bnp-hub .bnp-myfont .bnp-myslides { flex-basis: 100%; margin-top: 0; }
     .bnp-hub .bnp-myfont input[type="text"] { width: 220px; height: 30px; margin: 0; padding: 0 10px; border: 1px solid #cfc7b0; border-radius: 9px; font: 13px "MuseoSansRounded500", Arial, sans-serif; }
     .bnp-hub .bnp-myfontprev { padding: 4px 12px; border-radius: 9px; background: #f3f0e6; color: #363636; font: 17px "Cafeteria", Arial, sans-serif; letter-spacing: .3px; }
@@ -16318,6 +16808,11 @@
     .bnp-hub .bnp-lookcard.drop-after { box-shadow: 4px 0 0 #2c5aa0; }
     .bnp-hub .bnp-lookrow.drop-into { border-radius: 12px; background: #e3edfb; outline: 2px dashed #2c5aa0; outline-offset: 4px; }
     .bnp-hub .bnp-mysets { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 8px; }
+    .bnp-hub .bnp-mysets.is-logos { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }   /* (every theme's logo and icons: smaller tiles, the whole choice in sight) */
+    .bnp-hub .bnp-mysets.is-logos .bnp-mylogo, .bnp-hub .bnp-mysets.is-icons .bnp-myset { padding: 6px 8px; }
+    .bnp-hub .bnp-mysets.is-logos .bnp-mylogo i { height: 32px; background-size: auto 24px; }
+    .bnp-hub .bnp-mysets.is-icons { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 6px; }
+    .bnp-hub .bnp-mysets.is-icons .bnp-myset i { width: 22px; height: 22px; }
     .bnp-hub .bnp-myset, .bnp-hub .bnp-mylogo { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin: 0; padding: 8px 10px; border: 1px solid #e3ddca; border-radius: 10px; background: #fff; color: #363636; text-align: left; cursor: pointer; }
     .bnp-hub .bnp-myset span { display: flex; gap: 4px; padding: 4px 6px; border-radius: 8px; background: #2c2357; }
     .bnp-hub .bnp-myset i { width: 26px; height: 26px; background: center / contain no-repeat; }
@@ -16347,6 +16842,18 @@
     .bnp-hub .bnp-lpone:hover, .bnp-hub .bnp-lpone:focus-visible { border-color: var(--bnp-bar, var(--bnp-accent)); background: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 7%, #fff); }
     .bnp-hub .bnp-lpone b { width: 100%; overflow: hidden; color: #363636; font: 12px/1.25 "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
     .bnp-hub .bnp-lpone small { width: 100%; overflow: hidden; color: #8a8270; font: 10.5px/1.25 "MuseoSansRounded500", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-hub .bnp-myurlrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 12px; align-self: stretch; }   /* (a picture by its address, right where it's used: no picker needed) */
+    .bnp-hub .bnp-myurlrow input { height: 32px; margin: 0; padding: 0 10px; border: 1px solid #cfc7b0; border-radius: 9px; background: #fff; color: #363636; font: 13px "MuseoSansRounded500", Arial, sans-serif; box-sizing: border-box; }
+    .bnp-hub .bnp-myurlrow .bnp-myurlin { flex: 1 1 260px; min-width: 0; }
+    .bnp-hub .bnp-myurlrow .bnp-myurlname { flex: 0 1 140px; min-width: 0; }
+    .bnp-hub .bnp-mypatgo .bnp-myurlrow { margin-top: 2px; }
+    .bnp-hub .bnp-mypicstrip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; align-self: stretch; }   /* (your latest pictures, a click away) */
+    .bnp-hub .bnp-mypicthumb { width: 40px; height: 40px; margin: 0; padding: 0; border: 1px solid #d8d2bf; border-radius: 9px; background: #ece8dc center / cover no-repeat; box-shadow: 0 1px 0 #e4dece; cursor: pointer; }
+    .bnp-hub .bnp-mypicthumb:hover { border-color: var(--bnp-bar, var(--bnp-accent)); }
+    .bnp-hub .bnp-mypicthumb.is-on { box-shadow: 0 0 0 2px var(--bnp-bar, var(--bnp-accent)); }
+    .bnp-hub .bnp-mypatwrap { position: relative; display: block; }
+    .bnp-hub .bnp-mypatwrap .bnp-mypatone { width: 100%; }
+    .bnp-hub .bnp-mypatwrap .bnp-lookx { top: -7px; right: -7px; }
     .bnp-hub .bnp-lpurl { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px; border-top: 1px solid #ece6d4; background: #faf9f5; }
     .bnp-hub .bnp-lpurl input { height: 32px; padding: 0 10px; border: 1px solid #cfc7b0; border-radius: 9px; font: 13px "MuseoSansRounded500", Arial, sans-serif; }
     .bnp-hub .bnp-lpurl input[type="url"] { flex: 1 1 300px; min-width: 0; }
@@ -17316,7 +17823,8 @@
     .bnp-hub .bnp-main h5:not(.bnp-card h5):has(+ .bnp-card > h4:first-child) { margin: 34px 0 8px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: #4a4536; }   /* (its card has a title strip of its own: the name stays a label over it, never two strips) */
     .bnp-hub .bnp-main h5:not(.bnp-card h5) + .bnp-card:not(:has(> h4:first-child)) { margin-top: 0; border-top: 0; border-color: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 30%, #d3ccb7); border-radius: 0 0 12px 12px; }
     .bnp-hub .bnp-main > .bnp-mhead + h5, .bnp-hub .bnp-main > .bnp-jumps + h5, .bnp-hub .bnp-main > .bnp-subtabs + h5 { margin-top: 10px !important; }
-    .bnp-hub .bnp-card > h4:first-child { margin: -12px -14px 10px; padding: 8px 14px 7px; border-bottom: 1px solid #e3ddca; border-radius: 11px 11px 0 0; background: color-mix(in srgb, var(--bnp-accent) 16%, #fff); }   /* (each card's name on a strip of your theme's colour: where one ends and the next starts, at a glance) */
+    .bnp-hub .bnp-card > h4:first-child { margin: -12px -14px 10px; padding: 8px 14px 8px; border: 0; border-radius: 11px 11px 0 0; background: var(--bnp-bar, var(--bnp-accent)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 78%, #000), inset 0 -3px 0 color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 74%, #000); color: var(--bnp-bar-ink, var(--bnp-accent-text, #fff)); font: 13px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; letter-spacing: .06em; }   /* (each card's name on the same band as the sections' names: your theme's bar colour, on every page) */
+    .bnp-hub .bnp-card:has(> h4:first-child) { border-color: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent)) 30%, #d3ccb7); }
     .bnp-hub .bnp-switch { display: flex; align-items: flex-start; gap: 10px; margin: 6px 0 10px; cursor: pointer; font: 14px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-hub .bnp-switch input { flex: none; accent-color: #2b8a27; width: 17px; height: 17px; margin: 1px 0 0; }
     .bnp-hub .bnp-switch small { display: block; margin-top: 2px; color: #757575; font: 12.5px/1.45 "MuseoSansRounded500", Arial, sans-serif; }
@@ -17468,6 +17976,51 @@
       .bnp-hub .bnp-tag { display: none; }
     }
   `;
+  // Updates: Neopets Enhance's newest version, looked for on GitHub a few times a day (a tiny file); a newer one: a note under the bar,
+  // with Update now (Tampermonkey's own page). Tampermonkey updates it by itself too, about once a day: this only tells you sooner
+  const UPD_URL = 'https://raw.githubusercontent.com/Legacy-l/neopets-enhance/main/version.json';
+  const UPD_SCRIPT = 'https://raw.githubusercontent.com/Legacy-l/neopets-enhance/main/neopets-enhance.user.js';
+  const myVersion = () => String((typeof GM_info !== 'undefined' && GM_info && GM_info.script && GM_info.script.version) || '0');
+  const verNewer = (a, b) => { const x = String(a).split('.').map((n) => parseInt(n, 10) || 0), y = String(b).split('.').map((n) => parseInt(n, 10) || 0); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d > 0; } return false; };   // (a newer than b)
+  function updCheck(force) {   // (at most every 6 hours, or now when asked; never while it's off, unless asked)
+    const u = get('upd', {}) || {};
+    if (!force && (S.features.updNote === false || Date.now() - (u.at || 0) < 6 * 3600000)) { updShow(); return Promise.resolve(u); }
+    return new Promise((done) => {
+      const fail = () => { set('upd', { ...u, at: Date.now() }); done(null); };
+      try {
+        GM_xmlhttpRequest({ method: 'GET', url: `${UPD_URL}?t=${Math.floor(Date.now() / 600000)}`, timeout: 15000, ontimeout: fail, onerror: fail,
+          onload: (r) => {
+            let j = null;
+            try { j = JSON.parse(r.responseText); } catch (_) { /* */ }
+            if (!j || typeof j.version !== 'string' || !/^\d+(\.\d+)*$/.test(j.version)) { fail(); return; }
+            const next = { ...u, at: Date.now(), v: j.version, date: String(j.date || '').slice(0, 20), notes: Array.isArray(j.notes) ? j.notes.filter((x) => typeof x === 'string').slice(0, 10).map((x) => x.slice(0, 240)) : [] };
+            set('upd', next);
+            updShow();
+            done(next);
+          } });
+      } catch (_) { fail(); }
+    });
+  }
+  function updShow() {   // (a newer version than this one: a note under the bar, until it's updated; Later: a day; ×: not this one)
+    const u = get('upd', {}) || {};
+    if (S.features.updNote === false || !u.v || !verNewer(u.v, myVersion()) || u.skip === u.v || (u.later && Date.now() - u.later < 86400000) || !document.body || document.querySelector('[data-bnp="updnote"]')) return;
+    styles();
+    const n = document.createElement('div');
+    n.className = 'bnp-notice bnp-updnote';
+    n.setAttribute('data-bnp', 'updnote');
+    n.setAttribute('role', 'status');
+    n.innerHTML = `<b>${esc(APP)} ${esc(u.v)} is out</b><span>You have ${esc(myVersion())}.</span><a class="button-default__2020 button-yellow__2020 bnp-small" href="${UPD_SCRIPT}" target="_blank" rel="noopener" data-upd="go">Update now</a>${u.notes && u.notes.length ? '<button type="button" class="bnp-linkbtn" data-upd="new" aria-expanded="false">What’s new</button>' : ''}<button type="button" class="bnp-linkbtn" data-upd="later" title="Not now: again tomorrow">Later</button><button type="button" class="bnp-updx" data-upd="x" aria-label="Not this one" title="Not this one: tell me at the next">×</button>${u.notes && u.notes.length ? `<ul class="bnp-updnotes" hidden>${u.notes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}`;
+    n.addEventListener('click', (e) => {
+      const b = e.target instanceof Element ? e.target.closest('[data-upd]') : null;
+      if (!b) return;
+      const k = b.dataset.upd, cur = get('upd', {}) || {};
+      if (k === 'go') { set('upd', { ...cur, later: Date.now() }); setTimeout(() => n.remove(), 300); notice('Update it on Tampermonkey’s page, then reload this one'); return; }   // (Tampermonkey's own page, in a new tab)
+      if (k === 'new') { const ul = n.querySelector('.bnp-updnotes'); if (ul) { ul.hidden = !ul.hidden; b.setAttribute('aria-expanded', String(!ul.hidden)); } return; }
+      if (k === 'later') { set('upd', { ...cur, later: Date.now() }); n.remove(); return; }
+      if (k === 'x') { set('upd', { ...cur, skip: cur.v }); n.remove(); }
+    });
+    document.body.append(n);
+  }
   function notice(text, once) {   // (a note from BetaNav Plus, under the bar; "once": not again today after it's closed)
     if (once && get('notice:' + once, '') === nstDay()) return;
     const n = document.createElement('div');
@@ -17570,7 +18123,7 @@
   }
   function boot() {   // (the page is read: the rest)
     for (const fn of [finishOld, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, paintFq, searchPage, searchItemPage, searchNone, poundPage, itemsPage, nbPage, stPage, scPage, nmPage, nfNote, nfLook, smPage, fillAll, dailyFill, questGo]) { try { fn(); } catch (e) { report(e); } }
-    whenLoaded(() => { try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } });   // (a random event Neopets adds a moment later; theme pictures for the tab)
+    whenLoaded(() => { try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } setTimeout(() => updCheck(false).catch(report), 1500); });   // (a random event Neopets adds a moment later; theme pictures for the tab)
     if (document.getElementById('navtop__2020') || document.getElementById('navbottom__2020')) startOnce();
     document.documentElement.classList.remove('bnp-pagewait');   // (made over: it shows)
   }
