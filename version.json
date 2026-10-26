@@ -1,11 +1,11 @@
 {
- "version": "3.8",
- "date": "2026-10-25",
+ "version": "3.9",
+ "date": "2026-10-26",
  "notes": [
-  "NeoChat: your Neomail as conversations, in your theme: a window over any page or a page of its own, with an archive, alerts, sounds and desktop notices",
-  "NeoChat Themes: NeoChat in your site theme’s colours or a look of your own, every part of it, with a live preview and starters",
-  "Dailies: a calmer board, Pictures and Your layout views, your own icons and pictures, and a bar on each daily’s page",
-  "Trading Post: lots as tall as what’s in them, every item in a lot, the lowest Instant Buy kept for Create a Trade, several lots at once",
-  "Neomail’s header in your theme every time, and a small Neomail bar; Settings with page icons and a current-page dot; and more"
+  "NeoChat: pin it beside any page, size it from its corner, pick its header’s buttons (or show them only when you point at the header), mute people, quick replies, link cards and Find in your messages",
+  "Reminders and alerts: one sound and one notice however many Neopets tabs are open; closed on one tab, gone from all of them",
+  "Settings: side accounts can share your settings or have their own; the menu in cards, its colours right on every theme",
+  "Trading Post: Lot cards as one choice, pictures at 40, 60 or 80 px, View Details right on the card, and long lots no longer stretch their neighbours",
+  "Go to finds items anywhere, Neopoints over time, lookups without the captcha, pinned pages that stay put; and much more"
  ]
 }

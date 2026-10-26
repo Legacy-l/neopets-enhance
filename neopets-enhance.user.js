@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      3.8
+// @version      3.9
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Shop Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -82,6 +82,7 @@
     try {
       const u = new URL(href, SITE + '/');
       const host = u.hostname.replace(/^www\./, '');
+      if (u.pathname === '/userlookup.phtml') u.searchParams.delete('place');   // (place=9999: the same lookup)
       const path = (u.pathname.replace(/\/index\.phtml$/i, '/') + u.search).toLowerCase();
       return host === 'neopets.com' ? path : host + path;
     } catch (_) { return String(href || '').toLowerCase(); }
@@ -262,7 +263,7 @@
     council: 'It opens once you’ve helped Altador (its plot)', train3: 'You need to find the Secret Ninja Training School first', beast: 'It opens after Orion’s Quest (The Void Within)',
     symol: 'You need a petpet for this one', turmac: 'You need a petpet for this one', darkcave: 'You need a light for this one (from Moltara)', wstar: 'For Premium members',
   };
-  const DAILY_ACT = { bank: /interest/i, stocks: /\bbuy\b/i, foodclub: /\bbet\b|place/i, puzzle: /submit/i, wishing: /wish/i, lottery: /ticket|buy/i };   // (pages that do other things too: only these buttons count)
+  const DAILY_ACT = { bank: /interest/i, stocks: /\bbuy\b/i, foodclub: /\bbet\b|place/i, puzzle: /submit/i, wishing: /wish/i, lottery: /ticket|buy/i, adrewards: /\bwatch\b/i, tvw: /\b(?:claim|collect)\b/i, bdprizes: /(?!)/ };   // (Battledome prizes: only what the page says counts)   // (pages that do other things too: only these buttons count)
   const DAILIES_V2 = DAILY_ROWS.map(([id, label, href, kind, land, icon, rule, note, flags]) => ({
     id, label, href, kind, land, note: note || '', rule: parseRule(rule),
     icon: [...[].concat(icon || []), ...(land ? ['ac:' + land] : []), NC], visit: /v/.test(flags || ''), lockable: /l/.test(flags || ''),
@@ -369,14 +370,14 @@
   // ═══════════════════════════════════════════════════════════════════════════
   const FEAT = {
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false,
-    scopes: true, search: false, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
-    oldBeta: false, oldLookups: false, qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true,
-    updNote: true, updNew: true, dailyBtn: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, avIcon: 'worn', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, nm2: true, nmPopup: true, stocks: true, stockSell: 60, fillAll: true, dailyFill: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
+    scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
+    oldBeta: false, oldLookups: false, qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
+    updNote: true, updNew: true, dailyBtn: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, nm2: true, nmPopup: true, stocks: true, stockSell: 60, fillAll: true, dailyFill: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
-    on: true, popup: true, sound: true, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,
+    on: true, popup: true, sound: true, tone: '', vol: 100, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,   // (tone: '' each its own, or one of the sounds for all; vol: how loud, 5 to 100)
     ready: true, newday: false, dayend: true, dayendLead: 60, snow: true, dice: false,
-    fc: true, fcLead: 60, obelisk: true, lodge: true, lodgeLead: 360, train: true, freebies: true, advent: true, custom: [],
+    fc: true, fcLead: 60, obelisk: true, lodge: true, lodgeLead: 360, train: true, freebies: true, advent: true, backup: true, custom: [],
   };
   function kindGroups(ids) {   // (your dailies in sections that make sense: one per kind, in this order; yours can change them)
     const kinds = [...DAILY_KINDS, ['mine', 'Your own']];
@@ -400,10 +401,12 @@
   function tidy(s) {
     s.features = { ...FEAT, ...(s.features || {}) };
     s.menus = s.menus && typeof s.menus === 'object' ? s.menus : {};
+    for (const list of Object.values(s.menus)) if (Array.isArray(list)) walk(list, (e) => { if (e.t === 'l' && 'href' in e && !safeHref(e.href)) e.href = ''; });   // (a link of yours: only ever to a page)
     if (!Array.isArray(s.boards)) s.boards = [];
     s.games = Array.isArray(s.games) ? s.games.filter((g) => g && /^\d+$/.test(String(g.i))).map((g) => ({ i: String(g.i), n: String(g.n || '').slice(0, 60), u: /^https:\/\//.test(g.u || '') ? g.u : '' })) : [];   // (My Games: { i: its number, n: its name, u: its picture })
     if (!Array.isArray(s.dailies)) s.dailies = DAILY_DEFAULT.slice();
     if (!Array.isArray(s.dailyCustom)) s.dailyCustom = [];
+    s.dailyCustom = s.dailyCustom.filter((c) => c && typeof c === 'object' && !Array.isArray(c) && typeof c.id === 'string').map((c) => ({ ...c, href: safeHref(c.href), icon: /^https:\/\//i.test(String(c.icon || '')) ? c.icon : '' }));
     if (!Array.isArray(s.dailyGroups)) s.dailyGroups = [];
     if (!s.dailyArt || typeof s.dailyArt !== 'object' || Array.isArray(s.dailyArt)) s.dailyArt = {};   // (your own pictures for the Dailies board's Pictures view)
     for (const id of Object.keys(s.dailyArt)) {
@@ -444,19 +447,95 @@
     { const L = s.dailyLayout, ok = L && typeof L === 'object' && !Array.isArray(L); s.dailyLayout = { cols: ok ? Math.max(0, Math.min(10, Number(L.cols) || 0)) : 0, at: ok && L.at && typeof L.at === 'object' && !Array.isArray(L.at) ? L.at : {} }; }   // (the board's Your layout: so many spots across, and each daily's spot)   // (your dailies list, saved: by you, and just before a button changed all of it)
     s.rem = { ...REM_DEFAULT, ...(s.rem && typeof s.rem === 'object' ? s.rem : {}) };
     if (!Array.isArray(s.rem.custom)) s.rem.custom = [];
+    s.rem.custom = s.rem.custom.filter((c) => c && typeof c === 'object' && !Array.isArray(c) && typeof c.id === 'string').map((c) => ({ ...c, label: String(c.label || '').slice(0, 60), href: safeHref(c.href), ...(c.hours != null ? { hours: Math.max(1, Number(c.hours) || 1) } : {}), ...(c.mins != null ? { mins: Number(c.mins) || 0 } : {}) }));
     if (!Array.isArray(s.landsHide)) s.landsHide = [];
     s.tabs = s.tabs && typeof s.tabs === 'object' ? s.tabs : {};   // (NeoTabs: your own rules, and each shop's own name, picture or square)
     if (!Array.isArray(s.tabs.rules)) s.tabs.rules = [];
     if (!s.tabs.shops || typeof s.tabs.shops !== 'object') s.tabs.shops = {};
+    s.tabs.shops = Object.fromEntries(Object.entries(s.tabs.shops).filter(([k, o]) => /^\d{1,10}$/.test(k) && o && typeof o === 'object' && !Array.isArray(o)));   // (by shop number only)
+    s.tabs.rules = s.tabs.rules.filter((r) => r && typeof r === 'object' && typeof r.pattern === 'string').slice(0, 200);
     if (!Array.isArray(s.added)) s.added = [];
     s.guild = s.guild && typeof s.guild === 'object' ? s.guild : { label: '' };
     if (!s.nb || typeof s.nb !== 'object' || Array.isArray(s.nb)) s.nb = {};
-    if (!s.looks || typeof s.looks !== 'object' || Array.isArray(s.looks)) s.looks = {};
-    s.myThemes = Array.isArray(s.myThemes) ? s.myThemes.filter((t) => t && typeof t === 'object' && /^t[a-z0-9]+$/.test(t.id || '') && /^[a-z]+$/.test(t.base || '')).map((t) => ({ id: t.id, name: String(t.name || 'My theme').slice(0, 40), base: t.base, v: t.v && typeof t.v === 'object' ? t.v : {} })) : [];   // (Themes: yours)
+    s.looks = myLooksClean(s.looks);   // (who stands where, by theme)
+    s.myThemes = Array.isArray(s.myThemes) ? s.myThemes.filter((t) => t && typeof t === 'object' && /^t[a-z0-9]+$/.test(t.id || '') && /^[a-z]+$/.test(t.base || '')).map((t) => myThemeClean(t)) : [];   // (Themes: yours, with their looks; every part checked)
     s.nclThemes = Array.isArray(s.nclThemes) ? s.nclThemes.filter((t) => t && typeof t === 'object' && /^n[a-z0-9]+$/.test(t.id || '')).map((t) => ({ id: t.id, name: String(t.name || 'My NeoChat theme').slice(0, 40), v: t.v && typeof t.v === 'object' && !Array.isArray(t.v) ? t.v : {} })) : [];   // (NeoChat Themes: yours)
-    if (typeof s.nclWear !== 'string' || !s.nclThemes.some((t) => t.id === s.nclWear)) s.nclWear = '';   // (the one NeoChat wears: '' your site theme's)
+    if (typeof s.nclWear !== 'string' || !(s.nclThemes.some((t) => t.id === s.nclWear) || /^site:[a-z0-9]+$/.test(s.nclWear))) s.nclWear = '';   // (the one NeoChat wears: '' your site theme's; site:<folder> one of Neopets' themes, by itself)
+    s.nclSnips = Array.isArray(s.nclSnips) ? s.nclSnips.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.slice(0, 1000)).slice(0, 30) : [];   // (NeoChat's quick replies)
     if (typeof s.wear !== 'string') s.wear = '';   // (the theme of yours you wear: '' for your Neopets one)   // (Themes: who stands where, by theme; only what you've changed)   // (Neoboards 2: only what you've changed from how it starts)
     return s;
+  }
+  function safeHref(h) {   // (an address that is only somewhere to go: a page on the web, never a script to run; '' for anything else)
+    const s = String(h == null ? '' : h).trim();
+    if (!s) return '';
+    try { return /^https?:$/.test(new URL(s, SITE + '/').protocol) ? s : ''; } catch (_) { return ''; }
+  }
+  function pageHere() {   // (this page's address, for a link of yours: without the page's token or anything like it)
+    const u = new URL(location.href);
+    for (const k of [...u.searchParams.keys()]) if (/ck$|token|csrf|hash|pass|key/i.test(k)) u.searchParams.delete(k);
+    return u.pathname + u.search;
+  }
+  function myCssSafe(s) {   // (rules of a theme's own, from a file, a code or a backup: kept only if nothing in them could fetch from anywhere but Neopets)
+    if (typeof s !== 'string' || s.length > 400000) return false;
+    const plain = (x) => x.replace(/\\([0-9a-f]{1,6})[ \t\n\r\f]?|\\([\s\S])/gi, (m, h, c) => (h ? String.fromCodePoint(Math.min(parseInt(h, 16), 0x10ffff) || 0xfffd) : c));   // (its escapes read as what they stand for)
+    const x = plain(s.replace(/\/\*[\s\S]*?\*\//g, ' '));
+    if (/@import|@namespace|_ref_ck|expression\s*\(|javascript:|vbscript:|-moz-binding|behavior\s*:|<\/style|<!--/i.test(x)) return false;
+    const far = (u) => { const y = u.trim().replace(/^(["'])([\s\S]*)\1$/, '$2').trim(); return (/^[a-z][a-z0-9+.-]*:/i.test(y) || y.startsWith('//')) && !/^data:/i.test(y) && !/^(?:https?:)?\/\/(?:[\w-]+\.)*neopets\.com(?:[/:?#]|$)/i.test(y); };
+    for (const m of x.matchAll(/url\(\s*("[^"]*"|'[^']*'|[^)]*)\)/gi)) if (far(m[1])) return false;
+    for (const m of s.matchAll(/"((?:[^"\\]|\\[\s\S])*)"|'((?:[^'\\]|\\[\s\S])*)'/g)) { const y = plain(m[1] ?? m[2]).trim(); if ((y.includes('//') || /^[a-z][a-z0-9+.-]*:\S/i.test(y)) && far(y)) return false; }
+    return true;
+  }
+  function myWalk(o, str, k = '', depth = 0) {   // (data from a file, a code or a backup, made again as plain data: each string kept only if str keeps it)
+    if (typeof o === 'string') return str(o, k);
+    if (typeof o === 'number') return Number.isFinite(o) ? o : undefined;
+    if (typeof o === 'boolean' || o === null) return o;
+    if (!o || typeof o !== 'object' || depth > 8) return undefined;
+    if (Array.isArray(o)) return o.slice(0, 300).map((x) => myWalk(x, str, k, depth + 1)).filter((x) => x !== undefined);
+    const out = {};
+    for (const [k2, x] of Object.entries(o)) {
+      if (k2 === '__proto__' || k2 === 'constructor' || k2 === 'prototype' || k2.length > 60) continue;
+      const y = myWalk(x, str, k2, depth + 1);
+      if (y !== undefined) out[k2] = y;
+    }
+    return out;
+  }
+  function myVClean(v, cut, base) {   // (base: a theme's own parts, not a look's changes to them, where null takes a part away)   // (a theme's parts: only what a theme can hold, nothing that reaches past its own rules. cut counts what's left out)
+    const drop = () => { if (cut) cut.n = (cut.n || 0) + 1; return undefined; };
+    const out = myWalk(v && typeof v === 'object' && !Array.isArray(v) ? v : {}, (s, k) => {
+      if (k === 'css') return myCssSafe(s) ? s : drop();
+      if (s.length <= 2000 && /^https:\/\/[^\s"'`()<>\\{}]+$/.test(s)) return s;   // (a picture's address)
+      return s.length <= 400 && !/[{}<>\\@"'`;]|\/\*/.test(s) ? s : drop();   // (a colour, a name, a size: never the end of a rule or the start of another)
+    });
+    if (base) for (const k of ['link', 'bar', 'logo', 'page', 'menu', 'prof', 'news', 'pop', 'foot', 'boards', 'home', 'box', 'font', 'borrow', 'vary', 'icons']) if (k in out && (!out[k] || typeof out[k] !== 'object' || Array.isArray(out[k]))) delete out[k];
+    if (out.vary && typeof out.vary === 'object') for (const k of Object.keys(out.vary)) { const l = out.vary[k]; if (Array.isArray(l)) out.vary[k] = l.filter((x) => x && typeof x === 'object' && !Array.isArray(x)); else if (base || l !== null) delete out.vary[k]; }
+    if (Array.isArray(out.deco)) out.deco = out.deco.filter((d) => d && typeof d === 'object' && !Array.isArray(d)).map((d, i) => (/^d[a-z0-9]{1,24}$/.test(String(d.id || '')) ? d : { ...d, id: `dfix${i}` }));
+    return out;
+  }
+  function myVarsClean(list, cut) {   // (a theme's looks: each a name and only what it changes)
+    return (Array.isArray(list) ? list : []).filter((x) => x && typeof x === 'object' && !Array.isArray(x) && /^[\w-]{1,24}$/.test(String(x.id || '')) && x.v && typeof x.v === 'object' && !Array.isArray(x.v)).slice(0, 30)
+      .map((x) => ({ id: x.id, name: String(x.name || 'A look').slice(0, 30), ...(/^[a-z]+$/.test(String(x.base || '')) ? { base: x.base } : {}), v: myVClean(x.v, cut) }));
+  }
+  function myShowClean(sh) {   // (which look a page has: one chosen, by turns, or by the time; null for none)
+    if (!sh || typeof sh !== 'object' || Array.isArray(sh)) return null;
+    const ok = (x) => typeof x === 'string' && x.length <= 24 && /^[\w-]*$/.test(x), at = (x) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(x || '')); return !!m && Number(m[1]) < 24 && Number(m[2]) < 60; };
+    const out = { ...(['turns', 'time'].includes(sh.mode) ? { mode: sh.mode } : {}), ...(ok(sh.one) ? { one: sh.one } : {}), ...(Array.isArray(sh.turns) ? { turns: sh.turns.filter(ok).slice(0, 31) } : {}), ...(sh.times && typeof sh.times === 'object' && !Array.isArray(sh.times) ? { times: Object.fromEntries(Object.entries(sh.times).filter(([k, x]) => ok(k) && at(x))) } : {}) };
+    return Object.keys(out).length ? out : null;
+  }
+  function myThemeClean(t, cut) {   // (one of your themes as it can be kept: its name, base and parts, who made it, its looks and which one a page has)
+    const n = { id: t.id, name: String(t.name || 'My theme').slice(0, 40), base: t.base, v: myVClean(t.v, cut, true) };
+    if (t.about && typeof t.about === 'object' && !Array.isArray(t.about)) { const by = String(t.about.by || '').slice(0, 40), note = String(t.about.note || '').slice(0, 400); if (by || note) n.about = { by, note }; }
+    const vars = myVarsClean(t.vars, cut), sh = myShowClean(t.varShow);
+    if (vars.length) n.vars = vars;
+    if (sh) n.varShow = sh;
+    return n;
+  }
+  function mySaveClean(s, base, cut) {   // (a saved version of a theme: as it was, every part checked; null if it isn't one)
+    if (!s || typeof s !== 'object' || !s.v || typeof s.v !== 'object' || Array.isArray(s.v)) return null;
+    const sh = myShowClean(s.varShow);
+    return { at: Number(s.at) || Date.now(), name: String(s.name || '').slice(0, 40), base: /^[a-z]+$/.test(String(s.base || '')) ? s.base : base, v: myVClean(s.v, cut, true), ...(Array.isArray(s.vars) ? { vars: myVarsClean(s.vars, cut) } : {}), ...(sh ? { varShow: sh } : {}) };
+  }
+  function myLooksClean(o) {   // (who stands where: pictures and names, nothing else)
+    return myWalk(o && typeof o === 'object' && !Array.isArray(o) ? o : {}, (s) => (s.length <= 2000 && !/[<>{}\\`]/.test(s) ? s : undefined));
   }
   function addNewDefaults() {   // (a layout from before a default was added gets it once, under the item it belongs under)
     let any = false;
@@ -522,6 +601,11 @@
       any = true;
       for (const list of Object.values(S.menus)) walk(list, (e) => { if (e.t === 'l' && e.special === 'guild' && !e.fold) e.fold = { id: 'guild', preset: 'guild' }; });
     }
+    if (!S.added.includes('search1')) {   // (the search box in the top bar: on, once (it started off); Settings › General switches it off)
+      S.added.push('search1');
+      any = true;
+      S.features.search = true;
+    }
     if (!S.added.includes('live5')) {   // (a topic looks for new posts every 5 minutes now: the old 1-minute default moves with it, once)
       S.added.push('live5');
       any = true;
@@ -578,8 +662,13 @@
     }
     if (any) saveNow();
   }
+  // Your accounts: each shares the settings (as it starts), or has its own (a copy of the shared ones to start with). Which account
+  // a page is, at its very start: the one seen last in this browser; once the page says, checked again (acctCheck)
+  const ACCT0 = (() => { try { return localStorage.getItem('bnp-ncl-me') || ''; } catch (_) { return ''; } })();
+  const acctOwnOf = (me) => !!me && !!(get('acctown', {}) || {})[me];   // (GM acctown: { account: 1 } for each with settings of its own)
+  let SKEY = acctOwnOf(ACCT0) ? `settings@${ACCT0}` : 'settings';
   function loadSettings() {
-    const s = get('settings', null);
+    const s = get(SKEY, null) || (SKEY !== 'settings' ? get('settings', null) : null);
     return tidy(s && s.v === 3 ? s : migrate());
   }
   function migrate() {   // (2.1's keys: neos_*, neoab_*)
@@ -607,9 +696,10 @@
     return s;
   }
   let S = loadSettings();
+  let hubIndexing = false;   // (Settings' pages being made only to be read, for Find a setting)
   let saveT = 0;
-  const save = () => { clearTimeout(saveT); saveT = setTimeout(() => set('settings', S), 150); };
-  const saveNow = () => { clearTimeout(saveT); set('settings', S); };
+  const save = () => { clearTimeout(saveT); saveT = setTimeout(() => set(SKEY, S), 150); };
+  const saveNow = () => { clearTimeout(saveT); set(SKEY, S); };
 
   // ═══════════════════════════════════════════════════════════════════════════
   // Little stores: folders open, dailies done today, pages visited, guild, boards, pets
@@ -624,17 +714,20 @@
   // ═══════════════════════════════════════════════════════════════════════════
   const DAY_MS = 86400000;
   const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const nextNstMidnight = (now) => now + (86400 - nstOf(now).sec) * 1000;   // (a night when the clocks change is an hour off; close enough)
-  const nstDayStart = (now) => now - nstOf(now).sec * 1000;
+  const nextNstMidnight = (now) => Math.floor(now / 1000) * 1000 + (86400 - nstOf(now).sec) * 1000;   // (a night when the clocks change is an hour off; close enough)
+  const nstDayStart = (now) => Math.floor(now / 1000) * 1000 - nstOf(now).sec * 1000;   // (to the second: the same moment however often it's worked out, so a reminder for it is the same one on every page)
   let DLOG = null;
+  function dkey() { const me = nclMe(); return me ? `dlog@${me}` : 'dlog'; }   // (this account's dailies done)
   function dlog() {   // (read once a page; other tabs' changes come in through the change listener)
     if (DLOG) return DLOG;
-    DLOG = get('dlog', null);
+    const k = dkey();
+    DLOG = get(k, null);
+    if ((!DLOG || typeof DLOG !== 'object') && k !== 'dlog') { const old = get('dlog', null); if (old && typeof old === 'object') { DLOG = old; set(k, old); try { GM_deleteValue(KEY + 'dlog'); } catch (_) { /* */ } } }   // (from before: the first account to look takes them)
     if (!DLOG || typeof DLOG !== 'object') {   // (first time: today's ticks from before come along)
       DLOG = {};
       const old = get('done', null);
       if (old && old.day === nstDay() && old.ids) for (const id of Object.keys(old.ids)) DLOG[id] = { at: Date.now() };
-      set('dlog', DLOG);
+      set(dkey(), DLOG);
       try { GM_deleteValue(KEY + 'done'); } catch (_) { /* */ }
     }
     return DLOG;
@@ -834,6 +927,8 @@
   }
   const dailyReady = (d, now) => dailyState(d, now).s === 'ready';
   function dailyMark(id, how = {}) {   // (ticks a daily: how = { until, full, count, closed + why, lock, undo, prog })
+    const kept = get(dkey(), null);
+    if (kept && typeof kept === 'object') DLOG = kept;   // (as every tab has it just now: another tab's ticks never written over)
     const log = dlog(), now = Date.now();
     const rec = { ...(log[id] || {}) };
     if (how.undo) delete log[id];
@@ -851,7 +946,7 @@
       }
       log[id] = rec;
     }
-    set('dlog', log);
+    set(dkey(), log);
     dailiesChanged();
   }
   let dailiesT = 0;
@@ -897,6 +992,7 @@
     const main = $('td.content') || $('#container__2020') || $('.container') || document.body;
     if (!main) return '';
     let text = main.innerText || '';
+    if (!text.trim()) { const c = main.cloneNode(true); c.querySelectorAll('script, style, noscript, .randomEvent').forEach((x) => x.remove()); text = c.textContent || ''; }   // (still out of sight as the page's new look comes: its words all the same)
     for (const re of document.getElementsByClassName('randomEvent')) { const x = re.innerText; if (x) text = text.replace(x, ' '); }   // (a random event's words aren't the daily's)
     return text.replace(/\s+/g, ' ').trim().slice(0, 6000);
   };
@@ -954,7 +1050,7 @@
     if (says.closed && d.rule.kind !== 'at') { dailyMark(d.id, { closed: Date.now() + says.closed, why: says.why }); return; }
     if (kind === 'result') { dailyActed(d); return; }
     const own = new URL(d.href, SITE + '/'), here = new URL(location.href);
-    const newParams = [...here.searchParams.keys()].some((k) => k !== 'type' && !own.searchParams.has(k));
+    const newParams = !DAILY_ACT[d.id] && [...here.searchParams.keys()].some((k) => k !== 'type' && !own.searchParams.has(k));   // (one with a button of its own: browsing its pages isn't doing it)
     const sameAsBefore = (() => { try { return document.referrer && new URL(document.referrer).href === here.href; } catch (_) { return false; } })();
     if (newParams || (sameAsBefore && nav.type !== 'reload' && nav.type !== 'back_forward')) { dailyActed(d); return; }
     if (d.visit || S.features.dailyVisit) { dailyActed(d); return; }
@@ -978,7 +1074,7 @@
     if (!rec || !(rec.lock || rec.closed)) return;
     delete rec.lock; delete rec.lockAt; delete rec.closed; delete rec.closedWhy;
     if (!rec.at && !rec.prog) delete log[id];
-    set('dlog', log);
+    set(dkey(), log);
     dailiesChanged();
   }
   function dailyWatchClicks(d) {   // (spins and plays that happen without a new page: the click on its button counts)
@@ -988,8 +1084,7 @@
       const t = e.target instanceof Element ? e.target.closest('button, input[type=submit], input[type=image], input[type=button], canvas, [onclick], .button-default__2020, a[href^="javascript"]') : null;
       if (!t || !root.contains(t) || t.closest('[data-bnp]')) return;
       const words = (t.value || t.textContent || t.getAttribute('alt') || t.getAttribute('title') || '').replace(/\s+/g, ' ').trim();
-      if (not.test(words)) return;
-      if (DAILY_ACT[d.id] && !DAILY_ACT[d.id].test(words)) return;
+      if (DAILY_ACT[d.id] ? !DAILY_ACT[d.id].test(words) : not.test(words)) return;   // (its own button, Watch included; else anything but going back)
       document.removeEventListener('click', onClick, true);
       dailyActed(d);
     };
@@ -1129,6 +1224,7 @@
     paintBoard();
     clearInterval(boardTick);
     boardTick = setInterval(tickBoard, 1000);
+    pageBlur();
     board.win.focus({ preventScroll: true });
   }
   function closeBoard() {
@@ -1139,6 +1235,7 @@
     if (dedit && dedit.host === board.win) deditClose();
     board.win.classList.remove('open');
     board.veil.classList.remove('open');
+    pageBlur();
     boardArrange = false;
     boardSure = '';
     boardUndo = null;
@@ -1748,19 +1845,11 @@
     root.toggleAttribute('data-bnp-runon', on);
     if (on) requestAnimationFrame(() => { if (bar.isConnected && bar.offsetHeight) root.style.setProperty('--bnp-runh', `${bar.offsetHeight}px`); });
   }
-  function themeRun(bar) {   // (your theme's pop-up colour, like the reminders)
-    const probe = document.createElement('div');
-    probe.className = 'popup-header__2020';
-    probe.innerHTML = '<h3>x</h3>';
-    probe.style.cssText = 'position:absolute;visibility:hidden;left:-9999px';
-    document.body.append(probe);
-    const hb = getComputedStyle(probe).backgroundColor, hi = getComputedStyle(probe.querySelector('h3')).color;
-    probe.remove();
-    if (hb && !/rgba\(0, 0, 0, 0\)|transparent/.test(hb)) { bar.style.setProperty('--bnp-accent', hb); bar.style.setProperty('--bnp-accent-text', hi); }
-  }
+  function themeRun(bar) { remAccent(bar); }   // (your theme's pop-up colour, like the reminders)
   function openReady(only) {   // (each ready daily in a tab of its own, in the background: all of them, or one section's)
     const list = dailyOrdered(only || trackedDailies().filter((d) => dailyReady(d)), Date.now());
     for (const d of list.slice().reverse()) {
+      if (!safeHref(d.href)) continue;
       const url = new URL(d.href, SITE + '/').href;
       try { GM_openInTab(url, { active: false, insert: true, setParent: true }); } catch (_) { window.open(url, '_blank', 'noopener'); }
     }
@@ -1769,6 +1858,36 @@
   // Reminders: a Neopets pop-up (and a sound, and a desktop notice) when something's due. Only one Neopets tab says it
   // ═══════════════════════════════════════════════════════════════════════════
   const TAB_ID = uid();
+  // Your Neopets tabs, together. tabsSay: a message to all the others at once, through the browser's own channel between tabs (the site's
+  // storage carries it too, for a browser without one). tabsOnce: true in one tab only, by the browser's own lock on it, kept a while so a
+  // tab that comes to it meanwhile finds it taken. Neither waits on the storage reaching the other tabs: that can be slow, or full
+  const tabsBc = (() => { try { return typeof BroadcastChannel === 'function' ? new BroadcastChannel('bnp-tabs') : null; } catch (_) { return null; } })();
+  const tabsEar = {}, tabsHeard = new Set();
+  function tabsSay(t, m = {}) {
+    const msg = { ...m, t, mid: uid(), from: TAB_ID, at: Date.now() };
+    try { if (tabsBc) tabsBc.postMessage(msg); } catch (_) { /* */ }
+    try { localStorage.setItem('bnp-tabs', JSON.stringify(msg)); } catch (_) { /* (full: the channel alone) */ }
+  }
+  function tabsHear(m) {   // (each message once, however it came; never an old one)
+    if (!m || typeof m !== 'object' || m.from === TAB_ID || tabsHeard.has(m.mid) || Math.abs(Date.now() - (Number(m.at) || 0)) > 15000) return;
+    if (tabsHeard.size > 300) tabsHeard.clear();
+    tabsHeard.add(m.mid);
+    const fn = tabsEar[m.t];
+    if (fn) { try { fn(m); } catch (e) { report(e); } }
+  }
+  if (tabsBc) tabsBc.onmessage = (e) => tabsHear(e.data);
+  addEventListener('storage', (e) => { if (e.key === 'bnp-tabs' && e.newValue) { try { tabsHear(JSON.parse(e.newValue)); } catch (_) { /* */ } } });
+  function tabsOnce(key, hold = 5 * 60000) {   // (→ true: this tab says it; false: another tab has; null: no lock to be had in this browser)
+    return new Promise((done) => {
+      let said = false;
+      const say = (v) => { if (!said) { said = true; done(v); } };
+      try {
+        if (!(navigator.locks && navigator.locks.request)) { say(null); return; }
+        navigator.locks.request(`bnp-once:${key}`, { ifAvailable: true }, (lock) => { say(!!lock); return lock ? new Promise((r) => setTimeout(r, hold)) : null; }).catch(() => say(null));
+      } catch (_) { say(null); }
+    });
+  }
+  const MAIN_HOST = location.hostname === 'www.neopets.com';   // (Neopets' own address: the NC Mall's tabs can't hear these tabs' messages or take their locks)
   const SNOW_PIC = `${NPI}new_shopkeepers/t_1107.gif`;
   const SNOW_PAGE = /^\/winter\/snowager2?\.phtml$/;
   const snowCheck = (start, end) => () => { const r = dlog().snowager; return Date.now() < end && !(r && r.at >= start) && !SNOW_PAGE.test(location.pathname); };   // (still asleep, not been yet, and you aren't on its page already)
@@ -1795,6 +1914,7 @@
       let at = 0;
       if (d.rule.kind === 'every') { at = rec.until || rec.at + d.rule.mins * 60000; if (d.rule.dayStart !== null) at = Math.min(at, nextDayStartAfter(rec.at, d.rule.dayStart)); }
       else if (rec.until && rec.until > rec.at) at = rec.until;
+      if (at && d.rule.closed) at = shutUntil(d.rule, at) || at;   // (ready while it's shut: when it opens)
       if (at) add({ key: `ready:${d.id}:${rec.at}`, at, kind: 'ready', d, title: `${d.label} is ready again`, text: d.note, icon: dailyIcon(d), href: d.href, sound: 'chime', check: () => dailyReady(d) });
     }
     for (let dd = -1; dd <= 2; dd++) {
@@ -1802,14 +1922,14 @@
         const start = nstAtDay(dd, h * 60, now), end = start + 3600000;
         add({ key: `snow:${start}`, at: start, kind: 'snow', until: end, start, title: 'The Snowager is asleep', text: `For an hour, until ${fmtNst(end)} NST: grab a treasure while it sleeps.`, icon: SNOW_PIC, href: '/winter/snowager.phtml', sound: 'ice', check: snowCheck(start, end) });
       }
-      if (R.dice) { const start = nstAtDay(dd, 0, now); add({ key: `dice:${start}`, at: start, kind: 'dice', title: 'Deadly Dice is open', text: 'Count von Roo plays until 1 am NST.', icon: dailyIcon(dailyById('dice')), href: '/worlds/deadlydice.phtml', sound: 'bell', check: () => { const r = dlog().dice; return !(r && r.at >= start); } }); }
+      if (R.dice) { const start = nstAtDay(dd, 0, now); add({ key: `dice:${start}`, at: start, start, exp: start + 3600000, kind: 'dice', title: 'Deadly Dice is open', text: 'Count von Roo plays until 1 am NST.', icon: dailyIcon(dailyById('dice')), href: '/worlds/deadlydice.phtml', sound: 'bell', check: () => { const r = dlog().dice; return !(r && r.at >= start); } }); }
     }
     const midnight = nextNstMidnight(now);
-    if (R.newday) add({ key: `newday:${midnight}`, at: midnight, kind: 'newday', title: 'A new day in Neopia', text: '', icon: iconOf(FOLDERS.dailies.icon), board: true, sound: 'chime', textNow: () => { const n = readyCount(); return n ? `${n} dailies in your list are ready.` : 'Your dailies have started over.'; } });
+    if (R.newday) add({ key: `newday:${midnight}`, at: midnight, kind: 'newday', title: 'A new day in Neopia', text: '', icon: iconOf(FOLDERS.dailies.icon), board: true, sound: 'chime', textNow: remNewdayText });
     if (R.dayend && S.dailies.length) {
       const at = midnight - R.dayendLead * 60000;
-      const left = () => trackedDailies().filter((d) => d.rule.kind === 'day' && dailyReady(d));
-      add({ key: `dayend:${midnight}`, at, kind: 'dayend', title: `The day ends in ${fmtLeft(R.dayendLead * 60000)}`, what: 'The day ends', when: midnight, whenNote: 'midnight', ifNote: 'if any are still to do then', icon: iconOf(FOLDERS.dailies.icon), board: true, sound: 'bell', check: () => left().length > 0, textNow: () => { const l = left(); return `Still to do: ${l.slice(0, 5).map((d) => d.label).join(', ')}${l.length > 5 ? ` and ${l.length - 5} more` : ''}.`; } });
+      const left = remDayLeft;
+      add({ key: `dayend:${midnight}`, at, kind: 'dayend', title: `The day ends in ${fmtLeft(R.dayendLead * 60000)}`, what: 'The day ends', when: midnight, whenNote: 'midnight', ifNote: 'if any are still to do then', icon: iconOf(FOLDERS.dailies.icon), board: true, sound: 'bell', check: () => left().length > 0, textNow: remDayendText });
     }
     if (R.fc) {   // (Food Club: its bets close at 2 pm NST, when the round changes)
       const fcd = dailyById('foodclub');
@@ -1831,12 +1951,17 @@
       }
     }
     if (R.lodge) for (const [pet, end] of Object.entries(get('lodge', {}) || {})) {
-      add({ key: `lodge:${pet}:${end}`, at: end - R.lodgeLead * 60000, kind: 'lodge', title: `${pet} leaves the Neolodge ${R.lodgeLead ? `in ${fmtLeft(R.lodgeLead * 60000)}` : 'now'}`, text: 'Book more nights before then if you want them looked after.', icon: 'https://images.neopets.com/images/onholiday.gif', href: `/book_neolodge.phtml?pet_name=${encodeURIComponent(pet)}&hotel_rate=5&nights=28`, sound: 'chime' });
+      add({ key: `lodge:${pet}:${end}`, at: end - R.lodgeLead * 60000, kind: 'lodge', what: `${pet} leaves the Neolodge`, when: end, title: `${pet} leaves the Neolodge ${R.lodgeLead ? `in ${fmtLeft(R.lodgeLead * 60000)}` : 'now'}`, text: 'Book more nights before then if you want them looked after.', icon: 'https://images.neopets.com/images/onholiday.gif', href: `/book_neolodge.phtml?pet_name=${encodeURIComponent(pet)}&hotel_rate=5&nights=28`, sound: 'chime' });
     }
     if (R.train) for (const t of Object.values(get('train', {}) || {})) {
       if (t && t.end) add({ key: `train:${t.pet}:${t.end}`, at: t.end, kind: 'train', title: `${t.pet}'s training is done`, text: `At ${t.school}: finish the course to get its stat point.`, icon: t.icon || iconOf(['nat:battledome-icon']), href: t.href, sound: 'chime' });
     }
     if (R.freebies) { const at = firstOfNextMonth(now); add({ key: `freebies:${at}`, at, kind: 'freebies', title: 'New Monthly Freebies', text: 'This month’s free items are waiting.', icon: iconOf(dailyById('freebies').icon), href: '/freebies/', sound: 'chime' }); }
+    if (R.backup) {   // (your settings live only in this browser: a backup once a month, or once a week till you've saved one)
+      const last = Number(get('bkat', 0)) || 0, first = Number(get('bkfirst', 0)) || now, base = last || first, step = (last ? 30 : 7) * DAY_MS;
+      const at = base + Math.max(1, Math.ceil((now - 20 * 60000 - base) / step)) * step;
+      add({ key: `backup:${at}`, at, kind: 'backup', title: last ? 'Time for a backup' : 'Save a backup of your settings', text: last ? `Your last one was ${Math.max(1, Math.round((at - last) / DAY_MS))} days ago. One small file keeps your menus, themes and settings safe.` : 'Your menus, themes and settings live only in this browser: one small file keeps them safe.', icon: iconOf(['side:/settings/', 'el:#navprofiledropdown__2020 .nav-settings-icon']), hub: 'backup', sound: 'chime' });
+    }
     if (R.advent && (nstOf(midnight + 3600000).mo === 12)) add({ key: `advent:${midnight}`, at: midnight, kind: 'advent', title: 'A new Advent Calendar door', text: 'Today’s prize is waiting.', icon: iconOf(dailyById('advent').icon), href: '/winter/adventcalendar.phtml', sound: 'chime' });
     for (const s of get('remsnooze', []) || []) if (s && s.key) add({ ...s, kind: s.kind === 'ready' ? 'later' : s.kind || 'later', ...(s.kind === 'snow' && s.until ? { check: snowCheck(s.start || 0, s.until) } : {}) });   // ("In 10 minutes": the Snowager's only while it's still asleep and you haven't been)
     for (const c of R.custom || []) {   // (your own)
@@ -1852,7 +1977,7 @@
   function noteTraining() {
     const schools = { '/island/training.phtml': 'the Mystery Island Training School', '/pirates/academy.phtml': 'the Swashbuckling Academy', '/island/fight_training.phtml': 'the Secret Ninja Training School' };
     const school = schools[location.pathname];
-    if (!school) return;
+    if (!school || !/(^|&)type=status(&|$)/.test(location.search.slice(1))) return;   // (its other pages don't list the courses: nothing forgotten from them)
     const text = dailyMainText();
     const all = get('train', {}) || {}, now = Date.now();
     for (const k of Object.keys(all)) if (all[k].school === school) delete all[k];
@@ -1871,20 +1996,81 @@
     return { ...(get('remfired', {}) || {}), ...(ls && typeof ls === 'object' ? ls : {}) };
   }
   function remFiredSet(f) { try { localStorage.setItem('bnp-remfired', JSON.stringify(f)); } catch (_) { /* */ } set('remfired', f); }
-  function remClaim(keys) {   // (the tab you're looking at says it; the others wait a moment, see it's said, and stay quiet)
-    return new Promise((done) => setTimeout(() => {
-      const fired = remFired(), mine = keys.filter((k) => !fired[k]);
-      if (!mine.length) { done([]); return; }
-      const now = Date.now();
-      for (const k of mine) fired[k] = `${TAB_ID}@${now}`;
-      for (const k of Object.keys(fired)) if (now - Number(String(fired[k]).split('@')[1] || 0) > 4 * DAY_MS) delete fired[k];
-      remFiredSet(fired);
-      setTimeout(() => { const f2 = remFired(); done(mine.filter((k) => String(f2[k] || '').startsWith(TAB_ID + '@'))); }, 300);
-    }, document.hidden ? 1500 + Math.random() * 600 : Math.random() * 120));
+  function remClaim(keys) {   // (each said by one tab: the one you're looking at first, the others coming a moment later and finding it taken. Taken by the browser's own lock on it for a few minutes, and by its note in the storage after that. The NC Mall's tabs wait longer, and say it only if no tab on Neopets' own address has)
+    return new Promise((done) => setTimeout(async () => {
+      const fired = remFired(), want = keys.filter((k) => !fired[k]);
+      if (!want.length) { done([]); return; }
+      const now = Date.now(), mine = [];
+      let locks = true;
+      for (const k of want) { const got = await tabsOnce(`rem:${k}`); if (got === null) { locks = false; break; } if (got) mine.push(k); }
+      if (!locks) {   // (a browser without the lock: its note in the storage, and a look a moment later at whose it is)
+        for (const k of want) fired[k] = `${TAB_ID}@${now}`;
+        for (const k of Object.keys(fired)) if (now - Number(String(fired[k]).split('@')[1] || 0) > 4 * DAY_MS) delete fired[k];
+        remFiredSet(fired);
+        setTimeout(() => { const f2 = remFired(); done(want.filter((k) => String(f2[k] || '').startsWith(TAB_ID + '@'))); }, 300);
+        return;
+      }
+      if (mine.length) { const f = remFired(); for (const k of mine) f[k] = `${TAB_ID}@${now}`; for (const k of Object.keys(f)) if (now - Number(String(f[k]).split('@')[1] || 0) > 4 * DAY_MS) delete f[k]; remFiredSet(f); }
+      done(mine);
+    }, (MAIN_HOST ? 0 : 15000) + (document.hidden ? 1500 + Math.random() * 600 : Math.random() * 120)));
+  }
+  // A reminder's note, once said: kept (in both storages) till it's put away or no longer true, so every tab shows it, and the pages
+  // you open next. Put away: kept as put away for two days, so a note from a tab that hadn't heard yet never brings it back
+  function remKept(k) { let ls = null; try { ls = JSON.parse(localStorage.getItem(`bnp-${k}`) || 'null'); } catch (_) { /* */ } const gm = get(k, {}); return { ...(gm && typeof gm === 'object' ? gm : {}), ...(ls && typeof ls === 'object' ? ls : {}) }; }
+  function remKeep(k, v) { try { localStorage.setItem(`bnp-${k}`, JSON.stringify(v)); } catch (_) { /* (full: the script's own storage alone) */ } set(k, v); }
+  const remNoteId = (n) => (n.keys || []).join(' ');
+  const remNoteOf = (n, now, local) => ({ keys: (n.keys || [n.key]).filter(Boolean), kind: n.kind, title: String(n.title || ''), text: String(n.text || ''), icon: n.icon || '', href: n.href || '', hub: n.hub || '', board: !!n.board, sound: n.sound || '', at: now, exp: n.exp || n.until || n.when || now + (n.kind === 'test' ? 120000 : 6 * 3600000), who: nclMe(), ...(n.what && n.when ? { what: n.what, when: n.when } : {}), ...(n.until ? { until: n.until } : {}), ...(n.start ? { start: n.start } : {}), ...(local ? { local: true } : {}) });
+  function remActAdd(notes) {
+    const a = remKept('remact'), now = Date.now();
+    for (const n of notes) a[remNoteId(n)] = n;
+    for (const [id, n] of Object.entries(a)) if (!n || !(n.exp > now)) delete a[id];
+    const ids = Object.keys(a).sort((x, y) => (a[y].at || 0) - (a[x].at || 0));
+    for (const id of ids.slice(12)) delete a[id];
+    remKeep('remact', a);
+  }
+  function remGoneAdd(keys) {
+    if (!keys.length) return;
+    const a = remKept('remact'), g = remKept('remgone'), now = Date.now();
+    let any = false;
+    for (const [id, n] of Object.entries(a)) if (!n || (n.keys || []).some((k) => keys.includes(k))) { delete a[id]; any = true; }
+    if (any) remKeep('remact', a);
+    for (const k of keys) g[k] = now;
+    for (const k of Object.keys(g)) if (now - g[k] > 2 * DAY_MS) delete g[k];
+    remKeep('remgone', g);
+  }
+  function remStill(n) {   // (a note still worth showing: not past its time, and still true)
+    if (!n || !(n.exp > Date.now()) || (n.who && nclMe() && n.who !== nclMe())) return false;
+    if (n.kind === 'snow') { const r = dlog().snowager; return !(r && r.at >= (n.start || 0)) && !SNOW_PAGE.test(location.pathname); }
+    if (n.kind === 'dice') { const r = dlog().dice; return !(r && r.at >= (n.start || 0)); }
+    if (n.kind === 'ready') return (n.keys || []).some((k) => { const d = dailyById(String(k).split(':')[1]); return !!d && dailyReady(d); });
+    if (n.kind === 'fc') { const d = dailyById('foodclub'); return !d || dailyReady(d); }
+    if (n.kind === 'dayend') return remDayLeft().length > 0;
+    if (n.kind === 'backup') return !(Number(get('bkat', 0)) > (n.at || 0));
+    return true;
+  }
+  const remDayLeft = () => trackedDailies().filter((d) => d.rule.kind === 'day' && dailyReady(d));
+  const remDayendText = () => { const l = remDayLeft(); return `Still to do: ${l.slice(0, 5).map((d) => d.label).join(', ')}${l.length > 5 ? ` and ${l.length - 5} more` : ''}.`; };
+  const remNewdayText = () => { const n = readyCount(); return n ? `${n} dailies in your list are ready.` : 'Your dailies have started over.'; };
+  let remSyncOn = false;
+  function remSync() {   // (this tab's notes as they are for all your tabs: each still to show, shown; one put away elsewhere, or past its time, gone)
+    if (!remSyncOn) {
+      remSyncOn = true;
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) { try { remSync(); } catch (e) { report(e); } } });   // (back on this tab: as they are now)
+      setInterval(() => { if (document.querySelector('[data-bnp="rems"] .bnp-rem')) { try { remSync(); } catch (e) { report(e); } } }, 30000);
+    }
+    const cards = $$('[data-bnp="rems"] .bnp-rem');
+    if (!S.rem || !S.rem.on || !S.rem.popup) { for (const c of cards) c.remove(); return; }
+    const a = remKept('remact'), gone = remKept('remgone');
+    const live = Object.values(a).filter((n) => n && !(n.keys || []).some((k) => gone[k]) && remStill(n)).sort((x, y) => (y.at || 0) - (x.at || 0)).slice(0, 4);
+    const ids = new Set(live.map(remNoteId));
+    for (const c of cards) if (!c.dataset.local && !ids.has(c.dataset.keys || '')) c.remove();
+    for (const n of live.reverse()) remPopup(n);
   }
   let remT = 0;
   function remSchedule() {
     clearTimeout(remT);
+    if (!get('bkfirst', 0)) set('bkfirst', Date.now());   // (when this browser started keeping settings, for the first backup reminder)
+    try { remSync(); } catch (e) { report(e); }   // (the notes said already: as they are now, a daily done meanwhile and all)
     if (!S.rem || !S.rem.on) return;
     const now = Date.now(), fired = remFired();
     const evs = remEvents(now).filter((e) => !fired[e.key]);
@@ -1899,28 +2085,37 @@
     const h = new Date().getHours();
     return R.quietFrom > R.quietTo ? h >= R.quietFrom || h < R.quietTo : h >= R.quietFrom && h < R.quietTo;
   }
-  function remFire(list) {
+  function remFire(list, local) {   // (local: this tab's alone, as Try one now)
     const R = S.rem, shown = [];
     for (const e of list) {
       if (e.check && !e.check()) continue;
-      shown.push({ ...e, text: e.textNow ? e.textNow() : e.text });
+      shown.push({ ...e, text: e.textNow ? e.textNow() : e.text, ...(e.what && e.when ? { title: `${e.what} ${remWhenText(e.when)}` } : {}) });   // (its time as it is now, a little late or not)
     }
     if (!shown.length) return;
     const ready = shown.filter((e) => e.kind === 'ready');   // (several dailies ready at once: one notice for them all)
     const notes = shown.filter((e) => e.kind !== 'ready');
     if (ready.length === 1) notes.push(ready[0]);
     else if (ready.length > 1) notes.push({ kind: 'ready', keys: ready.map((e) => e.key), title: `${ready.length} dailies are ready again`, text: ready.map((e) => e.d.label).join(', '), icon: ready[0].icon, board: true, sound: 'chime' });
-    const quiet = remQuiet();
-    for (const n of notes) {
-      if (R.popup) remPopup(n);
-      if (R.desktop && !quiet) remDesktop(n);
+    const quiet = remQuiet(), now = Date.now(), out = notes.map((n) => remNoteOf(n, now, local));
+    if (R.popup) {   // (on this tab, on your others at once, and kept for the pages you open next)
+      for (const n of out) remPopup(n);
+      if (!local) { remActAdd(out); tabsSay('rem-show', { notes: out }); }
     }
-    if (R.sound && !quiet) remSoundOnce(notes.some((n) => n.sound === 'ice') ? 'ice' : notes.some((n) => n.sound === 'bell') ? 'bell' : 'chime');
+    if (R.desktop && !quiet) for (const n of out) remDesktop(n);
+    if (R.sound && !quiet) remRing(SOUNDS[R.tone] ? R.tone : notes.some((n) => n.sound === 'ice') ? 'ice' : notes.some((n) => n.sound === 'bell') ? 'bell' : 'chime', remVol());   // (the one you chose for all, or each its own)
   }
-  function remGo(n) { if (n.board) { openBoard(); return; } if (n.href) location.href = new URL(n.href, SITE + '/').href; }
+  tabsEar['rem-show'] = (m) => {   // (said on another tab: shown here too, quietly)
+    if (!S.rem || !S.rem.on || !S.rem.popup || !Array.isArray(m.notes)) return;
+    const gone = remKept('remgone');
+    for (const n of m.notes) if (n && Array.isArray(n.keys) && !n.keys.some((k) => gone[k]) && remStill(n)) remPopup(n);
+  };
+  function remVol() { return Math.min(100, Math.max(5, Number(S.rem.vol) || 100)) / 100; }   // (how loud reminders are, apart from NeoChat)
+  function remWhenText(when) { const left = when - Date.now(); return left > 90e3 ? `in ${fmtLeft(left)}, at ${fmtNst(when)} NST` : left > -90e3 ? 'now' : `at ${fmtNst(when)} NST`; }   // (the event's own time)
+  function remGo(n) { if (n.board) { openBoard(); return; } if (n.hub) { openHub(n.hub); return; } if (safeHref(n.href)) location.href = new URL(n.href, SITE + '/').href; }
   function remAccent(el) {   // (your theme's pop-up header colour, for a reminder's frame and the like)
     const h = themeHead();
-    if (h) { el.style.setProperty('--bnp-accent', h.bg); el.style.setProperty('--bnp-accent-text', h.ink); }
+    if (h) { el.style.setProperty('--bnp-accent', h.bg); el.style.setProperty('--bnp-accent-text', inkReads(h.ink, h.bg)); }
+    else { el.style.removeProperty('--bnp-accent'); el.style.removeProperty('--bnp-accent-text'); }   // (never the last theme's)
   }
   function remDesktop(n) {
     try {
@@ -1932,18 +2127,33 @@
     if (!(S.rem.on && S.rem.sound) && !(S.features.ncl && S.features.nclSound)) return;   // (reminders' sound, or NeoChat's)
     addEventListener('pointerdown', () => { try { const AC = window.AudioContext || window.webkitAudioContext; if (AC && !audioCtx) audioCtx = new AC(); if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch (_) { /* */ } }, { once: true, capture: true });
   }
-  function remSoundOnce(kind) {   // (one sound for all your Neopets tabs: the first to ring rings, the others stay quiet a few seconds. The browser's own lock between tabs makes them take turns, so two can't ring at once)
+  function remAudio() {   // (→ whether this tab may make a sound: browsers let a page make one once you've clicked on it, or came to it by a click. Its sound woken, to see)
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return Promise.resolve(false);
+      audioCtx = audioCtx || new AC();
+      if (audioCtx.state === 'running') return Promise.resolve(true);
+      try { const p = audioCtx.resume(); if (p && p.catch) p.catch(() => {}); } catch (_) { /* */ }
+      return new Promise((r) => setTimeout(() => r(!!audioCtx && audioCtx.state === 'running'), 250));
+    } catch (_) { return Promise.resolve(false); }
+  }
+  function remRing(kind, vol) {   // (from this tab if it may make a sound; else it asks your others, and one that may makes it)
+    remAudio().then((ok) => { if (ok) remSoundOnce(kind, vol); else tabsSay('ring', { kind, vol }); });
+  }
+  tabsEar.ring = (m) => { remAudio().then((ok) => { if (ok) remSoundOnce(m.kind, m.vol); }); };
+  function remSoundOnce(kind, vol) {   // (one sound for all your Neopets tabs: the first to ring takes the browser's own lock and keeps it a few seconds, so another that comes to it meanwhile finds it taken and stays quiet; its note in the storage too, for a tab on another Neopets address)
     const ring = () => {
       const now = Date.now();
       let last = 0;
       try { last = Number(localStorage.getItem('bnp-remsound')) || 0; } catch (_) { /* */ }
-      last = Math.max(last, Number(get('remsound', 0)) || 0);   // (the script's own note too: tabs on another Neopets address)
-      if (now - last < 6000) return;
+      last = Math.max(last, Number(get('remsound', 0)) || 0);
+      if (now - last < 6000) return false;
       try { localStorage.setItem('bnp-remsound', String(now)); } catch (_) { /* */ }
       set('remsound', now);
-      remSound(kind);
+      remSound(kind, vol);
+      return true;
     };
-    try { if (navigator.locks && navigator.locks.request) { navigator.locks.request('bnp-remsound', ring).catch(ring); return; } } catch (_) { /* */ }
+    try { if (navigator.locks && navigator.locks.request) { navigator.locks.request('bnp-remsound', { ifAvailable: true }, (lock) => (lock && ring() ? new Promise((r) => setTimeout(r, 6000)) : null)).catch(() => ring()); return; } } catch (_) { /* */ }
     ring();
   }
   // The sounds, drawn here (no sound files). Each is a few voices: [wave, Hz, the Hz it slides to (0: none), when, how long, how loud];
@@ -1960,11 +2170,11 @@
     knock: [['triangle', 320, 150, 0, 0.11, 0.42], ['triangle', 320, 150, 0.17, 0.11, 0.42]],
     swoosh: [['noise', 500, 3200, 0, 0.45, 0.7]],
   };
-  function soundDraw(ctx, kind, t0) {   // (a sound into an audio context: the page's, or one that only measures it)
+  function soundDraw(ctx, kind, t0, vol = 1) {   // (a sound into an audio context: the page's, or one that only measures it. vol: how loud, 1 as drawn)
     for (const [type, f, f2, dt, len, peak] of SOUNDS[kind] || SOUNDS.chime) {
       const t = t0 + dt, g = ctx.createGain();
       g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(peak, t + (type === 'noise' ? len * 0.35 : 0.012));
+      g.gain.linearRampToValueAtTime(Math.max(0.001, peak * vol), t + (type === 'noise' ? len * 0.35 : 0.012));
       g.gain.exponentialRampToValueAtTime(0.0008, t + len);
       g.connect(ctx.destination);
       let src;
@@ -1991,16 +2201,19 @@
       src.stop(t + len + 0.05);
     }
   }
-  function remSound(kind) {   // (one of the sounds, now)
+  function remSound(kind, vol = 1) {   // (one of the sounds, now, as loud as asked)
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
       audioCtx = audioCtx || new AC();
       if (audioCtx.state === 'suspended') audioCtx.resume();
-      soundDraw(audioCtx, kind, audioCtx.currentTime + 0.03);
+      soundDraw(audioCtx, kind, audioCtx.currentTime + 0.03, Math.min(1, Math.max(0.05, Number(vol) || 1)));
     } catch (_) { /* */ }
   }
   function remPopup(n) {   // (Neopets' pop-up look, stacked in the corner under the bar)
+    const keys = (n.keys || [n.key]).filter(Boolean);
+    if (keys.length && $$('[data-bnp="rems"] .bnp-rem').some((c) => c.dataset.keys === keys.join(' '))) return;   // (on this tab already)
+    const title = n.what && n.when ? `${n.what} ${remWhenText(n.when)}` : n.title, text = n.kind === 'dayend' ? remDayendText() : n.kind === 'newday' ? remNewdayText() : n.text;   // (as they are now: it may be shown a while after it was said)
     let box = $('[data-bnp="rems"]');
     if (!box) {
       box = document.createElement('div');
@@ -2014,42 +2227,52 @@
     const card = document.createElement('div');
     card.className = `bnp-rem is-${n.kind}`;
     card.innerHTML = `
-      <div class="popup-header__2020 bnp-rem-head"><h3>${esc(n.title)}</h3><span class="bnp-rem-btns"><button type="button" class="button-default__2020 button-yellow__2020 bnp-rem-b" data-r="set" title="Reminder settings: which ones you get, and how" aria-label="Reminder settings">${SVG_GEAR}</button><button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-rem-x" data-r="x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button></span><div class="popup-header-pattern__2020"></div></div>
-      <div class="bnp-rem-body">${n.icon ? `<img src="${esc(n.icon)}" alt="">` : ''}<div><p>${esc(n.text || '')}</p>${n.until ? `<p class="bnp-rem-left" data-until="${n.until}"></p>` : ''}
-        <div class="bnp-rem-acts">${n.board || n.href ? `<button type="button" class="button-default__2020 button-green__2020" data-r="go">${n.board ? 'Open the board' : 'Go'}</button>` : ''}<button type="button" class="bnp-linkbtn" data-r="dismiss" title="Put it away, on every Neopets tab">Dismiss</button><button type="button" class="bnp-linkbtn" data-r="snooze" title="Put it away, and say it again in 10 minutes">Remind me in 10 minutes</button></div></div></div>`;
-    const keys = (n.keys || [n.key]).filter(Boolean);
+      <div class="popup-header__2020 bnp-rem-head"><h3>${esc(title)}</h3><span class="bnp-rem-btns"><button type="button" class="button-default__2020 button-yellow__2020 bnp-rem-b" data-r="set" title="Reminder settings: which ones you get, and how" aria-label="Reminder settings">${SVG_GEAR}</button><button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-rem-x" data-r="x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button></span><div class="popup-header-pattern__2020"></div></div>
+      <div class="bnp-rem-body">${n.icon ? `<img src="${esc(n.icon)}" alt="">` : ''}<div><p>${esc(text || '')}</p>${n.until ? `<p class="bnp-rem-left" data-until="${n.until}"></p>` : ''}
+        <div class="bnp-rem-acts">${n.board || n.href || n.hub ? `<button type="button" class="button-default__2020 button-green__2020" data-r="go">${n.board ? 'Open the board' : n.hub === 'backup' ? 'Back up' : 'Go'}</button>` : ''}<button type="button" class="bnp-linkbtn" data-r="dismiss" title="Put it away, on every Neopets tab">Dismiss</button><button type="button" class="bnp-linkbtn" data-r="snooze" title="Put it away, and say it again in 10 minutes">Remind me in 10 minutes</button></div></div></div>`;
     card.dataset.keys = keys.join(' ');
     if (n.board) card.dataset.board = '1';
+    if (n.local) card.dataset.local = '1';
     card.addEventListener('click', (e) => {
       const b = e.target.closest('[data-r]');
       if (!b) return;
       if (b.dataset.r === 'set') { openHub('reminders'); return; }   // (the note stays, to Go from after)
-      if (b.dataset.r === 'snooze') { const sn = (get('remsnooze', []) || []).filter((s) => s.at > Date.now() - 3600000); sn.push({ key: 'sn' + uid(), at: Date.now() + 10 * 60000, title: n.title, text: n.text || '', href: n.href || '', icon: n.icon || '', board: !!n.board, kind: n.kind, sound: n.sound, ...(n.kind === 'snow' ? { start: n.start, until: n.until } : {}) }); set('remsnooze', sn); remSchedule(); }
+      if (b.dataset.r === 'snooze') { const sn = (get('remsnooze', []) || []).filter((s) => s.at > Date.now() - 3600000); sn.push({ key: 'sn' + uid(), at: Date.now() + 10 * 60000, title: n.title, text: n.text || '', href: n.href || '', hub: n.hub || '', icon: n.icon || '', board: !!n.board, kind: n.kind, sound: n.sound, ...(n.kind === 'snow' ? { start: n.start, until: n.until } : {}) }); set('remsnooze', sn); remSchedule(); }
       card.remove();
-      remCloseAll({ keys });   // (closed here: closed on every tab)
+      if (!n.local) remCloseAll({ keys });   // (closed here: closed on every tab, and on the pages after)
       if (b.dataset.r === 'go') remGo(n);
     });
     box.prepend(card);
+    remBesideDock();
     const left = card.querySelector('[data-until]');
     if (left) { const tick = () => { if (!left.isConnected) { clearInterval(t); return; } const ms = +left.dataset.until - Date.now(); left.textContent = ms > 0 ? `Asleep for ${fmtClock(ms).replace(/^0:/, '')} more` : 'It’s awake again'; if (ms <= 0) clearInterval(t); }; const t = setInterval(tick, 1000); tick(); }
     while (box.children.length > 4) box.lastElementChild.remove();
   }
+  function remBesideDock() {   // (the Shop Dock open in their corner: the notes stand to its left, its buttons free)
+    const box = document.querySelector('[data-bnp="rems"]');
+    if (!box) return;
+    const dk = sdockEl && sdockEl.isConnected ? sdockEl.getBoundingClientRect() : null, vw = document.documentElement.clientWidth;
+    box.style.right = dk && dk.width && dk.right > vw - 60 && dk.top < 220 ? `${Math.round(vw - dk.left + 10)}px` : '';
+  }
   function remClose(m) {   // (this tab's reminders that match: these keys, or every one of the dailies')
     for (const c of $$('[data-bnp="rems"] .bnp-rem')) if ((m.board && c.dataset.board) || (m.keys || []).some((k) => (c.dataset.keys || '').split(' ').includes(k))) c.remove();
   }
-  function remCloseAll(m) {   // (the same on every Neopets tab: the others hear it through the site's storage)
-    remClose(m);
-    try { localStorage.setItem('bnp-remclose', JSON.stringify({ ...m, at: Date.now(), from: TAB_ID })); } catch (_) { /* */ }
+  function remCloseAll(m) {   // (the same on every Neopets tab: at once (a message to them), and on the pages opened next (kept as put away))
+    const keys = new Set(m.keys || []);
+    if (m.board) {   // (the dailies' ones: each one said, wherever it shows)
+      for (const n of Object.values(remKept('remact'))) if (n && n.board) (n.keys || []).forEach((k) => keys.add(k));
+      for (const c of $$('[data-bnp="rems"] .bnp-rem[data-board]')) (c.dataset.keys || '').split(' ').forEach((k) => k && keys.add(k));
+    }
+    remClose({ keys: [...keys], board: !!m.board });
+    remGoneAdd([...keys]);
+    tabsSay('rem-close', { keys: [...keys], board: !!m.board });
   }
+  tabsEar['rem-close'] = (m) => remClose({ keys: Array.isArray(m.keys) ? m.keys : [], board: !!m.board });
   function remBoardSeen() {   // (the board opened: the dailies' reminders go from every tab, and any put off for 10 minutes with them)
     const sn = get('remsnooze', []) || [];
     if (sn.some((s) => s && s.board)) set('remsnooze', sn.filter((s) => !(s && s.board)));
-    if ($('[data-bnp="rems"] .bnp-rem[data-board]') || sn.some((s) => s && s.board)) remCloseAll({ board: true });
+    if ($('[data-bnp="rems"] .bnp-rem[data-board]') || sn.some((s) => s && s.board) || Object.values(remKept('remact')).some((n) => n && n.board)) remCloseAll({ board: true });
   }
-  addEventListener('storage', (e) => {   // (a reminder closed on another tab, or the board opened there: gone here too)
-    if (e.key !== 'bnp-remclose' || !e.newValue) return;
-    try { const m = JSON.parse(e.newValue); if (m && m.from !== TAB_ID) remClose(m); } catch (_) { /* */ }
-  });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // Random events: each one, on any page, kept in a log (Nav Settings › Random events), with a little "Logged" tab under it on the page
@@ -2218,7 +2441,7 @@
     }
     if (log.length > RE_KEEP) log.length = RE_KEEP;
     set('relog', log);
-    if (list.some((x) => x.e.bank && !x.dup)) { const d = dlog(); if (d.bank) { delete d.bank; set('dlog', d); dailiesChanged(); } }   // (Neopets reset your bank interest: it's ready again)
+    if (list.some((x) => x.e.bank && !x.dup)) { const d = dlog(); if (d.bank) { delete d.bank; set(dkey(), d); dailiesChanged(); } }   // (Neopets reset your bank interest: it's ready again)
     for (const x of list) if (!x.dup && x.e.av && S.features.avatars) avGot(x.e.av);   // (an avatar: in your collection at once)
     const ask = list.find((x) => !x.dup && x.e.k === 'quest' && !x.e.missed);
     if (ask) { fqFromEvent(ask.e); paintFq(); }   // (a faerie asked: her card, in the corner)
@@ -2362,7 +2585,7 @@
   function srUserActs(name, named) {   // (someone: their lookup, Neomail, trades, auctions, shop and gallery, each with your theme's own picture)
     const enc = encodeURIComponent(name), e = esc(name);
     const one = (ic, href, title, label) => `<a class="bnp-sr-act${named ? ' is-named' : ''}" href="${href}" title="${title}" aria-label="${title}">${ic}${named || !ic ? `<span>${label}</span>` : ''}</a>`;
-    return one(srIco(['el:#navprofiledropdown__2020 .nav-profile-icon'], 'bnp-sr-aic'), `/userlookup.phtml?user=${enc}`, `${e}’s lookup`, 'Lookup')
+    return one(srIco(['el:#navprofiledropdown__2020 .nav-profile-icon'], 'bnp-sr-aic'), `/userlookup.phtml?place=9999&user=${enc}`, `${e}’s lookup`, 'Lookup')
       + one(nbIc('mail'), `/neomessages.phtml?type=send&recipient=${enc}`, `Neomail ${e}`, 'Neomail')
       + one(nbIc('tp'), `/island/tradingpost.phtml?type=browse&criteria=owner&search_string=${enc}`, `${e}’s trades`, 'Trades')
       + one(nbIc('au'), `/genie.phtml?type=find_user&auction_username=${enc}`, `${e}’s auctions`, 'Auctions')
@@ -2408,6 +2631,25 @@
   function srNoted() { try { const k = JSON.parse(sessionStorage.getItem('bnp-srq') || 'null'); return k && Date.now() - k.t < 30 * 60000 ? String(k.q || '') : ''; } catch (_) { return ''; } }   // (its words, on a results page with none in its address)
   function srKept() { try { const st = history.state; return st && typeof st === 'object' && typeof st.bnpSrq === 'string' ? st.bnpSrq : ''; } catch (_) { return ''; } }   // (this results page's own words, kept with it: still right after Back and a reload, when a newer search was noted since)
   function srKeep(q) { try { const st = history.state && typeof history.state === 'object' ? history.state : {}; if (q && st.bnpSrq !== q) history.replaceState({ ...st, bnpSrq: q }, ''); } catch (_) { /* */ } }
+  let lookWatch = null;
+  function lookup9999() {   // (every user lookup link on Neopets at place=9999, Random Friend's too: the same page, without the captcha)
+    if (!S.features.lookup9999 || lookWatch || location.hostname !== 'www.neopets.com') return;
+    const fix = (root) => {
+      if (!root || !root.querySelectorAll) return;
+      for (const a of root.querySelectorAll('a[href*="userlookup.phtml"], a[href*="randomfriend.phtml"]')) {
+        let u;
+        try { u = new URL(a.href, location.href); } catch (_) { continue; }
+        const rf = u.pathname === '/randomfriend.phtml' ? u.searchParams.get('randomfriend') || u.searchParams.get('user') || '' : '';   // (Random Friend's, ?randomfriend=name: that person's lookup)
+        if (!/(^|\.)neopets\.com$/i.test(u.hostname) || !(rf || u.pathname === '/userlookup.phtml') || (!rf && u.searchParams.get('place') === '9999')) continue;
+        if (rf) { a.href = `${u.origin}/userlookup.phtml?place=9999&user=${encodeURIComponent(rf)}`; continue; }
+        u.search = `?${new URLSearchParams([['place', '9999'], ...[...u.searchParams].filter(([k]) => k !== 'place')])}`;   // (place first, the rest as they were: as DTI Enhance writes it)
+        a.href = u.href;
+      }
+    };
+    fix(document);
+    lookWatch = new MutationObserver((ms) => { if (!S.features.lookup9999) return; for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) fix(n.matches('a') ? n.parentElement : n); });
+    lookWatch.observe(document.documentElement, { childList: true, subtree: true });
+  }
   function searchPage() {
     if (!S.features.searchPage || location.pathname !== '/search.phtml') return;
     const list = $('#container__2020 ul.search-results');
@@ -2433,7 +2675,7 @@
       const v = (box.querySelector('[data-srs]') || {}).value || '';
       if (v.trim()) location.href = `/search.phtml?s=${encodeURIComponent(v.trim())}`;
     });
-    srPaint();
+    try { srPaint(); } catch (e) { report(e); box.remove(); document.documentElement.classList.remove('bnp-sr-pre'); }   // (ours can't be drawn: Neopets' own list, as it was)
   }
   function srPaint(listOnly) {
     const box = document.querySelector('[data-bnp="srpage"]');
@@ -2488,6 +2730,7 @@
     const head = $('.nav-top__2020, #navtop__2020');
     const bg = head ? getComputedStyle(head).backgroundColor : '';
     if (bg && !/rgba\(0, 0, 0, 0\)|transparent/.test(bg)) box.style.setProperty('--bnp-accent', bg);
+    else { const h = themeHead(); if (h) box.style.setProperty('--bnp-accent', h.bg); else box.style.removeProperty('--bnp-accent'); }   // (a bar that's only a picture: the pop-ups' colour)
     const b = themeBar();
     if (b) { box.style.setProperty('--bnp-bar', b.bar); box.style.setProperty('--bnp-bar-ink', inkReads(b.ink, b.bar)); }
     if (head && getComputedStyle(head).position === 'fixed') box.style.setProperty('--bnp-sr-top', `${Math.round(head.getBoundingClientRect().height)}px`);   // (the chips stay in sight under the bar as you scroll)
@@ -2759,7 +3002,7 @@
         const rep = document.getElementById(`pet${i}_report`), chk = document.getElementById(`pet${i}_report_check`);
         if (rep) rep.style.display = 'inline';
         if (chk) chk.checked = false;
-        try { if (arr) { const im = (u) => { const x = new Image(); x.src = u; return x; }; arr[i] = { ...p, happyImg: im(happy), sadImg: im(sad) }; } } catch (_) { /* */ }
+        try { if (arr) { const im = (u) => { const x = new Image(); x.src = u; return x; }; const o = typeof cloneInto === 'function' ? cloneInto(p, PAGE) : { ...p }; o.happyImg = im(happy); o.sadImg = im(sad); arr[i] = o; } } catch (_) { /* */ }   // (Firefox: made in the page's own world, so its code can read it)
       }
       try { PAGE.selected_pet = -1; PAGE.select_pet(1); } catch (_) { try { PAGE.selected_pet = 1; } catch (__) { /* */ } }   // (the middle one chosen, as Neopets does)
       poundKey = '';
@@ -2860,7 +3103,14 @@
     saveNow();
     return d;
   }
-  const itPremium = () => !!$('[class^="navsub-ssw-icon"], [class*=" navsub-ssw-icon"]');
+  function itPremium() {
+    const seen = !!$('[class^="navsub-ssw-icon"], [class*=" navsub-ssw-icon"]');
+    try {
+      const at = Number(localStorage.getItem('bnp-premium')) || 0;
+      if (seen) { if (Date.now() - at > 3600e3) localStorage.setItem('bnp-premium', String(Date.now())); return true; }   // (noted at most once an hour)
+      return Date.now() - at < 14 * 864e5;
+    } catch (_) { return seen; }
+  }
   function itHref(k, name) {
     if (k === 'closet') return `/closet.phtml?obj_name=${encodeURIComponent(name)}`;
     if (k === 'dti') return `https://impress.openneo.net/items?q=${encodeURIComponent(name)}`;
@@ -2947,11 +3197,12 @@
   // (itemdb gives userscripts its prices through your own itemdb visit: once a day, or every 14 days logged in. Until then it
   // says 401; then nothing is asked for 10 minutes, and each price says to open itemdb)
   const IT_401 = 'bnp-idb401';
-  const itBlocked = () => { try { return Date.now() - Number(localStorage.getItem(IT_401) || 0) < 10 * 60000; } catch (_) { return false; } };
+  const itBlocked = () => { try { return Date.now() - (parseInt(localStorage.getItem(IT_401) || '0', 10) || 0) < 10 * 60000; } catch (_) { return false; } };
+  const itBlockedBusy = () => { try { return /\|429$/.test(localStorage.getItem(IT_401) || ''); } catch (_) { return false; } };   // (itemdb asked for a pause, rather than a visit)
   function itPriceAsk(name, badge) {
     const c = itPriceCache()[name];
     if (c) { itPriceShow(badge, c.r); return; }
-    if (itBlocked()) { itPriceShow(badge, { visit: 1 }); return; }
+    if (itBlocked()) { itPriceShow(badge, itBlockedBusy() ? { err: 1, busy: 1 } : { visit: 1 }); return; }
     if (!itAsk.has(name)) itAsk.set(name, []);
     itAsk.get(name).push(badge);
     clearTimeout(itAskT);
@@ -2967,8 +3218,8 @@
         GM_xmlhttpRequest({ method: 'POST', url: 'https://itemdb.com.br/api/v1/items/many', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, data: JSON.stringify({ name: part }), timeout: 15000,
           onload: (r) => {
             if (r.status === 401 || r.status === 429) {   // (no itemdb visit lately, or its limit for now: ask again in a while)
-              try { localStorage.setItem(IT_401, String(Date.now())); } catch (_) { /* */ }
-              for (const n of part) for (const b of batch.get(n) || []) itPriceShow(b, r.status === 401 ? { visit: 1 } : { err: 1 });
+              try { localStorage.setItem(IT_401, `${Date.now()}|${r.status}`); } catch (_) { /* */ }
+              for (const n of part) for (const b of batch.get(n) || []) itPriceShow(b, r.status === 401 ? { visit: 1 } : { err: 1, busy: 1 });
               return;
             }
             let data = {};
@@ -2996,10 +3247,10 @@
       b.className = 'bnp-it-price is-none';
       b.innerHTML = '<a href="https://itemdb.com.br/" target="_blank" rel="noopener">Price: open itemdb</a>';
       b.title = 'itemdb gives its prices to scripts like this one after you’ve opened itemdb.com.br today (or logged in there in the last 14 days). Open it, then come back.';
-      b.firstChild.addEventListener('click', () => { try { localStorage.removeItem(IT_401); } catch (_) { /* */ } });
+      b.firstChild.addEventListener('pointerdown', () => { try { localStorage.removeItem(IT_401); } catch (_) { /* */ } });   // (pressed: the item row's own click handling never lets a click reach it)
       return;
     }
-    if (res.err) { b.className = 'bnp-it-price is-none'; b.textContent = '?'; b.title = 'itemdb didn’t answer just now'; return; }
+    if (res.err) { b.className = 'bnp-it-price is-none'; b.textContent = '?'; b.title = res.busy ? 'itemdb asked for a pause: prices again in a few minutes' : 'itemdb didn’t answer just now'; return; }
     if (res.p == null) { b.className = 'bnp-it-price is-none'; b.textContent = 'No price'; b.title = 'itemdb has no price for it'; return; }
     const at = b.closest('[data-item]'), name = at ? at.dataset.item : '';
     b.className = `bnp-it-price${res.inf ? ' is-inflated' : ''}`;
@@ -3046,7 +3297,7 @@
     const clear = (c) => !c || /rgba\([^)]*,\s*0\)|transparent/.test(c);
     const ps = getComputedStyle(probe.lastChild), hb = getComputedStyle(probe).backgroundColor, ink = getComputedStyle(probe.querySelector('h3')).color, pat = ps.backgroundImage, hi = getComputedStyle(probe).backgroundImage;
     const grad = /gradient\(/.test(hi || '') ? hi : '';
-    let bg = clear(hb) ? ps.backgroundColor : hb;   // (some themes colour the pattern's own layer instead: Mystery Island, the Neopian Times…)
+    let bg = !clear(ps.backgroundColor) ? ps.backgroundColor : hb;   // (the colour you see: the pattern's own layer where the theme colours it, painted over the header's (Altador Cup, Meridell; Mystery Island, the Neopian Times… colour only that layer), else the header's)
     probe.remove();
     if (clear(bg) && pat && pat !== 'none') {   // (a header that's only a picture, as Altadorian Constellations has: its menus' colour stands in)
       const dd = document.createElement('div');
@@ -3453,7 +3704,7 @@
       if (typeof PAGE.toggleInvFilter2 === 'function') setTimeout(() => { try { PAGE.toggleInvFilter2(3, action); } catch (_) { /* */ } }, 80);
     };
     whenLoaded(() => setTimeout(() => {
-      try { if (typeof PAGE.closeAndRefreshPopup__2020 === 'function' && PAGE.closeAndRefreshPopup__2020 !== close) orig = PAGE.closeAndRefreshPopup__2020; PAGE.closeAndRefreshPopup__2020 = close; } catch (_) { /* */ }
+      try { if (typeof PAGE.closeAndRefreshPopup__2020 === 'function' && PAGE.closeAndRefreshPopup__2020 !== close) orig = PAGE.closeAndRefreshPopup__2020; if (typeof exportFunction === 'function') exportFunction(close, PAGE, { defineAs: 'closeAndRefreshPopup__2020' }); else PAGE.closeAndRefreshPopup__2020 = close; } catch (_) { /* */ }
     }, 400));
     document.addEventListener('click', (e) => { if (!itSettings().noReload) return; const a = e.target instanceof Element ? e.target.closest('a.inv-refresh') : null; if (a) { e.preventDefault(); e.stopImmediatePropagation(); close(); } }, true);
     const res = document.getElementById('invResult');
@@ -3466,7 +3717,18 @@
     for (let n = w.nextNode(); n; n = w.nextNode()) {
       const v = n.nodeValue.trim();
       if (v === 'desc start') start = n;
-      else if (v === 'desc end' && start) { const box = document.createElement('div'); box.className = 'bnp-desc-hidden'; box.setAttribute('data-bnp', 'deschide'); for (let c = start.nextSibling; c && c !== n;) { const next = c.nextSibling; box.append(c); c = next; } n.parentNode.insertBefore(box, n); break; }
+      else if (v === 'desc end' && start) {
+        if (start.parentNode !== n.parentNode) break;   // (an owner's tags left open put the end somewhere else: the page as it is)
+        const part = [];
+        for (let c = start.nextSibling; c && c !== n; c = c.nextSibling) part.push(c);
+        if (part.some((c) => c.nodeType === 1 && (c.matches('a[href*="buy_item"]') || c.querySelector('a[href*="buy_item"]')))) break;   // (the shop's items in it: never hidden)
+        const box = document.createElement('div');
+        box.className = 'bnp-desc-hidden';
+        box.setAttribute('data-bnp', 'deschide');
+        box.append(...part);
+        n.parentNode.insertBefore(box, n);
+        break;
+      }
     }
   }
   // ═══════════════════════════════════════════════════════════════════════════
@@ -3590,7 +3852,8 @@
     html.bnp-nb .bnp-nbbox-h em { padding: 0 8px; border-radius: 999px; background: rgba(255, 255, 255, .7); color: #333; font: 11px/18px var(--nb-ui); font-style: normal; }
     html.bnp-nb .bnp-nbbox-b { padding: 10px 12px 12px; }
     html.bnp-nb .bnp-nbbox-foot { padding: 8px 14px; border-top: 2px solid var(--nb-line); background: var(--nb-panel); color: var(--nb-pink); font: 12px var(--nb-txt); }
-    html.bnp-nb .bnp-nbbox-foot button { margin: 0; padding: 0; border: 0; background: none; color: inherit; font: 12px var(--nb-ui); text-decoration: underline; cursor: pointer; }
+    html.bnp-nb .bnp-nbbox-foot > button { margin: 0; padding: 2px 10px; border: 1px solid var(--nb-line); border-radius: 999px; background: var(--nb-panel); color: inherit; font: 12px var(--nb-ui); cursor: pointer; }
+    html.bnp-nb .bnp-nbbox-foot > button:hover, html.bnp-nb .bnp-nbbox-foot > button:focus-visible { border-color: var(--nb-frame); }
     html.bnp-nb .bnp-nbtiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 10px 6px; }
     html.bnp-nb .bnp-nbtile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 2px; color: var(--nb-text) !important; font: 11.5px/1.2 var(--nb-ui); text-align: center; text-decoration: none !important; overflow-wrap: anywhere; }
     html.bnp-nb .bnp-nbtile i { position: relative; top: 0; display: block; box-sizing: content-box; width: 50px; height: 50px; padding: 4px; border: 2px solid var(--nb-pop); border-radius: 12px; background: #fff; box-shadow: 0 3px 0 var(--nb-pop); transition: top .12s, box-shadow .12s; }
@@ -3976,7 +4239,7 @@
     html.bnp-nb .bnp-nbcount.is-near i { background: conic-gradient(#e5711c calc(var(--p, 0) * 1%), rgba(255, 255, 255, .55) 0); }
     html.bnp-nb .bnp-nbcount.is-full i { background: conic-gradient(#d64545 100%, #d64545 0); }
     html.bnp-nb .bnp-nbdraft { font: 12px var(--nb-txt); opacity: .9; }
-    html.bnp-nb .bnp-nbdraft button { margin: 0 0 0 4px; padding: 0; border: 0; background: none; color: inherit; font: 12px var(--nb-ui); text-decoration: underline; cursor: pointer; }
+    html.bnp-nb .bnp-nbdraft button { margin: 0 0 0 6px; padding: 1px 10px; border: 1px solid var(--nb-line); border-radius: 999px; background: var(--nb-panel); color: inherit; font: 12px var(--nb-ui); cursor: pointer; }
     html.bnp-nb .bnp-nbkeys { font: 11.5px var(--nb-txt); opacity: .75; }
     html.bnp-nb .bnp-nbcf .bnp-nbact { margin-left: auto; }
     html.bnp-nb .bnp-nbcomp .bnp-nbsenderr { order: 8; margin: 12px 18px 0; padding: 9px 14px; border: 2px solid #d42326; border-radius: 12px; background: #fff1f1; color: #7a1414; font: 13px/1.45 var(--nb-txt); }
@@ -4044,9 +4307,9 @@
     html.bnp-nb .bnp-nbtagform-c button[aria-pressed="true"] { box-shadow: 0 0 0 2px #2a2a2a; }
     html.bnp-nb .bnp-nbtagform-acts { display: flex; align-items: center; gap: 10px; }
     html.bnp-nb .bnp-nbtagform-acts .bnp-linkbtn { margin-left: auto; }
-    html.bnp-nb .bnp-nbsay { position: fixed; left: 50%; bottom: 24px; z-index: 2147483000; max-width: calc(100vw - 32px); padding: 9px 18px 11px; border: 2px solid var(--nb-frame); border-radius: 13px; background: var(--nb-band); color: var(--nb-ink); box-shadow: 0 3px 0 var(--nb-frame), 0 10px 26px rgba(0, 0, 0, .25); font: 13px var(--nb-ui); transform: translateX(-50%); }
-    html.bnp-nb .bnp-nbsay[hidden] { display: none; }
-    html.bnp-nb .bnp-nbsay button { margin: 0 0 0 12px; padding: 1px 10px; border: 2px solid var(--nb-frame); border-radius: 8px; background: #fff; color: #333; font: 12px var(--nb-ui); cursor: pointer; }
+    html.bnp-st .bnp-nbsay, html.bnp-nb .bnp-nbsay { position: fixed; left: 50%; bottom: 24px; z-index: 2147483000; max-width: calc(100vw - 32px); padding: 9px 18px 11px; border: 2px solid var(--nb-frame); border-radius: 13px; background: var(--nb-band); color: var(--nb-ink); box-shadow: 0 3px 0 var(--nb-frame), 0 10px 26px rgba(0, 0, 0, .25); font: 13px var(--nb-ui); transform: translateX(-50%); }
+    html.bnp-st .bnp-nbsay[hidden], html.bnp-nb .bnp-nbsay[hidden] { display: none; }
+    html.bnp-st .bnp-nbsay button, html.bnp-nb .bnp-nbsay button { margin: 0 0 0 12px; padding: 1px 10px; border: 2px solid var(--nb-frame); border-radius: 8px; background: #fff; color: #333; font: 12px var(--nb-ui); cursor: pointer; }
     html.bnp-nb .bnp-nblive { position: fixed; left: 50%; bottom: 24px; z-index: 2147482999; transform: translateX(-50%); box-shadow: 0 3px 0 var(--nb-bar-edge), 0 10px 26px rgba(0, 0, 0, .28) !important; }
     html.bnp-nb .bnp-nblive[hidden] { display: none !important; }
     /* a new topic */
@@ -4161,7 +4424,7 @@
     nbCatIcons();
     nbHeroIc();
   }
-  const nbMe = () => { const a = $('#navprofiledropdown__2020 a[href*="userlookup.phtml?user="], .nav-profile-dropdown__2020 a[href*="userlookup.phtml?user="]'); const m = a && /user=([^&#]+)/.exec(a.getAttribute('href')); return m ? decodeURIComponent(m[1]).toLowerCase() : ''; };
+  const nbMe = () => { const a = $$('#navprofiledropdown__2020 a[href*="userlookup.phtml"], .nav-profile-dropdown__2020 a[href*="userlookup.phtml"], #header .user a[href*="userlookup.phtml"], .user.medText a[href*="userlookup.phtml"]').find((x) => !x.closest('[data-bnp-old]') && /[?&]user=/.test(x.getAttribute('href') || '')); const m = a && /[?&]user=([^&#]+)/.exec(a.getAttribute('href')); return m ? decodeURIComponent(m[1]).toLowerCase() : ''; };   // (the page's own link, whatever its place=; on an old page, never the kept bar's copy)
   const nbAgoMins = (t) => { const m = /(\d+)\s*(sec|min|hour|day|week|month|year)/i.exec(t || ''); if (!m) return Infinity; const n = Number(m[1]), u = m[2].toLowerCase(); return u === 'sec' ? 0 : u === 'min' ? n : u === 'hour' ? n * 60 : u === 'day' ? n * 1440 : u === 'week' ? n * 10080 : u === 'month' ? n * 43200 : n * 525600; };
   // Your topics: bookmarked (kept with your settings), read (in this browser: how far, for "new"), and what you're writing (this browser)
   const nbJson = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (_) { return d; } };
@@ -4346,13 +4609,14 @@
     nbAvBusy = true;
     try {
       for (const t of want) {
-        let a = '', av = '';
+        let a = '', av = '', got = false;
         try {
           const doc = new DOMParser().parseFromString(await (await fetch(`/neoboards/topic.phtml?topic=${t.id}`, { credentials: 'include' })).text(), 'text/html');
           const li = [...doc.querySelectorAll('.boardPostByline')].map((b) => b.parentElement)[0];
+          got = !!li;
           if (li) { a = reClean((li.querySelector('.postAuthorName') || {}).textContent); av = fullUrl(bgUrl(li.querySelector('.authorIcon'))); }
         } catch (_) { /* (another time) */ }
-        const fix = (x) => { if (Number(x.id) !== Number(t.id)) return; x.avTried = 1; if (av) x.av = av; if (a && !x.a) x.a = a; };
+        const fix = (x) => { if (Number(x.id) !== Number(t.id)) return; if (got) x.avTried = 1; if (av) x.av = av; if (a && !x.a) x.a = a; };   // (tried: only once its page came; else another time)
         const marks = nbMarks(); marks.forEach(fix); set('nbmarks', marks);
         const hist = nbHist(); hist.forEach(fix); nbJsonSet('bnp-nbhist', hist);
       }
@@ -4445,21 +4709,21 @@
       boards.push({ li: el, id, name: reClean((el.querySelector('h4') || a).textContent), desc: reClean((el.querySelector('.boardDesc-sub') || {}).textContent), icon: fullUrl(bgUrl(el.querySelector('.boardIcon'))), when, mins, cat });
     }
     nbHere = { kind: 'index', boards };
-    let sec = null, inner = null;   // (each section in a box of its own: its bar on top, its boards under it)
+    const secs = new Map();   // (each section in a box of its own: its bar on top, every one of its boards under it, even past an ad Neopets puts between them)
     for (const el of [...ul.children]) {
       if (el.tagName === 'H3' && el.classList.contains('bnp-nb-cat')) {
-        sec = document.createElement('li');
+        const sec = document.createElement('li'), inner = document.createElement('ul');
         sec.className = 'bnp-nb-sec';
         sec.setAttribute('data-bnp', 'nbsec');
         sec.dataset.cat = el.dataset.cat || '';
-        inner = document.createElement('ul');
         inner.className = 'bnp-nb-secul';
         el.before(sec);
         sec.append(el, inner);
+        if (!secs.has(sec.dataset.cat)) secs.set(sec.dataset.cat, inner);
         continue;
       }
-      if (sec && el.tagName === 'LI' && (el.classList.contains('bnp-nb-board') || el.classList.contains('bnp-nb-prem'))) { inner.append(el); continue; }
-      if (el.tagName === 'LI' && (el.classList.contains('bnp-nb-hero') || el.classList.contains('bnp-nb-ad'))) sec = null;   // (Neopets' own rows between sections: where they are)
+      const inner = el.tagName === 'LI' && (el.classList.contains('bnp-nb-board') || el.classList.contains('bnp-nb-prem')) ? secs.get(el.dataset.cat || '') : null;
+      if (inner) inner.append(el);   // (Neopets' own rows, ads and its heading: where they are)
     }
     for (const h of ul.querySelectorAll('h3.bnp-nb-cat')) {   // (each section's bar says how many boards are in it)
       const n = boards.filter((b) => b.cat === h.dataset.cat).length;
@@ -4598,7 +4862,7 @@
     const sec = Number(nbOpt().boardLive) || 0;
     if (sec && next === 1) {   // (never on the dot either; further apart while you're away, none after 4 hours away, back to your setting when you are)
       let t = 0;
-      const tick = () => { clearTimeout(t); t = setTimeout(() => { if (!document.hidden && nbHere.next === 1 && actIdle() < ACT_STOP) nbBoardFresh(false); tick(); }, nbJitter(actGap(Math.max(30, sec) * 1000) / 1000)); };
+      const tick = () => { clearTimeout(t); const now = Number(nbOpt().boardLive) || 0; if (!now) return; t = setTimeout(() => { if (!document.hidden && nbHere.next === 1 && actIdle() < ACT_STOP) nbBoardFresh(false); tick(); }, nbJitter(actGap(Math.max(30, now) * 1000) / 1000)); };   // (your setting read each time: off stops it)
       tick();
       addEventListener('bnp-back', tick);
     }
@@ -4830,42 +5094,44 @@
     h.freshBusy = true;
     const btn = $('[data-nbfresh="now"]');
     if (now && btn) btn.classList.add('is-busy');
+    const at = h.next;
     try {
       const doc = await nbFetch(`/neoboards/boardlist.phtml?board=${h.board}${h.next > 1 ? `&next=${h.next}` : ''}`);
+      if (h.next !== at || h.going) return;   // (you've gone to another page meanwhile: this one's topics aren't for it)
       const rows = [...doc.querySelectorAll('#boardList > ul > li:not(.boardNavTop)')];
       if (!rows.length) return;
-      if (now) { nbBoardSwap(rows); return; }
+      if (now) { nbBoardSwap(rows, doc); return; }
       const was = h.rs || new Map();
       const changed = rows.filter((li) => { const a = li.querySelector('.boardTopicTitle a[href*="topic="]'), id = a && (/topic=(\d+)/.exec(a.getAttribute('href')) || [])[1], r = reClean((li.querySelector('.replies') || {}).textContent).replace(/[^\d]/g, ''); return id && was.get(id) !== r; }).length;
       const pill = $('[data-nbfresh="show"]');
-      if (pill && changed) { h.freshRows = rows; pill.textContent = `${changed} topic${changed === 1 ? '' : 's'} with new posts · show them`; pill.hidden = false; }
+      if (pill && changed) { h.freshRows = rows; h.freshDoc = doc; pill.textContent = `${changed} topic${changed === 1 ? '' : 's'} with new posts · show them`; pill.hidden = false; }
     } catch (_) { if (now) nbSay('The board didn’t load just now: try again'); } finally { h.freshBusy = false; if (btn) btn.classList.remove('is-busy'); }
   }
-  function nbBoardSwap(rows) {
+  function nbBoardSwap(rows, doc) {   // (this page's topics again, as a page loaded in place has them: topics only, its own page bar, Show more above it)
     const ul = $('#boardList > ul'), cols = ul && ul.querySelector('[data-bnp="nbcols"]');
     if (!cols) return;
+    const topics = rows.filter((li) => !li.matches('.boardNavBottom') && li.querySelector('.boardTopicTitle a[href*="topic="]'));   // (an advert's row can't fill here)
+    if (!topics.length) return;
     const was = nbHere.rs || new Map();
-    for (const li of ul.querySelectorAll(':scope > li[data-topic], :scope > li:not(.boardNavTop)')) li.remove();
-    const seen = nbSeen(), me = nbMe();
-    let at = cols;
-    for (const li of rows) {
-      const n = document.importNode(li, true);
-      at.after(n);
-      at = n;
-      nbRow(n, seen, me);
-      if (was.size && was.get(n.dataset.topic) !== n.dataset.r) n.classList.add('is-flash');
-    }
-    const now = [...ul.querySelectorAll(':scope > li[data-topic]')];
-    nbHere.rs = new Map(now.map((li) => [li.dataset.topic, li.dataset.r]));
+    for (const li of ul.querySelectorAll(':scope > li:not(.boardNavTop):not(.boardNavBottom)')) li.remove();
+    const seen = nbSeen(), me = nbMe(), added = topics.map((li) => document.importNode(li, true)), frag = document.createDocumentFragment();
+    frag.append(...added);
+    cols.after(frag);
+    for (const n of added) { nbRow(n, seen, me); if (was.size && was.get(n.dataset.topic) !== n.dataset.r) n.classList.add('is-flash'); }
+    const botNew = doc && doc.querySelector('#boardList > ul > .boardNavBottom'), bot = ul.querySelector(':scope > .boardNavBottom');
+    if (botNew && bot) bot.replaceWith(document.importNode(botNew, true));
+    nbHere.rs = new Map(added.map((li) => [li.dataset.topic, li.dataset.r]));
     nbHere.more = nbHere.next;
     nbHalfSet(nbHere.half || 1);
-    const box = ul.querySelector('[data-bnp="nbmore"]');
-    if (box && !box.querySelector('[data-nbmore]')) box.innerHTML = `${nbMoreBtn()}`;
+    const more = ul.querySelector('[data-bnp="nbmore"]');
+    if (more) { more.innerHTML = `${nbMoreBtn()}`; const b = ul.querySelector(':scope > .boardNavBottom'); if (b) b.before(more); }
     const pill = $('[data-nbfresh="show"]');
     if (pill) pill.hidden = true;
-    nbLearn(now);
+    nbLearn(added);
+    nbMineRows(added, seen, me);
     nbMarksPaint();
     nbFilter();
+    nbPagerPaint();
   }
 
   // ---- a topic: its header (bookmark, new posts, the latest, reply), each post as a card, new ones as they come ----
@@ -5322,9 +5588,10 @@
     });
     nbSay('Your reply is in');
   }
+  const nbHeadOf = (src) => goNorm(String(src || '').replace(/\[\/?[a-z]+[^\]]*\]/gi, ' ').replace(NB_SMRE || /(?!)/g, ' ')).slice(0, 48);   // (the start of what you wrote, as the post shows it: no [codes], no smilies' words)
   async function nbPostLanded(text) {   // (the topic's newest page, looked at: your words there as its last post of yours?)
     try {
-      const h = nbHere, me = nbMe(), head = goNorm(text).slice(0, 48);
+      const h = nbHere, me = nbMe(), head = nbHeadOf(text);
       const first = await nbFetch(`/neoboards/topic.phtml?topic=${h.topic}${h.next > 1 ? `&next=${h.next}` : ''}`);
       let doc = first, url = `/neoboards/topic.phtml?topic=${h.topic}${h.next > 1 ? `&next=${h.next}` : ''}`;
       const nextA = [...first.querySelectorAll('.topicNavTop .pageNav a.boardPageButton')].find((a) => /next/i.test(a.textContent));
@@ -5450,7 +5717,7 @@
       + `<button type="button" class="bnp-nba is-ic" data-nba="more" aria-haspopup="menu" aria-expanded="false" title="More: follow, mute, a tag, copy…" aria-label="More for ${e}">${NB_SVG.dots}</button></span>`;
   }
   // (a post's words: Neopets' addresses become links; a picture's address shows the picture under it)
-  const NB_URL = /\b(https?:\/\/[^\s<>"']+|(?:www\.)?neopets\.com\/[^\s<>"']*)/gi;
+  const NB_URL = /(?<![\w.-])(https?:\/\/[^\s<>"']+|(?:[\w-]+\.)*neopets\.com\/[^\s<>"']*)/gi;   // (bare addresses on any Neopets host, from the start of the host)
   const NB_PICURL = /\.(?:png|gif|jpe?g|webp)(?:[?#][^\s]*)?$/i;
   const nbPicOk = (u) => { const p = nbOpt().pics; return p !== 'off' && /^https:\/\//i.test(u) && NB_PICURL.test(u) && (p === 'all' || /^https:\/\/(?:images|pets|upload)\.neopets\.com\//i.test(u)); };
   function nbPicEl(u) {
@@ -5479,7 +5746,7 @@
       const s = n.nodeValue, frag = document.createDocumentFragment();
       let at = 0, any = false;
       s.replace(NB_URL, (m, _u, i) => {
-        const url = m.replace(/[),.!?;:'"\]]+$/, ''), full = /^https?:/i.test(url) ? url.replace(/^http:/i, 'https:') : `https://${/^www\./i.test(url) ? '' : 'www.'}${url}`;
+        const url = m.replace(/[),.!?;:'"\]]+$/, ''), full = /^https?:/i.test(url) ? url.replace(/^http:/i, 'https:') : `https://${/^[\w-]+\.neopets\.com/i.test(url) || /^(?:[\w-]+\.){2,}neopets\.com/i.test(url) ? '' : 'www.'}${url}`;
         const np = /^https:\/\/(?:www\.)?neopets\.com\//i.test(full), pic = nbPicOk(full);
         if (!(np && o.links) && !pic) return m;
         frag.append(s.slice(at, i));
@@ -5531,13 +5798,15 @@
     requestAnimationFrame(() => { (line || li).scrollIntoView({ block: 'start' }); li.classList.add('is-flash'); });
   }
   const nbJitter = (sec) => Math.round(sec * 1000 * (0.85 + Math.random() * 0.4));   // (never on the dot: each wait a new 85–125 % of your setting)
-  function nbLive() {   // (the last page of a topic, while you're looking: new posts come in under the others)
-    const sec = Number(nbOpt().live) || 0;
-    if (!sec || nbHere.liveT) return;
-    const tick = () => { clearTimeout(nbHere.liveT); nbHere.liveT = setTimeout(() => { if (!document.hidden && nbHere.last && actIdle() < ACT_STOP) nbCheck(false); tick(); }, nbJitter(actGap(Math.max(20, sec) * 1000) / 1000)); };   // (only while you're on its last page: another page, put in place, waits. Further apart while you're away; none after 4 hours away)
+  function nbLive() {   // (the last page of a topic, while you're looking: new posts come in under the others. Your setting read each time: off stops it)
+    const every = () => Number(nbOpt().live) || 0;
+    if (!every() || nbHere.liveT) return;
+    const tick = () => { clearTimeout(nbHere.liveT); const sec = every(); if (!sec) { nbHere.liveT = 0; return; } nbHere.liveT = setTimeout(() => { if (!document.hidden && nbHere.last && actIdle() < ACT_STOP) nbCheck(false); tick(); }, nbJitter(actGap(Math.max(20, sec) * 1000) / 1000)); };   // (only while you're on its last page: another page, put in place, waits. Further apart while you're away; none after 4 hours away)
     tick();
-    addEventListener('bnp-back', () => { if (!document.hidden && nbHere.last && Date.now() - (nbHere.checkedAt || 0) > Math.max(20, sec) * 1000) nbCheck(false); tick(); });   // (back after a while: at once if it's due, then your setting again)
-    document.addEventListener('visibilitychange', () => { if (!document.hidden && nbHere.last && Date.now() - (nbHere.checkedAt || 0) > Math.max(20, sec) * 1000) nbCheck(false); });   // (back on the tab: at once, if it's been longer than your setting)
+    if (nbLive.wired) return;
+    nbLive.wired = true;
+    addEventListener('bnp-back', () => { const sec = every(); if (!sec) return; if (!document.hidden && nbHere.last && Date.now() - (nbHere.checkedAt || 0) > Math.max(20, sec) * 1000) nbCheck(false); tick(); });   // (back after a while: at once if it's due, then your setting again)
+    document.addEventListener('visibilitychange', () => { const sec = every(); if (sec && !document.hidden && nbHere.last && Date.now() - (nbHere.checkedAt || 0) > Math.max(20, sec) * 1000) nbCheck(false); });   // (back on the tab: at once, if it's been longer than your setting)
   }
   async function nbCheck(byHand) {
     const h = nbHere;
@@ -5693,7 +5962,11 @@
     ta.addEventListener('input', () => { nbCounter(); nbDraftSave(); nbMention(); nbTaFit(); });
     ta.addEventListener('click', nbMention);
     const keys = (e) => {
-      if (e.target === ta && !mention.hidden && (e.key === 'Tab' || e.key === 'Enter') && !e.ctrlKey && !e.metaKey && !e.shiftKey) { const b = mention.querySelector('button'); if (b) { e.preventDefault(); nbMentionPick(b.dataset.nbat); return; } }
+      if (e.target === ta && !mention.hidden) {   // (the names: ↑ ↓ to one, then Enter or Tab takes it; without one chosen, they do what they always do)
+        const bs = [...mention.querySelectorAll('button')], at = bs.findIndex((b) => b.getAttribute('aria-selected') === 'true');
+        if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && bs.length) { e.preventDefault(); const to = e.key === 'ArrowDown' ? (at + 1) % bs.length : at <= 0 ? bs.length - 1 : at - 1; bs.forEach((b, i) => b.setAttribute('aria-selected', String(i === to))); return; }
+        if ((e.key === 'Tab' || e.key === 'Enter') && at >= 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) { e.preventDefault(); nbMentionPick(bs[at].dataset.nbat); return; }
+      }
       if (e.key === 'Escape' && !mention.hidden) { mention.hidden = true; return; }
       if (!nbOpt().keys || !(e.ctrlKey || e.metaKey) || e.altKey) return;
       if (e.key === 'Enter') { e.preventDefault(); nbSend(); return; }
@@ -5752,12 +6025,12 @@
   function nbMention() {   // (the people who've posted in this topic, for an @ you've started typing)
     const ta = nbForm && nbForm.ta, box = $('[data-bnp="nbmention"]');
     if (!ta || !box) return;
-    const m = /(?:^|\s)@([\w]{0,20})$/.exec(ta.value.slice(0, ta.selectionStart));
+    const m = /(?:^|\s)@([\w]{2,20})$/.exec(ta.value.slice(0, ta.selectionStart));   // (from two letters)
     const me = nbMe(), names = [];
     for (const li of $$('#boardTopic li[data-k]')) { const n = li.dataset.name; if (n && n.toLowerCase() !== me && !names.some((x) => x.n.toLowerCase() === n.toLowerCase())) names.push({ n, av: fullUrl(bgUrl(li.querySelector('.authorIcon'))) }); }
     const found = m ? names.reverse().filter((x) => x.n.toLowerCase().startsWith(m[1].toLowerCase())).slice(0, 6) : [];
     box.hidden = !found.length;
-    box.innerHTML = found.map((x, i) => `<button type="button" data-nbat="${esc(x.n)}" aria-selected="${i === 0}"><i style="background-image:url('${esc(cssUrl(x.av))}')"></i>@${esc(x.n)}</button>`).join('');
+    box.innerHTML = found.map((x, i) => `<button type="button" data-nbat="${esc(x.n)}" aria-selected="false"><i style="background-image:url('${esc(cssUrl(x.av))}')"></i>@${esc(x.n)}</button>`).join('');
   }
   function nbMentionPick(name) {
     const ta = nbForm && nbForm.ta, box = $('[data-bnp="nbmention"]');
@@ -5804,14 +6077,22 @@
     if (had) { f.ta.focus({ preventScroll: true }); try { f.ta.setSelectionRange(s, e); } catch (_) { /* */ } f.ta.scrollTop = y; }
     nbTaFit();
   }
-  function nbTaFit() {   // (the box as tall as what's written in it: three lines at the least, in your NeoHTML's own size)
+  function nbTaFit() {   // (the box as tall as what's written in it: three lines at the least, in your NeoHTML's own size; beside you, never shorter than you are, NeoSignature or none)
     const ta = nbForm && nbForm.ta;
     if (!ta || !ta.isConnected) return;
     const cs = getComputedStyle(ta), lh = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) || 13) * 1.55;
     const min = Math.round(lh * 3 + (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + 4);
+    const y = scrollY;
     ta.style.height = 'auto';
-    ta.style.height = `${Math.max(min, Math.min(ta.scrollHeight + 4, 640))}px`;
+    const h = Math.max(min, Math.min(ta.scrollHeight + 4, 640));
+    ta.style.height = `${h}px`;
+    if (scrollY !== y) scrollTo(scrollX, y);   // (the page stays where you were)
+    const row = ta.closest('.bnp-nbme-row'), me = row && row.querySelector(':scope > .bnp-nbme'), bub = row && row.querySelector(':scope > .bnp-nbbub');
+    if (!me || !bub || bub.offsetTop > me.offsetTop + 4) return;   // (one under the other, on a narrow screen: as it is)
+    const short = me.offsetHeight - bub.offsetHeight;
+    if (short > 0) ta.style.height = `${Math.min(h + short, 640)}px`;
   }
+  addEventListener('resize', () => { if (nbForm && nbForm.ta) { clearTimeout(nbTaFit.t); nbTaFit.t = setTimeout(nbTaFit, 120); } });
   function nbCounter() {
     const ta = nbForm && nbForm.ta, out = $('[data-g="nbcount"]');
     if (!ta || !out) return;
@@ -5874,7 +6155,7 @@
     const d = nbJson(nbDraftKey(), null);
     if (!d || (!d.v && !d.t) || nbForm.ta.value.trim()) return;
     if (d.sent && nbForm.kind === 'reply') {   // (sent last time: on the page now, it's done with)
-      const me = nbMe(), head = goNorm(d.v).slice(0, 48);
+      const me = nbMe(), head = nbHeadOf(d.v);
       if (head && $$('#boardTopic li[data-k]').some((li) => li.dataset.author === me && goNorm((li.querySelector('.boardPostMessage') || {}).textContent || '').includes(head))) { try { localStorage.removeItem(nbDraftKey()); } catch (_) { /* */ } return; }
     }
     nbForm.ta.value = d.v || '';
@@ -6057,7 +6338,7 @@
   }
   function nbWhoMenu(name, li) {
     const w = nbWho(name) || {}, self = nbMe() === name.toLowerCase();
-    return `<div class="bnp-nbmenu" role="menu"><div class="bnp-nbmenu-h is-name">${esc(name)}</div>${self ? '' : `<button type="button" role="menuitem" data-nbm="fol">${w.f ? '★ Stop following' : '☆ Follow'}<small>${w.f ? '' : 'their posts stand out'}</small></button><button type="button" role="menuitem" data-nbm="mute">${w.m ? 'Unmute' : 'Mute'}<small>${w.m ? '' : 'their posts fold away'}</small></button>`}<button type="button" role="menuitem" data-nbm="tag">${w.t ? 'Change your tag' : 'Add a tag'}<small>a note only you see</small></button><hr><a role="menuitem" href="/userlookup.phtml?user=${encodeURIComponent(name)}">Their lookup</a><button type="button" role="menuitem" data-nbm="copy">Copy their name</button>${li ? '<button type="button" role="menuitem" data-nbm="link">Copy a link to this post</button>' : ''}</div>`;
+    return `<div class="bnp-nbmenu" role="menu"><div class="bnp-nbmenu-h is-name">${esc(name)}</div>${self ? '' : `<button type="button" role="menuitem" data-nbm="fol">${w.f ? '★ Stop following' : '☆ Follow'}<small>${w.f ? '' : 'their posts stand out'}</small></button><button type="button" role="menuitem" data-nbm="mute">${w.m ? 'Unmute' : 'Mute'}<small>${w.m ? '' : 'their posts fold away'}</small></button>`}<button type="button" role="menuitem" data-nbm="tag">${w.t ? 'Change your tag' : 'Add a tag'}<small>a note only you see</small></button><hr><a role="menuitem" href="/userlookup.phtml?place=9999&user=${encodeURIComponent(name)}">Their lookup</a><button type="button" role="menuitem" data-nbm="copy">Copy their name</button>${li ? '<button type="button" role="menuitem" data-nbm="link">Copy a link to this post</button>' : ''}</div>`;
   }
   function nbTagForm(name) {
     const w = nbWho(name) || {}, c = w.c || NB_TAGC[0];
@@ -6126,11 +6407,12 @@
       e.preventDefault();
       e.stopPropagation();
       if (d.nbx === 'histall') { const was = nbHist(); nbJsonSet('bnp-nbhist', []); nbPanel(null); nbHomePaint(); nbSay('Read lately is cleared', () => { nbJsonSet('bnp-nbhist', was); nbHomePaint(); }); return; }
-      const [kind, id] = d.nbx.split(':');
+      const [kind, id] = d.nbx.split(':'), open = ($('[data-g="nbpanel"]:not([hidden])') || { dataset: {} }).dataset.open;
       if (kind === 'mark') { nbToggleMark(Number(id), {}); }
       else { const was = nbHist(); nbJsonSet('bnp-nbhist', was.filter((x) => String(x.id) !== id)); nbHomePaint(); nbSay('Taken off Read lately', () => { nbJsonSet('bnp-nbhist', was); nbHomePaint(); nbPanel(null); }); }
       const p = $('[data-g="nbpanel"]');
-      if (p && !p.hidden) p.innerHTML = p.dataset.open === 'marks' ? nbMarksHtml() : nbHistHtml();
+      if (p && p.hidden && open) nbPanel(open);   // (the bar drawn again, the list closed with it: open again where you were)
+      else if (p && !p.hidden) p.innerHTML = p.dataset.open === 'marks' ? nbMarksHtml() : nbHistHtml();
       return;
     }
     if (d.nbstar) { e.preventDefault(); nbStar(Number(d.nbstar)); return; }
@@ -6184,7 +6466,7 @@
     if ('nbmore' in d) { nbMore(b); return; }
     if ('nbmoreAnyway' in d) { nbMore(b, true); return; }
     if (d.nbfresh === 'now') { nbBoardFresh(true); return; }
-    if (d.nbfresh === 'show') { if (nbHere.freshRows) nbBoardSwap(nbHere.freshRows); nbHere.freshRows = null; return; }
+    if (d.nbfresh === 'show') { if (nbHere.freshRows) nbBoardSwap(nbHere.freshRows, nbHere.freshDoc); nbHere.freshRows = nbHere.freshDoc = null; return; }
     if (d.nbdraft === 'clear' && nbForm) {
       const was = { v: nbForm.ta.value, t: nbForm.title ? nbForm.title.value : '' };
       nbForm.ta.value = '';
@@ -6271,12 +6553,12 @@
       <div class="bnp-card"${hide}>
         <p class="bnp-note">Follow someone and their posts and topics stand out; mute them and they fold away; a tag is a little note by their name that only you see. From ⋯ under any post, or here.</p>
         <div class="bnp-f"><span>Someone</span><input type="text" class="bnp-inline" data-g="nbwho" placeholder="Their username" maxlength="20" spellcheck="false"><button type="button" class="bnp-linkbtn" data-nbh="fol">Follow</button><button type="button" class="bnp-linkbtn" data-nbh="mute">Mute</button></div>
-        ${ppl.length ? `<div class="bnp-nbppl">${ppl.map((w) => `<div class="bnp-nbprow"><a href="/userlookup.phtml?user=${encodeURIComponent(w.n)}">${esc(w.n)}</a>${w.t ? `<span class="bnp-nbptag" title="${esc(w.note || '')}">${esc(w.t)}</span>` : ''}<label><input type="checkbox" data-nbpf="${esc(w.n)}"${w.f ? ' checked' : ''}> Following</label><label><input type="checkbox" data-nbpm="${esc(w.n)}"${w.m ? ' checked' : ''}> Muted</label><button type="button" class="bnp-chip-x" data-nbh="forget:${esc(w.n)}" title="Forget them (follow, mute and tag)" aria-label="Forget them">×</button></div>`).join('')}</div>` : ''}
+        ${ppl.length ? `<div class="bnp-nbppl">${ppl.map((w) => `<div class="bnp-nbprow"><a href="/userlookup.phtml?place=9999&user=${encodeURIComponent(w.n)}">${esc(w.n)}</a>${w.t ? `<span class="bnp-nbptag" title="${esc(w.note || '')}">${esc(w.t)}</span>` : ''}<label><input type="checkbox" data-nbpf="${esc(w.n)}"${w.f ? ' checked' : ''}> Following</label><label><input type="checkbox" data-nbpm="${esc(w.n)}"${w.m ? ' checked' : ''}> Muted</label><button type="button" class="bnp-chip-x" data-nbh="forget:${esc(w.n)}" title="Forget them (follow, mute and tag)" aria-label="Forget them">×</button></div>`).join('')}</div>` : ''}
       </div>
       <h5${hide}>Bookmarks <span class="bnp-note">${marks.length || ''}</span></h5>
       <div class="bnp-card"${hide}>
         ${sw('mine', 'Topics you start go in Bookmarks by themselves', 'Each one marked Yours. One you take out stays out.')}
-        ${marks.length ? `<div class="bnp-nbppl">${marks.map((m) => `<div class="bnp-nbprow">${m.mine ? '<span class="bnp-nbmine">Yours</span>' : ''}<a href="${esc(nbTopicUrl(m.id, m.r || 0))}">${esc(m.t || `Topic ${m.id}`)}</a><span class="bnp-note">${esc(m.bn || '')}</span><button type="button" class="bnp-chip-x" data-nbh="unmark:${m.id}" title="Take the bookmark away" aria-label="Take the bookmark away">×</button></div>`).join('')}</div>` : '<p class="bnp-note">None yet: Bookmark at the top of any topic.</p>'}
+        ${marks.length ? `<div class="bnp-nbppl">${marks.map((m) => `<div class="bnp-nbprow">${m.mine ? '<span class="bnp-nbmine">Yours</span>' : ''}<a href="${esc(nbTopicUrl(m.id, m.r || 0))}">${esc(m.t || `Topic ${m.id}`)}</a><span class="bnp-note">${esc(m.bn || '')}</span><button type="button" class="bnp-chip-x" data-nbh="unmark:${esc(String(m.id))}" title="Take the bookmark away" aria-label="Take the bookmark away">×</button></div>`).join('')}</div>` : '<p class="bnp-note">None yet: Bookmark at the top of any topic.</p>'}
         <div class="bnp-tools"><button type="button" class="bnp-linkbtn" data-nbh="readclear">Forget what you’ve read</button><span class="bnp-note">every “new” marker and Read lately start again</span></div>
       </div>`;
   }
@@ -6285,6 +6567,7 @@
       const i = t.dataset.nbov.indexOf(':'), k = t.dataset.nbov.slice(0, i), v = t.dataset.nbov.slice(i + 1);
       S.nb = { ...(S.nb || {}), [k]: /^\d+$/.test(v) ? Number(v) : v };
       if (k === 'per' && nbHere.kind === 'board') { nbHalfSet(nbHalfOf(location.href)); nbFilter(); nbPagerPaint(); }   // (this board's page, at once)
+      if (k === 'live' && nbHere.last) nbLive();   // (switched on again here: it starts looking at once)
       if (k === 'avatars' && document.documentElement.classList.contains('bnp-nb')) document.documentElement.classList.toggle('bnp-nb-bigav', v === 'big');   // (this page changes at once)
       if (k === 'who' && document.documentElement.classList.contains('bnp-nb')) for (const m of ['all', 'hover', 'click']) document.documentElement.classList.toggle(`bnp-nb-who-${m}`, m === v);
       if (k === 'pet' && document.documentElement.classList.contains('bnp-nb')) {   // (this page's pets change at once, to Neopets' picture at that size)
@@ -6848,7 +7131,7 @@
     html.bnp-st .settings-ro, html.bnp-st input.settings-textbox:read-only { color: var(--nb-text); font: 14px var(--nb-ui); }
     html.bnp-st .settings-center { padding: 12px 20px; }
     html.bnp-st .settings-item.panel-link { display: flex !important; align-items: center; justify-content: space-between; gap: 12px; color: var(--nb-link); font: 15px/1.3 var(--nb-ui); cursor: pointer; transition: background .1s; }   /* (a row that opens more: a link, not greyed out) */
-    html.bnp-st .settings-item.panel-link:hover { background: var(--nb-hover); }
+    html.bnp-st .settings-item.panel-link:hover { background: var(--nb-hover, color-mix(in srgb, var(--nb-panel, #fff) 46%, #fff)); }
     html.bnp-st .settings-item.panel-link .arrow { border-color: var(--nb-link); }
     html.bnp-st .settings-link { font: 13.5px var(--nb-ui); }
     html.bnp-st .settings-link a, html.bnp-st .settings-desc a, html.bnp-st .input-desc a { color: var(--nb-blink); }
@@ -6975,7 +7258,7 @@
     nbTheme();
     stEnhance();
     const app = $('#app') || document.body;
-    new MutationObserver(() => { if (!stRaf) stRaf = requestAnimationFrame(() => { stRaf = 0; try { stEnhance(); } catch (e) { report(e); } }); }).observe(app, { childList: true, subtree: true });   // (a section shown, or redrawn after a save: its helpers again, only where missing)
+    new MutationObserver((ms) => { if (ms.every((m) => { const t = m.target.nodeType === 1 ? m.target : m.target.parentElement; return !!t && !!t.closest('[data-bnp]'); })) return; if (!stRaf) stRaf = requestAnimationFrame(() => { stRaf = 0; try { stEnhance(); } catch (e) { report(e); } }); }).observe(app, { childList: true, subtree: true });   // (changes inside our own parts left alone)   // (a section shown, or redrawn after a save: its helpers again, only where missing)
     new MutationObserver((ms) => {   // (a theme picked here: Neopets puts its sheet in at once; everything of BetaNav Plus's follows when it has come)
       for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1 && n.id === 'themeToggle' && n.tagName === 'LINK') n.addEventListener('load', () => { for (const old of themeLinks().slice(0, -1)) old.remove(); themeChanged(); }, { once: true });
     }).observe(document.head, { childList: true });
@@ -7028,7 +7311,14 @@
       inp.setAttribute('aria-label', 'Find a NeoTitle');
       title.before(inp);
       inp.addEventListener('input', () => { const q = goNorm(inp.value); for (const o of title.options) o.hidden = !(!q || !o.value || goNorm(o.textContent).includes(q)); });
-      inp.addEventListener('keydown', (e) => { if (e.key !== 'Enter') return; e.preventDefault(); const o = [...title.options].find((x) => !x.hidden && x.value); if (o && title.value !== o.value) { title.value = o.value; title.dispatchEvent(new Event('change', { bubbles: true })); } });
+      inp.addEventListener('keydown', (e) => {   // (Enter: the NeoTitle you've written out whole, if it is one; else the list, to choose from — never a guess, as Neopets saves at once)
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const q = goNorm(inp.value), o = q && [...title.options].find((x) => x.value && goNorm(x.textContent) === q);
+        if (o) { if (title.value !== o.value) { title.value = o.value; title.dispatchEvent(new Event('change', { bubbles: true })); } return; }
+        title.focus();
+        try { if (typeof title.showPicker === 'function') title.showPicker(); } catch (_) { /* */ }
+      });
     }
     if (html && !form.querySelector('[data-bnp="stbuild"]')) {   // (NeoHTML made by clicking: a colour, size and font round the word neoHTML, Neopets' way)
       const b = document.createElement('div');
@@ -7039,7 +7329,7 @@
         const t = e.target.closest('button');
         if (!t) return;
         e.preventDefault();
-        const pick = stFontPick(html.value);
+        const pick = stFontPick(html.value), was = html.value;
         if (t.dataset.c) pick.c = t.dataset.c;
         if (t.dataset.s) pick.s = Number(t.dataset.s);
         if (t.dataset.f) pick.f = t.dataset.f;
@@ -7049,6 +7339,7 @@
         html.dispatchEvent(new Event('change', { bubbles: true }));   // (saved: Neopets' page saves a field on its change, as when you type and leave it)
         stBuildPaint(b, html.value);
         stPrevPaint();
+        if ('none' in t.dataset && was.trim()) nbSay('Your NeoHTML is off', () => { html.value = was; html.dispatchEvent(new Event('input', { bubbles: true })); html.dispatchEvent(new Event('change', { bubbles: true })); stBuildPaint(b, html.value); stPrevPaint(); });   // (Undo: it back, saved again)
       });
       b.addEventListener('input', (e) => {   // (a colour of your own: the preview follows the picker; it's saved once the picker closes)
         const cp = e.target.closest && e.target.closest('[data-cpick]');
@@ -7128,7 +7419,8 @@
     const sig = $('#neosignature_id'), c = $('[data-bnp="stcount"]');
     if (!sig || !c) return;
     const max = Number(sig.getAttribute('maxlength')) || 120, n = sig.value.length;
-    c.textContent = `${n} / ${max}`;
+    const t = `${n} / ${max}`;
+    if (c.textContent !== t) c.textContent = t;   // (only when it changes: writing it again is a change Settings 2's watcher would answer, over and over)
     c.classList.toggle('is-full', n >= max);
   }
   function stPrevPaint() {   // (Neopets' own preview of your post: your name, age, gender and pet as the boards show them; your words in what you've typed, before Enter saves it)
@@ -7189,6 +7481,7 @@
       --nb-head: "Palanquin", "Arial Bold", sans-serif; --nb-ui: "MuseoSansRounded700", Arial, sans-serif; --nb-txt: "MuseoSansRounded500", Arial, sans-serif; }
     html.bnp-nm td.content { color: var(--nb-text); font-family: var(--nb-txt); }
     html.bnp-nm-cloak td.content { visibility: hidden !important; }
+    html.bnp-nm td.content.bnp-nm-busy > :not([data-bnp="nmhead"]):not([data-bnp="nmmini"]) { opacity: .45; transition: opacity .15s; pointer-events: none; }   /* (another of Neomail's pages on its way) */
     html.bnp-nm td.content > br, html.bnp-nm td.content > p:empty, html.bnp-nm .bnp-nm-nav0, html.bnp-nm .bnp-nm-viewing, html.bnp-nm .bnp-nm-pager0, html.bnp-nm tr.bnp-nm-act0 { display: none !important; }
     /* the header: Neomail on your theme's band, how full your Inbox is, Neopets' pages as tabs */
     html.bnp-nm .bnp-nmhead { margin: 14px 0 16px; overflow: hidden; border: 2px solid var(--nb-frame); border-radius: 15px; background: #fff; box-shadow: 0 3px 0 var(--nb-frame); }
@@ -7497,10 +7790,14 @@
     }
     if (changed || on.join() !== d.on.join() || Date.now() - d.at > 5 * 60000) { d.at = Date.now(); d.on = on; nfSave(d); }
   }
-  const nfData = () => { try { const v = JSON.parse(localStorage.getItem('bnp-nf') || 'null'); if (v && typeof v === 'object') return { at: v.at || 0, on: Array.isArray(v.on) ? v.on : [], av: v.av && typeof v.av === 'object' ? v.av : {}, lk: v.lk && typeof v.lk === 'object' ? v.lk : {}, fr: Array.isArray(v.fr) ? v.fr : [], frAt: v.frAt || 0 }; } catch (_) { /* */ } return { at: 0, on: [], av: {}, lk: {}, fr: [], frAt: 0 }; };   // (fr: your Neofriends, as their page last listed them; lk: whose avatar is only their lookup's)
-  const nfSave = (d) => { try { localStorage.setItem('bnp-nf', JSON.stringify(d)); } catch (_) { /* */ } };
+  const nfData = () => {   // (av: everyone's avatars, seen by any of your accounts; fr: this account's Neofriends, as their page last listed them; on: those online)
+    const read = (k) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v && typeof v === 'object' ? v : null; } catch (_) { return null; } };
+    const sh = read('bnp-nf') || {}, mine = read(`bnp-nf:${nclMe() || '-'}`) || (Array.isArray(sh.fr) || Array.isArray(sh.on) ? sh : {});   // (from before, all in one: the first account to look takes its lists)
+    return { at: mine.at || 0, on: Array.isArray(mine.on) ? mine.on : [], av: sh.av && typeof sh.av === 'object' ? sh.av : {}, lk: sh.lk && typeof sh.lk === 'object' ? sh.lk : {}, fr: Array.isArray(mine.fr) ? mine.fr : [], frAt: mine.frAt || 0 };
+  };
+  const nfSave = (d) => { try { localStorage.setItem('bnp-nf', JSON.stringify({ av: d.av, lk: d.lk })); localStorage.setItem(`bnp-nf:${nclMe() || '-'}`, JSON.stringify({ at: d.at, on: d.on, fr: d.fr, frAt: d.frAt })); } catch (_) { /* */ } };
   // Your Neofriends' avatars wherever Neopets shows the one they wear: their posts on the boards, a Neomail from them, Neofriends
-  // online. (A lookup's only stands in till then: see nfLook)
+  // online, and their lookup (see nfLook). The newest seen is kept
   function nfSee(user, pic) {
     const u = String(user || '').trim().toLowerCase();
     pic = fullUrl(String(pic || '').trim());
@@ -7515,19 +7812,86 @@
       if (changed) nfSave(d);
     }, 600);
   }
-  // A Neofriend's lookup: the one avatar on it (the newest of their secret avatars, in their collections; not always the one they
-  // wear) stands in on their card till you see the one they wear. It never takes that one's place
+  // A Neofriend's lookup: the avatar on it is the one they use now (the boards show the same one), kept as theirs
+  const nfLookPic = (root) => [...root.querySelectorAll('#usercollections img[src*="/neoboards/avatars/"]'), ...root.querySelectorAll('#userinfo img[src*="/neoboards/avatars/"]')].map((i) => fullUrl(i.getAttribute('src')))
+    .find((x) => /\/neoboards\/avatars\/[^/?#]+\.(gif|png|jpe?g|webp)$/i.test(x) && !/\/default\.gif$/i.test(x)) || '';   // (a lookup's avatar: this page's, or one read)
   function nfLook() {
     if (location.pathname !== '/userlookup.phtml') return;
     const u = String(new URLSearchParams(location.search).get('user') || '').trim().toLowerCase();
-    const pic = [...$$('#usercollections img[src*="/neoboards/avatars/"]'), ...$$('#userinfo img[src*="/neoboards/avatars/"]')].map((i) => fullUrl(i.getAttribute('src')))
-      .find((x) => /\/neoboards\/avatars\/[^/?#]+\.(gif|png|jpe?g|webp)$/i.test(x) && !/\/default\.gif$/i.test(x));
+    const pic = nfLookPic(document);
     if (!u || !pic) return;
     const d = nfData();
-    if (!d.fr.includes(u) || (d.av[u] && !d.lk[u]) || d.av[u] === pic) return;
+    if (!d.fr.includes(u) || (d.av[u] === pic && !d.lk[u])) return;
     d.av[u] = pic;
-    d.lk[u] = 1;
+    delete d.lk[u];   // (from before: a lookup's was kept as a stand-in)
     nfSave(d);
+  }
+  // Every Neofriend's avatar, when you ask (Settings › NeoChat › Avatars): each one's lookup read in turn at a person's pace (a few
+  // seconds apart and never the same, a longer pause now and then, never two at once; waiting while you're in another tab or away),
+  // for the avatar it shows: the one they use. Only the ones without an avatar here; it can be stopped and carried on, one tab at a time
+  let nfLoad = null;   // ({ on, list, n: read, got: found, why: why it stopped, wait: 'tab' | 'away' | '' }: while it goes, and after)
+  const NF_EACH = 11;   // (seconds a lookup takes, on average, with its pauses: for the time it says it'll take)
+  const nfGap = () => 3500 + Math.random() * 4500 + (Math.random() < 0.2 ? 4000 + Math.random() * 9000 : 0);   // (like clicking from one lookup to the next: 3.5 to 8 seconds, now and then a while longer)
+  async function nfWait(ms) {   // (a pause that only counts while you're on this tab and about, and ends at once when it's stopped)
+    let left = ms;
+    while (left > 0 && nfLoad && nfLoad.on) {
+      const wait = document.hidden ? 'tab' : actIdle() > 5 * 60000 ? 'away' : '';
+      if (wait !== (nfLoad.wait || '')) { nfLoad.wait = wait; nfLoadPaint(); }
+      await new Promise((ok) => setTimeout(ok, Math.min(left, 500)));
+      if (!wait) left -= 500;
+    }
+    if (nfLoad && nfLoad.wait) { nfLoad.wait = ''; nfLoadPaint(); }
+  }
+  const nfLoadLeft = () => { const d = nfData(); return d.fr.filter((u) => !d.av[u]); };
+  function nfLoadHtml() {   // (Settings: the button, what it does, how far it's got)
+    const d = nfData(), left = nfLoadLeft(), L = nfLoad, mins = Math.max(1, Math.round((left.length * NF_EACH) / 60));
+    if (!d.fr.length) return '<p class="bnp-note">Your Neofriends haven’t been read yet: open NeoChat’s Neofriends tab once, then come back here.</p>';
+    const bar = L ? `<div class="bnp-nfload-go"><div class="bnp-nfload-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${L.list.length}" aria-valuenow="${L.n}"><i style="width:${L.list.length ? Math.round((L.n / L.list.length) * 100) : 100}%"></i></div><span>${L.n} of ${L.list.length} read · ${L.got} found${L.on && L.wait === 'tab' ? ' · waiting till you’re back on this tab' : L.on && L.wait === 'away' ? ' · waiting while you’re away' : ''}</span>${L.on ? '<button type="button" class="bnp-pillbtn" data-nclset="nfstop">Stop</button>' : ''}</div>${L.why ? `<p class="bnp-note bnp-nfload-why">${esc(L.why)}</p>` : ''}` : '';
+    const go = L && L.on ? '' : left.length ? `<button type="button" class="bnp-pillbtn is-go" data-nclset="nfload">${L && L.n < L.list.length ? 'Carry on' : `Load ${left.length === 1 ? 'its avatar' : `their ${left.length} avatars`}`}</button>` : '<span class="bnp-note">✓ Every Neofriend has an avatar here.</span>';
+    return `<p class="bnp-note bnp-cardlead">Neofriends without an avatar here: <b>${left.length}</b> of ${d.fr.length}. NeoChat learns each one as it sees it (their posts on the boards, a Neomail from them, Neofriends online), or it can load them now.</p>
+      <div class="bnp-tools">${go}</div>${bar}
+      <p class="bnp-note">It reads each one’s lookup in turn, at a person’s pace: a few seconds apart and never the same, with a pause now and then, never two at once${left.length && !(L && L.on) ? ` (about ${mins} ${mins === 1 ? 'minute' : 'minutes'} for ${left.length === 1 ? 'one' : `these ${left.length}`})` : ''}. Keep this page open: it waits while you’re in another tab or away, and carries on when you’re back. A lookup shows the avatar they use now.</p>`;
+  }
+  function nfLoadPaint() { const box = hub && hub.main.querySelector('[data-g="nfload"]'); if (box) box.innerHTML = nfLoadHtml(); }
+  async function nfLoadRun() {
+    if (nfLoad && nfLoad.on) return;
+    const list = nfLoadLeft();
+    if (!list.length) return;
+    nfLoad = { on: true, list, n: 0, got: 0, why: '' };
+    nfLoadPaint();
+    const go = async () => {
+      let since = 0, rest = 8 + Math.floor(Math.random() * 7);   // (a longer pause every 8 to 14 lookups, as a person stops to look at one)
+      for (const u of list) {
+        await nfWait(0);   // (on this tab and about, first)
+        if (!nfLoad.on) { nfLoad.why = 'Stopped: Carry on goes on from here.'; break; }
+        if (!nfData().av[u]) {   // (seen meanwhile, on a board or in a Neomail: left as it is)
+          let pic = '';
+          try {
+            const r = await fetch(`/userlookup.phtml?place=9999&user=${encodeURIComponent(u)}`, { credentials: 'include' });   // (the lookup's address that never asks for a check)
+            if (!r.ok) { nfLoad.why = `Neopets answered ${r.status}: stopped here. Carry on in a while.`; break; }
+            const html = await r.text(), doc = new DOMParser().parseFromString(html, 'text/html');
+            if (doc.querySelector('form[action*="login"] input[type="password"], #loginButton')) { nfLoad.why = 'You’re logged out of Neopets: log in, then Carry on.'; break; }
+            if (!doc.querySelector('#userinfo, #usercollections')) {   // (not a lookup: a check to do, or a name that's gone)
+              if (/captcha|are you a robot|verify you are/i.test(html)) { nfLoad.why = 'Neopets asked for a check before showing a lookup: stopped here. Open a lookup yourself, then Carry on.'; break; }
+            } else pic = nfLookPic(doc);
+          } catch (_) { nfLoad.why = 'Neopets didn’t answer just now: Carry on in a moment.'; break; }
+          if (pic) { const d = nfData(); if (!d.av[u]) { d.av[u] = pic; delete d.lk[u]; nfSave(d); nfLoad.got++; if (ncl) nclPaint(); } }
+        }
+        nfLoad.n++;
+        nfLoadPaint();
+        if (nfLoad.n < list.length && nfLoad.on) {
+          if (++since >= rest) { since = 0; rest = 8 + Math.floor(Math.random() * 7); await nfWait(20000 + Math.random() * 25000); }
+          else await nfWait(nfGap());
+        }
+      }
+      nfLoad.on = false;
+      if (nfLoad.n >= list.length && !nfLoad.why) nfLoad.why = `Done: ${nfLoad.got} of ${list.length} found${nfLoad.got < list.length ? ' (a lookup with none, or the plain one, has nothing to show)' : ''}.`;
+      nfLoadPaint();
+    };
+    try {
+      if (navigator.locks && navigator.locks.request) await navigator.locks.request('bnp-nf-avload', { ifAvailable: true }, async (lock) => { if (!lock) { nfLoad.on = false; nfLoad.why = 'Another Neopets tab is loading them already.'; nfLoadPaint(); return; } await go(); });
+      else await go();
+    } catch (e) { report(e); if (nfLoad) { nfLoad.on = false; nfLoadPaint(); } }
   }
   function nmFriends(tc) {   // (your Neofriends: each one a card, Neopets' own fields in it, its Update button still saving)
     const form = tc.querySelector('form[action*="process_neofriend"]'), t = form && form.querySelector('table');
@@ -7546,7 +7910,7 @@
       const online = nf.on.has(lc), av = nf.av[lc] || '';
       const card = document.createElement('div');
       card.className = `bnp-nmfr${online ? ' is-on' : ''}`;
-      card.innerHTML = `<div class="bnp-nmfr-top"><span class="bnp-nmfr-pic${av ? '' : ' is-none'}" style="background-image:url('${esc(cssUrl(av || AV_DEFAULT_PIC))}')" title="${esc(av ? (nf.lk[lc] ? `${user}’s newest secret avatar, from their lookup. The one they wear takes its place once you see it: on a post of theirs, a Neomail from them or in Neofriends online` : `${user}’s avatar`) : 'Their avatar shows here once you’ve seen it: on their lookup, a post of theirs on the Neoboards, a Neomail from them or in Neofriends online')}"></span><span class="bnp-nmfr-who"><a class="bnp-nmfr-name" href="/userlookup.phtml?user=${encodeURIComponent(user)}">${esc(user)}</a>${real ? `<small>${esc(real)}</small>` : ''}</span><span class="bnp-nmfr-acts" data-slot="acts"></span></div>
+      card.innerHTML = `<div class="bnp-nmfr-top"><span class="bnp-nmfr-pic${av ? '' : ' is-none'}" style="background-image:url('${esc(cssUrl(av || AV_DEFAULT_PIC))}')" title="${esc(av ? `${user}’s avatar` : 'Their avatar shows here once you’ve seen it: on their lookup, a post of theirs on the Neoboards, a Neomail from them or in Neofriends online')}"></span><span class="bnp-nmfr-who"><a class="bnp-nmfr-name" href="/userlookup.phtml?place=9999&user=${encodeURIComponent(user)}">${esc(user)}</a>${real ? `<small>${esc(real)}</small>` : ''}</span><span class="bnp-nmfr-acts" data-slot="acts"></span></div>
         <div class="bnp-nmfr-body"><div class="bnp-nmfr-meta">${online ? '<span class="is-on">Online now</span>' : ''}${reClean(c[4] && c[4].textContent) ? `<span>${esc(reClean(c[4].textContent))} yrs</span>` : ''}${reClean(c[5] && c[5].textContent) ? `<span>${esc(reClean(c[5].textContent))}</span>` : ''}${status && !/^accepted!?$/i.test(status) ? `<span class="is-st">${esc(status)}</span>` : ''}</div><div class="bnp-nmfr-note" data-slot="note"></div></div>
         <div class="bnp-nmfr-foot"><label class="bnp-nmfr-vip" data-slot="vip" title="A VIP: in All VIP's and Neopets' drop-down lists"></label><label class="bnp-nmfr-del" data-slot="del" title="Ticked, Update NeoFriends takes them off your list"></label></div>`;
       const slot = (k) => card.querySelector(`[data-slot="${k}"]`);
@@ -7614,7 +7978,7 @@
         try { full = new URL(href, location.href).href; } catch (_) { /* */ }   // (a whole address: NeoChat puts its link after Neopets' own "/listgreetings.phtml" one, never after a tab of ours)
         const tab = `<a href="${esc(full)}"${here(href) ? ' aria-current="page"' : ''}${a.target ? ` target="${esc(a.target)}"` : ''}>${icon ? `<i style="background-image:url('${esc(cssUrl(icon))}')"></i>` : /type=send/.test(href) ? NB_SVG.pen : ''}<span class="bnp-nmtab-l"${/type=send/.test(href) ? ' data-short="Write"' : ''}>${esc(label)}</span></a>`;
         return /type=send/.test(href) && S.features.nmPopup ? `<span class="bnp-nmtab-pair">${tab}<button type="button" class="bnp-nmtab-pop" data-nmw-open title="Write one in a little window over the page" aria-label="Write a Neomail in a little window">${NMW_POP_SVG}</button></span>` : tab;   // (Write a Neomail: Neopets' page; the button joined to it, the little window)
-      }).join('');
+      }).join('') + (S.features.ncl ? `<a href="${esc(new URL(NCL_PAGE, location.href).href)}" class="bnp-nmtab-ncl" title="NeoChat on a page of its own"><i style="background-image:url('${esc(cssUrl(nclIconUrl()))}')"></i><span class="bnp-nmtab-l">NeoChat</span></a>` : '');   // (NeoChat, full page)
       if (tabs.dataset.sig !== html) { tabs.innerHTML = html; tabs.dataset.sig = html; }
     };
     paint();
@@ -7688,6 +8052,7 @@
     const cap = head.querySelector('[data-g="nmcap"]');
     if (!m || !cap || !/^inbox$/i.test(m[1])) return;
     const n = Number(m[4]), p = Math.min(100, n), c = n >= 95 ? '#d42326' : n >= 80 ? '#e5711c' : '#3bc92e';
+    nbJsonSet(acctKey('bnp-ncl-inbox'), { n, at: Date.now() });   // (for NeoChat's word when it's nearly full)
     cap.innerHTML = `<span class="bnp-nmcap" data-n="${n}" data-c="${c}" title="Neopets stops your Neomail coming once your Inbox has more than 100"><b>${n} of 100</b><i style="--p:${p};--c:${c}"></i><small>${n > 100 ? 'Full: Neomail can’t reach you' : `Room for ${100 - n} more`}</small></span>`;
   }
   function nmAgo(text) {   // ("22/10/2026 01:38pm", Neopian time → "3 h ago", "yesterday", "22 Oct")
@@ -7698,7 +8063,7 @@
     if (mins < 1) return 'just now';
     if (mins < 60) return `${mins} min ago`;
     if (mins < 24 * 60 && now.d === +m[1]) return `${Math.round(mins / 60)} h ago`;
-    if (mins < 48 * 60) return 'yesterday';
+    if (Math.round((Date.UTC(...now.day.split('-').map((x, i) => (i === 1 ? +x - 1 : +x))) - Date.UTC(+m[3], +m[2] - 1, +m[1])) / 864e5) === 1) return 'yesterday';   // (the day before, by the calendar)
     return `${+m[1]} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+m[2] - 1]}${+m[3] !== +now.day.slice(0, 4) ? ` ${m[3]}` : ''}`;
   }
   let nmF = 'all';
@@ -7770,7 +8135,7 @@
     bar.querySelector('[data-nmq]').addEventListener('input', apply);
     bar.querySelector('[data-nmall]').addEventListener('change', (e) => { for (const r of rows) if (!r.tr.classList.contains('is-out')) { r.cb.checked = e.target.checked; r.tr.classList.toggle('is-picked', r.cb.checked); } nmPickPaint(); });
     const act = (value, btn) => {   // (Neopets' own "With selected" list and Go!: as you'd pick them)
-      const picked = rows.filter((r) => r.cb.checked);
+      const picked = rows.filter((r) => r.cb.checked && !r.tr.classList.contains('is-out'));   // (only the ones shown: as many as it says)
       if (!picked.length) { pageSay('Tick the messages first'); return; }
       if (!sel || !go) return;
       const doIt = () => nmPost(form, value, picked.filter((r) => !r.tr.classList.contains('is-out')).length);
@@ -7788,7 +8153,7 @@
     const mv = bar.querySelector('[data-nmmove]');
     if (mv) mv.addEventListener('change', () => { const v2 = mv.value; mv.value = ''; if (v2) act(v2); });
     chips.addEventListener('click', (e) => { const a = e.target.closest('.bnp-nmpager a[href]'); if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button) return; e.preventDefault(); nmGoTo(a.href, true); });   // (‹ › without leaving)
-    if (!nmList.pop) { nmList.pop = true; addEventListener('popstate', () => { if (nmOn() && $('form[name="messages"]')) nmGoTo(location.href, false); }); }
+    // (Back and Forward: nmNav, for every page shown in place)
     nmList.rows = rows;
   }
   // The list's actions and pages without leaving it: Neopets' own form sent as it would be, the list as Neopets then has it put in place
@@ -7830,8 +8195,56 @@
     nmList(tc);
     const head = tc.querySelector('[data-bnp="nmhead"]'), cap = head && head.querySelector('[data-g="nmcap"]');
     if (cap) { cap.textContent = ''; nmCapPaint(tc, head); }
+    nmMiniCap();   // (the small bar's count too)
     return true;
   }
+  // Neomail's own pages in place, without loading the whole page: its tabs, Jump to's chips, the Neofriends' letters and Search for a
+  // friend. A page with work of its own to do (scripts in it), or not one of Neomail's, loads as usual
+  const nmSame = (u) => { try { const x = new URL(u, location.href); return x.origin === location.origin && !!NM_PAGES[x.pathname] && !(x.pathname === '/neomessages.phtml' && /^(neo-?chat|neochat-lite)$/i.test(x.searchParams.get('folder') || '')); } catch (_) { return false; } };
+  let nmNavAsk = 0, nmNavDone = false;
+  const nmKind = (u) => { try { const x = new URL(u, location.href); return `${x.pathname}?${(x.searchParams.get('type') || '').toLowerCase()}`; } catch (_) { return ''; } };
+  const nmFull = () => { try { return JSON.parse(localStorage.getItem('bnp-nm-full') || '[]'); } catch (_) { return []; } };   // (Neomail's pages found to have scripts of their own: loaded as usual from then on, never fetched twice)
+  async function nmNav(href, push) {
+    const tc = $('td.content');
+    if (!tc || !nmOn()) { location.href = href; return; }
+    const ask = ++nmNavAsk;
+    tc.classList.add('bnp-nm-busy');
+    try {
+      const r = await fetch(href, { credentials: 'include' });
+      if (!r.ok) throw new Error(`Neomail page ${r.status}`);
+      const doc = nmDoc(await r.text()), ntc = doc.querySelector('td.content'), url = new URL(r.url || href, location.href);
+      if (ask !== nmNavAsk) return;   // (another was asked for meanwhile: that one)
+      if (ntc && ntc.querySelector('script')) { try { localStorage.setItem('bnp-nm-full', JSON.stringify([...new Set([...nmFull(), nmKind(url.href)])].slice(-20))); } catch (_) { /* */ } }
+      if (!ntc || !nmSame(url.href) || ntc.querySelector('script') || doc.querySelector('form[action*="login"] input[type="password"]')) { location.href = url.href; return; }
+      if (push) history.pushState({ bnpNm: 1 }, '', url.href);
+      nmNavDone = true;
+      if (doc.title) document.title = doc.title;
+      tc.replaceChildren(...[...ntc.childNodes].map((n) => document.importNode(n, true)));
+      delete tc.dataset.bnpNm;
+      nmPage();   // (dressed as it would be on its own)
+      tabsApply(true);
+      const head = tc.querySelector('[data-bnp="nmhead"]:not([hidden]), [data-bnp="nmmini"]');
+      if (head && head.getBoundingClientRect().top < 0) head.scrollIntoView({ block: 'start' });
+    } catch (e) { report(e); if (ask === nmNavAsk) location.href = href; }
+    finally { if (ask === nmNavAsk) tc.classList.remove('bnp-nm-busy'); }
+  }
+  document.addEventListener('click', (e) => {
+    if (e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || !nmOn() || !(e.target instanceof Element)) return;
+    const a = e.target.closest('[data-g="nmtabs"] a[href], .bnp-nmsub a[href], a.bnp-nmrange[href]');
+    if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download') || !nmSame(a.href) || nmFull().includes(nmKind(a.href))) return;
+    e.preventDefault();
+    nmNav(a.href, true);
+  });
+  document.addEventListener('submit', (e) => {   // (Search for a friend, and any other form of Neomail's that only asks for a page)
+    const f = e.target;
+    if (e.defaultPrevented || !nmOn() || !(f instanceof HTMLFormElement) || !f.closest('td.content') || (f.getAttribute('method') || 'get').toLowerCase() !== 'get' || (f.target && f.target !== '_self')) return;
+    const u = new URL(f.getAttribute('action') || location.href, location.href);
+    if (!nmSame(u.href) || nmFull().includes(nmKind(u.href))) return;
+    e.preventDefault();
+    u.search = new URLSearchParams(new FormData(f, e.submitter || undefined)).toString();
+    nmNav(u.href, true);
+  });
+  addEventListener('popstate', () => { if (nmNavDone && nmSame(location.href)) nmNav(location.href, false); });   // (Back and Forward, through the pages shown in place)
   async function nmGoTo(href, push) {   // (another page of the list, in place)
     const tc = $('td.content'), form = tc && tc.querySelector('form[name="messages"]');
     if (!form) { location.href = href; return; }
@@ -7840,6 +8253,7 @@
       const doc = nmDoc(await (await fetch(href, { credentials: 'include' })).text());
       if (!nmSwap(tc, doc)) throw new Error('no list');
       if (push) history.pushState({ bnpNm: 1 }, '', href);
+      nmNavDone = true;
       const head = tc.querySelector('[data-bnp="nmhead"]');
       if (head && head.getBoundingClientRect().top < 0) head.scrollIntoView({ block: 'start', behavior: 'smooth' });
     } catch (e) { report(e); location.href = href; }
@@ -7901,24 +8315,24 @@
   const NMW_FULL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3.5h6.5V10M20.5 3.5l-7 7M10 20.5H3.5V14M3.5 20.5l7-7"/></svg>';
   const NMW_PEOPLE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.8a3.3 3.3 0 0 1 0 6.4M18.2 14.8c1.9.8 3 2.6 3.3 5.2"/></svg>';
   let nmw = null;
-  const nmwDrafts = () => { const v = nbJson(NMW_DRAFTS, {}); return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; };
+  const nmwDrafts = () => { const v = nbJson(acctKey(NMW_DRAFTS), {}); return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; };
   function nmwDraftGet(to) {   // (your unsent words to them; to no one in particular: the newest you have)
     const all = nmwDrafts(), k = String(to || '').trim().toLowerCase();
     if (k) return all[k] || null;
     return Object.values(all).sort((a, b) => (b.at || 0) - (a.at || 0))[0] || null;
   }
-  function nmwDraftPut(was, d) {   // (kept under who it's to: changing To moves it; nothing written, nothing kept; the newest 12)
+  function nmwDraftPut(was, d, keep) {   // (kept under who it's to: a name being written carries it along; keep: drafts there before, never taken away; nothing written, nothing kept; the newest 12)
     const all = nmwDrafts(), k = String(d.to || '').trim().toLowerCase();
-    if (was !== k) delete all[was];
+    if (was !== k && !(keep && keep.has(was))) delete all[was];
     if (String(d.subject || '').trim() || String(d.body || '').trim()) all[k] = { to: String(d.to || '').trim(), subject: d.subject, body: d.body, at: Date.now() };
     else delete all[k];
     for (const x of Object.keys(all).sort((a, b) => (all[b].at || 0) - (all[a].at || 0)).slice(12)) delete all[x];
-    nbJsonSet(NMW_DRAFTS, all);
+    nbJsonSet(acctKey(NMW_DRAFTS), all);
     return k;
   }
-  function nmwDraftDrop(to) { const all = nmwDrafts(), k = String(to || '').trim().toLowerCase(); if (k in all) { delete all[k]; nbJsonSet(NMW_DRAFTS, all); } }
+  function nmwDraftDrop(to) { const all = nmwDrafts(), k = String(to || '').trim().toLowerCase(); if (k in all) { delete all[k]; nbJsonSet(acctKey(NMW_DRAFTS), all); } }
   function nmwPeople() {   // (who you might be writing to: who you've written to lately, then your Neofriends; their avatars where you've seen them)
-    const d = nfData(), recent = nbJson(NMW_TO, []), seen = new Set(), list = [];
+    const d = nfData(), recent = nbJson(acctKey(NMW_TO), []), seen = new Set(), list = [];
     for (const u of [...(Array.isArray(recent) ? recent : []), ...d.fr, ...d.on]) { const k = String(u || '').trim().toLowerCase(); if (k && !seen.has(k)) { seen.add(k); list.push(k); } }
     return { list, av: d.av, fr: new Set([...d.fr, ...d.on]), on: new Set(Date.now() - d.at < 15 * 60000 ? d.on : []) };
   }
@@ -8020,6 +8434,7 @@
       w.subj.value = d.subject || '';
       w.ta.value = d.body || '';
       w.key = w.to.value.trim().toLowerCase();
+      w.keep = new Set(Object.keys(nmwDrafts()));   // (the drafts there now: each stays its person's)
       nmwErr('');
     }
     nmwPlace();
@@ -8041,7 +8456,20 @@
     w.win.style.top = `${Math.round(Math.min(Math.max(pos.y, 0), innerHeight - 48))}px`;
   }
   function nmwSaveSoon() { clearTimeout(nmwSaveSoon.t); nmwSaveSoon.t = setTimeout(nmwSave, 350); }
-  function nmwSave() { clearTimeout(nmwSaveSoon.t); if (nmw) nmw.key = nmwDraftPut(nmw.key, { to: nmw.to.value, subject: nmw.subj.value, body: nmw.ta.value }); }
+  function nmwSave() {
+    clearTimeout(nmwSaveSoon.t);
+    if (!nmw) return;
+    const k = nmw.to.value.trim().toLowerCase(), all = nmwDrafts();
+    if (k && k !== nmw.key && all[k] && nmw.keep && nmw.keep.has(k)) {   // (To is now someone with a draft of their own: theirs shows, the one before stays theirs)
+      if (nmw.key && !nmw.keep.has(nmw.key)) { delete all[nmw.key]; nbJsonSet(acctKey(NMW_DRAFTS), all); }   // (a name half-written on the way: gone)
+      nmw.subj.value = all[k].subject || '';
+      nmw.ta.value = all[k].body || '';
+      nmw.key = k;
+      nmwFit();
+      return;
+    }
+    nmw.key = nmwDraftPut(nmw.key, { to: nmw.to.value, subject: nmw.subj.value, body: nmw.ta.value }, nmw.keep);
+  }
   function nmwFullHref() { const to = nmw.to.value.trim(); nmw.full.href = `/neomessages.phtml?type=send${to ? `&recipient=${encodeURIComponent(to)}` : ''}&bnpdraft=1`; }
   function nmwFit() {   // (the message box as tall as what's in it, up to about half the screen)
     const ta = nmw.ta;
@@ -8126,8 +8554,8 @@
       const bad = await nmSendNow(to, subject, body);
       if (bad) { nmwErr(bad); return; }
       w.form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));   // (for NeoChat: it keeps what Neopets' page sends)
-      const rec = nbJson(NMW_TO, []), k = to.toLowerCase();
-      nbJsonSet(NMW_TO, [k, ...(Array.isArray(rec) ? rec : []).filter((x) => x !== k)].slice(0, 20));
+      const rec = nbJson(acctKey(NMW_TO), []), k = to.toLowerCase();
+      nbJsonSet(acctKey(NMW_TO), [k, ...(Array.isArray(rec) ? rec : []).filter((x) => x !== k)].slice(0, 20));
       nmwDraftDrop(to);
       w.key = '';
       w.to.value = '';
@@ -8158,11 +8586,16 @@
   const NCL_PAGE = '/neomessages.phtml?folder=neo-chat';
   const nclHere = () => location.pathname === '/neomessages.phtml' && /^(neo-chat|neochat-lite)$/.test(new URLSearchParams(location.search).get('folder') || '');   // (and its address from before it was NeoChat)
   const NCL_NOREPLY = new Set(['theneopetsteam']);   // (Neopets' own messages, sent by itself: read here, never answered)
-  const NCL_EVERY = [['1', '1 min'], ['2', '2 min'], ['5', '5 min'], ['10', '10 min'], ['15', '15 min'], ['30', '30 min'], ['0', 'Only when I press Look now']];
+  const NCL_EVERY = [['2', '2 min'], ['5', '5 min'], ['10', '10 min'], ['15', '15 min'], ['30', '30 min'], ['60', '1 hr'], ['120', '2 hr'], ['0', 'Only when I press Look now']];
+  const nclMins = (m) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} hr${m % 60 ? ` ${m % 60} min` : ''}`);   // (12 min, 1 hr, 1 hr 20 min)
+  const nclEveryWords = (m) => (m === 60 ? 'hour' : m % 60 === 0 ? `${m / 60} hours` : `${m} minutes`);
   const NCL_SOUNDS = [['', 'None'], ['chime', 'Chime'], ['bell', 'Bell'], ['ice', 'Icy'], ['marimba', 'Marimba'], ['pop', 'Pop'], ['chirp', 'Chirp'], ['coin', 'Coin'], ['knock', 'Knock'], ['swoosh', 'Swoosh']];
-  const nclEvery = () => { const n = Number(S.features.nclEvery ?? 5); return NCL_EVERY.some(([v]) => Number(v) === n) ? n : 5; };   // (minutes between looks; 0, only when you ask)
+  const nclEvery = () => { const was = Number(S.features.nclEvery ?? 5), n = was === 1 ? 2 : was; return NCL_EVERY.some(([v]) => Number(v) === n) ? n : 5; };   // (every minute, from before: every 2 now)   // (minutes between looks; 0, only when you ask)
   const nclDue = () => Number(get('nclChk', 0)) + actGap(nclEvery() * 60000) * (Number(get('nclJit', 1)) || 1);   // (the next look: your setting after the last, give or take a fifth (new each time: never like clockwork), and further off while you're away. Shared by every tab)
   const NCL_SVG = {
+    bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16.5h12l-1.6-2.2V10a4.4 4.4 0 0 0-8.8 0v4.3z"/><path d="M10.4 19.2a1.7 1.7 0 0 0 3.2 0"/></svg>',
+    bellOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16.5h12l-1.6-2.2V10a4.4 4.4 0 0 0-8.8 0v4.3z"/><path d="M10.4 19.2a1.7 1.7 0 0 0 3.2 0"/><path d="M4.5 4.5l15 15"/></svg>',
+    bolt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.2 3.5 6.5 13h5l-1 7.5 6.8-9.6h-5z"/></svg>',
     chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5h16v11.5H10l-5.5 4v-4H4z"/><path d="M8.5 9h7M8.5 12.2h4.5"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.75 14a8 8 0 1 1-2.15-7.7"/><path d="M20.5 4v5h-5"/></svg>',
     fold: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 17h12"/></svg>',
@@ -8174,10 +8607,18 @@
     gear: NB_SVG.gear,
     home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 11.5 12 4.5l8.5 7"/><path d="M6.5 9.5v10h11v-10"/><path d="M10 19.5v-5h4v5"/></svg>',
     arch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 3.5h13M5.5 20.5h13"/><path d="M7 3.5v2.4c0 2.6 5 4.2 5 6.1s-5 3.5-5 6.1v2.4M17 3.5v2.4c0 2.6-5 4.2-5 6.1s5 3.5 5 6.1v2.4"/><path d="M9.2 18.7c.8-1.5 1.8-2.2 2.8-2.4 1 .2 2 .9 2.8 2.4z" fill="currentColor" stroke-width="1.2"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.2 3.5h5.6l-.9 5.3 3.6 3.6H6.5l3.6-3.6z"/><path d="M12 12.4v8.1"/></svg>',
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg>',
+    paint: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5c-4.9 0-8.5 3.6-8.5 8 0 4.2 3.3 7.5 7.4 7.5 1.3 0 1.9-.8 1.9-1.7 0-1.4-1.2-1.6-1.2-2.7 0-.9.7-1.6 1.7-1.6h2.4c2.6 0 4.8-1.9 4.8-4.6 0-2.7-3.6-4.9-8.5-4.9z"/><circle cx="7.8" cy="11" r="1.1" fill="currentColor"/><circle cx="10.6" cy="7.6" r="1.1" fill="currentColor"/><circle cx="15" cy="7.8" r="1.1" fill="currentColor"/></svg>',
   };
   let ncl = null;   // ({ el: the window or the page's box, page: on its own page, who: the one open, q: what's typed in Find, tab: Chats or Neofriends, stick: the messages kept at their end })
   let nclBusy = false, nclErr = '', nclTick = 0, nclCool = 0, nclAway = '', nclLastN = 0, nclSyncT = 0;   // (nclCool: till when Look now rests after a press; nclAway: '' about, 'slow' away (looks further apart), 'stop' 4 hours away)
-  const nclMe = () => { const m = nbMe() || reClean(($('.user.medText a[href*="userlookup"]') || {}).textContent || '').toLowerCase(); try { if (m) localStorage.setItem('bnp-ncl-me', m); else return localStorage.getItem('bnp-ncl-me') || ''; } catch (_) { /* */ } return m; };
+  const nclMe = () => { const m = nbMe() || reClean(($('.user.medText a[href*="userlookup"]') || {}).textContent || '').toLowerCase(); try { if (m) { if (localStorage.getItem('bnp-ncl-me') !== m) localStorage.setItem('bnp-ncl-me', m); } else return localStorage.getItem('bnp-ncl-me') || ''; } catch (_) { /* */ } return m; };
+  function acctKey(k) {   // (a key of this account's own, in this browser: what was kept for all of them before goes to the first account that looks)
+    const key = `${k}:${nclMe() || '-'}`;
+    try { if (localStorage.getItem(key) == null) { const old = localStorage.getItem(k); if (old != null) { localStorage.setItem(key, old); localStorage.removeItem(k); } } } catch (_) { /* */ }
+    return key;
+  }
   const nclAll = () => { const v = get('ncl', null); return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; };
   function nclData(me = nclMe()) { const d = nclAll()[me]; return d && d.p && typeof d.p === 'object' ? { p: d.p, x: Array.isArray(d.x) ? d.x : [] } : { p: {}, x: [] }; }
   function nclPut(me, d) {   // (kept: the newest 150 conversations, each its newest 150 messages)
@@ -8189,8 +8630,13 @@
   }
   const nclLast = (p) => (p.m.length ? p.m[p.m.length - 1].at : 0);
   const nclPlain = (h) => reClean(String(h || '').replace(/<br\s*\/?>/gi, ' ').replace(/<img[^>]*>/gi, ' 🖼 ').replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, '\'').replace(/&amp;/g, '&'));
-  const nclUnread = (p) => p.m.filter((m) => !m.me && m.at > (p.seen || 0)).length;
-  const nclNewCount = () => Object.values(nclData().p).filter((p) => !p.arch && nclUnread(p)).length;   // (how many people have written since you looked)
+  const nclMuted = () => new Set((nbJson(acctKey('bnp-ncl-mute'), []) || []).filter((x) => typeof x === 'string'));   // (this account's muted: their Neomail comes, quietly)
+  function nclMuteSet(k, on) { const s = nclMuted(); if (on) s.add(k); else s.delete(k); nbJsonSet(acctKey('bnp-ncl-mute'), [...s]); }
+  const nclSnips = () => (Array.isArray(S.nclSnips) ? S.nclSnips : []);   // (your quick replies: your own words, one click away)
+  const nclPlainKept = new Map();
+  const nclPlainOf = (m) => { let v = nclPlainKept.get(m.i); if (v == null) { v = nclPlain(m.t); nclPlainKept.set(m.i, v); } return v; };   // (a message's words, read once a page)
+  const nclUnread = (p) => p.m.filter((m) => !m.me && !m.rd && Math.max(m.at, m.n || 0) > (p.seen || 0)).length;   // (by when it came here, not Neopets' minute; not one you'd read on Neopets)
+  const nclNewCount = () => { const mu = nclMuted(); return Object.values(nclData().p).filter((p) => !p.arch && !mu.has(String(p.n).toLowerCase()) && nclUnread(p)).length; };   // (how many people have written since you looked; the muted never counted)
   function roundIconUrl(paths) {   // (a picture for the menus: a round button in your theme's pop-up colours with a drawing on it (24-unit paths), sharp at any size)
     const h = themeHead() || { bg: '#fed123', ink: '#363636' };
     return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56"><circle cx="28" cy="28" r="26.5" fill="${h.bg}" stroke="#fff" stroke-width="3"/><g transform="translate(14 14) scale(1.1667)" fill="none" stroke="${h.ink}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${paths}</g></svg>`)}`;
@@ -8228,7 +8674,7 @@
       else if (tag === 'B' || tag === 'STRONG') out += inner ? `<b>${inner}</b>` : '';
       else if (tag === 'I' || tag === 'EM') out += inner ? `<i>${inner}</i>` : '';
       else if (tag === 'U') out += inner ? `<u>${inner}</u>` : '';
-      else if (tag === 'A') { const h = fullUrl(n.getAttribute('href') || ''); out += /^https:\/\/[\w.-]*neopets\.com\//i.test(h) ? `<a href="${esc(h)}" target="_blank" rel="noopener">${inner}</a>` : inner; }
+      else if (tag === 'A') { const h = fullUrl(n.getAttribute('href') || ''); out += /^https:\/\/(?:[\w-]+\.)*neopets\.com\//i.test(h) ? `<a href="${esc(h)}" target="_blank" rel="noopener">${inner}</a>` : inner; }
       else if (tag === 'IMG') { const s = fullUrl(n.getAttribute('src') || ''); if (/^https:\/\/(images|pets)\.neopets\.com\//i.test(s)) out += `<img src="${esc(s)}" alt="">`; }
       else if (/^(P|DIV|CENTER|LI|BLOCKQUOTE)$/.test(tag)) out += (out && !out.endsWith('<br>') ? '<br>' : '') + inner;
       else out += inner;
@@ -8241,7 +8687,10 @@
     const p = d.p[k] = d.p[k] || { n: String(who).trim(), av: '', m: [], seen: 0 };
     if (extra.av) p.av = extra.av;
     if (p.m.some((x) => x.i === msg.i)) return false;
-    if (msg.me && p.m.some((x) => x.me && Math.abs(x.at - msg.at) < 6 * 3600e3 && nclPlain(x.t) === nclPlain(msg.t))) return false;   // (sent once, kept once: from here, Neopets' page, or quoted back)
+    if (msg.me) {   // (sent once, kept once: a quoted copy ("You wrote") never doubles one of yours; the same words sent again later are kept)
+      const same = (x) => x.me && nclPlain(x.t) === nclPlain(msg.t);
+      if (/^w/.test(String(msg.i)) ? p.m.some(same) : p.m.some((x) => same(x) && Math.abs(x.at - msg.at) < 120000)) return false;
+    }
     p.m.push(msg);
     p.m.sort((a, b) => a.at - b.at);
     if (p.arch) { delete p.arch; p.back = Date.now(); }   // (something new in it: out of the archive)
@@ -8281,34 +8730,48 @@
     const f = e.target;
     if (!S.features.ncl || !(f instanceof HTMLFormElement) || !/process_neomessages/.test(f.getAttribute('action') || '')) return;
     const v = (n) => String((f.elements[n] || {}).value || '');
-    if (v('recipient').trim() && v('message_body').trim()) nclKeepSent(v('recipient'), v('subject'), v('message_body'));
+    if (!v('recipient').trim() || !v('message_body').trim()) return;
+    if (f.closest('[data-bnp="nmw"]')) { nclKeepSent(v('recipient'), v('subject'), v('message_body')); return; }   // (the little window's: it's gone already)
+    try { sessionStorage.setItem('bnp-ncl-pend', JSON.stringify({ to: v('recipient'), s: v('subject'), t: v('message_body'), at: Date.now() })); } catch (_) { /* */ }   // (Neopets' own page: kept once its answer shows it went)
   }, true);
-  async function nclRead(id, d) {   // (one Neomail, read as Neopets shows it: who, when, the subject, the message, and what you'd written it was a reply to)
+  function nclPendCheck() {   // (sent from Neopets' own page: into its conversation if the page after it shows no error)
+    let p = null;
+    try { p = JSON.parse(sessionStorage.getItem('bnp-ncl-pend') || 'null'); sessionStorage.removeItem('bnp-ncl-pend'); } catch (_) { return; }
+    if (!p || Date.now() - (Number(p.at) || 0) > 120000 || document.querySelector('.errormess')) return;
+    nclKeepSent(p.to, p.s, p.t);
+  }
+  async function nclRead(id, d, rd) {   // (one Neomail, read as Neopets shows it: who, when, the subject, the message, and what you'd written it was a reply to. rd: already read on Neopets)
     const r = await fetch(`/neomessages.phtml?type=read_message&folder=Inbox&id=${encodeURIComponent(id)}&delevent=yes`, { credentials: 'include' });
+    if (!r.ok) throw new Error(`Neopets answered ${r.status}`);   // (read again at the next look, never put aside)
     const doc = nmDoc(await r.text());
+    if (/\/login\b/.test(new URL(r.url || location.href).pathname) || doc.querySelector('form[action*="login"] input[type="password"]')) throw new Error('logged out');
     const t = [...doc.querySelectorAll('table')].find((x) => [...x.rows].some((row) => row.cells.length > 1 && /^\s*from:?\s*$/i.test(row.cells[0].textContent)));
+    if (!t) throw new Error('not a Neomail');   // (an error page or a busy one: read again at the next look)
     let who = '', av = '', at = 0, s = '', body = null, prior = null;
     if (t) for (const row of t.rows) {
       if (row.cells.length < 2) continue;
       const label = reClean(row.cells[0].textContent).toLowerCase(), c = row.cells[1];
-      if (/^from/.test(label)) { const a = c.querySelector('a[href*="userlookup.phtml?user="]'), m = a && /user=([^&#]+)/.exec(a.getAttribute('href')), img = c.querySelector('img'); who = m ? decodeURIComponent(m[1]) : ''; av = img ? fullUrl(img.getAttribute('src') || '') : ''; }
+      if (/^from/.test(label)) { const a = c.querySelector('a[href*="userlookup.phtml"][href*="user="]'), m = a && /[?&]user=([^&#]+)/.exec(a.getAttribute('href')), img = c.querySelector('img'); who = m ? decodeURIComponent(m[1]) : ''; av = img ? fullUrl(img.getAttribute('src') || '') : ''; }
       else if (/^(sent|date)/.test(label)) at = nclNst(c.textContent);
       else if (/^subject/.test(label)) s = reClean(c.textContent);
       else if (/^you wrote/.test(label)) prior = c;
       else if (!/^(folder|to)\b/.test(label)) body = c;
     }
-    if (!who || !body) { d.x.push(String(id)); return false; }   // (not from a person, or not a message: not read again)
+    if (!who || !body) { d.x.push(String(id)); return false; }   // (a real Neomail page, but not from a person, or no message in it: not read again)
     if (!/\/neoboards\/avatars\//.test(av)) av = '';
     if (av) nfSee(who, av);
     at = at || Date.now();
-    const added = nclAdd(d, who, { i: String(id), me: 0, at, s: s.slice(0, 60), t: nclClean(body).replace(/^(<br>)+|(<br>)+$/g, '') }, { av });
+    const pk = d.p[who.toLowerCase()], lm = pk && pk.m[pk.m.length - 1];
+    if (lm && lm.me && lm.at >= at && lm.at - at < 60000) at = lm.at + 1;   // (Neopets' time is to the minute: a reply in the minute of your last message comes after it)
+    const added = nclAdd(d, who, { i: String(id), me: 0, at, n: Date.now(), ...(rd ? { rd: 1 } : {}), s: s.slice(0, 60), t: nclClean(body).replace(/^(<br>)+|(<br>)+$/g, '') }, { av });   // (n: when it came here; rd: you'd read it on Neopets already)
     if (prior) { const tx = nclClean(prior).replace(/^(<br>)+|(<br>)+$/g, ''); if (tx) nclAdd(d, who, { i: `w${id}`, me: 1, at: at - 60000, s: s.slice(0, 60), t: tx }); }
-    return added ? who.toLowerCase() : '';   // (who it was from, when it's new here)
+    return added && !rd ? who.toLowerCase() : '';   // (who it was from, when it's new here and you hadn't read it on Neopets)
   }
+  let nclHoldEnd = null;   // (the lock's 20 seconds, ended early: only the tests do)
   async function nclCheck(force) {   // (your Inbox looked at for Neomail not seen here yet. On its own: as often as you've chosen, by one tab for them all, the one you're looking at if it can. 'alert': Neopets says there's new Neomail, so at once, if no tab has looked in the last 25 seconds)
     const me = nclMe();
-    if (!S.features.ncl || !me || nclBusy) return;
-    if (force === 'alert' && Date.now() - Number(get('nclChk', 0)) < 25000) return;
+    if (!S.features.ncl || !me || nclBusy || !MAIN_HOST) return;   // (only Neopets' own address looks: the NC Mall's tabs show what's kept)
+    if (force === 'alert' && (!nclEvery() || Date.now() - Number(get('nclChk', 0)) < 25000)) return;   // (only when you press Look now: Neopets' alerts don't look for you either)
     if (!force) {
       const every = nclEvery() * 60000, now = Date.now(), last = Number(get('nclChk', 0)), idle = actIdle();
       const away = !every ? '' : idle > ACT_STOP ? 'stop' : actGap(every) > every ? 'slow' : '';
@@ -8320,7 +8783,17 @@
     }
     const run = () => nclCheckNow(me, force);
     if (!(navigator.locks && navigator.locks.request)) { await run(); return; }
-    try { await navigator.locks.request('bnp-ncl-check', { ifAvailable: true }, (lock) => (lock ? run() : null)); } catch (e) { report(e); }   // (another tab looking right now: left to it)
+    return new Promise((done) => {   // (another tab looking right now, or that has just looked: left to it. The lock is kept 20 seconds after a look, so a tab that hasn't heard of that look yet can't look again straight after it. → 'held': left to another)
+      try {
+        navigator.locks.request('bnp-ncl-check', { ifAvailable: true }, async (lock) => {
+          if (!lock) { done('held'); return; }
+          try { await run(); } catch (e) { report(e); }
+          done('looked');
+          await new Promise((r) => { nclHoldEnd = r; setTimeout(r, 20000); });
+          nclHoldEnd = null;
+        }).catch((e) => { report(e); done(''); });
+      } catch (e) { report(e); done(''); }
+    });
   }
   async function nclCheckNow(me, force) {   // (the newest twenty not seen here yet, oldest first, one at a time)
     if (nclBusy || (!force && Date.now() - Number(get('nclChk', 0)) < 20000)) return;
@@ -8334,12 +8807,28 @@
       const r = await fetch('/neomessages.phtml?folder=Inbox', { credentials: 'include' });
       const doc = nmDoc(await r.text());
       if (/\/login\b/.test(new URL(r.url || location.href).pathname) || doc.querySelector('form[action*="login"] input[type="password"]')) { nclErr = 'Log in to Neopets to read your Neomail.'; return; }
+      { const vt = [...doc.querySelectorAll('td.content > div, div')].map((x) => reClean(x.textContent)).find((x) => /Viewing:\s*Inbox/i.test(x) && /Messages:/i.test(x)), vm = vt && /Messages:\s*\d+\s*-\s*\d+\s*of\s*(\d+)/i.exec(vt); if (vm) nbJsonSet(acctKey('bnp-ncl-inbox'), { n: Number(vm[1]), at: Date.now() }); }   // (how full your Inbox is: past 100, Neopets stops Neomail reaching you)
       const d = nclData(me), known = new Set(d.x);
       for (const p of Object.values(d.p)) for (const x of p.m) known.add(x.i);
-      const ids = [...new Set([...doc.querySelectorAll('a[href*="type=read_message"]')].map((a) => (/[?&]id=(\d+)/.exec(a.getAttribute('href') || '') || [])[1]).filter(Boolean))].filter((id) => !known.has(id)).slice(0, 20).reverse();
+      const readOn = new Map(), all = [];   // (readOn: a message's row says it's read already, on Neopets)
+      let page = doc;
+      for (let n = 0; n < 3 && page; n++) {   // (newest first: the next page only while every one on this one is new)
+        const pids = [];
+        for (const a of page.querySelectorAll('a[href*="type=read_message"]')) { const id = (/[?&]id=(\d+)/.exec(a.getAttribute('href') || '') || [])[1], tr = a.closest('tr'); if (!id || pids.includes(id)) continue; pids.push(id); if (tr && tr.cells.length > 4) readOn.set(id, !/unread/i.test(tr.cells[4].textContent)); }
+        const fresh2 = pids.filter((id) => !known.has(id));
+        all.push(...fresh2);
+        if (!pids.length || fresh2.length < pids.length) break;
+        const nx = [...page.querySelectorAll('a[href*="lower="]')].find((x) => /next|»/i.test(x.textContent));
+        if (!nx) break;
+        await new Promise((ok) => setTimeout(ok, 400 + Math.random() * 300));
+        const r2 = await fetch(new URL(nx.getAttribute('href'), `${location.origin}/neomessages.phtml`).href, { credentials: 'include' });
+        page = r2.ok ? nmDoc(await r2.text()) : null;
+      }
+      const ids = [...new Set(all)].slice(0, 60).reverse();   // (oldest first, sixty at most a look)
       const got = new Set();
       for (const id of ids) {
-        try { const who = await nclRead(id, d); if (who) fresh.add(who); got.add(String(id)); } catch (e) { report(e); }
+        try { const who = await nclRead(id, d, readOn.get(id)); if (who) fresh.add(who); got.add(String(id)); }
+        catch (e) { const why = String((e && e.message) || ''); if (why === 'logged out') { nclErr = 'Log in to Neopets to read your Neomail.'; break; } if (!/^(Neopets answered|not a Neomail)/.test(why)) report(e); }   // (left for the next look)
         await new Promise((ok) => setTimeout(ok, 300));
       }
       if (ids.length) {   // (into what's kept now: a conversation read, erased or written to meanwhile, here or in another tab, stays as it is)
@@ -8378,8 +8867,10 @@
     const sp = !o.av && nclSignPic(kind), np = o.av && o.fresh && nctPic('newPic');   // (a theme's pictures: for the sign, and in place of a writer's avatar)
     t.innerHTML = `${np ? `<i class="bnp-ncl-toastic is-pic" style="background-image:url('${esc(cssUrl(np))}')"></i>` : o.av ? nclAv(o.av) : sp ? `<i class="bnp-ncl-toastic is-pic" style="background-image:url('${esc(cssUrl(sp))}')"></i>` : `<i class="bnp-ncl-toastic">${NCL_TOAST_IC[kind]}</i>`}<div class="bnp-ncl-toastt">${o.title ? `<b>${esc(o.title)}</b>` : ''}${o.text ? `<span>${esc(o.text)}</span>` : ''}${o.act ? `<button type="button" class="bnp-pillbtn" data-ncl-tact>${esc(o.act[0])}</button>` : ''}</div><button type="button" class="bnp-ncl-toastx" aria-label="Close" title="Close">×</button>`;
     const gone = () => { if (t.classList.contains('is-gone')) return; t.classList.add('is-gone'); setTimeout(() => t.remove(), 260); };
-    t.querySelector('.bnp-ncl-toastx').addEventListener('click', gone);
-    if (o.act) t.querySelector('[data-ncl-tact]').addEventListener('click', () => { gone(); o.act[1](); });
+    if (o.tid) t.dataset.tid = o.tid;
+    const away = () => { gone(); if (o.tid) tabsSay('ncl-x', { tid: o.tid }); };   // (one on every tab: put away on all of them)
+    t.querySelector('.bnp-ncl-toastx').addEventListener('click', away);
+    if (o.act) t.querySelector('[data-ncl-tact]').addEventListener('click', () => { away(); o.act[1](); });
     box.prepend(t);
     while (box.children.length > 4) box.lastElementChild.remove();
     setTimeout(gone, o.ms || 5000);
@@ -8387,6 +8878,7 @@
   // Neopets' own alerts (the beta alerts list; an old page's event bar): a Neomail NeoChat hasn't read yet → it looks at once, where it's
   // open or folded (never reading mail behind your back where it isn't); each gets Read in NeoChat. "X has accepted your request to become
   // a NeoFriend": said so, and they're one of your Neofriends from now on
+  const nclAlertSeen = (() => { try { return new Set(JSON.parse(sessionStorage.getItem('bnp-ncl-alseen') || '[]')); } catch (_) { return new Set(); } })();
   function nclAlerts() {
     if (!S.features.ncl) return;
     const d = nclData(), known = new Set(d.x);
@@ -8405,7 +8897,8 @@
         b.textContent = 'Read in NeoChat';
         (el.querySelector('p') || el).after(b);
       }
-      if (!id || !known.has(id)) fresh = true;
+      if (id) { if (!known.has(id)) fresh = true; }
+      else { const k = `${who}|${reClean(text).slice(0, 80)}`; if (!nclAlertSeen.has(k)) { nclAlertSeen.add(k); try { sessionStorage.setItem('bnp-ncl-alseen', JSON.stringify([...nclAlertSeen].slice(-40))); } catch (_) { /* */ } fresh = true; } }   // (one with no message id: once in this tab, not on every page)
     };
     const lis = $$('#alerts li, .alerts-tab-content__2020 li'), tds = $$('td.eventIcon');
     for (const li of lis) { const h = li.querySelector('h4'); if (h && /^\s*Neomail\s*$/i.test(h.textContent)) one(li, (li.querySelector('p') || li).textContent, li.querySelector('a[href*="type=read_message"]')); }
@@ -8419,9 +8912,9 @@
     if (nf.fr.includes(k)) return;
     nf.fr.push(k);
     nfSave(nf);
-    const pend = nbJson('bnp-nf-pend', {}) || {};
-    if (pend[k]) { delete pend[k]; nbJsonSet('bnp-nf-pend', pend); }
-    nclToast({ kind: 'ok', title: 'A new Neofriend', text: `${name} took up your Neofriend request!`, ms: 8000 });
+    const pend = nbJson(acctKey('bnp-nf-pend'), {}) || {};
+    if (pend[k]) { delete pend[k]; nbJsonSet(acctKey('bnp-nf-pend'), pend); }
+    tabsOnce(`nf:${k}`).then((ok) => { if (ok !== false) nclToast({ kind: 'ok', title: 'A new Neofriend', text: `${name} took up your Neofriend request!`, ms: 8000 }); });   // (said by one tab)
     if (ncl) nclPaint();
   }
   function nclAlertsWatch() {   // (the alerts list, as Neopets fills it in: looked at again)
@@ -8438,17 +8931,31 @@
     e.preventDefault();
     nclOpen({ who: a.dataset.who });
   });
-  function nclTell(whos) {   // (new Neomail: the round button and the menu count say so; and, as you've chosen, an alert, a sound, a desktop notice, or NeoChat opening on it)
-    const d = nclData(), fresh = whos.map((k) => d.p[k]).filter((p) => p && nclUnread(p));
+  function nclTell(whos) {   // (new Neomail: the round button and the menu count say so; and, as you've chosen, an alert, a sound, a desktop notice, or NeoChat opening on it. Told by one tab, even if two have read it)
+    const d = nclData(), mu = nclMuted(), fresh = whos.map((k) => d.p[k]).filter((p) => p && nclUnread(p) && !mu.has(String(p.n).toLowerCase()));   // (the muted: in your chats, quietly)
     try { applyAll(); } catch (_) { /* (an old page: no menus) */ }
     if (!fresh.length) return;
+    tabsOnce(`ncl:${fresh.map((p) => `${p.n.toLowerCase()}:${(p.m[p.m.length - 1] || {}).i}`).join(',')}`).then((ok) => { if (ok !== false) nclTellNow(fresh); });
+  }
+  function nclNewToast(o, ms) { nclToast({ ...o, ms: ms || o.ms || 10000, act: ['Read', () => nclOpen({ who: o.who })] }); }   // (new Neomail's alert, the same on every tab: Read opens it here; × or Read puts it away on all of them)
+  tabsEar['ncl-new'] = (m) => {   // (told on another tab: its alert here too, quietly, for the time it has left)
+    const o = m.o || {};
+    if (!S.features.ncl || S.features.nclSay === false || !o.tid || !o.who) return;
+    if (o.one && ncl && nclIsOpen() && !document.hidden && ncl.who === String(o.who).toLowerCase()) return;   // (not for a conversation you're reading here)
+    const left = (o.ms || 10000) - (Date.now() - m.at);
+    if (left > 1500) nclNewToast(o, left);
+  };
+  tabsEar['ncl-x'] = (m) => { for (const t of $$('.bnp-ncl-toast[data-tid]')) if (t.dataset.tid === m.tid) { t.classList.add('is-gone'); setTimeout(() => t.remove(), 260); } };   // (put away on another tab)
+  function nclTellNow(fresh) {
     const f = S.features, open = !!ncl && nclIsOpen(), first = fresh[0], what = fresh.length === 1 ? `New Neomail from ${first.n}` : `New Neomail from ${fresh.length} people`;
     if (f.nclSay !== false) {   // (an alert: not for a conversation you're reading)
       const show = fresh.filter((p) => !(open && !document.hidden && ncl.who === p.n.toLowerCase())), nf = nfData();
-      if (show.length === 1) { const p = show[0], m = p.m[p.m.length - 1]; nclToast({ title: `New Neomail from ${p.n}`, text: nclPlain(m.t).slice(0, 90) || m.s || '', av: p.av || nf.av[p.n.toLowerCase()] || AV_DEFAULT_PIC, fresh: true, act: ['Read', () => nclOpen({ who: p.n })], ms: 10000 }); }
-      else if (show.length > 1) nclToast({ title: `New Neomail from ${show.length} people`, text: show.map((p) => p.n).join(', '), act: ['Read', () => nclOpen({ who: show[0].n })], ms: 10000 });
+      let o = null;
+      if (show.length === 1) { const p = show[0], m = p.m[p.m.length - 1]; o = { title: `New Neomail from ${p.n}`, text: nclPlain(m.t).slice(0, 90) || m.s || '', av: p.av || nf.av[p.n.toLowerCase()] || AV_DEFAULT_PIC, fresh: true, who: p.n, one: true, ms: 10000 }; }
+      else if (show.length > 1) o = { title: `New Neomail from ${show.length} people`, text: show.map((p) => p.n).join(', '), who: show[0].n, ms: 10000 };
+      if (o) { o.tid = uid(); nclNewToast(o); tabsSay('ncl-new', { o }); }
     }
-    if (f.nclSound) remSoundOnce(f.nclSound);
+    if (f.nclSound) remRing(f.nclSound, nclVol());
     if (f.nclDesk && (document.hidden || !document.hasFocus())) {
       const dp = (nctWorn() && nctWorn().v && nctWorn().v.deskPic && nctPic('newPic')) || first.av || undefined;   // (the theme's picture, if it says so; else theirs)
       try { GM_notification({ title: what, text: nclPlain(first.m[first.m.length - 1].t).slice(0, 200) || 'NeoChat', image: dp, silent: true, onclick: () => { try { window.focus(); } catch (_) { /* */ } nclOpen({ who: first.n }); } }); } catch (_) { /* (no desktop notices here) */ }
@@ -8465,15 +8972,19 @@
 
   // ── the window, its round button, and the page of its own ──
   const nclState = (v) => { try { if (v === undefined) return sessionStorage.getItem('bnp-ncl-win') || ''; if (v) sessionStorage.setItem('bnp-ncl-win', v); else sessionStorage.removeItem('bnp-ncl-win'); } catch (_) { /* */ } return ''; };   // (this tab's: open, min (folded), x (closed here), or nothing yet)
+  const nclVol = () => Math.min(100, Math.max(5, Number(S.features.nclVol) || 100)) / 100;   // (its alert's sound: how loud, from 5% to all of it)
   const nclKept = (k, d) => { try { return localStorage.getItem(k) || d; } catch (_) { return d; } };
-  const nclDrafts = () => { try { const v = JSON.parse(localStorage.getItem('bnp-ncl-drafts') || '{}'); return v && typeof v === 'object' ? v : {}; } catch (_) { return {}; } };
-  const nclDraftPut = (who, text) => { const all = nclDrafts(); if (text.trim()) all[who] = text; else delete all[who]; try { localStorage.setItem('bnp-ncl-drafts', JSON.stringify(all)); } catch (_) { /* */ } };
-  function nclLook(el) {   // (your theme's colours, as Neoboards 2 and Neomail wear them: the ones read last, or read now if there are none yet)
-    let t = nbJson('bnp-nbtheme', null);
+  const nclDrafts = () => { try { const v = JSON.parse(localStorage.getItem(acctKey('bnp-ncl-drafts')) || '{}'); return v && typeof v === 'object' ? v : {}; } catch (_) { return {}; } };   // (this account's)
+  const nclDraftPut = (who, text) => { const all = nclDrafts(); if (text.trim()) all[who] = text; else delete all[who]; try { localStorage.setItem(acctKey('bnp-ncl-drafts'), JSON.stringify(all)); } catch (_) { /* */ } };
+  function nclLook(el) {   // (your theme's colours, as Neoboards 2 and Neomail wear them: the ones read last, or read now if there are none yet; or another site theme's, NeoChat wearing it by itself)
+    const sf = el.closest('.bnp-nct-pv') ? '' : nctSiteOf(S.nclWear), sp = sf ? nctSitePalKept(sf) : null;   // (a preview of one of yours: over your own site theme, as ever)
+    if (sf && !sp && !nctSiteBusy.has(sf) && Date.now() - (nctSiteFail.get(sf) || 0) > 10 * 60e3) nctSitePal(sf).then((p) => { if (p) nctSiteSync(); });   // (not read yet: your own theme's meanwhile)
+    let t = sp ? sp.nb : nbJson('bnp-nbtheme', null);
     if (!t) { try { nbTheme(); } catch (e) { report(e); } t = nbJson('bnp-nbtheme', null); }
     for (const v of Object.values(NB_VARS)) el.style.removeProperty(v);
     if (t) for (const [k, v] of Object.entries(NB_VARS)) if (t[k] && t[k] !== 'none') el.style.setProperty(v, t[k]);
-    if (!el.classList.contains('bnp-go')) { const h = themeHead(); if (h) { el.style.setProperty('--bnp-accent', h.bg); el.style.setProperty('--bnp-accent-text', h.ink); } }   // (its round picture on its own page: your theme's pop-up colours, as a window's header has them)
+    const h = sp ? sp.head : themeHead();
+    if (h) { el.style.setProperty('--bnp-accent', h.bg); el.style.setProperty('--bnp-accent-text', h.ink); }   // (its round pictures, on its own page and in the window: your theme's pop-up colours, read from the theme itself (a NeoChat theme's own header can't say them))
   }
   function nclBuild(page) {
     styles();
@@ -8484,22 +8995,21 @@
     if (!page) { el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'NeoChat'); }
     const hb = (k, title, svg, more = '') => `<button type="button" class="bnp-ncl-hb" data-ncl="${k}" title="${title}" aria-label="${title}"${more}>${svg}</button>`;
     el.innerHTML = `${page ? '' : `<div class="popup-header__2020 bnp-hub-head" data-ncl-drag title="Drag it anywhere (a double-click puts it back)">
-        <span class="bnp-ncl-hbtns is-left">${hb('home', 'NeoChat’s start (no conversation open)', NCL_SVG.home)}${hb('set', 'NeoChat’s settings', NCL_SVG.gear)}${hb('check', 'Look for new Neomail now', NCL_SVG.check)}${hb('arch', 'Archived conversations', NCL_SVG.arch, ' aria-pressed="false"')}</span><h3><i class="bnp-ncl-hic" aria-hidden="true">${NCL_SVG.chat}</i>NeoChat</h3>
-        <span class="bnp-ncl-hbtns">${hb('max', 'Full screen', NCL_SVG.max, ' aria-pressed="false"')}<a class="bnp-ncl-hb" data-ncl="page" href="${NCL_PAGE}" title="On a page of its own" aria-label="Open it on a page of its own">${NMW_FULL_SVG}</a>${hb('min', 'Fold it up (it keeps looking for new Neomail)', NCL_SVG.fold)}</span>
-        <button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-ncl-x" data-ncl="x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button><div class="popup-header-pattern__2020"></div></div>`}
-      <div class="bnp-ncl-main"><aside class="bnp-ncl-side" aria-label="Chats and Neofriends"><div class="bnp-ncl-tabs" role="tablist" aria-label="Chats or Neofriends" data-ncl-tabs></div><div class="bnp-ncl-find"><input type="search" data-ncl-q placeholder="Find someone, or type a username" aria-label="Find someone, or type a username to write to" spellcheck="false" autocomplete="off"></div><div class="bnp-ncl-list" data-ncl-list role="tabpanel"></div><div class="bnp-ncl-status" data-ncl-status></div></aside><section class="bnp-ncl-chat" data-ncl-chat aria-live="polite"></section></div>`;
-    ncl = { el, page: !!page, who: nclKept('bnp-ncl-who', ''), q: '', tab: nclKept('bnp-ncl-tab', 'chats') === 'friends' ? 'friends' : 'chats', stick: true, arch: false };   // (arch: the side shows the archive)
+        <span class="bnp-ncl-hbtns is-left">${hb('home', 'NeoChat’s start (no conversation open)', NCL_SVG.home)}${hb('set', 'NeoChat’s settings', NCL_SVG.gear)}${hb('theme', 'NeoChat’s look: its themes', NCL_SVG.paint)}${hb('check', 'Look for new Neomail now', NCL_SVG.check)}${hb('arch', 'Archived conversations', NCL_SVG.arch, ' aria-pressed="false"')}</span><h3><i class="bnp-ncl-hic" aria-hidden="true">${NCL_SVG.chat}</i>NeoChat</h3>
+        <span class="bnp-ncl-hbtns">${hb('max', 'Full screen', NCL_SVG.max, ' aria-pressed="false"')}<a class="bnp-ncl-hb" data-ncl="page" href="${NCL_PAGE}" title="On a page of its own" aria-label="Open it on a page of its own">${NMW_FULL_SVG}</a>${hb('pin', 'Pin it to the side of the page', NCL_SVG.pin, ' aria-pressed="false"')}${hb('min', 'Fold it up (it keeps looking for new Neomail)', NCL_SVG.fold)}<button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-ncl-x" data-ncl="x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button></span><div class="popup-header-pattern__2020"></div></div>`}
+      <div class="bnp-ncl-main"><aside class="bnp-ncl-side" aria-label="Chats and Neofriends"><div class="bnp-ncl-tabs" role="tablist" aria-label="Chats or Neofriends" data-ncl-tabs></div><div class="bnp-ncl-find"><input type="search" data-ncl-q placeholder="Find someone, or type a username" aria-label="Find someone, or type a username to write to" spellcheck="false" autocomplete="off"></div><div class="bnp-ncl-list" data-ncl-list role="tabpanel"></div><div class="bnp-ncl-status" data-ncl-status></div></aside><section class="bnp-ncl-chat" data-ncl-chat aria-live="polite"></section></div>${page ? '' : '<div class="bnp-ncl-edge" data-ncl-edge aria-hidden="true" title="Drag to make it wider or narrower; double-click for its first width"></div><div class="bnp-ncl-grip" data-ncl-grip aria-hidden="true" title="Drag to size it; double-click for its first size"></div>'}`;
+    ncl = { el, page: !!page, who: nclKept(acctKey('bnp-ncl-who'), ''), q: '', tab: nclKept('bnp-ncl-tab', 'chats') === 'friends' ? 'friends' : 'chats', stick: true, arch: false };   // (arch: the side shows the archive)
     el.addEventListener('click', nclClick);
     el.addEventListener('input', (e) => {
       const t = e.target;
       if (t.matches('[data-ncl-q]')) { ncl.q = t.value.trim(); nclListPaint(); }
-      else if (t.matches('[data-ncl-ta]')) { nclDraftPut(ncl.who, t.value); nclFit(t); }
+      else if (t.matches('[data-ncl-ta]')) { nclDraftPut(ncl.who, t.value); nclFit(t); const sa = ncl.el.querySelector('[data-ncl="snipadd"]'); if (sa) sa.disabled = !t.value.trim(); }   // (quick replies open: Save what's written as you write it)
       else if (t.matches('[data-ncl-subj]')) delete t.dataset.auto;   // (your own subject: left as you write it)
     });
     el.addEventListener('keydown', (e) => {
       const t = e.target;
       if (e.key === 'Escape' && (!ncl.page || el.classList.contains('is-max'))) { e.preventDefault(); e.stopPropagation(); if (el.classList.contains('is-max')) nclMaxSet(false, true); else nclMin(); return; }   // (full screen: back to a window, or to its page; a window: folded)
-      if (t.matches('[data-ncl-ta]') && e.key === 'Enter' && !e.isComposing && (S.features.nclEnter === 'ctrl' ? e.ctrlKey || e.metaKey : !e.shiftKey)) { e.preventDefault(); nclSendNow(); return; }   // (Enter, or Ctrl+Enter, as you've chosen; the other way, a new line)
+      if (t.matches('[data-ncl-ta]') && e.key === 'Enter' && !e.isComposing && (S.features.nclEnter === 'button' ? false : S.features.nclEnter === 'ctrl' ? e.ctrlKey || e.metaKey : !e.shiftKey)) { e.preventDefault(); nclSendNow(); return; }   // (Enter, or Ctrl+Enter, as you've chosen; the other way, a new line)
       if (t.matches('[data-ncl-q]') && e.key === 'Enter') { e.preventDefault(); const first = el.querySelector('[data-ncl-who]'); if (first) first.click(); }
     });
     el.addEventListener('scroll', (e) => { const l = e.target; if (l instanceof Element && l.matches('[data-ncl-msgs]')) ncl.stick = l.scrollHeight - l.scrollTop - l.clientHeight < 40; }, true);   // (read to the end: new ones keep it there)
@@ -8508,6 +9018,8 @@
     if (!page) {
       document.body.append(el);
       nclDrag(el);
+      nclSizeDrag(el);
+      if (typeof ResizeObserver === 'function') new ResizeObserver(() => { const n = el.clientWidth > 0 && el.clientWidth <= 560; if (el.classList.contains('is-narrow') !== n) el.classList.toggle('is-narrow', n); }).observe(el);   // (narrow, pinned or made small: the list, or one conversation, at a time)
       const bub = document.createElement('button');
       bub.type = 'button';
       bub.className = 'bnp-ncl-bub';
@@ -8519,6 +9031,8 @@
       ncl.bub = bub;
       themeWin(el);
       nclBubLook();
+      nclHeadPaint();
+      nclPinPaint();
     }
     return el;
   }
@@ -8536,6 +9050,8 @@
     nclState('open');
     nclMaxSet(nclKept('bnp-ncl-max', '') === '1');
     nclPlace();
+    nclPinPaint();
+    nclDimPaint();
     if (o.who) nclWho(o.who, o.quiet); else nclPaint();
     nclTickOn();
     nclCheck(false);
@@ -8559,6 +9075,8 @@
     nclBubPaint();
     nclTickOn();
     nclFullSync();
+    nclPinPaint();
+    nclDimPaint();
   }
   function nclClose() {   // (closed on this tab: on every page of it, till you open it again)
     if (!ncl || ncl.page) return;
@@ -8567,6 +9085,8 @@
     nclState('x');
     nclTickOff();
     nclFullSync();
+    nclPinPaint();
+    nclDimPaint();
   }
   function nclMaxSet(on, keep) {   // (full screen: all of the browser's window; or a window again (its own page: the page again). keep: remembered for next time)
     if (!ncl) return;
@@ -8586,6 +9106,8 @@
       b.innerHTML = on ? NCL_SVG.unmax : NCL_SVG.max;
     }
     nclFullSync();
+    nclPinPaint();
+    nclDimPaint();
   }
   function nclFullNow() { return !!ncl && ncl.el.classList.contains('is-max') && (ncl.page || nclIsOpen()); }   // (full screen, and showing)
   let nclTabWas = null;   // (the window full screen has the tab: the page's own name, and with tab icons off its own pictures, for after)
@@ -8613,8 +9135,10 @@
     document.title = was.title;
     if (S.features.tabs) { try { tabsApply(); } catch (e) { report(e); } }
   }
-  function nclPlace() {   // (where you last left it, still on the screen; or in the middle)
-    const pos = nbJson('bnp-ncl-pos', null), el = ncl.el;
+  function nclPlace() {   // (where you last left it, still on the screen, at the size you made it; or in the middle, as it started)
+    const pos = nbJson('bnp-ncl-pos', null), el = ncl.el, size = nbJson('bnp-ncl-size', null);
+    if (size && Number.isFinite(size.w) && Number.isFinite(size.h)) { el.style.width = `${Math.round(Math.min(Math.max(size.w, 420), document.documentElement.clientWidth - 24))}px`; el.style.height = `${Math.round(Math.min(Math.max(size.h, 360), innerHeight - 24))}px`; }
+    else { el.style.width = ''; el.style.height = ''; }
     if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y)) { el.classList.remove('is-placed'); el.style.left = ''; el.style.top = ''; return; }
     const vw = document.documentElement.clientWidth;
     el.classList.add('is-placed');
@@ -8624,7 +9148,7 @@
   function nclDrag(el) {   // (moved by its header, as the little Neomail window is; full screen, it stays put)
     const head = el.querySelector('[data-ncl-drag]');
     head.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0 || el.classList.contains('is-max') || (e.target instanceof Element && e.target.closest('a, button'))) return;
+      if (e.button !== 0 || el.classList.contains('is-max') || el.classList.contains('is-pinned') || (e.target instanceof Element && e.target.closest('a, button'))) return;   // (pinned: it stays at its side)
       e.preventDefault();
       const r = el.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top, vw = document.documentElement.clientWidth, vh = innerHeight;
       el.classList.add('is-placed', 'is-moving');
@@ -8640,13 +9164,125 @@
     head.addEventListener('dblclick', (e) => {
       if (e.target instanceof Element && e.target.closest('a, button')) return;
       if (el.classList.contains('is-max')) { nclMaxSet(false, true); return; }   // (full screen: a window again)
-      try { localStorage.removeItem('bnp-ncl-pos'); } catch (_) { /* */ }
+      if (el.classList.contains('is-pinned')) return;
+      try { localStorage.removeItem('bnp-ncl-pos'); localStorage.removeItem('bnp-ncl-size'); } catch (_) { /* */ }
       nclPlace();
     });
   }
+  function nclSizeDrag(el) {   // (made bigger or smaller: the window by its corner, kept for next time; pinned, by its edge beside the page)
+    const corner = el.querySelector('[data-ncl-grip]'), edge = el.querySelector('[data-ncl-edge]');
+    const drag = (h, move, end) => h.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      try { h.setPointerCapture(e.pointerId); } catch (_) { /* */ }
+      h.classList.add('is-on');
+      let raf = 0, last = e;
+      const mv = (ev) => { last = ev; if (!raf) raf = requestAnimationFrame(() => { raf = 0; move(last); }); };
+      const up = () => { h.removeEventListener('pointermove', mv); h.removeEventListener('pointerup', up); h.removeEventListener('pointercancel', up); cancelAnimationFrame(raf); move(last); h.classList.remove('is-on'); end(); };
+      h.addEventListener('pointermove', mv);
+      h.addEventListener('pointerup', up);
+      h.addEventListener('pointercancel', up);
+    });
+    if (corner) corner.addEventListener('dblclick', (e) => { e.preventDefault(); nclSizeReset('size'); });   // (its first size again)
+    if (edge) edge.addEventListener('dblclick', (e) => { e.preventDefault(); nclSizeReset('pin'); });
+    if (corner) {
+      let r0 = null;
+      corner.addEventListener('pointerdown', () => { const r = el.getBoundingClientRect(); r0 = r; el.classList.add('is-placed'); el.style.left = `${Math.round(r.left)}px`; el.style.top = `${Math.round(r.top)}px`; }, true);   // (its top left stays put as it grows)
+      drag(corner, (ev) => { if (!r0) return; el.style.width = `${Math.round(Math.min(Math.max(ev.clientX - r0.left, 420), document.documentElement.clientWidth - r0.left - 8))}px`; el.style.height = `${Math.round(Math.min(Math.max(ev.clientY - r0.top, 360), innerHeight - r0.top - 8))}px`; },
+        () => { nbJsonSet('bnp-ncl-size', { w: parseFloat(el.style.width), h: parseFloat(el.style.height) }); nbJsonSet('bnp-ncl-pos', { x: parseFloat(el.style.left), y: parseFloat(el.style.top) }); r0 = null; });
+    }
+    if (edge) drag(edge, (ev) => { const vw = document.documentElement.clientWidth, w = S.features.nclPinSide === 'left' ? ev.clientX : vw - ev.clientX; document.documentElement.style.setProperty('--bnp-ncl-pinw', `${nclPinW(w)}px`); },   // (the page keeps its place till you let go)
+      () => { try { localStorage.setItem('bnp-ncl-pinw', String(parseFloat(document.documentElement.style.getPropertyValue('--bnp-ncl-pinw')) || 400)); } catch (_) { /* */ } nclPinPaint(true); });
+  }
+  const nclSized = () => { try { return ['bnp-ncl-size', 'bnp-ncl-pos', 'bnp-ncl-pinw'].some((k) => localStorage.getItem(k) != null); } catch (_) { return false; } };   // (made another size, moved, or pinned at another width)
+  function nclSizeReset(what = 'all') {   // (its first size: 'all', or only the window's size, or only its pinned width)
+    try { for (const k of what === 'all' ? ['bnp-ncl-size', 'bnp-ncl-pos', 'bnp-ncl-pinw'] : what === 'pin' ? ['bnp-ncl-pinw'] : ['bnp-ncl-size']) localStorage.removeItem(k); } catch (_) { /* */ }
+    if (what !== 'size') document.documentElement.style.removeProperty('--bnp-ncl-pinw');
+    if (ncl && !ncl.page) { nclPlace(); nclPinPaint(true); }
+  }
+  const nclPinW = (w) => { const vw = document.documentElement.clientWidth, want = Number(w) || Number(nclKept('bnp-ncl-pinw', '')) || 400; return Math.round(Math.min(Math.max(want, 320), Math.max(320, vw * 0.6))); };   // (pinned, its width: yours, 320 at least, never more than 60% of the window)
+  function nclPinTop() {   // (pinned, its top: under Neopets' top bar when the bar stays at the top as the page scrolls)
+    const bar = document.getElementById('navtop__2020');
+    if (!bar) return 0;
+    const pos = getComputedStyle(bar).position, b = bar.getBoundingClientRect().bottom;
+    return (pos === 'fixed' || pos === 'sticky') && b > 0 && b < innerHeight / 3 ? Math.round(b) : 0;
+  }
+  function nclPinPaint(fit) {   // (pinned: at its side of the browser's window, under the top bar, as tall as there's room for, the page beside it; or a window over the page. fit: Neopets' page and the Shop Dock fitted to it again)
+    const root = document.documentElement, el = ncl && !ncl.page ? ncl.el : null;
+    const pin = !!S.features.ncl && !!S.features.nclPin, left = S.features.nclPinSide === 'left';
+    if (el) { el.classList.toggle('is-pinned', pin); el.classList.toggle('is-left', pin && left); }
+    const docked = !!el && pin && nclIsOpen() && !el.classList.contains('is-max');
+    const was = root.classList.contains('bnp-ncl-pinned') ? `${root.classList.contains('bnp-ncl-pinleft')}|${root.style.getPropertyValue('--bnp-ncl-pagew')}` : '';
+    root.classList.toggle('bnp-ncl-pinned', docked);
+    root.classList.toggle('bnp-ncl-pinleft', docked && left);
+    if (docked) { const w = `${nclPinW()}px`; root.style.setProperty('--bnp-ncl-pinw', w); root.style.setProperty('--bnp-ncl-pagew', w); root.style.setProperty('--bnp-ncl-pintop', `${nclPinTop()}px`); }
+    else for (const v of ['--bnp-ncl-pinw', '--bnp-ncl-pagew', '--bnp-ncl-pintop']) root.style.removeProperty(v);
+    try { pageMax(); } catch (_) { /* */ }
+    const now = docked ? `${left}|${root.style.getPropertyValue('--bnp-ncl-pagew')}` : '';
+    if (el) {
+      const b = el.querySelector('[data-ncl="pin"]'), head = el.querySelector('[data-ncl-drag]');
+      if (b) { b.setAttribute('aria-pressed', String(pin)); b.title = pin ? 'Unpin it: a window over the page again' : `Pin it to the ${left ? 'left' : 'right'} of the page: there on every page, the page beside it`; b.setAttribute('aria-label', b.title); }
+      if (head) head.title = pin ? '' : 'Drag it anywhere (a double-click puts it back)';
+    }
+    if (fit || now !== was) { clearTimeout(nclPinPaint.t); nclPinPaint.t = setTimeout(() => dispatchEvent(new Event('resize')), 60); }   // (Neopets' own page and the Shop Dock fit themselves to the room)
+  }
+  function nclPinSet(on) {   // (pinned or not: every page, every tab, from now on)
+    S.features.nclPin = !!on;
+    saveNow();
+    nclPinPaint();
+    nclDimPaint();
+    if (hub && hub.win.classList.contains('open') && hubPage === 'neochat') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
+  }
+  function nclPinEarly() {   // (pinned, and to be open here: the page's room for it kept from the very start, so nothing moves when it comes)
+    if (window.top !== window || !S.features.ncl || !S.features.nclPin || nclHere()) return;
+    const st = nclState();
+    if (st === 'min' || st === 'x') return;
+    const root = document.documentElement, w = `${nclPinW()}px`;
+    root.classList.add('bnp-ncl-pinned');
+    root.classList.toggle('bnp-ncl-pinleft', S.features.nclPinSide === 'left');
+    root.style.setProperty('--bnp-ncl-pinw', w);
+    root.style.setProperty('--bnp-ncl-pagew', w);
+    addEventListener('load', () => setTimeout(() => { try { nclPinPaint(); } catch (_) { /* */ } }, 0), { once: true });   // (never left kept for a NeoChat that didn't come)
+  }
+  addEventListener('resize', (e) => { if (e.isTrusted && document.documentElement.classList.contains('bnp-ncl-pinned')) { clearTimeout(nclPinEarly.t); nclPinEarly.t = setTimeout(() => { try { nclPinPaint(); } catch (_) { /* */ } }, 150); } });
+  function nclDimPaint() {   // (the page behind NeoChat's window: darker, blurred, both, or as it is (Settings › NeoChat › Its window); never while it's pinned (the page is beside it), folded or full screen. A click on it folds NeoChat)
+    if (!ncl || ncl.page) return;
+    const m = S.features.nclDim || '', on = !!m && nclIsOpen() && !S.features.nclPin && !ncl.el.classList.contains('is-max');
+    let v = ncl.veil;
+    if (on && !v) {
+      v = ncl.veil = document.createElement('div');
+      v.className = 'bnp-veil bnp-ncl-veil';
+      v.setAttribute('data-bnp', 'nclveil');
+      v.addEventListener('click', () => nclMin());
+      document.body.append(v);
+    }
+    if (v) { v.classList.toggle('open', on); v.classList.toggle('is-clear', on && m === 'blur'); }
+    pageBlur();
+  }
+  const NCL_HB = [   // (its header's buttons, for choosing: [key, name, side]; Fold and Close always there)
+    ['home', 'Home', 'l'], ['set', 'Settings', 'l'], ['theme', 'Themes', 'l'], ['check', 'Look now', 'l'], ['arch', 'Archive', 'l'],
+    ['max', 'Full screen', 'r'], ['page', 'Its page', 'r'], ['pin', 'Pin', 'r'], ['min', 'Fold', 'r'], ['x', 'Close', 'r'],
+  ];
+  const NCL_HB_KEEP = new Set(['min', 'x']);
+  const nclHideList = () => (Array.isArray(S.features.nclHide) ? S.features.nclHide.filter((k) => typeof k === 'string' && !NCL_HB_KEEP.has(k)) : ['theme']);
+  const nclThemeIc = () => NCL_SVG.paint;   // (a paint palette, drawn like the header's other buttons)
+  function nclHbHoverPaint() { document.documentElement.classList.toggle('bnp-ncl-hbhover', !!S.features.ncl && !!S.features.nclHbHover); }   // (its header's buttons only while you point at the header, if you've chosen)
+  function nclHeadPaint() {   // (its header's buttons: the ones you've chosen; the Themes one in your theme's own picture)
+    nclHbHoverPaint();
+    if (!ncl || ncl.page) return;
+    const hide = new Set(nclHideList());
+    for (const b of ncl.el.querySelectorAll('.bnp-hub-head [data-ncl]')) b.hidden = !NCL_HB_KEEP.has(b.dataset.ncl) && hide.has(b.dataset.ncl);
+    const th = ncl.el.querySelector('.bnp-hub-head [data-ncl="theme"]'), ic = nclThemeIc();
+    if (th && th.dataset.ic !== ic) { th.dataset.ic = ic; th.innerHTML = ic; crispIn(th); }
+  }
+  function nclHbPick() {   // (Settings: NeoChat's header in small, in your theme, its buttons there to click on or off)
+    const hide = new Set(nclHideList()), svg = { home: NCL_SVG.home, set: NCL_SVG.gear, theme: nclThemeIc(), check: NCL_SVG.check, arch: NCL_SVG.arch, max: NCL_SVG.max, page: NMW_FULL_SVG, pin: NCL_SVG.pin, min: NCL_SVG.fold, x: '<span class="bnp-nclhb-x" aria-hidden="true">×</span>' };
+    const one = ([k, name]) => { const keep = NCL_HB_KEEP.has(k), on = keep || !hide.has(k); return `<button type="button" class="bnp-nclhb${keep ? ' is-keep' : ''}" data-nclhb="${k}" aria-pressed="${on}"${keep ? ' disabled' : ''} title="${name}: ${keep ? 'always there' : on ? 'shown (click to hide it)' : 'hidden (click to show it)'}">${svg[k]}<small>${name}</small></button>`; };
+    return `<div class="popup-header__2020 bnp-nclhb-bar"><span class="bnp-nclhb-grp">${NCL_HB.filter((b) => b[2] === 'l').map(one).join('')}</span><span aria-hidden="true"></span><span class="bnp-nclhb-grp">${NCL_HB.filter((b) => b[2] === 'r').map(one).join('')}</span><div class="popup-header-pattern__2020"></div></div>`;
+  }
   function nclWho(who, quiet) {   // (a conversation open: whoever, even someone not written to yet)
     ncl.who = String(who || '').trim().toLowerCase();
-    try { localStorage.setItem('bnp-ncl-who', ncl.who); } catch (_) { /* */ }
+    try { localStorage.setItem(acctKey('bnp-ncl-who'), ncl.who); } catch (_) { /* */ }
     nclPaint();
     if (quiet) return;
     const ta = ncl.el.querySelector('[data-ncl-ta]');
@@ -8670,10 +9306,10 @@
     const go = () => {
       if (!now) { const n2 = nfData(); if (n2.fr.length && Date.now() - n2.frAt < 3 * 864e5) return null; }   // (another tab has just read them)
       return nfFetch().then(() => {
-        const pend = nbJson('bnp-nf-pend', {}) || {}, fr = new Set(nfData().fr), d = nclData();
+        const pend = nbJson(acctKey('bnp-nf-pend'), {}) || {}, fr = new Set(nfData().fr), d = nclData();
         let took = false;
-        for (const k of Object.keys(pend)) if (fr.has(k)) { const p = d.p[k]; nclToast({ kind: 'ok', title: 'A new Neofriend', text: `${(p && p.n) || k} took up your Neofriend request!`, ms: 8000 }); delete pend[k]; took = true; }   // (a request of yours, taken up)
-        if (took) nbJsonSet('bnp-nf-pend', pend);
+        for (const k of Object.keys(pend)) if (fr.has(k)) { const p = d.p[k], name = (p && p.n) || k; tabsOnce(`nf:${k}`).then((ok) => { if (ok !== false) nclToast({ kind: 'ok', title: 'A new Neofriend', text: `${name} took up your Neofriend request!`, ms: 8000 }); }); delete pend[k]; took = true; }   // (a request of yours, taken up: said by one tab)
+        if (took) nbJsonSet(acctKey('bnp-nf-pend'), pend);
         if (ncl) { nclTabsPaint(d); nclListPaint(d); }
       });
     };
@@ -8722,7 +9358,8 @@
     const nf = nfData(), q = goNorm(ncl.q || ''), me = nclMe();
     const hit = (k, p) => !q || goNorm(`${k} ${p ? p.n : ''}`).includes(q);
     const has = (k) => !!(d.p[k] && d.p[k].m.length);
-    const row = (k, sub, right) => { const p = has(k) ? d.p[k] : null; return `<button type="button" class="bnp-ncl-row${k === ncl.who ? ' is-on' : ''}${p && nclUnread(p) ? ' is-unread' : ''}" data-ncl-who="${esc(k)}" title="${esc(p ? p.n : k)}">${nclAv((p && p.av) || nf.av[k] || AV_DEFAULT_PIC)}<span class="bnp-ncl-rt"><b><span>${esc(p ? p.n : k)}</span></b><small>${sub}</small></span>${right}</button>`; };
+    const mu = nclMuted();
+    const row = (k, sub, right) => { const p = has(k) ? d.p[k] : null; return `<button type="button" class="bnp-ncl-row${k === ncl.who ? ' is-on' : ''}${p && nclUnread(p) ? ' is-unread' : ''}${mu.has(k) ? ' is-muted' : ''}" data-ncl-who="${esc(k)}" title="${esc(p ? p.n : k)}${mu.has(k) ? ' (muted)' : ''}">${nclAv((p && p.av) || nf.av[k] || AV_DEFAULT_PIC)}<span class="bnp-ncl-rt"><b><span>${esc(p ? p.n : k)}</span>${mu.has(k) ? `<i class="bnp-ncl-mut" aria-label="muted">${NCL_SVG.bellOff}</i>` : ''}</b><small>${sub}</small></span>${right}</button>`; };
     const unreadPill = (k) => { const n = has(k) ? nclUnread(d.p[k]) : 0; return n ? `<em class="bnp-ncl-n" title="${n} new">${n}</em>` : ''; };
     const friends = [...new Set([...nf.on, ...nf.fr])].filter((k) => k && k !== me);
     const friendRow = (k) => row(k, 'Neofriend', `<span class="bnp-ncl-rr">${unreadPill(k)}</span>`);
@@ -8745,21 +9382,40 @@
         : `<p class="bnp-ncl-none">Your Neofriends come from Neopets’ Neofriends page.</p><p class="bnp-ncl-none"><button type="button" class="bnp-pillbtn" data-ncl="friends">Read them now</button></p>`;
     } else {
       const convs = Object.entries(d.p).filter(([k, p]) => p.m.length && !p.arch && hit(k, p)).sort((a, b) => nclLast(b[1]) - nclLast(a[1]));
-      const newN = Object.values(d.p).filter((p) => !p.arch && nclUnread(p)).length;
+      const newN = Object.values(d.p).filter((p) => !p.arch && nclUnread(p)).length, ib = nbJson(acctKey('bnp-ncl-inbox'), null);
+      if (!q && ib && ib.n >= 90 && Date.now() - (ib.at || 0) < 7 * DAY_MS) html += `<div class="bnp-ncl-listbar is-warn" role="status">${NCL_SVG.info}<span>${ib.n >= 100 ? `Your Inbox is full (${ib.n} of 100): Neomail can’t reach you` : `Your Inbox has ${ib.n} of 100: past 100, Neomail can’t reach you`}</span><a class="bnp-pillbtn" href="/neomessages.phtml">Tidy it</a></div>`;
       if (newN && !q) html += `<div class="bnp-ncl-listbar"><span>${newN} with new Neomail</span><button type="button" class="bnp-pillbtn" data-ncl="readall">Mark all read</button></div>`;
       html += convs.map(chatRow).join('');
       const archd = q ? Object.entries(d.p).filter(([k, p]) => p.m.length && p.arch && hit(k, p)).sort((a, b) => nclLast(b[1]) - nclLast(a[1])) : [];   // (Find: the archive's by that name too)
       if (archd.length) html += `<h6>In the archive</h6>${archd.map(chatRow).join('')}`;
       const more = q ? friends.filter((k) => !has(k) && hit(k)).sort((a, b) => a.localeCompare(b)) : [];   // (Find: your Neofriends by that name too, to start one)
       if (more.length) html += `<h6>Neofriends</h6>${more.map(friendRow).join('')}`;
-      if (!convs.length && !more.length && !canNew && !archd.length) html += `<p class="bnp-ncl-none">${q ? 'No one by that name. A whole username starts a new conversation.' : 'No conversations yet: they come from your Inbox and from what you send. Your Neofriends are in the tab beside this one.'}</p>`;
+      const said = typed.length >= 2 ? nclFindSaid(d, typed) : [];   // (Find: what was written, in any conversation)
+      if (said.length) html += `<h6>In what was written</h6>${said.map(({ k, p, m, snip }) => `<button type="button" class="bnp-ncl-row is-hit" data-ncl-who="${esc(k)}" data-ncl-mid="${esc(String(m.i))}" title="${esc(p.n)}">${nclAv(p.av || nf.av[k] || AV_DEFAULT_PIC)}<span class="bnp-ncl-rt"><b><span>${m.me ? 'You' : esc(p.n)}${m.me ? ` <em>to ${esc(p.n)}</em>` : ''}</span></b><small>${snip}</small></span><span class="bnp-ncl-rr"><time>${esc(nclAgo(m.at))}</time></span></button>`).join('')}`;
+      if (!convs.length && !more.length && !canNew && !archd.length && !said.length) html += `<p class="bnp-ncl-none">${q ? 'No one by that name, and nothing written with it. A whole username starts a new conversation.' : 'No conversations yet: they come from your Inbox and from what you send. Your Neofriends are in the tab beside this one.'}</p>`;
     }
     box.innerHTML = html;
+  }
+  function nclFindSaid(d, typed) {   // (the newest 20 messages with these words in them, each with its words around them, the words marked)
+    const want = typed.toLowerCase(), out = [];
+    const all = [];
+    for (const [k, p] of Object.entries(d.p)) for (const m of p.m) all.push([k, p, m]);
+    all.sort((a, b) => b[2].at - a[2].at);
+    for (const [k, p, m] of all) {
+      const text = nclPlainOf(m), at = text.toLowerCase().indexOf(want);
+      if (at < 0) continue;
+      const from = Math.max(0, at - 28), to = Math.min(text.length, at + want.length + 52);
+      const snip = `${from ? '…' : ''}${esc(text.slice(from, at))}<mark>${esc(text.slice(at, at + want.length))}</mark>${esc(text.slice(at + want.length, to))}${to < text.length ? '…' : ''}`;
+      out.push({ k, p, m, snip });
+      if (out.length >= 20) break;
+    }
+    return out;
   }
   function nclChatPaint(d = nclData()) {   // (the conversation open: built when it's opened; after that its header and messages kept up to date, and what you're writing left as it is)
     const box = ncl && ncl.el.querySelector('[data-ncl-chat]');
     if (!box) return;
     const k = ncl.who;
+    ncl.el.classList.toggle('is-who', !!k);
     if (!k) { box.dataset.who = ''; box.innerHTML = ncl.arch ? `<div class="bnp-ncl-empty"><span class="bnp-ncl-ic">${NCL_SVG.arch}</span><b>The archive</b><p>Conversations put away, out of your Chats. Choose one on the left to read it: a new Neomail in one brings it back.</p></div>` : `<div class="bnp-ncl-empty"><span class="bnp-ncl-ic">${NCL_SVG.chat}</span><b>Your Neomail, as conversations</b><p>Choose someone on the left, or type a username in Find to write to someone new.</p></div>`; return; }
     const p = d.p[k] || { n: k, av: '', m: [] }, built = box.dataset.who !== k;
     if (built) { box.dataset.who = k; box.innerHTML = `<div class="bnp-ncl-chead" data-ncl-chead></div><div class="bnp-ncl-msgs" data-ncl-msgs></div>${nclCompHtml(k, p)}`; ncl.stick = true; }
@@ -8767,7 +9423,11 @@
     if (head.dataset.sig !== hh) { head.innerHTML = hh; head.dataset.sig = hh; crispIn(head); }
     const list = box.querySelector('[data-ncl-msgs]'), last = p.m[p.m.length - 1] || {}, sig = `${p.m.length}|${last.i || ''}|${p.av || ''}|${nclMyAv()}|${new Date().toDateString()}`;
     if (list.dataset.sig !== sig) { list.innerHTML = nclMsgsHtml(k, p); list.dataset.sig = sig; }
-    if (ncl.stick) list.scrollTop = list.scrollHeight;
+    if (ncl.jump) {   // (a message found by Find: in sight, and lit a moment)
+      const b = list.querySelector(`[data-mid="${CSS.escape(ncl.jump)}"]`);
+      ncl.jump = '';
+      if (b) { ncl.stick = false; b.scrollIntoView({ block: 'center' }); b.classList.add('is-found'); setTimeout(() => b.classList.remove('is-found'), 2200); }
+    } else if (ncl.stick) list.scrollTop = list.scrollHeight;
     const sj = box.querySelector('[data-ncl-subj]');
     if (sj && sj.dataset.auto && sj.value !== nclSubj(p)) sj.value = nclSubj(p);   // (new messages, a new subject: kept up with, unless you've written your own)
     if (built) nclFit(box.querySelector('[data-ncl-ta]'));
@@ -8775,13 +9435,13 @@
   function nclHeadHtml(k, p) {
     const nf = nfData();
     const sub = `${p.arch ? 'In the archive · ' : ''}${NCL_NOREPLY.has(k) ? 'Neopets’ own messages to you' : p.m.length ? `${p.m.length} ${p.m.length === 1 ? 'message' : 'messages'} here` : 'A new conversation'}`;
-    return `${nclAv(p.av || nf.av[k] || AV_DEFAULT_PIC)}<span class="bnp-ncl-ct"><b><span>${esc(p.n)}</span></b><small>${sub}</small></span>${nclActs(k, p.n)}`;
+    return `<button type="button" class="bnp-ncl-back" data-ncl="home" title="Back to the list" aria-label="Back to the list">${NCL_SVG.back}</button>${nclAv(p.av || nf.av[k] || AV_DEFAULT_PIC)}<span class="bnp-ncl-ct"><b><span>${esc(p.n)}</span></b><small>${sub}</small></span>${nclActs(k, p.n)}`;
   }
   function nclActs(k, name) {   // (their lookup, trades and auctions, each a click away in a new tab: your theme's own pictures for them, as on the boards)
     const enc = encodeURIComponent(name), e = esc(name);
     const one = (href, title, ic, svg) => `<a class="bnp-ncl-act" href="${href}" target="_blank" rel="noopener" title="${title}" aria-label="${title}">${ic ? `<i data-crisp="${esc(ic)}" data-center style="background-image:url('${esc(cssUrl(ic))}')"></i>` : svg}</a>`;
     const svg = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
-    const look = `<a class="bnp-ncl-act" href="/userlookup.phtml?user=${enc}" target="_blank" rel="noopener" title="${e}’s lookup" aria-label="${e}’s lookup"><i class="is-big" style="background-image:url('${NCL_LOOKUP_IC}')"></i></a>`;   // (the Neopets app's own star: a big picture, shrunk cleanly as it is)
+    const look = `<a class="bnp-ncl-act" href="/userlookup.phtml?place=9999&user=${enc}" target="_blank" rel="noopener" title="${e}’s lookup" aria-label="${e}’s lookup"><i class="is-big" style="background-image:url('${NCL_LOOKUP_IC}')"></i></a>`;   // (the Neopets app's own star: a big picture, shrunk cleanly as it is)
     const archIc = `<i data-crisp="${NCL_ARCH_IC}" data-trim style="background-image:url('${NCL_ARCH_IC}')"></i>`;   // (Neopets' own hourglass, among Neopets' own pictures; the top bar keeps its drawn one)
     const cp = nclData().p[k], archBtn = cp && cp.m.length ? (cp.arch ? `<button type="button" class="bnp-ncl-act" data-ncl="unarchive" aria-pressed="true" title="In the archive: back to your Chats" aria-label="In the archive: back to your Chats">${archIc}</button>` : `<button type="button" class="bnp-ncl-act" data-ncl="archive" aria-pressed="false" title="Archive it: out of your Chats till there’s something new" aria-label="Archive this conversation">${archIc}</button>`) : '';
     const erase = nclData().p[k] && nclData().p[k].m.length ? `<button type="button" class="bnp-ncl-act" data-ncl="erase" title="Erase this conversation from NeoChat (it stays on Neopets)" aria-label="Erase this conversation from NeoChat"><i data-crisp="${NCL_DEL_IC}" data-trim style="background-image:url('${NCL_DEL_IC}')"></i></button>` : '';
@@ -8789,13 +9449,14 @@
     if (NCL_NOREPLY.has(k)) return wrap(`${look}${archBtn}${erase}`);   // (Neopets itself: no trades, auctions or Neofriends)
     const nf = nfData(), pend = nclNfPending(k), friend = nf.fr.includes(k) || nf.on.includes(k);
     const add = friend || k === nclMe() ? '' : `<button type="button" class="bnp-ncl-act" data-ncl="nfadd" title="${pend ? `Neofriend request sent to ${e}` : `Send ${e} a Neofriend request`}" aria-label="${pend ? `Neofriend request sent to ${e}` : `Send ${e} a Neofriend request`}"${pend ? ' disabled' : ''}>${(() => { const ic = tabIconOf(['nat:community-central-icon']) || NCL_NF_IC; return `<i data-crisp="${esc(ic)}" data-center style="background-image:url('${esc(cssUrl(ic))}')"></i>`; })()}${pend ? '<b class="bnp-ncl-actok" aria-hidden="true">✓</b>' : ''}</button>`;
-    return wrap(`${look}${one(`/island/tradingpost.phtml?type=browse&criteria=owner&search_string=${enc}`, `${e}’s trades`, tabIconOf(['nat:shop-trading-icon']), svg('<path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/>'))}${one(`/genie.phtml?type=find_user&auction_username=${enc}`, `${e}’s auctions`, tabIconOf(['nat:shop-auction-icon']), svg('<path d="m14.5 4.5 5 5M10 9l5 5M12.2 6.8l-5.4 5.4 5 5 5.4-5.4M9.3 14.7 3.5 20.5"/>'))}${add}${archBtn}${erase}`);
+    const muted = nclMuted().has(k), mute = `<button type="button" class="bnp-ncl-act" data-ncl="mute" aria-pressed="${muted}" title="${muted ? `Muted: ${e}’s Neomail comes quietly. Unmute` : `Mute ${e}: their Neomail comes quietly (no alert, sound or notice)`}" aria-label="${muted ? `Unmute ${e}` : `Mute ${e}`}">${muted ? NCL_SVG.bellOff : NCL_SVG.bell}</button>`;
+    return wrap(`${look}${mute}${one(`/island/tradingpost.phtml?type=browse&criteria=owner&search_string=${enc}`, `${e}’s trades`, tabIconOf(['nat:shop-trading-icon']), svg('<path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/>'))}${one(`/genie.phtml?type=find_user&auction_username=${enc}`, `${e}’s auctions`, tabIconOf(['nat:shop-auction-icon']), svg('<path d="m14.5 4.5 5 5M10 9l5 5M12.2 6.8l-5.4 5.4 5 5 5.4-5.4M9.3 14.7 3.5 20.5"/>'))}${add}${archBtn}${erase}`);
   }
   const NCL_LOOKUP_IC = 'https://cdn9.neopets.com/app_icons/816098ae647bce91fb4ba4590b0f3e6b.png';   // (the Neopets app's star, as NeoChat has it for a lookup)
   const NCL_NF_IC = `${NPI}themes/h5/basic/images/communitycentral-icon.png`;   // (Neofriends, when the theme has no picture of its own)
   const NCL_ARCH_IC = `${NPI}solitairesoiree/images/ss-timer.png`;   // (Archive, by a conversation's name: Solitaire Soiree's hourglass)
   const NCL_DEL_IC = `${NPI}ncmall/buttons/btn_delete.gif`;   // (Erase: Neopets' own red ×, the NC Mall's delete button. Its 25 px drawn at 20: one to one on a 125% screen)
-  const nclNfPending = (k) => { const v = nbJson('bnp-nf-pend', {}); return !!(v && v[k] && Date.now() - v[k] < 30 * 864e5); };   // (a request sent from here: shown as sent for a month, or till they're a Neofriend)
+  const nclNfPending = (k) => { const v = nbJson(acctKey('bnp-nf-pend'), {}); return !!(v && v[k] && Date.now() - v[k] < 30 * 864e5); };   // (a request sent from here: shown as sent for a month, or till they're a Neofriend)
   function nclEraseAsk() {   // (Erase: asked first, under the header)
     const box = ncl && ncl.el.querySelector('[data-ncl-chat]'), k = ncl && ncl.who;
     if (!box || !k) return;
@@ -8819,7 +9480,7 @@
     nclPut(me, d);
     nclDraftPut(k, '');
     ncl.who = '';
-    try { localStorage.removeItem('bnp-ncl-who'); } catch (_) { /* */ }
+    try { localStorage.removeItem(acctKey('bnp-ncl-who')); } catch (_) { /* */ }
     nclPaint();
     try { applyAll(); } catch (_) { /* */ }
     nclToast({ kind: 'info', text: `Your conversation with ${p.n} is erased from NeoChat`, act: ['Undo', () => { const d2 = nclData(me); d2.p[k] = before; d2.x = d2.x.filter((i, n) => n < x0 || !before.m.some((m) => m.i === i)); nclPut(me, d2); nclWho(k); try { applyAll(); } catch (_) { /* */ } }], ms: 8000 });
@@ -8861,9 +9522,9 @@
       }
     } catch (e) { report(e); bad = 'Neopets didn’t answer, so it may not have gone: try again in a moment.'; }
     if (bad) { say.textContent = bad; ask.classList.add('is-bad'); const no = ask.querySelector('[data-ncl="nfno"]'); no.disabled = false; no.textContent = 'OK'; ask.querySelector('[data-ncl="nfyes"]').remove(); return; }
-    const v = nbJson('bnp-nf-pend', {}) || {};
+    const v = nbJson(acctKey('bnp-nf-pend'), {}) || {};
     v[k] = Date.now();
-    nbJsonSet('bnp-nf-pend', v);
+    nbJsonSet(acctKey('bnp-nf-pend'), v);
     ask.remove();
     nclToast({ kind: 'ok', text: `Neofriend request sent to ${name}` });
     const head = ncl.el.querySelector('[data-ncl-chead]');
@@ -8879,7 +9540,7 @@
     const flush = () => {
       if (!run) return;
       const av = run.me ? mine : theirs;
-      html += `<div class="bnp-ncl-run${run.me ? ' is-me' : ''}${av ? '' : ' is-noav'}">${av ? nclAv(av) : ''}<div class="bnp-ncl-rb"><div class="bnp-ncl-by"><b>${run.me ? 'You' : esc(p.n)}</b><time>${clock(run.list[0].at)}</time>${run.s ? `<span class="bnp-ncl-sj" title="Its subject">${NCL_SVG.mail}${esc(run.s)}</span>` : ''}</div>${run.list.map((m) => `<div class="bnp-ncl-b" title="${clock(m.at)}">${m.t || '<i>(no words)</i>'}</div>`).join('')}</div></div>`;
+      html += `<div class="bnp-ncl-run${run.me ? ' is-me' : ''}${av ? '' : ' is-noav'}">${av ? nclAv(av) : ''}<div class="bnp-ncl-rb"><div class="bnp-ncl-by"><b>${run.me ? 'You' : esc(p.n)}</b><time>${clock(run.list[0].at)}</time>${run.s ? `<span class="bnp-ncl-sj" title="Its subject">${NCL_SVG.mail}${esc(run.s)}</span>` : ''}</div>${run.list.map((m) => `<div class="bnp-ncl-b" data-mid="${esc(String(m.i))}" title="${clock(m.at)}">${m.t || '<i>(no words)</i>'}</div>${nclCards(m)}`).join('')}</div></div>`;
       run = null;
     };
     for (const m of p.m) {
@@ -8894,13 +9555,47 @@
     flush();
     return html;
   }
+  function nclCards(m) {   // (a lot, a shop, a lookup, a pet, a gallery, an auction, a topic or an item a message links to: a small card for each, three at most)
+    const seen = new Set(), out = [];
+    for (const x of String(m.t || '').matchAll(/<a\s[^>]*href="([^"]+)"/gi)) {
+      let u;
+      try { u = new URL(x[1].replace(/&amp;/g, '&'), SITE + '/'); } catch (_) { continue; }
+      if (!/(^|\.)neopets\.com$/i.test(u.hostname) || seen.has(u.href)) continue;
+      seen.add(u.href);
+      const q = (k) => u.searchParams.get(k) || '', path = u.pathname.replace(/\/{2,}/g, '/');
+      let c = null;
+      if (path === '/island/tradingpost.phtml') { const lot = q('lot_id') || (q('criteria') === 'id' ? q('search_string') : ''), own = q('criteria') === 'owner' ? q('search_string') : ''; if (lot || own) c = { t: lot ? `Trading Post lot ${lot}` : `${own}’s trades`, s: 'Trading Post', ic: tabIconOf(['nat:shop-trading-icon']) }; }
+      else if (path === '/browseshop.phtml' && q('owner')) c = { t: `${q('owner')}’s shop`, s: 'A shop', ic: tabIconOf(['nat:shop-usershop-icon']) };
+      else if (path === '/userlookup.phtml' && q('user')) { const k = q('user').toLowerCase(); c = { t: `${q('user')}’s lookup`, s: 'Lookup', ic: nfData().av[k] || NCL_LOOKUP_IC, av: !!nfData().av[k] }; }
+      else if ((path === '/petlookup.phtml' && q('pet')) || /^\/~[\w-]+$/.test(path)) { const pet = q('pet') || path.slice(2); c = { t: pet, s: path === '/petlookup.phtml' ? 'Pet lookup' : 'Pet page', ic: `https://pets.neopets.com/cpn/${encodeURIComponent(pet)}/1/1.png`, pet: true }; }
+      else if (path === '/gallery/index.phtml' && q('gu')) c = { t: `${q('gu')}’s gallery`, s: 'Gallery', ic: tabIconOf(LINKS.gallery.icon) };
+      else if (path === '/auctions.phtml' && q('auction_id')) c = { t: `Auction ${q('auction_id')}`, s: 'Auctions', ic: tabIconOf(['nat:shop-auction-icon']) };
+      else if (path === '/genie.phtml' && q('auction_username')) c = { t: `${q('auction_username')}’s auctions`, s: 'Auctions', ic: tabIconOf(['nat:shop-auction-icon']) };
+      else if (path === '/neoboards/topic.phtml' && q('topic')) c = { t: 'A Neoboards topic', s: `Topic ${q('topic')}`, ic: tabIconOf(['nat:community-neoboards-icon']) };
+      else if ((path === '/shops/wizard.phtml' && q('string')) || (path === '/search.phtml' && q('selected_type') === 'object' && q('string'))) { const name = q('string'), kept = itPriceCache()[Object.keys(itPriceCache()).find((n) => n.toLowerCase() === name.toLowerCase()) || ''], r = kept && kept.r; c = { t: name, s: r && r.p > 0 ? `About ${r.p.toLocaleString()} NP` : 'An item', ic: (r && r.img) || tabIconOf(['nat:shop-sw-icon']) }; }
+      if (!c) continue;
+      out.push(`<a class="bnp-ncl-card${c.pet ? ' is-pet' : ''}${c.av ? ' is-av' : ''}" href="${esc(u.href)}" target="_blank" rel="noopener"><i style="background-image:url('${esc(cssUrl(c.ic || ''))}')"></i><span><b>${esc(c.t)}</b><small>${esc(c.s)}</small></span></a>`);
+      if (out.length >= 3) break;
+    }
+    return out.length ? `<div class="bnp-ncl-cards">${out.join('')}</div>` : '';
+  }
   const nclSubj = (p) => { const last = [...p.m].reverse().find((m) => m.s); return last ? (/^re:/i.test(last.s) ? last.s : `Re: ${last.s}`).slice(0, 30) : 'Hi!'; };   // (a reply's subject: the newest one, with "Re:")
   function nclCompHtml(k, p) {   // (where you write: its subject, your words, Send. Neopets' own messages have none)
     if (NCL_NOREPLY.has(k)) return `<div class="bnp-ncl-comp is-noreply">${NCL_SVG.info}<span>Neopets sends these by itself, so there’s no one to answer them.</span></div>`;
     const subj = nclSubj(p);
-    const how = S.features.nclEnter === 'ctrl' ? 'Ctrl+Enter sends' : 'Enter sends, Shift+Enter: a new line';
-    return `<div class="bnp-ncl-comp"><p class="bnp-ncl-err" data-ncl-err role="alert" hidden></p><label class="bnp-ncl-subjf"><span>Subject</span><input type="text" data-ncl-subj data-auto="1" value="${esc(subj)}" maxlength="30" spellcheck="false"></label><div class="bnp-ncl-row2"><textarea data-ncl-ta rows="2" placeholder="Write to ${esc(p.n)}… (${how})" aria-label="Your message to ${esc(p.n)}">${esc(nclDrafts()[k] || '')}</textarea><button type="button" class="button-default__2020 button-yellow__2020 bnp-ncl-send" data-ncl="send" title="Send it as a Neomail">${NCL_SVG.send}<span>Send</span></button></div></div>`;
+    const how = S.features.nclEnter === 'button' ? 'Send sends it, Enter: a new line' : S.features.nclEnter === 'ctrl' ? 'Ctrl+Enter sends' : 'Enter sends, Shift+Enter: a new line';
+    return `<div class="bnp-ncl-comp"><p class="bnp-ncl-err" data-ncl-err role="alert" hidden></p><label class="bnp-ncl-subjf"><span>Subject</span><input type="text" data-ncl-subj data-auto="1" value="${esc(subj)}" maxlength="30" spellcheck="false"></label><div class="bnp-ncl-row2"><textarea data-ncl-ta rows="2" placeholder="Write to ${esc(p.n)}… (${how})" aria-label="Your message to ${esc(p.n)}">${esc(nclDrafts()[k] || '')}</textarea><button type="button" class="bnp-ncl-snipbtn" data-ncl="snips" title="Quick replies: your own words, one click away" aria-label="Quick replies" aria-expanded="false">${NCL_SVG.bolt}</button><button type="button" class="button-default__2020 button-yellow__2020 bnp-ncl-send" data-ncl="send" title="Send it as a Neomail">${NCL_SVG.send}<span>Send</span></button></div><div class="bnp-ncl-snips" data-ncl-snips hidden></div></div>`;
   }
+  function nclSnipsPaint(open) {   // (your quick replies, over where you write: one click puts it in; × takes one away; what's written can become one)
+    const box = ncl && ncl.el.querySelector('[data-ncl-snips]'), btn = ncl && ncl.el.querySelector('[data-ncl="snips"]'), ta = ncl && ncl.el.querySelector('[data-ncl-ta]');
+    if (!box) return;
+    if (open !== undefined) box.hidden = !open;
+    if (btn) btn.setAttribute('aria-expanded', String(!box.hidden));
+    if (box.hidden) return;
+    const list = nclSnips(), has = !!(ta && ta.value.trim());
+    box.innerHTML = `<div class="bnp-ncl-snipl">${list.length ? list.map((s, i) => `<div class="bnp-ncl-snip"><button type="button" class="bnp-ncl-snipt" data-ncl="snipuse" data-i="${i}" title="Put it in">${esc(s.length > 140 ? `${s.slice(0, 140)}…` : s)}</button><button type="button" class="bnp-ncl-snipx" data-ncl="snipdel" data-i="${i}" title="Take this one away" aria-label="Take this quick reply away">×</button></div>`).join('') : '<p class="bnp-ncl-none">None yet. Write something you send often, then save it here.</p>'}</div><div class="bnp-ncl-snipf"><button type="button" class="bnp-pillbtn" data-ncl="snipadd"${has ? '' : ' disabled'}>Save what’s written as one</button></div>`;
+  }
+  document.addEventListener('pointerdown', (e) => { const box = ncl && ncl.el && ncl.el.querySelector('[data-ncl-snips]:not([hidden])'); if (box && !(e.target instanceof Element && e.target.closest('[data-ncl-snips], [data-ncl="snips"]'))) nclSnipsPaint(false); }, true);
   function nclFit(ta) { if (!ta) return; ta.style.height = 'auto'; ta.style.height = `${Math.min(ta.scrollHeight + 4, 180)}px`; }   // (two lines to start with, growing as you write)
   function nclLookNow() {   // (Look now, pressed: a look at once, then 10 seconds before it can be pressed again)
     if (nclBusy || Date.now() < nclCool) return;
@@ -8913,7 +9608,7 @@
       return;
     }
     nclLastN = -1;
-    nclCheck(true).then(() => { if (nclLastN < 0) return; if (nclErr) nclToast({ kind: 'bad', text: nclErr }); else if (!nclLastN) nclToast({ kind: 'info', text: 'No new Neomail', ms: 3000 }); });   // (pressed: a word either way, so you know it looked)
+    nclCheck(true).then((r) => { if (r === 'held') { nclPaint(); nclToast({ kind: 'info', text: 'Up to date: it looked a few seconds ago', ms: 3000 }); return; } if (nclLastN < 0) return; if (nclErr) nclToast({ kind: 'bad', text: nclErr }); else if (!nclLastN) nclToast({ kind: 'info', text: 'No new Neomail', ms: 3000 }); });   // (pressed: a word either way, so you know it looked)
     nclCheckPaint();
     setTimeout(nclCheckPaint, 10050);
   }
@@ -8931,8 +9626,8 @@
     if (!box) return;
     const at = Number(get('nclChk', 0)), ago = nclAgo(at), m = nclEvery(), next = Math.max(0, Math.round((nclDue() - Date.now()) / 60000));
     const said = nclBusy ? 'Reading your Inbox…' : nclErr || (nclAway === 'stop' && m ? 'Paused till you’re back' : at ? `Looked ${ago === 'now' ? 'just now' : `${ago}${/min$/.test(ago) ? ' ago' : ''}`}` : 'Not looked yet');
-    const how = !m ? 'It looks only when you ask' : nclAway === 'stop' ? 'You’ve been away from Neopets 4 hours: it looks again when you’re back' : `It looks about every ${m === 1 ? 'minute' : `${m} minutes`} while NeoChat is open or folded${nclAway === 'slow' ? ', less often while you’re away' : ''}${at ? `: next in about ${next ? `${next} min` : 'a moment'}` : ''}`;
-    box.innerHTML = `<span>${esc(said)}</span><button type="button" class="bnp-pillbtn" data-ncl="check" title="Look for new Neomail now. ${esc(how)} (Settings › NeoChat)">${NCL_SVG.check}${m ? `Every ${m} min` : 'Only when asked'}</button>`;
+    const how = !m ? 'It looks only when you ask' : nclAway === 'stop' ? 'You’ve been away from Neopets 4 hours: it looks again when you’re back' : `It looks about every ${nclEveryWords(m)} while NeoChat is open or folded${nclAway === 'slow' ? ', less often while you’re away' : ''}${at ? `: next in about ${next ? nclMins(next) : 'a moment'}` : ''}`;
+    box.innerHTML = `<span>${esc(said)}</span><button type="button" class="bnp-pillbtn" data-ncl="check" title="Look for new Neomail now. ${esc(how)} (Settings › NeoChat)">${NCL_SVG.check}${m ? `Every ${nclMins(m)}` : 'Only when asked'}</button>`;
     nclCheckPaint();
   }
   function nclBubPaint() {
@@ -8959,14 +9654,17 @@
     ncl.el.classList.remove('is-busy');
     btn.disabled = false;
     if (bad) { err.textContent = bad; err.hidden = false; ta.focus(); return; }
-    nclDraftPut(who, '');
-    if (ncl.who === who) { ta.value = ''; nclFit(ta); }
+    const rest = (v) => (v === body ? '' : v.startsWith(body) ? v.slice(body.length).replace(/^[ \t]*\r?\n/, '') : v);   // (what's in the box now, less what was sent)
+    const cur = ncl.who === who ? ncl.el.querySelector('[data-ncl-ta]') : null, left = cur ? rest(cur.value) : rest(String(nclDrafts()[who] || ''));
+    nclDraftPut(who, left);
+    if (cur) { cur.value = left; nclFit(cur); }
     nclKeepSent(to, subject, body);
-    const rec = nbJson(NMW_TO, []);   // (written to lately: first in the little window's To)
-    nbJsonSet(NMW_TO, [who, ...(Array.isArray(rec) ? rec : []).filter((x) => x !== who)].slice(0, 20));
+    const rec = nbJson(acctKey(NMW_TO), []);   // (written to lately: first in the little window's To)
+    nbJsonSet(acctKey(NMW_TO), [who, ...(Array.isArray(rec) ? rec : []).filter((x) => x !== who)].slice(0, 20));
     ncl.stick = true;
     nclPaint();
-    if (ta.isConnected) ta.focus();
+    const now = ncl.el.querySelector('[data-ncl-ta]');
+    if (now && ncl.who === who) now.focus();
   }
   function nclClick(e) {
     const t = e.target instanceof Element ? e.target : null;
@@ -8974,7 +9672,7 @@
     const tab = t.closest('[data-ncl-tab]');
     if (tab) { nclTabSet(tab.dataset.nclTab); return; }
     const who = t.closest('[data-ncl-who]');
-    if (who) { nclWho(who.dataset.nclWho); return; }
+    if (who) { ncl.jump = who.dataset.nclMid || ''; nclWho(who.dataset.nclWho, !!ncl.jump); return; }   // (a message found: its conversation, at it)
     const b = t.closest('[data-ncl]');
     if (!b) return;
     const k = b.dataset.ncl;
@@ -8990,6 +9688,8 @@
     else if (k === 'send') nclSendNow();
     else if (k === 'max') nclMaxSet(!ncl.el.classList.contains('is-max'), true);
     else if (k === 'set') openHub('neochat');
+    else if (k === 'theme') openHub('nclthemes');
+    else if (k === 'pin') nclPinSet(!S.features.nclPin);
     else if (k === 'friends') { b.disabled = true; b.textContent = 'Reading them…'; nclFriendsMaybe(true); }
     else if (k === 'nfadd') nclNfAsk();
     else if (k === 'erase') nclEraseAsk();
@@ -8998,6 +9698,21 @@
     else if (k === 'nfyes') nclNfAdd();
     else if (k === 'nfno') { const a = b.closest('[data-ncl-ask]'); if (a) a.remove(); }
     else if (k === 'page') nclState('');   // (its own page instead: the window not brought back there)
+    else if (k === 'mute') { const who = ncl.who, on = !nclMuted().has(who), name = (nclData().p[who] || {}).n || who; nclMuteSet(who, on); nclPaint(); nclBubPaint(); nclToast({ kind: 'info', text: on ? `${name} is muted: their Neomail comes quietly` : `${name} isn’t muted now`, act: ['Undo', () => { nclMuteSet(who, !on); nclPaint(); nclBubPaint(); }], ms: 6000 }); }
+    else if (k === 'snips') { const box = ncl.el.querySelector('[data-ncl-snips]'); nclSnipsPaint(!!(box && box.hidden)); }
+    else if (k === 'snipuse') {
+      const s = nclSnips()[Number(b.dataset.i)], ta = ncl.el.querySelector('[data-ncl-ta]');
+      if (s == null || !ta) return;
+      const a = ta.selectionStart ?? ta.value.length, z = ta.selectionEnd ?? a;
+      ta.value = ta.value.slice(0, a) + s + ta.value.slice(z);
+      ta.setSelectionRange(a + s.length, a + s.length);
+      nclDraftPut(ncl.who, ta.value);
+      nclFit(ta);
+      nclSnipsPaint(false);
+      ta.focus();
+    }
+    else if (k === 'snipdel') { const i = Number(b.dataset.i), list = nclSnips().slice(), [gone] = list.splice(i, 1); S.nclSnips = list; saveNow(); nclSnipsPaint(); nclToast({ kind: 'info', text: 'Quick reply taken away', act: ['Undo', () => { const l = nclSnips().slice(); l.splice(i, 0, gone); S.nclSnips = l; saveNow(); nclSnipsPaint(); }], ms: 6000 }); }
+    else if (k === 'snipadd') { const ta = ncl.el.querySelector('[data-ncl-ta]'), v = ta ? ta.value.trim().slice(0, 1000) : ''; if (!v) return; if (!nclSnips().includes(v)) { S.nclSnips = [...nclSnips(), v].slice(-30); saveNow(); } nclSnipsPaint(); nclToast({ kind: 'ok', text: 'Saved as a quick reply', ms: 3000 }); }
   }
   // The archive: conversations out of your Chats, under the hourglass at the top (p.arch: when it went in). One comes back out by
   // itself when there's a new Neomail in it, from them or from you. Archive by itself (S.features.nclArch, days): conversations with
@@ -9005,7 +9720,7 @@
   function nclArchView(on) {   // (the side: the archive, or your Chats again)
     if (!ncl) return;
     ncl.arch = !!on;
-    if (ncl.arch && ncl.who && !((nclData().p[ncl.who] || {}).arch)) { ncl.who = ''; try { localStorage.removeItem('bnp-ncl-who'); } catch (_) { /* */ } }   // (one from your Chats was open: the archive's own start instead)
+    if (ncl.arch && ncl.who && !((nclData().p[ncl.who] || {}).arch)) { ncl.who = ''; try { localStorage.removeItem(acctKey('bnp-ncl-who')); } catch (_) { /* */ } }   // (one from your Chats was open: the archive's own start instead)
     nclPaint();
     const list = ncl.el.querySelector('[data-ncl-list]');
     if (list) list.scrollTop = 0;
@@ -9016,7 +9731,7 @@
     const was = { arch: p.arch, seen: p.seen, back: p.back }, wasView = ncl.arch;
     if (on) { p.arch = Date.now(); p.seen = Math.max(p.seen || 0, Date.now()); } else { delete p.arch; p.back = Date.now(); }   // (put away: read, too)
     nclPut(me, d);
-    if (on && !ncl.arch) { ncl.who = ''; try { localStorage.removeItem('bnp-ncl-who'); } catch (_) { /* */ } }   // (put away from your Chats: closed with it)
+    if (on && !ncl.arch) { ncl.who = ''; try { localStorage.removeItem(acctKey('bnp-ncl-who')); } catch (_) { /* */ } }   // (put away from your Chats: closed with it)
     if (!on) ncl.arch = false;   // (taken out: your Chats, still open on it)
     nclPaint();
     try { applyAll(); } catch (_) { /* */ }
@@ -9038,7 +9753,7 @@
     if (!old.length) return;
     for (const p of old) p.arch = now;
     nclPut(me, d);
-    if (ncl && ncl.who && old.some((p) => p.n.toLowerCase() === ncl.who) && !ncl.arch) { ncl.who = ''; try { localStorage.removeItem('bnp-ncl-who'); } catch (_) { /* */ } }
+    if (ncl && ncl.who && old.some((p) => p.n.toLowerCase() === ncl.who) && !ncl.arch) { ncl.who = ''; try { localStorage.removeItem(acctKey('bnp-ncl-who')); } catch (_) { /* */ } }
     if (ncl) nclPaint();
     nclToast({ kind: 'info', text: `${old.length === 1 ? `Your conversation with ${old[0].n}` : `${old.length} conversations`}, with nothing new for ${days} days, ${old.length === 1 ? 'is' : 'are'} in the archive now`, ms: 7000 });
   }
@@ -9046,27 +9761,33 @@
     if (!ncl) return;
     ncl.who = '';
     ncl.arch = false;
-    try { localStorage.removeItem('bnp-ncl-who'); } catch (_) { /* */ }
+    try { localStorage.removeItem(acctKey('bnp-ncl-who')); } catch (_) { /* */ }
     nclPaint();
   }
   function nclSettingsChanged(k) {   // (one of NeoChat's settings changed: at once, on this page)
     if (k === 'ncl' && !S.features.ncl) { nclTickOff(); if (ncl && !ncl.page) { ncl.el.classList.remove('open', 'is-min'); ncl.bub.hidden = true; } return; }
     if ((k === 'ncl' || k === 'nclAlways') && S.features.ncl && S.features.nclAlways && nclState() !== 'x' && !(ncl && (nclIsOpen() || !ncl.bub.hidden))) nclFold();
-    if (k === 'nclSound' && S.features.nclSound) remSound(S.features.nclSound);   // (heard as it's picked)
+    if ((k === 'nclSound' || k === 'nclVol') && S.features.nclSound) remSound(S.features.nclSound, nclVol());   // (heard as it's picked, and at its new loudness)
+    nclHbHoverPaint();
     if (!ncl) return;
     if (k === 'nclEnter') { const c = ncl.el.querySelector('[data-ncl-chat]'); if (c) c.dataset.who = ''; }   // (its hint about Enter, written again)
     if (k === 'nclArch') nclAutoArch();   // (chosen: put away now what's waited that long)
+    if (k === 'nclPinSide') nclPinPaint(true);
+    if (k === 'nclDim') nclDimPaint();
     nclPaint();
   }
   function nclBoot() {   // (the page read: the window back as it was on this tab's last page (folded on every page, if you've chosen that and haven't closed it here); or this is its own page. Then Neopets' own alerts)
     if (!S.features.ncl) return;
+    nclHbHoverPaint();
+    nclPendCheck();
     nclMe();
     if (nclHere()) nclPageMake();
     else {
       const st = nclState();
-      if (st === 'open') nclOpen({ quiet: true });
+      if (st === 'open' || (!st && S.features.nclPin)) nclOpen({ quiet: true });   // (pinned: at its side on every page, unless you've folded or closed it in this tab)
       else if (st === 'min' || (!st && S.features.nclAlways)) nclFold();
     }
+    nclPinPaint();
     nclAlertsWatch();
     document.addEventListener('visibilitychange', () => { if (!document.hidden && ncl && ncl.who && nclIsOpen()) nclPaint(); });   // (back on this tab: what came while it was out of sight, seen now)
   }
@@ -9105,7 +9826,7 @@
       </div>
       <div class="bnp-card"><h4>Looking for new Neomail</h4>
         ${seg('nclEvery', 'How often', NCL_EVERY, String(nclEvery()))}
-        ${(() => { const m = nclEvery(); return `<div class="bnp-nclhow"><i class="bnp-bang" aria-hidden="true">!</i><ul aria-label="How it looks">${m ? `<li>About every ${m === 1 ? 'minute' : `${m} minutes`}, a little sooner or later each time</li>
+        ${(() => { const m = nclEvery(); return `<div class="bnp-nclhow"><i class="bnp-bang" aria-hidden="true">!</i><ul aria-label="How it looks">${m ? `<li>About every ${nclEveryWords(m)}, a little sooner or later each time</li>
           <li>${f.nclAlways ? 'In every tab, from its round button in the corner' : 'Only in tabs where NeoChat is open or folded'}</li>
           <li>Away from Neopets: less and less often, none after 4 hours, back to normal when you return</li>
           <li>With several tabs, only the one you’re on looks</li>` : '<li>Only when you press Look now</li>'}
@@ -9115,14 +9836,31 @@
       <div class="bnp-card"><h4>When new Neomail comes</h4>
         ${sw('nclSay', 'An alert on the page', 'Who it’s from and how it starts, with Read to open it (not for a conversation you’re reading). Gone in a few seconds.')}
         ${seg('nclSound', 'A sound', NCL_SOUNDS, f.nclSound || '')}
-        <p class="bnp-note">Each one plays as you pick it.</p>
+        <label class="bnp-f bnp-nclvol"><span>How loud</span><input type="range" min="5" max="100" step="5" data-feat="nclVol" value="${Math.round(nclVol() * 100)}" aria-label="How loud the sound is"><output>${Math.round(nclVol() * 100)}%</output></label>
+        <p class="bnp-note">Each one plays as you pick it, and again when you let go of How loud.</p>
         ${sw('nclDesk', 'A desktop notice', 'While you’re in another tab or window: who it’s from and how it starts. Click it for NeoChat.')}
         ${sw('nclPop', 'NeoChat opens on it', 'Folded, it opens on their conversation, in the tab you’re looking at (never taking your typing away from where it is).')}
       </div>
       <div class="bnp-card"><h4>Writing and opening</h4>
-        ${seg('nclEnter', 'Sending', [['enter', 'Enter sends (Shift+Enter: a new line)'], ['ctrl', 'Ctrl+Enter sends (Enter: a new line)']], f.nclEnter === 'ctrl' ? 'ctrl' : 'enter')}
+        ${(() => { const now = f.nclEnter === 'ctrl' || f.nclEnter === 'button' ? f.nclEnter : 'enter'; return `${seg('nclEnter', 'Sending', [['enter', 'Enter sends'], ['ctrl', 'Ctrl+Enter sends'], ['button', 'Only the Send button']], now)}
+        <p class="bnp-note">${now === 'enter' ? 'Shift+Enter makes a new line.' : 'Enter makes a new line.'}</p>`; })()}
         ${seg('nclMenu', 'NeoChat in the menu opens', [['win', 'Its window'], ['page', 'Its own page']], f.nclMenu === 'page' ? 'page' : 'win')}
         <p class="bnp-note">A Ctrl-click or a middle click on it opens its own page in a new tab.</p>
+      </div>
+      <div class="bnp-card"><h4>Muted, and quick replies</h4>
+        ${(() => { const mu = [...nclMuted()], sn = nclSnips(); return `<p class="bnp-note bnp-cardlead">Mute someone with the bell by their name: their Neomail still comes, quietly (no alert, sound, notice or count). Quick replies: the ⚡ beside Send.</p>
+        <div class="bnp-f"><span>Muted</span>${mu.length ? `<span class="bnp-chips is-static">${mu.map((k) => `<span class="bnp-chip">${esc(k)}<button type="button" class="bnp-chip-x" data-nclset="unmute" data-k="${esc(k)}" title="Unmute" aria-label="Unmute ${esc(k)}">×</button></span>`).join('')}</span>` : '<span class="bnp-note">No one</span>'}</div>
+        <div class="bnp-f"><span>Quick replies</span>${sn.length ? `<span class="bnp-ncl-setsnips">${sn.map((s, i) => `<span class="bnp-chip" title="${esc(s)}">${esc(s.length > 40 ? `${s.slice(0, 40)}…` : s)}<button type="button" class="bnp-chip-x" data-nclset="snipdel" data-i="${i}" title="Take it away" aria-label="Take this quick reply away">×</button></span>`).join('')}</span>` : '<span class="bnp-note">None yet</span>'}</div>`; })()}
+      </div>
+      <div class="bnp-card"><h4>Its window</h4>
+        <p class="bnp-note bnp-cardlead">Its header’s buttons: click one to show it or hide it there. Fold and Close always stay.</p>
+        ${nclHbPick()}
+        ${sw('nclHbHover', 'Its buttons only when you point at its header', 'A clean header: they show as you point at the header itself (not the conversation under it), and while you use them with the keyboard. On a touch screen they always show.')}
+        ${seg('nclPinSide', 'Pinned, it sits', [['right', 'On the right'], ['left', 'On the left']], f.nclPinSide === 'left' ? 'left' : 'right')}
+        <p class="bnp-note">The pin in its header keeps NeoChat at that side of every page, under the top bar, with the page beside it (folded or closed in a tab, it stays that way there). Drag its edge to make it wider or narrower; drag the window’s corner to size it when it isn’t pinned.</p>
+        <div class="bnp-tools"><button type="button" class="bnp-pillbtn" data-nclset="size"${nclSized() ? '' : ' disabled'}>Back to its first size</button><span class="bnp-note">${nclSized() ? 'Its size, its place and its pinned width, as it started.' : 'It’s the size it started at.'} A double-click on its corner (or, pinned, its edge) does the same.</span></div>
+        ${seg('nclDim', 'The page behind its window', [['', 'As it is'], ['dark', 'Darker'], ['blur', 'Blurred'], ['both', 'Both']], f.nclDim || '')}
+        <p class="bnp-note">Never while it’s pinned (the page is beside it then), or full screen. With one on, a click on the page folds NeoChat.</p>
       </div>
       <div class="bnp-card"><h4>The archive</h4>
         <p class="bnp-note bnp-cardlead">Conversations put away, out of your Chats: the hourglass at the top shows them, and the one by a conversation’s name puts it there. A new Neomail in one, from them or from you, brings it back.</p>
@@ -9133,6 +9871,8 @@
         ${seg('nclAvList', 'In the list of chats', [['full', 'Their own size'], ['half', 'Half size']], f.nclAvList === 'half' ? 'half' : 'full')}
         ${seg('nclAvChat', 'In conversations', [['full', 'Their own size'], ['half', 'Half size']], f.nclAvChat === 'half' ? 'half' : 'full')}
         <p class="bnp-note">Half size: 25 by 25, still whole in their frames. More of the list, or of what’s written, fits.</p>
+        <h5>Your Neofriends’ avatars</h5>
+        <div class="bnp-nfload" data-g="nfload">${nfLoadHtml()}</div>
       </div>
       <div class="bnp-card"><h4>What it keeps <span class="bnp-note">${convs.length ? `${convs.length} ${convs.length === 1 ? 'conversation' : 'conversations'}, ${msgs} ${msgs === 1 ? 'message' : 'messages'}` : ''}</span></h4>
         <p class="bnp-note bnp-cardlead">In this browser, for each of your accounts: the newest 150 conversations, each its newest 150 messages. Your Neomail itself stays on Neopets.</p>
@@ -9254,8 +9994,94 @@
     return rules.join('\n');
   }
   function nctFonts(t) { const v = (t && t.v) || {}; for (const k of Object.keys(NCT_FONTS)) gFont(v[k]); }
+  const nctSiteOf = (id) => { const m = /^site:([a-z0-9]+)$/.exec(id || ''); return m && THEMES.some((x) => x[1] === m[1]) ? m[1] : ''; };   // (one of Neopets' themes NeoChat wears by itself: its folder)
+  const nctSitePalKept = (f) => { const sw = themeData().sw[f], p = sw && sw.nc; return p && p.v === 2 && Date.now() - (p.at || 0) < 14 * DAY_MS ? p : null; };
+  const nctSiteBusy = new Map(), nctSiteFail = new Map();
+  let nctSiteAsk = '';   // (the site theme last clicked, while its colours are read)   // (being read; couldn't be read, when)
+  const NCT_PROBE = '<div class="popup-header__2020"><h3>x</h3><div class="popup-header-pattern__2020"></div></div><div class="nav-dropdown__2020"><ul><li>x</li></ul></div><div class="nav-profile-pet-box-sm__2020"></div><div id="boardIndex"><ul><h3>x</h3></ul></div><div class="bnp-probe-h3"><h3>x</h3></div><div id="boardList"><ul><li><div class="boardTopicTitle"><a href="#">x</a></div></li></ul></div><div class="togglePopup__2020"></div><div class="nav-top__2020"><div class="nav-top-pattern__2020"></div><div class="nav-community-icon__2020"></div><div class="nav-games-icon__2020"></div><div class="nav-explore-icon__2020"></div><div class="nav-shop-icon__2020"></div></div>';
+  function nctSitePal(f, art) {   // (a site theme's colours as NeoChat wears them, read as your own theme's are: its parts, made in a page of their own with Neopets' shared sheets and its own, out of sight. Kept a fortnight. art: its tile's pictures too)
+    const kept = nctSitePalKept(f);
+    if (kept && (!art || kept.art)) return Promise.resolve(kept);
+    if (nctSiteBusy.has(f)) return nctSiteBusy.get(f);
+    const job = new Promise((done) => {
+      const common = [...new Set([...$$('link[rel="stylesheet"]').map((l) => l.href), ...((get('chrome', null) || {}).css || [])])].filter((h) => /\/themes\/h5\/common\/(navigation|template)\.css/.test(h));
+      const fr = document.createElement('iframe');
+      fr.setAttribute('aria-hidden', 'true');
+      fr.tabIndex = -1;
+      fr.style.cssText = 'position:absolute;left:-9999px;top:0;width:600px;height:400px;border:0;visibility:hidden;pointer-events:none';
+      (document.body || document.documentElement).append(fr);
+      const doc = fr.contentDocument;
+      doc.open();
+      doc.write(`<!doctype html><html><head>${[...common, myBaseHref(f)].map((u) => `<link rel="stylesheet" href="${esc(u)}">`).join('')}</head><body>${NCT_PROBE}</body></html>`);
+      doc.close();
+      let left = doc.querySelectorAll('link').length, over = false;
+      const end = () => {
+        if (over) return;
+        over = true;
+        let p = null;
+        try {
+          const w = fr.contentWindow, q = (sel) => w.getComputedStyle(doc.querySelector(sel)), clear = (c) => !c || /rgba\([^)]*,\s*0\)|transparent/.test(c);
+          const hd = q('.popup-header__2020'), pt = q('.popup-header-pattern__2020'), h3 = q('.popup-header__2020 h3'), dd = q('.nav-dropdown__2020'), li = q('.nav-dropdown__2020 li'), pet = q('.nav-profile-pet-box-sm__2020'), bar = q('#boardIndex h3'), plain = q('.bnp-probe-h3 h3'), link = q('#boardList .boardTopicTitle a'), pop = q('.togglePopup__2020'), top = q('.nav-top__2020');
+          const pat = pt.backgroundImage && pt.backgroundImage !== 'none' ? pt.backgroundImage : '', grad = /gradient\(/.test(hd.backgroundImage || '') ? hd.backgroundImage : '';
+          let bg = !clear(pt.backgroundColor) ? pt.backgroundColor : hd.backgroundColor;   // (the colour you see: the pattern's own layer where the theme colours it (Mystery Island, the Neopian Times…: over Neopets' plain yellow), else the header's; its menus' colour for a header that's only a picture)
+          if (clear(bg) && pat) bg = parseFloat(dd.borderTopWidth) > 0 && !clear(dd.borderTopColor) ? dd.borderTopColor : dd.backgroundColor;
+          if (clear(bg) && grad) bg = (/rgba?\([^)]*\)|#[0-9a-f]{3,8}\b/i.exec(grad) || [])[0] || '';
+          if (!clear(bg)) {
+            const nb = { acc: bg, ink: h3.color, pic: pat };   // (as nbTheme reads your own)
+            if (pt.backgroundSize && pt.backgroundSize !== 'auto') nb.patsz = pt.backgroundSize;
+            if (pt.backgroundPosition) nb.patpos = pt.backgroundPosition;
+            if (!clear(dd.backgroundColor)) { nb.panel = dd.backgroundColor; nb.pink = dd.color; }
+            if (parseFloat(dd.borderTopWidth) > 0 && !clear(dd.borderTopColor)) nb.frame = dd.borderTopColor;
+            if (parseFloat(li.borderBottomWidth) > 0 && !clear(li.borderBottomColor)) nb.rule = li.borderBottomColor;
+            if (parseFloat(pet.borderTopWidth) > 0 && !clear(pet.borderTopColor)) nb.pop = pet.borderTopColor;
+            if (!clear(bar.backgroundColor)) { nb.bar = bar.backgroundColor; nb.barInk = barInk(nb.bar, bar.color !== plain.color ? bar.color : '').ink; }
+            if (!clear(link.color)) nb.blink = link.color;
+            let edge = parseFloat(pop.borderTopWidth) > 0 && !clear(pop.borderTopColor) ? pop.borderTopColor : parseFloat(top.borderBottomWidth) > 0 && !clear(top.borderBottomColor) ? top.borderBottomColor : 'rgb(77, 77, 77)';   // (its windows' outline, as winBorder gives your own)
+            const a = rgbIn(edge), b = rgbIn(bg);
+            if (a && b && a.every((v, i) => Math.abs(v - b[i]) < 16)) edge = `color-mix(in srgb, ${edge} 45%, #000)`;
+            p = { v: 2, at: Date.now(), nb, head: { bg, ink: h3.color, pat, grad }, edge, patOp: pt.opacity || '1', patBg: clear(pt.backgroundColor) ? '' : pt.backgroundColor };
+            const tp = q('.nav-top__2020 .nav-top-pattern__2020'), bs = w.getComputedStyle(doc.body), img = (x) => (x && /^url\(/.test(x) ? x : '');   // (its tile: the theme's own top bar, its icons and its page's background)
+            p.art = { topBg: top.backgroundColor, topImg: img(top.backgroundImage), topPat: img(tp.backgroundImage), topPatSz: tp.backgroundSize || 'auto', topPatOp: tp.opacity || '1', pageBg: bs.backgroundColor, pageImg: img(bs.backgroundImage), pageSz: bs.backgroundSize || 'auto', icons: ['community', 'games', 'explore', 'shop'].map((k) => img(q(`.nav-top__2020 .nav-${k}-icon__2020`).backgroundImage)).filter(Boolean) };
+            const d = themeData();
+            d.sw[f] = { ...(d.sw[f] || {}), nc: p };
+            themeDataSet(d);
+          }
+        } catch (e) { report(e); }
+        fr.remove();
+        if (!p) nctSiteFail.set(f, Date.now());
+        done(p);
+      };
+      const cut = setTimeout(end, 6000);   // (never waited on for long)
+      const one = () => { if (--left <= 0) { clearTimeout(cut); setTimeout(end, 30); } };
+      doc.querySelectorAll('link').forEach((l) => { l.addEventListener('load', one, { once: true }); l.addEventListener('error', one, { once: true }); });
+      if (!left) { clearTimeout(cut); setTimeout(end, 30); }
+    }).finally(() => nctSiteBusy.delete(f));
+    nctSiteBusy.set(f, job);
+    return job;
+  }
+  function nctSiteCss(p) {   // (NeoChat in another site theme's colours: its header, its pattern and its outline as that theme's pop-ups have them; the rest from its colours, as your own theme's are)
+    const W = '.bnp-ncl:not(.bnp-nct-pv *)', h = p.head || {}, nb = p.nb || {};
+    return [`${W} .bnp-hub-head { background: ${h.grad ? `${h.grad} ${h.bg}` : h.bg} !important; }`,
+      `${W} .bnp-hub-head .popup-header-pattern__2020 { background: ${nb.pic || 'none'} ${nb.patpos || '0% 0%'} / ${nb.patsz || 'auto'} repeat ${p.patBg || 'transparent'} !important; opacity: ${p.patOp || 1} !important; }`,
+      `${W} .bnp-hub-head h3 { color: ${h.ink} !important; }`,
+      `.bnp-go.bnp-ncl:not(.bnp-nct-pv *) { border-color: ${p.edge} !important; }`].join('\n');
+  }
+  function nctSiteSync() { try { nctApply(); for (const x of $$('.bnp-ncl, .bnp-ncl-phead')) nclLook(x); nclBubLook(); } catch (e) { report(e); } }   // (what NeoChat wears, changed: its sheet and its colours, everywhere it shows)
+  let nctSitesFilling = false;
+  async function nctSitesFill() {   // (the site themes' tiles: each one's colours read in turn, once, its tile drawn as they come)
+    if (nctSitesFilling) return;
+    nctSitesFilling = true;
+    try {
+      for (const [, f] of THEMES) {
+        if (!f || (nctSitePalKept(f) || {}).art || Date.now() - (nctSiteFail.get(f) || 0) < 10 * 60e3) continue;
+        if (!hub || hubPage !== 'nclthemes' || nctAt || !hub.win.classList.contains('open')) break;   // (the page left: the rest next time)
+        const p = await nctSitePal(f, true), pic = hub && hub.main.querySelector(`[data-nctsite="${f}"] .bnp-nct-sitepic`);
+        if (p && pic) pic.outerHTML = nctSiteArt(p);
+      }
+    } finally { nctSitesFilling = false; }
+  }
   function nctApply() {   // (the theme NeoChat wears, on this page: its sheet after NeoChat's own; none for your site theme's)
-    const t = nctWorn(), css = t ? nctCss(t, false) : '';
+    const sp = nctSiteOf(S.nclWear) ? nctSitePalKept(nctSiteOf(S.nclWear)) : null, t = nctWorn(), css = sp ? nctSiteCss(sp) : t ? nctCss(t, false) : '';
     let st = document.getElementById('bnp-nct-style');
     if (!css) { if (st) st.remove(); return; }
     if (!st) { st = document.createElement('style'); st.id = 'bnp-nct-style'; (document.head || document.documentElement).append(st); }
@@ -9267,21 +10093,33 @@
   // ── Settings › NeoChat Themes: your site theme's and yours as tiles; one of yours open, a tab for each part, NeoChat in small beside them ──
   let nctAt = '', nctTab = 'main', nctImp = false, nctRo = null;
   const nctHist = new Map();
-  function nctSiteLook() {   // (your site theme's colours as NeoChat starts with them: for the tiles)
-    const nb = nbJson('bnp-nbtheme', null) || {}, h = themeHead() || {}, hx = (c, d) => nbHex(rgbToHex(c || '')) || d;
+  function nctSiteLook(p) {   // (your site theme's colours as NeoChat starts with them, or another site theme's (p, read for NeoChat to wear): for the tiles)
+    const nb = (p && p.nb) || nbJson('bnp-nbtheme', null) || {}, h = (p && p.head) || themeHead() || {}, hx = (c, d) => nbHex(rgbToHex(c || '')) || d;
     const acc = hx(nb.acc, '#fed123'), frame = hx(nb.frame, '#faa819'), panel = hx(nb.panel, '#fffacd');
     return { head: hx(h.bg, acc), acc, frame, by: myMixHex(panel, '#ffffff', 0.68), stage: myMixHex(panel, '#ffffff', 0.88), card: '#ffffff', tint2: myMixHex(acc, '#ffffff', 0.78) };
   }
-  function nctTileLook(t) {   // (a theme's tile: its header, side, background and bubbles, in small)
-    const s = nctSiteLook(), v = (t && nctClean(t.v)) || {};
+  function nctTileLook(t, p) {   // (a theme's tile: its header, side, background and bubbles, in small. p: another site theme's colours under it)
+    const s = nctSiteLook(p), v = (t && nctClean(t.v)) || {};
     const by = v.by || s.by, card = v.card || s.card;
     return { head: v.headTop || s.head, side: v.sideBg || by, stage: v.stage || s.stage, frame: v.frame || s.frame, their: v.theirBg || card, mine: v.mineBg || v.tint2 || s.tint2, acc: v.tabOnBg || v.acc || s.acc, edge: v.theirEdge || v.frame || s.frame };
+  }
+  function nctSiteArt(p) {   // (a site theme's tile: a bit of the theme itself, its top bar with its own icons over its page's own background, and NeoChat in small on it, in its colours)
+    const a = p && p.art;
+    if (!a) return '<span class="bnp-nct-sitepic is-wait" aria-hidden="true"></span>';
+    const bg = (u) => (u && /^url\(/.test(u) ? u : 'none'), ic = (a.icons || []).slice(0, 4).map((u) => `<i class="ic" style="background-image:${esc(u)}"></i>`).join('');
+    const L = nctTileLook(null, p);
+    return `<span class="bnp-nct-sitepic" aria-hidden="true" style="--tb:${esc(a.topBg || L.head)};--ti:${esc(bg(a.topImg))};--tp:${esc(bg(a.topPat))};--tps:${esc(a.topPatSz)};--tpo:${esc(a.topPatOp)};--pb:${esc(a.pageBg || L.stage)};--pi:${esc(bg(a.pageImg))};--pis:${esc(a.pageSz)};--hp:${esc(bg(p.head && p.head.pat))}"><i class="tb"><i class="tp"></i>${ic}</i><i class="pg">${nctMini(L)}</i></span>`;
   }
   const nctMini = (L) => `<span class="bnp-nct-mini" style="--h:${L.head};--sd:${L.side};--st:${L.stage};--f:${L.frame};--b1:${L.their};--b2:${L.mine};--a:${L.acc};--e:${L.edge}" aria-hidden="true"><i class="h"></i><i class="sd"><i class="tb"></i><i class="r"></i><i class="r"></i><i class="r"></i></i><i class="cv"><i class="bb"></i><i class="bb is-me"></i><i class="bb"></i></i></span>`;
   function nctPage() {
     if (nctAt && nctOf(nctAt)) return nctEditHtml(nctOf(nctAt));
     nctAt = '';
-    const worn = S.nclWear && nctOf(S.nclWear) ? S.nclWear : '';
+    const worn = S.nclWear && (nctOf(S.nclWear) || nctSiteOf(S.nclWear)) ? S.nclWear : '';
+    const sites = THEMES.filter(([, f]) => f).map(([, f, name]) => {   // (Neopets' own themes, small: one click and NeoChat wears it, whatever your site theme)
+      const id = `site:${f}`, p = nctSitePalKept(f), on = worn === id;
+      return `<button type="button" class="bnp-nct-site${on ? ' is-now' : ''}" data-nctsite="${f}" aria-pressed="${on}" title="${on ? `NeoChat wears ${esc(name)}’s colours` : `NeoChat in ${esc(name)}’s colours, whatever site theme you wear`}">${nctSiteArt(p)}<span class="bnp-nct-sitename">${esc(name)}</span>${on ? '<b aria-hidden="true">✓</b>' : ''}</button>`;
+    }).join('');
+    if (!hubIndexing && THEMES.some(([, f]) => f && !(nctSitePalKept(f) || {}).art)) setTimeout(() => nctSitesFill().catch(report), 60);
     const foot = (id) => (worn === id ? '<span class="bnp-look-on">✓ NeoChat wears it</span>' : `<button type="button" class="bnp-look-put" data-nctwear="${esc(id)}">Wear it</button>`);
     const site = `<div class="bnp-look${worn ? '' : ' is-now'}"><span class="bnp-look-open bnp-nct-tile is-site">${nctMini(nctTileLook(null))}<span class="bnp-look-name"><b>Your site theme</b><small>NeoChat in its colours, changing with it</small></span></span><span class="bnp-look-foot">${foot('')}</span></div>`;
     const mine = (t) => `<div class="bnp-look is-mine${worn === t.id ? ' is-now' : ''}"><button type="button" class="bnp-look-open bnp-nct-tile" data-nctopen="${esc(t.id)}" title="Change ${esc(t.name)}">${nctMini(nctTileLook(t))}<span class="bnp-look-name"><b>${esc(t.name)}</b><small>Yours</small></span></button><span class="bnp-look-foot">${foot(t.id)}</span></div>`;
@@ -9290,7 +10128,8 @@
       <div class="bnp-looks bnp-nct-tiles">${site}${nctAll().map(mine).join('')}
         <button type="button" class="bnp-look-new" data-nctnew=""><b>+</b><span>New NeoChat theme</span><small>It starts as your site theme’s colours, for you to change</small></button>
         <button type="button" class="bnp-look-new" data-nctimp><b>⇩</b><span>Bring one in</span><small>From the code of one that’s shared with you</small></button></div>
-      ${nctImp ? `<div class="bnp-card bnp-nct-imp"><h4>Bring one in</h4><textarea data-nctimptext rows="4" spellcheck="false" placeholder="Paste a NeoChat theme’s code here"></textarea><div class="bnp-tools"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-nctimpgo>Bring it in</button><button type="button" class="bnp-pillbtn" data-nctimp>Not now</button></div></div>` : ''}
+      ${nctImp ? `<div class="bnp-card bnp-nct-imp"><h4>Bring one in</h4><textarea data-nctimptext rows="4" spellcheck="false" aria-label="A NeoChat theme’s code" placeholder="Paste a NeoChat theme’s code here"></textarea><div class="bnp-tools"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-nctimpgo>Bring it in</button><button type="button" class="bnp-pillbtn" data-nctimp>Not now</button></div></div>` : ''}
+      <details class="bnp-fold bnp-nct-sitesfold" data-fold="nctsites"${myFolds.nctsites === false ? '' : ' open'}><summary>Site themes <span class="bnp-note">NeoChat in one of Neopets’ own themes, whatever you wear</span></summary><div class="bnp-nct-sites">${sites}</div></details>
       <details class="bnp-fold bnp-nct-starters" data-fold="nctstart"${myFolds.nctstart || !nctAll().length ? ' open' : ''}><summary>Starters <span class="bnp-note">A ready look to make your own</span></summary><div class="bnp-looks">${starters}</div></details>`;
   }
   function nctTabChanged(t, tab) { const v = t.v || {}; return Object.keys(v).some((k) => NCT_KEYTAB[k] === tab); }
@@ -9303,7 +10142,7 @@
       <div class="bnp-nct-top"><label class="bnp-f"><span>Its name</span><input type="text" data-nctname maxlength="40" value="${esc(t.name)}" spellcheck="false" autocomplete="off"></label>
         ${worn ? '<span class="bnp-look-on">✓ NeoChat wears it</span>' : `<button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-nctwear="${esc(t.id)}">Wear it</button>`}
         <span class="bnp-nct-acts"><button type="button" class="bnp-pillbtn" data-nctcopy>Copy its code</button><button type="button" class="bnp-pillbtn" data-nctdup>Make a copy</button><button type="button" class="bnp-pillbtn is-danger" data-nctdel>Delete it</button></span></div>
-      <div class="bnp-mytools"><button type="button" class="bnp-pillbtn${h && h.past.length ? '' : ' is-off'}" data-nctundo title="Undo (Ctrl+Z)"><span aria-hidden="true">↶</span>Undo</button><button type="button" class="bnp-pillbtn${h && h.next.length ? '' : ' is-off'}" data-nctredo title="Redo (Ctrl+Y)"><span aria-hidden="true">↷</span>Redo</button><button type="button" class="bnp-pillbtn" data-nctfreeze title="Every colour you haven’t chosen, chosen as it looks now: then it stays this way whatever your site theme">Every colour its own</button><span class="bnp-note">Kept as you go. A dotted swatch follows your site theme until you choose a colour.</span></div>
+      <div class="bnp-mytools"><button type="button" class="bnp-pillbtn${h && h.past.length ? '' : ' is-off'}" aria-disabled="${!(h && h.past.length)}" data-nctundo title="Undo (Ctrl+Z)"><span aria-hidden="true">↶</span>Undo</button><button type="button" class="bnp-pillbtn${h && h.next.length ? '' : ' is-off'}" aria-disabled="${!(h && h.next.length)}" data-nctredo title="Redo (Ctrl+Y)"><span aria-hidden="true">↷</span>Redo</button><button type="button" class="bnp-pillbtn" data-nctfreeze title="Every colour you haven’t chosen, chosen as it looks now: then it stays this way whatever your site theme">Every colour its own</button><span class="bnp-note">Kept as you go. A dotted swatch follows your site theme until you choose a colour.</span></div>
       ${tabs}
       <div class="bnp-nct-ed"><div class="bnp-nct-opts">${nctTabHtml(t, nctTab)}</div><div class="bnp-nct-pvcol"><div class="bnp-nct-pvbox" data-nctpvbox>${nctPrevHtml(t)}</div><p class="bnp-note">Point at a part of it to see what it is; click it to change it.</p></div></div>`;
   }
@@ -9381,9 +10220,8 @@
     if (!pv) return;
     const win = pv.querySelector('.bnp-ncl'), bub = pv.querySelector('.bnp-ncl-bub');
     nclLook(win);
-    const site = $('.togglePopup__2020');
-    if (site) { const cs = getComputedStyle(site); if (parseFloat(cs.borderTopWidth) > 0) win.style.setProperty('--bnp-border', `${cs.borderTopWidth} ${cs.borderTopStyle} ${cs.borderTopColor}`); }
-    const h = themeHead();
+    const h = themeHead(), edge = winBorder(h && h.bg);
+    if (edge) win.style.setProperty('--bnp-border', edge); else win.style.removeProperty('--bnp-border');
     if (h) for (const el of [win, bub]) { el.style.setProperty('--bnp-accent', h.bg); el.style.setProperty('--bnp-accent-text', h.ink); }
     nctPrevStyle(t);
     const box = hub.main.querySelector('[data-nctpvbox]');
@@ -9487,7 +10325,7 @@
     if (val == null || val === '') delete v[k]; else v[k] = val;
     t.v = v;
     clearTimeout(nctSet.t);
-    nctSet.t = setTimeout(saveNow, 600);
+    nctSet.t = setTimeout(() => { nctSet.t = 0; saveNow(); }, 600);
     nctPrevStyle(t);
     if (S.nclWear === t.id) nctApply();
     if (keep) { clearTimeout(nctSet.p); nctSet.p = setTimeout(() => { nctSwatchPaint(t); nctHardPaint(t); }, 60); return; }
@@ -9506,7 +10344,7 @@
   function nctWear(id) {   // (NeoChat in it, on every page: '' your site theme's)
     S.nclWear = id && nctOf(id) ? id : '';
     saveNow();
-    nctApply();
+    nctSiteSync();
   }
   function nctFreeze(t) {   // (every colour not chosen yet, chosen as it looks now: the theme stays this way whatever your site theme)
     const v = { ...(t.v || {}) };
@@ -9535,10 +10373,25 @@
   }
   document.addEventListener('click', (e) => {   // (NeoChat Themes' buttons)
     if (!hub || hubPage !== 'nclthemes' || !(e.target instanceof Element) || !hub.win.contains(e.target)) return;
-    const el = e.target.closest('[data-nctwear], [data-nctopen], [data-nctnew], [data-nctback], [data-ncttab], [data-nctcol], [data-nctx], [data-nctset], [data-nctundo], [data-nctredo], [data-nctdel], [data-nctcopy], [data-nctdup], [data-nctimp], [data-nctimpgo], [data-nctfreeze], [data-nctpicuse], [data-nctpv] [data-nctk]');
+    const el = e.target.closest('[data-nctsite], [data-nctwear], [data-nctopen], [data-nctnew], [data-nctback], [data-ncttab], [data-nctcol], [data-nctx], [data-nctset], [data-nctundo], [data-nctredo], [data-nctdel], [data-nctcopy], [data-nctdup], [data-nctimp], [data-nctimpgo], [data-nctfreeze], [data-nctpicuse], [data-nctpv] [data-nctk]');
     if (!el) return;
     const d = el.dataset, t = nctAt && nctOf(nctAt);
     if (el.closest('[data-nctpv]') && d.nctk) { e.preventDefault(); const k = d.nctk.split(' ')[0], tab = NCT_KEYTAB[k]; if (!tab) return; if (tab !== nctTab) { nctTab = tab; nctRepaint(); } const row = hub.main.querySelector(`[data-nctrow="${CSS.escape(k)}"]`); if (row) { row.scrollIntoView({ block: 'center', behavior: 'smooth' }); row.classList.remove('is-flash'); void row.offsetWidth; row.classList.add('is-flash'); } return; }
+    if (d.nctsite) {   // (one of Neopets' themes, worn by NeoChat: its colours read first, if they haven't been)
+      const f = d.nctsite, name = (THEMES.find((x) => x[1] === f) || [])[2] || 'that theme';
+      el.classList.add('is-busy');
+      nctSiteAsk = f;
+      nctSitePal(f).then((p) => {
+        if (nctSiteAsk !== f) return;   // (another one clicked meanwhile: that one wins)
+        if (!p) { el.classList.remove('is-busy'); toast(`${name}’s colours couldn’t be read just now: try again in a moment`); return; }
+        S.nclWear = `site:${f}`;
+        saveNow();
+        nctSiteSync();
+        nctRepaint();
+        toast(`NeoChat wears ${name}’s colours`);
+      }).catch(report);
+      return;
+    }
     if ('nctwear' in d) { nctWear(d.nctwear); nctRepaint(); toast(d.nctwear ? `NeoChat wears ${(nctOf(d.nctwear) || {}).name}` : 'NeoChat wears your site theme’s colours'); return; }
     if (d.nctopen) { nctAt = d.nctopen; nctTab = 'main'; myColourClose(); paintHub(); hub.main.scrollTop = 0; return; }
     if ('nctnew' in d) { nctNew(d.nctnew); paintHub(); hub.main.scrollTop = 0; return; }
@@ -9568,7 +10421,7 @@
       nctAt = '';
       saveNow();
       nctApply();
-      changed(`${t.name}: deleted`, () => { S.nclThemes = was; S.nclWear = wore; nctApply(); });
+      changed(`${t.name}: deleted`, () => { S.nclThemes = was; S.nclWear = wore; changed(); nctSiteSync(); });
     }
   });
   document.addEventListener('input', (e) => {   // (NeoChat Themes: its sliders as you move them, its name as you type)
@@ -9576,7 +10429,7 @@
     const t = nctAt && nctOf(nctAt), el = e.target;
     if (!t) return;
     if (el.matches('[data-nctrange]')) { const k = el.dataset.nctrange, n = Number(el.value), lab = el.parentElement.querySelector('b'); if (lab) lab.textContent = `${n}${el.dataset.unit || ''}`; nctSet(t, k, n, true); }
-    if (el.matches('[data-nctname]')) { t.name = el.value.replace(/[<>]/g, '').slice(0, 40) || 'My NeoChat theme'; clearTimeout(nctSet.t); nctSet.t = setTimeout(saveNow, 600); }
+    if (el.matches('[data-nctname]')) { t.name = el.value.replace(/[<>]/g, '').slice(0, 40) || 'My NeoChat theme'; clearTimeout(nctSet.t); nctSet.t = setTimeout(() => { nctSet.t = 0; saveNow(); }, 600); }
   });
   document.addEventListener('change', (e) => {   // (NeoChat Themes: a picture's address, a font, a switch)
     if (!hub || hubPage !== 'nclthemes' || !(e.target instanceof Element)) return;
@@ -9639,19 +10492,32 @@
   // ═════════════════════════════════════════════════════════════════
   const tpOn = () => location.pathname === '/island/tradingpost.phtml';
   const tpF = (k) => S.features[k] !== false;
+  const tpLots = () => { const v = S.features.tpLots; return v === 'own' || v === 'fit' || v === 'all' ? v : S.features.tpAll !== false ? 'all' : S.features.tpFit !== false ? 'fit' : 'own'; };   // (the lot cards: Neopets' own; as tall as they need; or every item, as tall as it takes. From the two switches before it, once)
+  const tpPic = () => { const n = Number(S.features.tpPic); return n === 40 || n === 60 || n === 80 ? n : S.features.tpBig === false ? 40 : 80; };   // (item pictures in lots: 40 px as Neopets shrinks them, 60, or their own 80)
+  const tpHere = new Set();   // (lots opened on their own card by View Details)
   const TP_AJAX = '/np-templates/ajax/island/tradingpost/';
   const TP_FEE = 15000;   // (what Neopets takes to cancel a lot)
-  const tpNum = (s) => Number(String(s ?? '').replace(/[^\d]/g, '')) || 0;
+  const tpNum = (s) => Number(String(s ?? '').replace(/[^\d]/g, '')) || 0;   // (Neopets' own numbers, as its pages write them)
+  function tpPriceIn(s) {   // (an Instant Buy as you type it: 2500000, 2,500,000, 2 500 000, 2.500.000, 2.5m, 500k (NP after it or not); 0 for nothing; NaN for anything else. Never a guess: 500k is never 500)
+    const t = String(s ?? '').trim().toLowerCase().replace(/\s+/g, '').replace(/np$/, '');
+    if (!t) return 0;
+    let m = /^(\d{1,3}(?:,\d{3})+|\d{1,3}(?:\.\d{3}){2,}|\d+)$/.exec(t);
+    if (m) return Number(m[1].replace(/[.,]/g, ''));
+    m = /^(\d+(?:\.\d+)?)([km])$/.exec(t);
+    if (m) return Math.round(Number(m[1]) * (m[2] === 'k' ? 1e3 : 1e6));
+    return NaN;
+  }
+  const tpPriceSay = (s) => { if (!String(s ?? '').trim()) return ''; const n = tpPriceIn(s); return Number.isNaN(n) ? 'Write it as 2,500,000, 2.5m or 500k' : `= ${tpFmt(n)} NP`; };   // (what it understood, under the box)
   const tpFmt = (n) => Math.round(n).toLocaleString('en-US');
   const tpPrem = () => !!(PAGE.trading_post && PAGE.trading_post.isPremium);
   const tpFind = (n) => `/island/tradingpost.phtml?type=browse&criteria=item_exact&search_string=${encodeURIComponent(n)}`;
   let tpVue = null;   // (Neopets' own app, caught as it's made: { all }, which its lot cards read)
   const TP_LOT = '.tp-border-frame > div[class*="max-h-[392px]"]';   // (a lot card's white box: its items, wishlist and Instant Buy)
   const TP_CSS = `
-    html.bnp-tp-fit #tp_app__2025 div:has(> ${TP_LOT}) { height: auto !important; min-height: 580px; }
-    html.bnp-tp-fit #tp_app__2025 .tp-border-frame:has(> div[class*="max-h-[392px]"]) { position: relative !important; min-height: 580px; }   /* (as tall as its row, its buttons along the foot as Neopets has them) */
-    html.bnp-tp-fit #tp_app__2025 ${TP_LOT} { max-height: none !important; }
-    html.bnp-tp-big #tp_app__2025 ${TP_LOT} img[class~="w-[40px]"] { width: 80px !important; height: 80px !important; max-width: none !important; object-fit: contain; }   /* (its own size, never squeezed: the page's own rule caps pictures at their box's width) */
+    html.bnp-tp-fit #tp_app__2025 div:has(> ${TP_LOT}), #tp_app__2025 div[data-bnp-open]:has(> ${TP_LOT}) { height: auto !important; min-height: 580px; align-self: start; }   /* (each card its own height, Neopets' at the least: a long lot never stretches the ones beside it) */
+    html.bnp-tp-fit #tp_app__2025 .tp-border-frame:has(> div[class*="max-h-[392px]"]), #tp_app__2025 div[data-bnp-open] > .tp-border-frame:has(> div[class*="max-h-[392px]"]) { position: relative !important; height: auto !important; min-height: 580px; }   /* (its own height, not its row's (Neopets' frame fills its cell); its buttons along the foot, as Neopets has them) */
+    html.bnp-tp-fit #tp_app__2025 ${TP_LOT}, #tp_app__2025 div[data-bnp-open] ${TP_LOT} { max-height: none !important; }
+    html.bnp-tp-big #tp_app__2025 ${TP_LOT} img[class~="w-[40px]"] { width: var(--bnp-tp-pic, 80px) !important; height: var(--bnp-tp-pic, 80px) !important; max-width: none !important; object-fit: contain; }   /* (its own size, never squeezed: the page's own rule caps pictures at their box's width) */
     #tp_app__2025 ${TP_LOT} > div[class~="py-1"] > div.relative { flex: none; }
     #tp_app__2025 ${TP_LOT} > div[class~="py-1"] > div:last-child { flex: 1 1 auto; min-width: 0; }   /* (an item's name and buttons: all the room beside its picture) */
     #tp_app__2025 ${TP_LOT} .bnp-it { max-width: 100% !important; }   /* (an item's picture keeps its room beside long names and item buttons) */
@@ -9722,6 +10588,7 @@
     .bnp-tpm-low.is-none { color: #9a8a6a; }
     .bnp-tpm-f { display: grid; gap: 2px; margin: 0; color: #7a6a4a; font: 11px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-tpm-f input { box-sizing: border-box; width: 100%; height: 32px; margin: 0; padding: 0 10px; border: 1px solid #d1c7ad; border-radius: 10px; background: #fff; color: #2a2a2a; font: 13px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-tpm-say { min-height: 13px; color: #6f6a58; font: 11px "MuseoSansRounded500", Arial, sans-serif; }
     .bnp-tpm-f input:focus { outline: none; border-color: #63a24a; box-shadow: 0 0 0 3px rgba(99, 162, 74, .25); }
     .bnp-tpm-ok { color: #2b8a27; font: 13px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }
     .bnp-tpm-err { grid-column: 2 / -1; margin: 0; color: #b42318; font-size: 12px; }
@@ -9757,7 +10624,7 @@
   function tpHookApp(app) {   // (each lot card is Neopets' own, drawn by its own code: told to draw all of a lot's items when you want them)
     const V = PAGE.Vue;
     if (!app || typeof app.component !== 'function' || !app.config || !V || typeof V.reactive !== 'function' || tpVue) return;
-    tpVue = V.reactive({ all: tpF('tpAll') });
+    tpVue = V.reactive({ all: tpLots() === 'all', open: {} });   // (open: the lots shown whole, one by one)
     app.config.globalProperties.$bnpTp = tpVue;
     const reg = app.component;
     app.component = function (name, def) {
@@ -9765,19 +10632,22 @@
       return reg.apply(this, arguments);
     };
   }
-  function tpLotTpl(t) {   // (its first four items, or all of them; "and more..." only when they're not all there)
+  let tpHooked = false;   // (Neopets' card told: a lot shown whole needs nothing read)
+  function tpLotTpl(t) {   // (its first four items, or all of them (every lot's, or one lot's); "and more..." only when they're not all there)
     const a = 'lot.items.slice(0, 4)', b = 'v-if="lot.items.length > 4"';
     if (!t.includes(a) || !t.includes(b)) { tpVue = null; return t; }   // (Neopets changed its card: left as it is)
-    return t.replace(a, 'lot.items.slice(0, $bnpTp.all ? lot.items.length : 4)').replace(b, 'v-if="!$bnpTp.all && lot.items.length > 4"');
+    tpHooked = true;
+    return t.replace(a, 'lot.items.slice(0, ($bnpTp.all || $bnpTp.open[lot.lot_id]) ? lot.items.length : 4)').replace(b, 'v-if="!($bnpTp.all || $bnpTp.open[lot.lot_id]) && lot.items.length > 4"');
   }
   function tpApply() {   // (the look as you've set it; the cards' "every item" at once)
     if (!tpOn()) return;
     const root = document.documentElement;
     if (!root) return;
     if (!document.getElementById('bnp-tp-style')) { const st = document.createElement('style'); st.id = 'bnp-tp-style'; st.textContent = TP_CSS; root.append(st); }
-    root.classList.toggle('bnp-tp-fit', tpF('tpFit'));
-    root.classList.toggle('bnp-tp-big', tpF('tpBig'));
-    if (tpVue && tpVue.all !== tpF('tpAll')) tpVue.all = tpF('tpAll');
+    root.classList.toggle('bnp-tp-fit', tpLots() !== 'own');
+    root.classList.toggle('bnp-tp-big', tpPic() > 40);
+    root.style.setProperty('--bnp-tp-pic', `${tpPic()}px`);
+    if (tpVue && tpVue.all !== (tpLots() === 'all')) tpVue.all = tpLots() === 'all';
     if (document.readyState !== 'loading') tpPaint();
   }
   function tpType() {   // (which page of it this is: Neopets keeps it in the address, after the # once you've moved about in it)
@@ -9803,6 +10673,7 @@
     if (!app || tpObs) return;
     tpObs = new MutationObserver(() => { if (!tpRaf) tpRaf = requestAnimationFrame(() => { tpRaf = 0; try { tpPaint(); } catch (e) { report(e); } }); });
     tpObs.observe(app, { childList: true, subtree: true });
+    app.addEventListener('click', tpDetails, true);
     app.addEventListener('click', tpClick);
     app.addEventListener('change', tpChange);
     app.addEventListener('input', tpInput);
@@ -9849,8 +10720,26 @@
   // Neopets' own card wasn't told to): read with the same call as its View Details, one lot at a time ──
   const tpMore = new Map(), tpMoreOpen = new Set(), tpMoreWait = new Set(), tpMoreFail = new Map();   // (tpMoreFail: lot → why its items didn't come)
   let tpMoreBusy = false;
+  let tpListKept = null;   // ({ key: the search, lots: lot → its items }: one read a page of the search)
+  async function tpListItems(id) {
+    const h = location.hash.indexOf('?'), q = new URLSearchParams(h >= 0 ? location.hash.slice(h + 1) : location.search.slice(1));
+    const body = { type: 'browse', criteria: q.get('criteria') || '20', search_string: q.get('search_string') || '', sort: q.get('sort') || 'newest', page: Number(q.get('page')) || 1 }, key = JSON.stringify(body);
+    if (!tpListKept || tpListKept.key !== key) {
+      const r = await fetch(`${TP_AJAX}tradingpost-list.php?`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'XMLHttpRequest' }, body: key });
+      if (!r.ok) return { why: `Neopets answered ${r.status}` };
+      const j = await r.json();
+      tpListKept = { key, lots: new Map((j && Array.isArray(j.lots) ? j.lots : []).map((l) => [String(l.lot_id), l.items])) };
+    }
+    const raw = tpListKept.lots.get(String(id)), items = Array.isArray(raw) ? raw : raw && typeof raw === 'object' ? Object.values(raw) : null;
+    return items && items.length ? { items } : { why: 'the search’s answer didn’t have that lot (it may have just sold)' };
+  }
   async function tpLotItems(id) {
     let why = '';
+    if (tpType() === 'browse') {   // (someone's lot: from the search, which has them all)
+      try { const r = await tpListItems(id); if (r.items) { tpMore.set(id, r.items); tpMoreFail.delete(id); return; } why = r.why; } catch (e) { why = `it couldn’t be read (${String((e && e.message) || e).slice(0, 80)})`; }
+      tpMoreFail.set(id, why);
+      return;
+    }
     try {
       const r = await fetch(`${TP_AJAX}get-lot-details.php?lot_id=${encodeURIComponent(id)}`, { credentials: 'include', headers: { 'x-requested-with': 'XMLHttpRequest' } });
       if (!r.ok) why = `Neopets answered ${r.status}`;
@@ -9897,9 +10786,20 @@
     }
   }
   function tpMoreCards(cards) {
-    const all = tpF('tpAll');
+    const all = tpLots() === 'all';
     for (const c of cards) {
+      if (c.el) c.el.toggleAttribute('data-bnp-open', !all && !!c.id && tpHere.has(c.id));   // (opened by View Details: as tall as it takes, whatever the cards' setting)
       const extra = c.box.querySelectorAll('[data-bnp="tpmore"]'), box = c.box.querySelector(':scope > .bnp-tpmorebox');
+      if (!c.moreEl && c.id && !all && tpVue && tpVue.open[c.id]) {   // (shown whole by Neopets' own card: Show fewer, under its last item)
+        const rows = [...c.box.children].filter((x) => x.matches('div[class~="py-1"]')), last = rows[rows.length - 1];
+        let b = box;
+        if (!b) { b = document.createElement('div'); b.className = 'bnp-tpmorebox'; }
+        if (last && b.previousElementSibling !== last) last.after(b);
+        const html = `<button type="button" class="bnp-tpbtn is-small" data-tpless="${esc(c.id)}">Show fewer</button>`;
+        if (b.bnpHtml !== html) { b.bnpHtml = html; b.innerHTML = html; }
+        b.hidden = false;
+        continue;
+      }
       if (!c.moreEl || !c.id) { extra.forEach((x) => x.remove()); if (box) box.remove(); continue; }   // (Neopets' card shows them all itself)
       const want = all || tpMoreOpen.has(c.id);
       if (want && !extra.length) { if (tpMore.has(c.id)) tpMoreRows(c, tpMore.get(c.id)); else tpMoreQueue(c.id); }
@@ -9933,10 +10833,13 @@
     tpLowNow = [...low.values()];
     for (const c of cards) { if (!c.ibBox) continue; const k = (c.names[0] || '').toLowerCase(); c.ibBox.classList.toggle('bnp-tplow', low.get(k) === c && groups.get(k).length > 1); }   // (marked when there are others to compare it with)
     if (!low.size) return;
-    const now = Date.now(), items = { ...tpIbAll() };
+    const sig = [...low.values()].map((c) => `${c.id}:${c.ib}`).join();
+    if (sig !== tpSeeIb.sig) { tpSeeIb.sig = sig; tpSeeIb.at = Date.now(); }   // (when this tab saw these lots: drawn again, still that time)
+    const now = tpSeeIb.at, items = { ...tpIbAll() };
     let changed = false;
     for (const [k, c] of low) {
       const was = items[k];
+      if (was && was.at > now) continue;   // (another tab saw it since: an older look never writes over a newer one, so two tabs never go back and forth)
       if (was && now - was.at < 2 * 3600e3 && was.p <= c.ib && !(was.l === c.id && was.p !== c.ib)) continue;
       items[k] = { n: c.names[0], p: c.ib, at: now, l: c.id, img: c.img };
       changed = true;
@@ -10036,14 +10939,14 @@
     const sec = tpIbSec(app), inp = tpIbBox(sec), row = inp && inp.closest('.flex.justify-center');
     let el = app.querySelector('[data-bnp="tpib"]');
     if (!tpF('tpIb') || !row) { if (el) el.remove(); return; }
-    const names = [...new Set([...app.querySelectorAll('#tp-create-form .tp-grid-item.bg-item-selection .tp-grid-item-name')].map((p) => p.textContent.trim()).filter(Boolean))];
+    const picked = [...app.querySelectorAll('#tp-create-form .tp-grid-item.bg-item-selection .tp-grid-item-name')].map((p) => p.textContent.trim()).filter(Boolean), names = [...new Set(picked)], times = (n) => picked.filter((x) => x === n).length;   // (each chosen tile counts: three of one item are three prices)
     const known = names.map((n) => [n, tpIbOf(n)]);
     let html = '';
     if (names.length) {
-      html = known.slice(0, 4).map(([n, x]) => `<div class="bnp-tpib-one">${x && x.img ? `<img src="${esc(x.img)}" alt="" width="30" height="30">` : ''}<span><b>${esc(n)}</b>: ${x ? tpLowHtml(x) : 'no Instant Buy seen for it yet'}</span>${x ? '' : `<a class="bnp-tpbtn is-small" href="${esc(tpFind(n))}" target="_blank" rel="noopener">Look it up</a>`}</div>`).join('')
+      html = known.slice(0, 4).map(([n, x]) => `<div class="bnp-tpib-one">${x && x.img ? `<img src="${esc(x.img)}" alt="" width="30" height="30">` : ''}<span><b>${esc(n)}</b>${times(n) > 1 ? ` ×${times(n)}` : ''}: ${x ? tpLowHtml(x) : 'no Instant Buy seen for it yet'}</span>${x ? '' : `<a class="bnp-tpbtn is-small" href="${esc(tpFind(n))}" target="_blank" rel="noopener">Look it up</a>`}</div>`).join('')
         + (names.length > 4 ? `<div>and ${names.length - 4} more</div>` : '');
-      const all = known.every(([, x]) => x), sum = all ? known.reduce((s, [, x]) => s + x.p, 0) : 0;
-      if (all) html += `<div class="bnp-tpib-fill">${tpUnderSel()}<button type="button" class="bnp-tpbtn is-small is-go" data-tpfill="${tpUnder(sum)}">Fill in ${tpFmt(tpUnder(sum))} NP${names.length > 1 ? ': just under them together' : ': just under it'}</button></div>`;
+      const all = known.every(([, x]) => x), sum = all ? known.reduce((s, [n, x]) => s + x.p * times(n), 0) : 0;
+      if (all) html += `<div class="bnp-tpib-fill">${tpUnderSel()}<button type="button" class="bnp-tpbtn is-small is-go" data-tpfill="${tpUnder(sum)}">Fill in ${tpFmt(tpUnder(sum))} NP${picked.length > 1 ? ': just under them together' : ': just under it'}</button></div>`;
     }
     if (!el) { el = document.createElement('div'); el.className = 'bnp-tpib'; el.setAttribute('data-bnp', 'tpib'); el.setAttribute('aria-live', 'polite'); }
     if (el.previousElementSibling !== row) row.after(el);
@@ -10069,15 +10972,12 @@
   const tpBusy = new Set();   // (lots going up now: their keys)
   const tpKey = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   const tpMax = () => (tpPrem() ? 30 : 20);   // (items to a lot, as Neopets allows)
-  function tpQ() {   // (the lots you're making: { rows: [{ k, items: [{ id, n, img, sub }], ib, wl, done, err }], onk: the one being filled }, kept a day)
-    let v = null;
-    try { v = JSON.parse(localStorage.getItem('bnp-tpq') || 'null'); } catch (_) { /* */ }
-    if (!v || !Array.isArray(v.rows) || Date.now() - (v.at || 0) > DAY_MS) v = { at: Date.now(), rows: [] };
-    v.rows = v.rows.filter((r) => r && typeof r === 'object').map((r) => (Array.isArray(r.items) ? r : { k: String(r.id || tpKey()), items: r.id ? [{ id: r.id, n: r.n, img: r.img, sub: r.sub }] : [], ib: r.ib || '', wl: r.wl || '', done: r.done, err: r.err }));   // (one item to a row, from before)
-    for (const r of v.rows) if (!r.k) r.k = tpKey();
-    return v;
+  let tpQNow = null;
+  function tpQ() {   // (the lots you're making, on this page only: { rows: [{ k, items: [{ id, n, img, sub }], ib, wl, done, err }], onk: the one being filled }. Gone when the page is loaded again, as Neopets' own form forgets what you picked; each tab its own)
+    if (!tpQNow) { tpQNow = { rows: [] }; try { localStorage.removeItem('bnp-tpq'); } catch (_) { /* */ } }   // (kept a day, before)
+    return tpQNow;
   }
-  const tpQSave = (q) => { q.at = Date.now(); try { localStorage.setItem('bnp-tpq', JSON.stringify(q)); } catch (_) { /* */ } };
+  const tpQSave = (q) => { tpQNow = q; };
   const tpMOpen = () => { try { return localStorage.getItem('bnp-tpm-open') === '1'; } catch (_) { return false; } };
   const tpMode = () => { try { return localStorage.getItem('bnp-tpm-mode') === 'one' ? 'one' : 'each'; } catch (_) { return 'each'; } };   // (each: an item makes a lot of its own; one: it goes in the lot you're making)
   async function tpInvLoad() {   // (the same list Create a Trade shows: the first 50 items in your inventory)
@@ -10099,7 +10999,7 @@
   }
   // Look them all up: each item in your lots with no lowest Instant Buy seen yet, looked up with the Trading Post's own search (its first
   // page, as Look it up shows it), one at a time a little apart (never like clockwork), and kept as if you'd looked at it yourself
-  let tpLooking = null, tpLookErr = '';   // (tpLooking: { n: done, of: how many } while it looks)
+  let tpLooking = null, tpLookErr = '', tpWlAll = '';   // (tpLooking: { n: done, of: how many } while it looks)
   const tpLookedNone = new Set();   // (looked up just now with none to buy: said so, this visit)
   async function tpLookUp(name) {
     const r = await fetch(`${TP_AJAX}tradingpost-list.php?`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'XMLHttpRequest' }, body: JSON.stringify({ type: 'browse', criteria: 'item_exact', search_string: name, sort: 'newest', page: 1 }) });
@@ -10131,7 +11031,7 @@
   }
   function tpLotLow(items) {   // (what's been seen for a lot's items: all of them, added up, or the first one not looked up yet)
     const seen = items.map((x) => [x, tpIbOf(x.n)]), miss = seen.find(([, s]) => !s);
-    return { all: !!items.length && !miss, sum: seen.reduce((t, [, s]) => t + (s ? s.p : 0), 0), miss: miss ? miss[0] : null, one: items.length === 1 ? seen[0][1] : null };
+    return { all: !!items.length && !miss, sum: seen.reduce((t, [, s]) => t + (s ? s.p : 0), 0), miss: miss ? miss[0] : null, one: items.length === 1 ? seen[0][1] : null, oldest: seen.reduce((m, [, s]) => (s && s.at && (!m || s.at < m) ? s.at : m), 0) };   // (oldest: when the oldest of its prices was seen)
   }
   function tpMultiPaint() {
     const el = document.querySelector('[data-bnp="tpm"]');
@@ -10150,29 +11050,34 @@
     const row = (r, i) => {
       const busy = tpBusy.has(r.k), here = mode === 'one' && i === onAt, low = tpLotLow(r.items), n = r.items.length;
       const its = r.items.map((x) => `<span class="bnp-tpm-th" title="${esc(x.n)}"><img src="${esc(x.img)}" alt="${esc(x.n)}" width="40" height="40">${r.done ? '' : `<button type="button" class="bnp-tpm-thx" data-tpm-out="${esc(r.k)}:${esc(x.id)}" title="Take it out of this lot" aria-label="Take ${esc(x.n)} out of this lot">×</button>`}</span>`).join('');
-      const lowHtml = !n ? '' : low.all ? `<span>${n === 1 ? tpLowHtml(low.one) : `lowest Instant Buys seen, together <b>${tpFmt(low.sum)} NP</b>`}</span>${r.done ? '' : `<button type="button" class="bnp-tpbtn is-small" data-tpm-under="${i}">Use ${tpFmt(tpUnder(low.sum))}</button>`}`
+      const lowHtml = !n ? '' : low.all ? `<span>${n === 1 ? tpLowHtml(low.one) : `lowest Instant Buys seen, together <b>${tpFmt(low.sum)} NP</b>${low.oldest ? ` · the oldest ${esc(avAgo(low.oldest))}` : ''}`}</span>${r.done ? '' : `<button type="button" class="bnp-tpbtn is-small" data-tpm-under="${i}">Use ${tpFmt(tpUnder(low.sum))}</button>`}`
         : `<span>${tpLookedNone.has(low.miss.n.toLowerCase()) ? `none to buy on the Trading Post for ${n === 1 ? 'it' : esc(low.miss.n)} right now` : `no Instant Buy seen for ${n === 1 ? 'it' : esc(low.miss.n)} yet`}</span>${r.done ? '' : `<a class="bnp-tpbtn is-small" href="${esc(tpFind(low.miss.n))}" target="_blank" rel="noopener">Look it up</a>`}`;
       return `<div class="bnp-tpm-row${r.done ? ' is-done' : ''}${here ? ' is-here' : ''}" data-tpm-row="${i}">
         <div class="bnp-tpm-its">${its || '<span class="bnp-tpm-none">Click items above to put them in this lot</span>'}</div>
         <div class="bnp-tpm-n"><b>Lot ${i + 1}${n > 1 ? ` · ${n} items` : ''}</b><small>${esc(r.items.map((x) => x.n).join(', ')) || 'No items yet'}</small>${n ? `<div class="bnp-tpm-low${low.all ? '' : ' is-none'}">${lowHtml}</div>` : ''}
           ${here ? '<span class="bnp-tpm-heretag">Items you click go in this lot</span>' : mode === 'one' && !r.done ? `<button type="button" class="bnp-tpbtn is-small bnp-tpm-heretbtn" data-tpm-here="${esc(r.k)}">Add items to this one</button>` : ''}</div>
-        ${r.done ? '<span class="bnp-tpm-ok" style="grid-column: 3 / 6">✓ Listed</span>' : `<label class="bnp-tpm-f">Instant Buy (NP, or empty for offers only)<input type="text" inputmode="numeric" data-tpm-ib="${i}" value="${esc(r.ib ? tpFmt(tpNum(r.ib)) : '')}" placeholder="${prem ? 'up to 20,000,000' : 'up to 10,000,000'}" aria-label="Instant Buy for lot ${i + 1}"></label>
+        ${r.done ? '<span class="bnp-tpm-ok" style="grid-column: 3 / 6">✓ Listed</span>' : `<label class="bnp-tpm-f">Instant Buy (NP, or empty for offers only)<input type="text" inputmode="numeric" data-tpm-ib="${i}" value="${esc(!r.ib ? '' : Number.isNaN(tpPriceIn(r.ib)) ? r.ib : tpFmt(tpPriceIn(r.ib)))}" placeholder="${prem ? 'up to 20,000,000' : 'up to 10,000,000'}" aria-label="Instant Buy for lot ${i + 1}" aria-describedby="bnp-tpmsay${i}"><small class="bnp-tpm-say" id="bnp-tpmsay${i}" data-tpm-ibsay="${i}">${esc(tpPriceSay(r.ib))}</small></label>
         <label class="bnp-tpm-f">Wishlist<input type="text" data-tpm-wl="${i}" value="${esc(r.wl || '')}" maxlength="${prem ? 750 : 500}" placeholder="what you’d like for it (or nothing)" aria-label="Wishlist for lot ${i + 1}"></label>
         <button type="button" class="bnp-tpbtn is-go" data-tpm-go="${i}"${busy || !n ? ' disabled' : ''}>${busy ? 'Listing…' : 'List it'}</button>`}
         <button type="button" class="bnp-tpm-x" data-tpm-x="${i}" title="${r.done ? 'Clear it from here' : 'Take this lot out (nothing is listed)'}" aria-label="Take lot ${i + 1} out"${busy ? ' disabled' : ''}>×</button>
         ${r.err ? `<p class="bnp-tpm-err" role="alert">${esc(r.err)}</p>` : ''}</div>`;
     };
     const todo = q.rows.filter((r) => !r.done && r.items.length);
+    const f = el.contains(document.activeElement) && document.activeElement instanceof HTMLInputElement ? document.activeElement : null;
+    const fk = !f ? '' : f.dataset.tpmIb != null ? `[data-tpm-ib="${f.dataset.tpmIb}"]` : f.dataset.tpmWl != null ? `[data-tpm-wl="${f.dataset.tpmWl}"]` : 'tpmWlall' in f.dataset ? '[data-tpm-wlall]' : '', fs = f ? [f.selectionStart, f.selectionEnd] : null;
+    queueMicrotask(() => { if (!fk) return; const g = el.querySelector(fk); if (g && document.activeElement !== g) { g.focus(); try { g.setSelectionRange(fs[0], fs[1]); } catch (_) { /* */ } } });   // (the box you were typing in: yours again, the cursor where it was)
     el.innerHTML = `${head}<div class="bnp-tpm-body"><h6>Your items</h6><p class="bnp-tpm-note">The first 50 items in your inventory, as Neopets lists them here (up to ${tpMax()} items to a lot). Each lot goes up with its own List it, as Start Trading! does, so nothing is posted that you didn’t press for.</p>${modeHtml}${pick}
       ${q.rows.length ? `<div class="bnp-tpm-rows">${q.rows.map(row).join('')}</div>` : `<p class="bnp-tpm-empty">${mode === 'one' ? 'Click items above to put them in a lot.' : 'Click items above: each one becomes a lot of its own.'}</p>`}
-      ${todo.length > 1 ? `<div class="bnp-tpm-all">${(() => { const m = tpLookNames().length; return tpLooking ? `<button type="button" class="bnp-tpbtn is-small" disabled>Looking… ${tpLooking.n + 1 > tpLooking.of ? tpLooking.of : tpLooking.n + 1} of ${tpLooking.of}</button>` : m > 1 ? `<button type="button" class="bnp-tpbtn is-small" data-tpm="lookall" title="Each item not looked up yet, looked up on the Trading Post one at a time: its lowest Instant Buy, kept as if you'd looked">Look them all up (${m})</button>` : ''; })()}${tpLookErr ? `<span class="bnp-tpm-err" role="alert">${esc(tpLookErr)}</span>` : ''}<label class="bnp-tpm-f">One wishlist for all of them<input type="text" data-tpm-wlall maxlength="${prem ? 750 : 500}" placeholder="what you’d like for them"></label><button type="button" class="bnp-tpbtn is-small" data-tpm="wlall">Use it for all</button><button type="button" class="bnp-tpbtn is-small" data-tpm="underall" title="Each lot just under the lowest Instant Buys you’ve seen for its items, as set in Settings (lots with one not looked up stay empty)">Each just under the lowest seen</button>${q.rows.some((r) => r.done) ? '<button type="button" class="bnp-tpbtn is-small" data-tpm="cleardone">Clear the listed ones</button>' : ''}</div>` : q.rows.some((r) => r.done) ? '<div class="bnp-tpm-all"><button type="button" class="bnp-tpbtn is-small" data-tpm="cleardone">Clear the listed ones</button></div>' : ''}</div>`;
+      ${todo.length > 1 ? `<div class="bnp-tpm-all">${(() => { const m = tpLookNames().length; return tpLooking ? `<button type="button" class="bnp-tpbtn is-small" disabled>Looking… ${tpLooking.n + 1 > tpLooking.of ? tpLooking.of : tpLooking.n + 1} of ${tpLooking.of}</button>` : m > 1 ? `<button type="button" class="bnp-tpbtn is-small" data-tpm="lookall" title="Each item not looked up yet, looked up on the Trading Post one at a time: its lowest Instant Buy, kept as if you'd looked">Look them all up (${m})</button>` : ''; })()}${tpLookErr ? `<span class="bnp-tpm-err" role="alert">${esc(tpLookErr)}</span>` : ''}<label class="bnp-tpm-f">One wishlist for all of them<input type="text" data-tpm-wlall maxlength="${prem ? 750 : 500}" placeholder="what you’d like for them" value="${esc(tpWlAll)}"></label><button type="button" class="bnp-tpbtn is-small" data-tpm="wlall">Use it for all</button><button type="button" class="bnp-tpbtn is-small" data-tpm="underall" title="Each lot just under the lowest Instant Buys you’ve seen for its items, as set in Settings (lots with one not looked up stay empty)">Each just under the lowest seen</button>${q.rows.some((r) => r.done) ? '<button type="button" class="bnp-tpbtn is-small" data-tpm="cleardone">Clear the listed ones</button>' : ''}</div>` : q.rows.some((r) => r.done) ? '<div class="bnp-tpm-all"><button type="button" class="bnp-tpbtn is-small" data-tpm="cleardone">Clear the listed ones</button></div>' : ''}</div>`;
   }
   async function tpListOne(i) {   // (one lot, as Start Trading! sends it: its items, its wishlist, its Instant Buy)
     const q = tpQ(), r = q.rows[i];
     if (!r || r.done || tpBusy.has(r.k) || !r.items.length) return;
-    const prem = tpPrem(), max = prem ? 20000000 : 10000000, wlMax = prem ? 750 : 500, ib = tpNum(r.ib);
-    const bad = r.items.length > tpMax() ? `A lot holds up to ${tpMax()} items` : String(r.ib || '').trim() && !ib ? 'Instant Buy: a number of NP (or leave it empty for offers only)' : ib > max ? `Instant Buy goes up to ${tpFmt(max)} NP` : (r.wl || '').length > wlMax ? `A wishlist goes up to ${wlMax} letters` : '';
+    const prem = tpPrem(), max = prem ? 20000000 : 10000000, wlMax = prem ? 750 : 500, ib = tpPriceIn(r.ib), tpo = PAGE.trading_post, noWl = !!tpo && !tpo.canPostWishlist && !!String(r.wl || '').trim();
+    const bad = r.items.length > tpMax() ? `A lot holds up to ${tpMax()} items` : Number.isNaN(ib) ? 'Instant Buy: write it as 2,500,000, 2.5m or 500k (or leave it empty for offers only)' : String(r.ib || '').trim() && !ib ? 'Instant Buy: a number of NP (or leave it empty for offers only)' : noWl ? 'Neopets won’t take a wishlist from your account just now: empty it to list without one' : ib > max ? `Instant Buy goes up to ${tpFmt(max)} NP` : (r.wl || '').length > wlMax ? `A wishlist goes up to ${wlMax} letters` : '';
     if (bad) { r.err = bad; tpQSave(q); tpMultiPaint(); return; }
+    const low = tpLotLow(r.items);
+    if (ib && low.all && ib < low.sum * 0.5 && r.sure !== ib) { r.sure = ib; r.err = `${tpFmt(ib)} NP is under half the lowest seen for it (${tpFmt(low.sum)} NP): press List it again to list it at that`; tpQSave(q); tpMultiPaint(); return; }   // (so low it's likely a slip: a second press, once you've seen it)
     tpBusy.add(r.k);
     r.err = '';
     tpQSave(q);
@@ -10228,25 +11133,50 @@
     if (v.tpmX != null) { const i = Number(v.tpmX); if (q.rows[i] && !tpBusy.has(q.rows[i].k)) { if (q.rows[i].k === q.onk) delete q.onk; q.rows.splice(i, 1); tpQSave(q); tpMultiPaint(); } return; }
     if (v.tpm === 'lookall') { tpLookAll(); return; }
     if (v.tpm === 'wlall') { const w = (document.querySelector('[data-tpm-wlall]') || {}).value || ''; for (const r of q.rows) if (lotFree(r)) r.wl = w; tpQSave(q); tpMultiPaint(); return; }
-    if (v.tpm === 'underall') { for (const r of q.rows) { const low = lotFree(r) && tpLotLow(r.items); if (low && low.all) r.ib = String(tpUnder(low.sum)); } tpQSave(q); tpMultiPaint(); return; }
+    if (v.tpm === 'underall') {   // (prices seen in the last day only: an old dip never fills a lot)
+      let old = 0;
+      for (const r of q.rows) { const low = lotFree(r) && tpLotLow(r.items); if (!low || !low.all) continue; if (Date.now() - low.oldest > DAY_MS) { old++; continue; } r.ib = String(tpUnder(low.sum)); }
+      tpLookErr = old ? `${old} ${old === 1 ? 'lot was' : 'lots were'} left as ${old === 1 ? 'it was' : 'they were'}: ${old === 1 ? 'its' : 'their'} lowest seen is over a day old. Look ${old === 1 ? 'it' : 'them'} up again first.` : '';
+      tpQSave(q); tpMultiPaint(); return;
+    }
     if (v.tpm === 'cleardone') { q.rows = q.rows.filter((r) => !r.done); tpQSave(q); tpMultiPaint(); }
   }
   function tpInput(e) {   // (typed into a lot: kept as you type, nothing drawn again)
     const t = e.target;
     if (!(t instanceof HTMLInputElement)) return;
+    if ('tpmWlall' in t.dataset) { tpWlAll = t.value; return; }   // (One wishlist for all of them: kept till you use it)
     const i = t.dataset.tpmIb != null ? Number(t.dataset.tpmIb) : t.dataset.tpmWl != null ? Number(t.dataset.tpmWl) : -1;
     if (i < 0) return;
     const q = tpQ(), r = q.rows[i];
     if (!r) return;
-    if (t.dataset.tpmIb != null) r.ib = t.value; else r.wl = t.value;
+    if (t.dataset.tpmIb != null) { r.ib = t.value; const say = t.parentElement && t.parentElement.querySelector('[data-tpm-ibsay]'); if (say) say.textContent = tpPriceSay(t.value); } else r.wl = t.value;
     if (r.err) { r.err = ''; const p = t.closest('.bnp-tpm-row'), m = p && p.querySelector('.bnp-tpm-err'); if (m) m.remove(); }
     tpQSave(q);
+  }
+  function tpShowAll(id) {   // (all of a lot's items: Neopets' own card told, when it's been; checked a moment later, and read if it hasn't taken)
+    const read = () => { tpMoreFail.delete(id); tpMoreOpen.add(id); tpPaint(); };
+    if (!tpVue || !tpHooked) { read(); return; }
+    tpVue.open[id] = true;
+    setTimeout(() => { const c = tpCards(document.getElementById('tp_app__2025') || document).find((x) => x.id === id); if (c && c.moreEl) { delete tpVue.open[id]; read(); } else tpPaint(); }, 200);
+  }
+  function tpShowFew(id) { if (tpVue && tpVue.open[id]) delete tpVue.open[id]; tpMoreOpen.delete(id); tpHere.delete(id); tpPaint(); }
+  function tpDetails(e) {   // (View Details, if you've chosen: the lot opened right on its card, every item there, instead of Neopets' window; again, folded back. A Ctrl-, Shift- or middle click opens the lot in a new tab, as Neopets lets it)
+    if (!tpOn() || S.features.tpDetHere !== true || tpLots() === 'all' || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    const a = e.target instanceof Element ? e.target.closest('a[href]') : null;
+    if (!a || !/^\s*View Details\s*$/i.test(a.textContent || '')) return;
+    const c = tpCards(document.getElementById('tp_app__2025') || document).find((x) => x.frame.contains(a));
+    if (!c || !c.id || (!c.more && !tpHere.has(c.id))) return;   // (nothing more to show on its card, or a card it can't read: Neopets' window, as ever)
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (tpHere.has(c.id)) { tpShowFew(c.id); return; }
+    tpHere.add(c.id);
+    tpShowAll(c.id);
   }
   function tpClick(e) {
     const t = e.target instanceof Element ? e.target.closest('[data-tpmore], [data-tpless], [data-tp], [data-tpfill], [data-tpm], [data-tpm-it], [data-tpm-under], [data-tpm-go], [data-tpm-x], [data-tpm-out], [data-tpm-here]') : null;
     if (!t) return;
-    if (t.dataset.tpmore) { const id = t.dataset.tpmore; tpMoreFail.delete(id); tpMoreOpen.add(id); tpPaint(); return; }
-    if (t.dataset.tpless) { tpMoreOpen.delete(t.dataset.tpless); tpPaint(); return; }
+    if (t.dataset.tpmore) { tpShowAll(t.dataset.tpmore); return; }
+    if (t.dataset.tpless) { tpShowFew(t.dataset.tpless); return; }
     if (t.dataset.tpfill) { tpFillIb(Number(t.dataset.tpfill)); return; }
     if (t.closest('[data-bnp="tpm"]')) { tpMultiClick(t); return; }
     const k = t.dataset.tp;
@@ -10262,9 +11192,11 @@
     const pic = (u) => (u ? (/^\/\//.test(u) ? `https:${u}` : u) : '');
     return `<div class="bnp-mhead"><h2>Trading Post</h2><span class="bnp-note">Neopets’ Trading Post, easier to use: lots that fit, every item in sight, prices remembered for when you sell, and several lots at once.</span></div>
       <div class="bnp-card"><h4>Lots</h4>
-        ${sw('tpFit', 'Lots as tall as what’s in them', 'Neopets’ lot cards are a set height, so a lot with long names, item buttons or a long wishlist ran over its own buttons. Each card grows to fit instead, its buttons along the foot.')}
-        ${sw('tpAll', 'Every item in each lot', 'All of a lot’s items on its card, not only the first four: no View Details needed to see them.')}
-        ${sw('tpBig', 'Items at their own size', 'Item pictures in lots at 80 px, as Neopets draws them, not shrunk to 40.')}
+        ${(() => { const v = tpLots(); return `<div class="bnp-f bnp-tpunders"><span>Lot cards</span><span class="bnp-seg" role="group" aria-label="Lot cards">${[['own', 'As Neopets has them'], ['fit', 'As tall as they need'], ['all', 'Every item']].map(([k, l]) => `<button type="button" data-featv="tpLots:${k}" aria-pressed="${v === k}">${l}</button>`).join('')}</span></div>
+        <p class="bnp-note">${v === 'own' ? 'Neopets’ own: each card a set height, with a lot’s first four items (View Details for the rest). Long names, item buttons or a long wishlist can run over its own buttons.' : v === 'fit' ? 'Each card grows to fit what’s in it, its buttons along its foot, with a lot’s first four items (View Details for the rest). A long lot is the only long one: the cards beside it keep their own height.' : 'Every item in each lot on its card, each card as tall as it takes (so this one grows them too): no View Details needed to see them. A long lot is the only long one: the cards beside it keep their own height.'}</p>`; })()}
+        ${(() => { const n = tpPic(); return `<div class="bnp-f bnp-tpunders"><span>Item pictures</span><span class="bnp-seg" role="group" aria-label="Item pictures in lots">${[[40, '40 px'], [60, '60 px'], [80, '80 px']].map(([k, l]) => `<button type="button" data-featv="tpPic:${k}" aria-pressed="${n === k}">${l}</button>`).join('')}</span></div>
+        <p class="bnp-note">${n === 40 ? 'As Neopets shrinks them in lots.' : n === 60 ? 'Bigger than Neopets’ 40, a little under their own size.' : 'Their own size, as Neopets draws them.'}</p>`; })()}
+        <label class="bnp-switch"><input type="checkbox" data-feat="tpDetHere"${f.tpDetHere === true ? ' checked' : ''}><span>View Details opens the lot on its card<small>Instead of Neopets’ window: every item right there, the card as tall as it takes; View Details again, or Show fewer, folds it back. A Ctrl- or middle click still opens the lot in a new tab. A lot of four items or fewer has nothing more to show (and with Every item, none has): its View Details opens Neopets’ window as ever.</small></span></label>
       </div>
       <div class="bnp-card"><h4>Selling</h4>
         ${sw('tpIb', 'Remember the lowest Instant Buy', 'Looking through lots, the cheapest Instant Buy for each item (one item to a lot) is marked and kept for a while. Create a Trade shows it for the items you choose, with a button that fills in just under it.')}
@@ -10307,7 +11239,7 @@
       b.type = 'button';
       b.className = `bnp-fill${cls ? ` ${cls}` : ''}`;
       b.setAttribute('data-bnp', 'fill');
-      const paint = () => { const n = get(); b.textContent = `${label}: ${smFmt(n)} NP`; b.disabled = !n; };
+      const paint = () => { const n = get(), t = `${label}: ${smFmt(n)} NP`; if (b.textContent !== t) b.textContent = t; b.disabled = !n; };
       b.addEventListener('click', () => { const n = get(); if (!n) return; inp.value = String(n); inp.dispatchEvent(new Event('input', { bubbles: true })); inp.focus(); paint(); });
       paint();
       return { b, paint };
@@ -10358,7 +11290,7 @@
         a.href = typeof hit[1] === 'function' ? hit[1](reClean(d.textContent)) : hit[1];
         a.textContent = 'Go';
         a.title = 'Where this is done';
-        d.after(a);
+        if (d === t) t.append(a); else d.after(a);   // (always inside its task, where the next look finds it)
       }
     };
     paint();
@@ -10793,7 +11725,17 @@
   ];
   const TAB_DIRS = { island: 'mysteryisland', desert: 'lostdesert', medieval: 'meridell', halloween: 'hauntedwoods', winter: 'terrormountain', pirates: 'krawkisland', faerieland: 'faerieland', space: 'virtupets', moon: 'kreludor', water: 'maraqua', prehistoric: 'tyrannia', shenkuu: 'shenkuu', altador: 'altador', magma: 'moltara' };   // (a page with nothing of its own: its land's emblem)
   const tabClean = (t) => String(t || '').replace(/^\s*Neopets\s*[-|:–—]\s*/i, '').replace(/\s*[-|:–—]\s*Neopets\s*$/i, '').replace(/^Neopets\s+(?=[A-Z])/, '').replace(/^Games \| Kids Games.*$/i, '').replace(/[!.]+$/, (m) => (m.length > 1 ? '!' : m)).replace(/\s+/g, ' ').trim();
-  const tabRule = (pat) => new RegExp('^' + String(pat).replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$', 'i');   // (the Restock Highlighter's: * is anything)
+  const tabRule = (pat) => {   // (the Restock Highlighter's: * is anything. Matched piece by piece, so no pattern can take long)
+    const parts = String(pat).toLowerCase().split('*');
+    return { test: (url) => {
+      const s = String(url).toLowerCase(), last = parts[parts.length - 1];
+      if (parts.length === 1) return s === parts[0];
+      if (!s.startsWith(parts[0])) return false;
+      let at = parts[0].length;
+      for (let i = 1; i < parts.length - 1; i++) { const j = s.indexOf(parts[i], at); if (j < 0) return false; at = j + parts[i].length; }
+      return s.length - last.length >= at && s.endsWith(last);
+    } };
+  };
   function tabWant(noRules) {   // this page's tab: { title, icon, crop, from }
     if (!noRules && S.features.ncl && nclFullNow() && !ncl.page) return { title: 'NeoChat', icon: nclIconUrl(), from: 'neochat' };   // (NeoChat's window full screen: the tab is NeoChat's while it is)
     const T = S.tabs || {}, u = new URL(location.href), path = u.pathname, q = u.searchParams;
@@ -10902,7 +11844,7 @@
   function crispIn(box) {   // (every <i data-crisp> in it: its picture, sharp, at the size it's drawn)
     if (!box) return;
     for (const i of box.querySelectorAll('i[data-crisp]')) {
-      const url = i.dataset.crisp, css = Math.round(i.getBoundingClientRect().width) || 20;
+      const url = i.dataset.crisp, css = Number(i.dataset.crispPx) || Math.round(i.getBoundingClientRect().width) || 20;   // (data-crisp-px: its size, known: no measuring)
       i.removeAttribute('data-crisp');
       crispPic(url, css, 'trim' in i.dataset ? 'trim' : 'center' in i.dataset ? 'center' : '').then((d) => { if (i.isConnected) i.style.backgroundImage = `url("${cssUrl(d)}")`; });
     }
@@ -10938,8 +11880,10 @@
     return near ? [near[0], near[1], near[2]] : best;
   }
   let tabIconKey = '', tabTitleWant = '', tabObs = null;
+  let tabLinkWas = null;   // (Neopets' own tab picture, kept for a page none of ours fits)
   function tabLink(url) {   // (the page's tab picture: ours, and no other)
     if (!document.head) return;
+    if (!tabLinkWas) tabLinkWas = [...document.querySelectorAll('link[rel~="icon"]:not([data-bnp])')].map((l) => l.cloneNode(true));
     for (const l of document.querySelectorAll('link[rel~="icon"]')) if (!l.hasAttribute('data-bnp')) l.remove();
     let link = document.querySelector('link[data-bnp="tabicon"]');
     if (!link) { link = document.createElement('link'); link.rel = 'icon'; link.setAttribute('data-bnp', 'tabicon'); document.head.append(link); }
@@ -10952,7 +11896,7 @@
     if (tabIconKey === key) return;
     tabIconKey = key;
     let kept = null;
-    try { kept = sessionStorage.getItem('bnp-ti:' + key); } catch (_) { /* */ }
+    if (!/^(blob|data):/.test(src)) { try { kept = sessionStorage.getItem('bnp-ti:' + key); } catch (_) { /* */ } }   // (a picture made on this page alone: never kept)
     if (kept) { tabLink(kept); return; }
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -10969,7 +11913,7 @@
         if (crop != null || w > h * 1.25) { const s = Math.min(w, h), sx = Math.round((w - s) * ((crop ?? 50) / 100)); x.drawImage(img, sx, 0, s, s, 0, 0, 64, 64); }
         else { const k = Math.min(64 / w, 64 / h), dw = w * k, dh = h * k; x.drawImage(img, (64 - dw) / 2, (64 - dh) / 2, dw, dh); }
         const url = c.toDataURL('image/png');
-        try { sessionStorage.setItem('bnp-ti:' + key, url); } catch (_) { /* (full: drawn again next time) */ }
+        if (!/^(blob|data):/.test(src)) { try { sessionStorage.setItem('bnp-ti:' + key, url); } catch (_) { /* (full: drawn again next time) */ } }
         tabLink(url);
       } catch (_) { tabLink(src); }
     };
@@ -11013,6 +11957,10 @@
     tabNow = w;
     if (w.title) tabTitle(w.title);
     if (w.icon) tabIcon(w.icon, w.crop, w.more || []);
+    else {   // (none of ours for this page (NeoChat's, after its full screen): Neopets' own picture again)
+      const ours = document.querySelector('link[data-bnp="tabicon"]');
+      if (ours) { ours.remove(); tabIconKey = ''; if (document.head) document.head.append(...(tabLinkWas && tabLinkWas.length ? tabLinkWas.map((l) => l.cloneNode(true)) : [Object.assign(document.createElement('link'), { rel: 'icon', href: '/favicon.ico' })])); }
+    }
     if (location.pathname === '/shops/wizard.phtml' && !tabsApply.sw && $('#shopWizardFormResults')) {   // (the Shop Wizard searches without a new page: its tab follows)
       tabsApply.sw = new MutationObserver(() => { clearTimeout(tabsApply.swT); tabsApply.swT = setTimeout(tabsApply, 120); });
       tabsApply.sw.observe($('#shopWizardFormResults'), { childList: true });
@@ -11094,7 +12042,10 @@
     return { name: /^neighbourhood/i.test(n) ? '' : n.slice(0, 60), logo: img ? new URL(fullUrl(img), SITE + '/guilds/').href : '' };
   }
   async function guildFind() {
-    const hq = new DOMParser().parseFromString(await (await fetch('/guilds/index.phtml', { credentials: 'include' })).text(), 'text/html');
+    const r = await fetch(SITE + '/guilds/index.phtml', { credentials: 'include' });
+    if (!r.ok || /login/i.test(new URL(r.url).pathname)) throw new Error('not signed in');
+    const hq = new DOMParser().parseFromString(await r.text(), 'text/html');
+    if (hq.querySelector('form[action*="login"] input[type="password"]') || !hq.querySelector('#navprofiledropdown__2020, .user a[href*="userlookup"]')) throw new Error('not signed in');   // (logged out: nothing learned, nothing forgotten)
     const area = hq.querySelector('area[title="Jump to your Guild"], a[title="Jump to your Guild"]');
     const id = (/guild\.phtml\?id=(\d+)/.exec((area && area.getAttribute('href')) || '') || [])[1];
     if (!id) { set('guild', { none: true, at: Date.now() }); return null; }
@@ -11107,7 +12058,7 @@
   function guildMaybeFind() {   // (a guild in your menus, not looked at for a week: looked at again, quietly, once the page is idle)
     let has = false;
     for (const list of Object.values(S.menus)) walk(list, (e) => { if (e.t === 'l' && e.special === 'guild' && !e.hide) has = true; });
-    if (!has || Date.now() - guildInfo().at < 7 * DAY_MS) return;
+    if (!has || /^\/login/i.test(location.pathname) || Date.now() - guildInfo().at < 7 * DAY_MS) return;
     const go = () => guildFind().then(() => { try { applyAll(); } catch (_) { /* */ } }).catch(() => { /* (another day) */ });
     if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 8000 }); else setTimeout(go, 3000);
   }
@@ -11154,10 +12105,161 @@
     }
     return list;
   }
+  // Your Neopoints over time: the bar's own count, noted as you browse (a point when it changes, else one every few hours), for
+  // this account, in this browser. Settings › Shops and money draws them; the bar's NP says today's change when pointed at
+  const NPL_MAX = 3000;
+  const nplKey = () => `bnp-npl:${nclMe() || '-'}`;
+  function nplRead() { try { const v = JSON.parse(localStorage.getItem(nplKey()) || '[]'); return Array.isArray(v) ? v.filter((p) => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1])) : []; } catch (_) { return []; } }   // ([[minutes since 1970, NP], …], oldest first)
+  const nplAnchor = () => $$('#npanchor').find((x) => !x.closest('[data-bnp-old]'));   // (the page's own count: on an older page, its own header's)
+  function nplNote() {
+    if (!S.features.npLog) return;
+    const el = nplAnchor();
+    if (!el) return;
+    const take = () => {
+      const txt = (el.textContent || '').trim(), np = Number(txt.replace(/[^\d]/g, ''));
+      if (!txt || !/\d/.test(txt) || !Number.isFinite(np)) return;
+      let list = nplRead();
+      const now = Math.round(Date.now() / 60000), last = list[list.length - 1];
+      if (!(last && last[1] === np && now - last[0] < 360)) {   // (the same as last time, within six hours: nothing new to keep)
+        list.push([now, np]);
+        if (list.length > NPL_MAX) {   // (older than a week: one a hour is plenty)
+          const cut = now - 7 * 1440, hours = new Map(), recent = [];
+          for (const p of list) { if (p[0] >= cut) recent.push(p); else hours.set(Math.floor(p[0] / 60), p); }
+          list = [...hours.values(), ...recent].slice(-NPL_MAX);
+        }
+        try { localStorage.setItem(nplKey(), JSON.stringify(list)); } catch (_) { /* (the site's storage is full: kept next time) */ }
+      }
+      const day = npStats(list, nstDayStart(Date.now())), week = npStats(list, Date.now() - 7 * DAY_MS), sign = (d) => `${d > 0 ? '+' : d < 0 ? '−' : '±'}${Math.abs(d).toLocaleString()} NP`;
+      if (day) el.title = `Today: ${sign(day.change)}${week ? ` · the last 7 days: ${sign(week.change)}` : ''} (Settings › Shops and money)`;
+    };
+    take();
+    if (!nplNote.obs) { nplNote.obs = new MutationObserver(() => { clearTimeout(nplNote.t); nplNote.t = setTimeout(take, 1500); }); nplNote.obs.observe(el, { childList: true, characterData: true, subtree: true }); }   // (bought or sold without a new page)
+  }
+  function npStats(list, from) {   // (what NP did since a moment: its first value then (the last before it, carried on), its last, highest and lowest)
+    const f = Math.round(from / 60000);
+    let start = null;
+    const inside = [];
+    for (const p of list) { if (p[0] <= f) start = p; else inside.push(p); }
+    const pts = [...(start ? [[f, start[1]]] : []), ...inside];
+    if (!pts.length) return null;
+    const vals = pts.map((p) => p[1]);
+    return { pts, first: vals[0], last: vals[vals.length - 1], change: vals[vals.length - 1] - vals[0], hi: Math.max(...vals), lo: Math.min(...vals) };
+  }
+  const NP_RANGES = [['day', 'Today'], ['7d', '7 days'], ['30d', '30 days'], ['all', 'All']];
+  const npFrom = (r) => (r === 'day' ? nstDayStart(Date.now()) : r === '7d' ? Date.now() - 7 * DAY_MS : r === '30d' ? Date.now() - 30 * DAY_MS : 0);
+  function npRange() { try { const r = localStorage.getItem('bnp-nprange'); return NP_RANGES.some(([k]) => k === r) ? r : '7d'; } catch (_) { return '7d'; } }
+  function npCardHtml() {   // (Settings › Shops and money: how your Neopoints have gone, in a chart and in numbers)
+    const list = nplRead(), r = npRange(), st = list.length ? npStats(list, npFrom(r)) : null;
+    const tile = (label, v, cls = '') => `<div class="bnp-np-tile${cls}"><span>${label}</span><b>${v}</b></div>`;
+    const sign = (d) => `${d > 0 ? '▲ +' : d < 0 ? '▼ −' : '± '}${Math.abs(d).toLocaleString()}`;
+    const days = st ? npDays(st.pts) : [];
+    return `<div class="bnp-card bnp-np"><h4>Your Neopoints</h4>
+      ${S.features.npLog ? '' : '<p class="bnp-note">Switched off: switch it on below and they’re noted from your next page.</p>'}
+      <div class="bnp-np-ranges bnp-seg" role="group" aria-label="How far back">${NP_RANGES.map(([k, l]) => `<button type="button" data-nprange="${k}" aria-pressed="${k === r}">${l}</button>`).join('')}</div>
+      ${st ? `<div class="bnp-np-tiles">${tile('Now', `${st.last.toLocaleString()} NP`)}${tile('Change', `${sign(st.change)} NP`, st.change > 0 ? ' is-up' : st.change < 0 ? ' is-down' : '')}${tile('Highest', `${st.hi.toLocaleString()} NP`)}${tile('Lowest', `${st.lo.toLocaleString()} NP`)}</div>
+      <div class="bnp-np-chart" data-g="npchart" role="img" aria-label="Your Neopoints on hand, ${NP_RANGES.find((x) => x[0] === r)[1].toLowerCase()}: from ${st.first.toLocaleString()} to ${st.last.toLocaleString()} NP"></div>
+      <details class="bnp-np-table"><summary>As a table</summary><table><thead><tr><th>Day (NST)</th><th>Start</th><th>End</th><th>Change</th></tr></thead><tbody>${days.slice(-31).reverse().map((d) => `<tr><td>${esc(d.day)}</td><td>${d.first.toLocaleString()}</td><td>${d.last.toLocaleString()}</td><td class="${d.last > d.first ? 'is-up' : d.last < d.first ? 'is-down' : ''}">${sign(d.last - d.first)}</td></tr>`).join('')}</tbody></table></details>`
+    : '<p class="bnp-note">Nothing noted yet: your Neopoints are noted as you browse Neopets, from the next page you open.</p>'}
+      ${sw2('npLog', 'Note my Neopoints as I browse', 'Your Neopoints on hand (not the bank), from the top bar of each page you open: a point when they change, else one every few hours. Kept in this browser, for each of your accounts on its own. Point at your Neopoints in the bar for today’s change.')}
+      ${list.length ? `<div class="bnp-tools"><button type="button" class="bnp-pillbtn" data-npforget>Forget them</button></div>` : ''}
+    </div>`;
+  }
+  const sw2 = (k, title, small) => `<label class="bnp-switch"><input type="checkbox" data-feat="${k}"${S.features[k] ? ' checked' : ''}><span>${title}<small>${small}</small></span></label>`;
+  function npDays(pts) {   // (each NST day: its first and last value)
+    const out = [];
+    for (const p of pts) { const day = nstOf(p[0] * 60000).day, last = out[out.length - 1]; if (last && last.day === day) last.last = p[1]; else out.push({ day, first: last ? last.last : p[1], last: p[1] }); }
+    return out;
+  }
+  function npInk() {   // (the line's colour: your theme's bar colour, darkened till it reads on white)
+    const rgb = rgbIn((themeBar() || {}).bar || '') || [62, 103, 146];
+    const lum = (c) => { const [r, g, b] = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    let c = rgb;
+    for (let i = 0; i < 12 && 1.05 / (lum(c) + 0.05) < 3; i++) c = c.map((v) => Math.round(v * 0.85));   // (at least 3:1 against the card)
+    return `rgb(${c.join(', ')})`;
+  }
+  function npChartMount() {   // (the chart, drawn to the card's own width; pointing shows when and how much)
+    const box = hub && hub.main.querySelector('[data-g="npchart"]');
+    if (!box) return;
+    const st = npStats(nplRead(), npFrom(npRange()));
+    if (!st) return;
+    const W = Math.max(280, Math.round(box.clientWidth)), H = 170, L = 52, R = 64, T = 12, B = 26, ink = npInk();
+    const now = Math.round(Date.now() / 60000), x0 = st.pts[0][0], x1 = Math.max(now, x0 + 1);
+    let lo = st.lo, hi = st.hi;
+    if (hi === lo) { hi += Math.max(1, Math.round(hi * 0.01)); lo = Math.max(0, lo - Math.max(1, Math.round(lo * 0.01))); }
+    const span = hi - lo, raw = span / 3, mag = 10 ** Math.floor(Math.log10(raw)), step = [1, 2, 5, 10].map((m) => m * mag).find((s) => s >= raw) || raw;
+    const y0 = Math.floor(lo / step) * step, y1 = Math.ceil(hi / step) * step;
+    const X = (t) => L + ((t - x0) / (x1 - x0)) * (W - L - R), Y = (v) => T + (1 - (v - y0) / (y1 - y0 || 1)) * (H - T - B);
+    let d = `M${X(st.pts[0][0]).toFixed(1)},${Y(st.pts[0][1]).toFixed(1)}`;   // (a step line: the count holds till it changes)
+    for (let i = 1; i < st.pts.length; i++) d += `H${X(st.pts[i][0]).toFixed(1)}V${Y(st.pts[i][1]).toFixed(1)}`;
+    d += `H${X(x1).toFixed(1)}`;
+    const area = `${d}V${Y(y0).toFixed(1)}H${X(x0).toFixed(1)}Z`;
+    const ticks = [];
+    for (let v = y0; v <= y1 + step / 2; v += step) ticks.push(v);
+    const days = (x1 - x0) / 1440, tf = days <= 1.2 ? { hour: 'numeric' } : days <= 10 ? { weekday: 'short' } : { month: 'short', day: 'numeric' }, xt = [];
+    for (let i = 0; i <= 4; i++) { const t = x0 + ((x1 - x0) * i) / 4; xt.push([X(t), new Date(t * 60000).toLocaleString([], tf)]); }
+    const lastY = Y(st.last), fmt = (v) => (v >= 1e3 ? npShort(v) : String(v));
+    box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">
+      ${ticks.map((v) => `<line x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="g"/><text x="${L - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" class="t">${fmt(v)}</text>`).join('')}
+      ${xt.map(([x, l], i) => `<text x="${x.toFixed(1)}" y="${H - 6}" text-anchor="${i === 0 ? 'start' : i === 4 ? 'end' : 'middle'}" class="t">${esc(l)}</text>`).join('')}
+      <path d="${area}" fill="${ink}" fill-opacity=".1"/><path d="${d}" fill="none" stroke="${ink}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${X(x1).toFixed(1)}" cy="${lastY.toFixed(1)}" r="4.5" fill="${ink}" stroke="#fff" stroke-width="2"/><text x="${(X(x1) + 9).toFixed(1)}" y="${(lastY + 4).toFixed(1)}" class="v">${fmt(st.last)}</text>
+      <line class="x" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><circle class="xd" r="4.5" fill="${ink}" stroke="#fff" stroke-width="2" visibility="hidden"/>
+      <rect x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent" class="hit"/></svg><div class="bnp-np-tip" hidden></div>`;
+    const svg = box.querySelector('svg'), hit = svg.querySelector('.hit'), cross = svg.querySelector('.x'), dot = svg.querySelector('.xd'), tip = box.querySelector('.bnp-np-tip');
+    const at = (ev) => {
+      const r = svg.getBoundingClientRect(), x = Math.min(W - R, Math.max(L, ev.clientX - r.left)), t = x0 + ((x - L) / (W - L - R)) * (x1 - x0);
+      let v = st.pts[0][1], when = st.pts[0][0];
+      for (const p of st.pts) { if (p[0] <= t) { v = p[1]; when = p[0]; } else break; }
+      cross.setAttribute('x1', x); cross.setAttribute('x2', x); cross.setAttribute('visibility', 'visible');
+      dot.setAttribute('cx', x); dot.setAttribute('cy', Y(v)); dot.setAttribute('visibility', 'visible');
+      tip.hidden = false;
+      tip.innerHTML = `<b>${v.toLocaleString()} NP</b><span>${esc(new Date(t * 60000).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</span>${when < t - 1 ? `<small>since ${esc(new Date(when * 60000).toLocaleString([], { hour: 'numeric', minute: '2-digit' }))}</small>` : ''}`;
+      tip.style.left = `${Math.round(Math.min(W - tip.offsetWidth - 4, Math.max(4, x - tip.offsetWidth / 2)))}px`;
+      tip.style.top = `${Math.round(Math.max(0, Y(v) - tip.offsetHeight - 12))}px`;
+    };
+    hit.addEventListener('pointermove', at);
+    hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); tip.hidden = true; });
+  }
+  addEventListener('resize', () => { if (hub && hub.win.classList.contains('open') && hubPage === 'shops') { clearTimeout(npChartMount.t); npChartMount.t = setTimeout(npChartMount, 150); } });
+  function npRepaint() { const c = hub && hub.main.querySelector('.bnp-np'); if (!c) return; c.outerHTML = npCardHtml(); npChartMount(); }
+  function settingsNow(v, o) {   // (settings changed from elsewhere: another tab's, or another account's coming in; worn the same as when they're put on)
+    try { myColourClose(); } catch (_) { /* */ }
+    const prev = o || S, wore = (prev && prev.wear) || '', wornOf = (x) => JSON.stringify(((x && x.myThemes) || []).find((t) => t && t.id === (v.wear || '')));
+    S = tidy(v);
+    if (!myPreviewOf && ((S.wear || '') !== wore || (S.wear && wornOf(prev) !== wornOf(v)))) { try { const t = myWorn(); if (t) myOn(t, false); else if (wore) myOff(); themeChanged(); } catch (e) { report(e); } }
+    applyAll(); remSchedule(); tabsToggle();
+    if (hub && hub.win.classList.contains('open')) paintHub();
+    try { if (ncl) { if (!S.features.ncl) nclSettingsChanged('ncl'); else { nclPaint(); nclHeadPaint(); nclPinPaint(); nclDimPaint(); } } nmMiniPaint(); nctSiteSync(); } catch (e) { report(e); }
+  }
+  const watched = new Set();
+  function settingsWatch() {   // (the settings this account uses, kept up to date from other tabs: the shared ones, or its own)
+    for (const k of new Set(['settings', SKEY])) {
+      if (watched.has(k)) continue;
+      watched.add(k);
+      try { GM_addValueChangeListener(KEY + k, (n, o, v, remote) => { if (!remote || !v || n !== KEY + SKEY) return; settingsNow(v, o); }); } catch (_) { /* */ }
+    }
+  }
+  function dlogWatch() {   // (this account's dailies done, kept up to date from other tabs)
+    const k = dkey();
+    if (watched.has(k)) return;
+    watched.add(k);
+    try { GM_addValueChangeListener(KEY + k, (n, o, v, remote) => { if (!remote || n !== KEY + dkey()) return; DLOG = v && typeof v === 'object' ? v : {}; dailiesChanged(); }); } catch (_) { /* */ }
+  }
+  function acctCheck() {   // (whose page it is, as the page says: its own settings and dailies if the start guessed another)
+    const me = nclMe();
+    if (!me) return;
+    if (me !== ACCT0 || acctCheck.was) { DLOG = null; dlogWatch(); if (acctCheck.was !== me) dailiesChanged(); }
+    acctCheck.was = me;
+    const want = acctOwnOf(me) ? `settings@${me}` : 'settings';
+    if (want === SKEY) return;
+    SKEY = want;
+    settingsWatch();
+    settingsNow(get(SKEY, null) || clone(S));
+  }
   function notePets() {   // (My Pets: every pet, kept for Switch Pet)
     if (!location.pathname.startsWith('/home')) return;
-    const list = readPets(document);
-    if (list.length) set('pets', { list, at: Date.now() });
+    const list = readPets(document), was = get('pets', null);
+    if (list.length && (!was || JSON.stringify(was.list) !== JSON.stringify(list) || Date.now() - (was.at || 0) > 3600e3)) set('pets', { list, at: Date.now() });   // (every tab redraws its menus when it changes: only when it has)
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -11425,7 +12527,7 @@
   // ---- making the items ----
   function itemEl(href, label, icon, opts = {}) {   // an item the way Neopets makes them: a › li › icon + h4
     const a = document.createElement('a');
-    a.href = href || '#';
+    a.href = safeHref(href) || '#';
     a.setAttribute('data-bnp', opts.kind || 'item');
     if (opts.title) a.title = opts.title;
     if (opts.newTab) { a.target = '_blank'; a.rel = 'noopener'; }
@@ -11692,11 +12794,14 @@
   ];
   const THEME_RE = /\/themes\/h5\/([^/]+)\/theme-[^/?]+\.css/i;
   const themeOfUrl = (u) => (THEME_RE.exec(u || '') || [])[1] || '';
+  let themeDataKept = null;   // (read once, kept: written here, or changed in another tab, it's read again)
   function themeData() {   // (this browser's notes: the account's list, each theme's sheet and script as Neopets gave them, and each one's colours)
-    try { const v = JSON.parse(localStorage.getItem('bnp-themes') || 'null'); if (v && typeof v === 'object') return { list: Array.isArray(v.list) ? v.list : null, css: v.css || {}, js: v.js || {}, sw: v.sw || {} }; } catch (_) { /* */ }
-    return { list: null, css: {}, js: {}, sw: {} };
+    if (themeDataKept) return themeDataKept;
+    try { const v = JSON.parse(localStorage.getItem('bnp-themes') || 'null'); if (v && typeof v === 'object') return (themeDataKept = { list: Array.isArray(v.list) ? v.list : null, css: v.css || {}, js: v.js || {}, sw: v.sw || {} }); } catch (_) { /* */ }
+    return (themeDataKept = { list: null, css: {}, js: {}, sw: {} });
   }
-  const themeDataSet = (d) => { try { localStorage.setItem('bnp-themes', JSON.stringify(d)); } catch (_) { /* (the site's storage is full: learnt again) */ } };
+  const themeDataSet = (d) => { themeDataKept = d; try { localStorage.setItem('bnp-themes', JSON.stringify(d)); } catch (_) { /* (the site's storage is full: learnt again) */ } };
+  addEventListener('storage', (e) => { if (e.key === 'bnp-themes' || e.key === null) themeDataKept = null; });
   // ═══════════════════════════════════════════════════════════════════════════
   // Your own themes. One starts from a Neopets theme (its own sheet, put on in this browser only, never on your account) and draws its
   // changes over it: the top bar, menus, pop-ups, the page, the foot of the page, the boards, and icons (another theme's, recoloured).
@@ -11827,7 +12932,7 @@
     if (/^[\w./-]+\.(png|gif|svg|webp|jpe?g)$/i.test(p)) return NPI + p;
     return '';
   }
-  const myRoot = (sel) => sel.split(',').map((s) => `:root ${s.trim()}`).join(', ');   // (a step stronger than the base theme's own rule for it)
+  const myRoot = (sel) => sel.split(',').map((s) => (s.trim().startsWith(':root') ? s.trim() : `:root ${s.trim()}`)).join(', ');   // (a step stronger than the base theme's own rule for it; one written from the root already, as it is)
   const myVaryNow = new Map();   // (each part with several looks: the one this page has)
   function myVaryOn(t, part, list) {   // (the looks of a part that take turns: those ticked in Themes, or all of them)
     const ids = (((S.looks || {})[`my:${t.id}`] || {}).vary || {})[part], on = Array.isArray(ids) ? list.filter((x) => ids.includes(x.id)) : list;
@@ -11897,7 +13002,7 @@
       const f = font[k], px2 = Number(font[`${k}Size`]) || 0;
       if (myFontOk(f) || px2) rule(sel, myFontOk(f) && `font-family: "${f}", ${k === 'page' ? '"MuseoSansRounded500"' : '"Cafeteria"'}, Arial, sans-serif`, px2 && `font-size: ${Math.round(px2)}px`);
     }
-    if (has(box.colour) || has(pats.box) || placed(box)) rule('#container__2020', has(box.colour) && `background-color: ${box.colour}`, has(pats.box) ? `background-image: ${pic(pats.box)}` : has(box.colour) && 'background-image: none', ...place(box, 150, ['50%', '0%'], has(pats.box)));
+    if (has(box.colour) || has(pats.box) || placed(box)) rule(MY_BOX_AT, has(box.colour) && `background-color: ${box.colour}`, has(pats.box) ? `background-image: ${pic(pats.box)}` : has(box.colour) && 'background-image: none', ...place(box, 150, ['50%', '0%'], has(pats.box)));
     const boxEdge = has(box.line) || box.lineW != null;   // (its edge: its colour, or its thickness alone in a soft one)
     if (boxEdge || has(box.glow) || box.round != null) rule('#container__2020', box.round != null && `border-radius: ${Math.round(Number(box.round) || 0)}px`, (boxEdge || has(box.glow)) && `box-shadow: ${[boxEdge && `0 0 0 ${Math.round(box.lineW == null ? 3 : Number(box.lineW))}px ${box.line || 'rgba(0, 0, 0, .22)'}`, has(box.glow) && `0 0 18px 2px ${box.glow}`].filter(Boolean).join(', ')}`);
     if (has(box.text)) rule('#container__2020', `color: ${box.text}`);   // (the pages' own writing: light on a dark box of yours)
@@ -11914,7 +13019,8 @@
     if (!own && (has(page.scroll) || has(page.scrollTrack))) out.push(`:root { scrollbar-color: ${page.scroll || `color-mix(in srgb, ${page.scrollTrack} 45%, #7d7d7d)`} ${page.scrollTrack || 'transparent'}; }`);   // (its track alone: a thumb that goes with it)   // (the page's own scrollbar: on the root itself)
     if (has(page.select) || has(page.selectText)) rule('::selection', has(page.select) && `background-color: ${page.select}`, has(page.selectText) && `color: ${page.selectText}`);
     out.push(`html.bnp-my-wait .nav-top__2020 [class*="-icon__2020"], html.bnp-my-wait .nav-bottom__2020 [class*="-icon__2020"], html.bnp-my-wait .nav-dropdown-arrow__2020, html.bnp-my-wait .nav-search-icon__2020, html.bnp-my-wait .bnp-gear { visibility: hidden !important; }`);
-    for (const k of myTints(t)) if (!(own && k === 'page')) out.push(`html.bnp-my-wait ${MY_PAT_AT[k].split(',').join(', html.bnp-my-wait ')} { ${k === 'page' || k === 'home' ? 'background-image: none' : 'visibility: hidden'} !important; }`);   // (its patterns out of sight the moment before they're recoloured; the page keeps its colour)
+    for (const k of myTints(t)) if (!(own && k === 'page')) out.push(`html.bnp-my-wait ${MY_PAT_AT[k].split(',').join(', html.bnp-my-wait ')} { ${k === 'page' || k === 'home' || k === 'box' ? 'background-image: none' : 'visibility: hidden'} !important; }`);   // (its patterns out of sight the moment before they're recoloured; the page keeps its colour)
+    if (myTints(t).includes('box')) out.push('html.bnp-my-wait.bnp-old #main { background-image: none !important; }');   // (an old page's box: its colour alone that moment, the page itself never out of sight)
     if (logo.tint && logo.tint.mode && tintOn(logo.tint)) out.push('html.bnp-my-wait .nav-logo__2020, html.bnp-my-wait .footer-logo__2020 { visibility: hidden !important; }');
     for (const b of Object.values(v.borrow && typeof v.borrow === 'object' ? v.borrow : {})) if (b && typeof b.css === 'string') out.push(b.css);   // (a part taken from another theme: its own rules, then your changes over them)
     if (has(link.colour)) rule('a', `color: ${link.colour}`);
@@ -12039,9 +13145,10 @@
     moving('pop', '.popup-header-pattern__2020, .popup-footer-pattern__2020', ['50%', '50%']);
     moving('foot', '.footer-pattern__2020', ['50%', '0%']);
     moving('home', '.hp-bg-grid__2020', ['0%', '0%']);
-    moving('box', '#container__2020', ['50%', '0%']);
+    moving('box', MY_BOX_AT, ['50%', '0%']);
     const decos = Array.isArray(v.deco) ? v.deco.filter((d) => d && MY_DECO_AT[d.at] && myPic(d.pic)) : [];   // (pictures of your own placed on a part: behind its writing and icons, or in front of everything)
     for (const at of Object.keys(MY_DECO_AT)) for (const over of [false, true]) {
+      if (own && at === 'page') continue;   // (a page its owner designed: its own background, no pictures of yours on it)
       const list = decos.filter((d) => d.at === at && !!d.over === over);
       if (!list.length) continue;
       const layer = list.map((d) => { const s = String(d.spot || 'cb'), ax = { l: 0, c: 50, r: 100 }[s[0]] ?? 50, ay = { t: 0, c: 50, b: 100 }[s[1]] ?? 100; return `url("${cssUrl(myPic(d.pic))}") calc(${ax}% + ${Math.round(Number(d.x) || 0)}px) calc(${ay}% + ${Math.round(Number(d.y) || 0)}px) / ${d.w === 'h' ? 'auto 100%' : Number(d.w) > 0 ? `${Math.round(Number(d.w))}px auto` : 'auto'} ${({ x: 'repeat-x', y: 'repeat-y' })[d.rep] || 'no-repeat'}`; }).join(', ');
@@ -12152,6 +13259,7 @@
       if (still.length && tries < 6) blobFree(still, tries + 1);   // (still shown somewhere: asked again later, then simply kept)
     }, tries ? 15000 : 4000);
   }
+  const MY_BOX_AT = '#container__2020, :root.bnp-old #main';   // (the pages' box, its colour and picture: an old page's too, in the beta look. Its text colour stays the old page's own: their tables weren't made for it)
   const MY_PAT_AT = { bar: '.nav-top-pattern__2020, .nav-bottom-pattern__2020', pop: '.popup-header-pattern__2020, .popup-footer-pattern__2020', foot: '.footer-pattern__2020', page: 'body', home: '.hp-bg-grid__2020', box: '#container__2020' };   // (where each part's pattern is drawn)
   function myPatNow(t, k) {   // (a part's picture on this page: its own, or one of those taking turns with it, picked once a page at random)
     const o = (t && t.v && t.v[k]) || {}, alts = Array.isArray(o.alts) ? o.alts.filter((x) => x && myPic(x)) : [];
@@ -12171,6 +13279,7 @@
   }
   const isSvg = (u) => /\.svg(\?|#|$)/i.test(u || '') || /^data:image\/svg\+xml/i.test(u || '');
   const myTints = (t) => Object.keys(MY_PAT_AT).filter((k) => { const p = t && t.v && t.v[k], u = p && tintOn(p.tint) && myPatSrc(t, k); return !!u && (!!p.tint.mode || isSvg(u)); });   // (older ones: shapes only)
+  const myBoxOwn = (t) => { const b = (t && t.v && t.v.box) || {}; return !!(b.colour || myPatNow(t, 'box') || b.fit || b.size != null || b.x || b.y || b.repeat || b.fixed) || myTints(t).includes('box'); };   // (a theme with a box of its own: as myCss draws it)
   const svgGet = async (u) => { try { const r = await fetch(u); if (!r.ok) return ''; const svg = await r.text(); return /<svg[\s>]/i.test(svg) ? svg : ''; } catch (_) { return ''; } };
   const picLoad = (u) => new Promise((done, fail) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.decoding = 'async'; im.onload = () => done(im); im.onerror = () => fail(new Error('the picture didn’t come')); im.src = u; });
   function picCanvas(im, scale = 1, most = 2400) {   // (a picture on a canvas of its own: at its own size, or the size asked)
@@ -12273,7 +13382,7 @@
         got.forEach((u, i) => { if (u) css.push(`${myRoot(MY_ICON_PARTS[i][1])} { background-image: url("${cssUrl(u)}") !important; }`); });
       }
       const pats = await Promise.all(tints.map((k) => tinted(myPatSrc(t, k), t.v[k].tint)));
-      tints.forEach((k, i) => { if (pats[i]) css.push(`${myRoot(MY_PAT_AT[k])} { background-image: url("${cssUrl(pats[i])}")${k === 'page' && myPageGrad(t.v.page) ? `, ${myPageGrad(t.v.page)}` : ''} !important; }`); });   // (the page's gradient kept under its recoloured pattern)
+      tints.forEach((k, i) => { if (pats[i] && !(k === 'page' && myOwnLook())) css.push(`${myRoot(k === 'box' ? MY_BOX_AT : MY_PAT_AT[k])} { background-image: url("${cssUrl(pats[i])}")${k === 'page' && myPageGrad(t.v.page) ? `, ${myPageGrad(t.v.page)}` : ''} !important; }`); });   // (the page's gradient kept under its recoloured pattern)
       if (logoTint) { const u = await tinted(myLogoSrc(t), logoTint); if (u) css.push(`${myRoot(lg.foot ? '.nav-logo__2020' : '.nav-logo__2020, .footer-logo__2020')} { background-image: url("${cssUrl(u)}") !important; }`); }
       if (ask !== myIconsAsk) { made.forEach((u) => { URL.revokeObjectURL(u); myBlobSrc.delete(u); }); return; }   // (another asked for meanwhile: these were never shown)
       let st = document.getElementById('bnp-my-icons');
@@ -12418,19 +13527,19 @@
     look(sheet.cssRules);
     if (barTop.u) { if (pics.bar) pics.barUnder = { ...barTop }; else { pics.bar = barTop.u; pics.barLift = { size: barTop.size || '', pos: barTop.pos || '', rep: barTop.rep || '' }; } }   // (its only pattern on the bar itself: lifted onto the pattern's layer when yours changes the bar; one under its layer's: kept under your colours)
     if (!bg && grad) bg = (/rgba?\([^)]*\)|#[0-9a-f]{3,8}\b/i.exec(grad) || [])[0] || '';   // (its first colour, where only one colour will do)
-    return bg || pbg || pat || grad ? { bg: bg || pbg || '', pat, grad, pics } : null;
+    return bg || pbg || pat || grad ? { bg: pbg || bg || '', pat, grad, pics } : null;   // (the pattern's layer's colour first: it's painted over the header's)
   }
   let themeSwBusy = false;
   async function themeSwatches() {   // (each theme's colours, read once from its own sheet and kept a fortnight; the menu shows them as they come)
     if (themeSwBusy) return;
     const now = Date.now(), d0 = themeData();
-    const want = themeList().map(([id]) => [id, themeFolder(id)]).filter(([, f]) => f && !(d0.sw[f] && d0.sw[f].v === 6 && now - (d0.sw[f].at || 0) < 14 * DAY_MS));   // (v3: read the way that knows headers coloured on their pattern, drawn as a picture, or in a gradient)
+    const want = themeList().map(([id]) => [id, themeFolder(id)]).filter(([, f]) => f && !(d0.sw[f] && d0.sw[f].v === 7 && now - (d0.sw[f].at || 0) < 14 * DAY_MS));   // (v3: read the way that knows headers coloured on their pattern, drawn as a picture, or in a gradient)
     if (!want.length) return;
     themeSwBusy = true;
     const got = {};
     try {
       await Promise.all(want.map(async ([id, f]) => {
-        try { const url = themeCssOf(id), r = await fetch(url); if (!r.ok) return; const sw = themeSheetRead(await r.text(), url); if (sw) got[f] = { ...sw, at: now, v: 6 }; } catch (_) { /* (that one another time) */ }
+        try { const url = themeCssOf(id), r = await fetch(url); if (!r.ok) return; const sw = themeSheetRead(await r.text(), url); if (sw) got[f] = { ...sw, at: now, v: 7 }; } catch (_) { /* (that one another time) */ }
       }));
       if (Object.keys(got).length) { const d = themeData(); Object.assign(d.sw, got); themeDataSet(d); themeMenuPaint(); if (document.documentElement.classList.contains('bnp-pound')) { poundKey = ''; try { poundPaint(); } catch (e) { report(e); } } { const id = myPreviewOf || S.wear, w = id ? myOf(id) : null; if (w && got[myLive(w).base]) myRedrawFor(''); } if (stOn()) stThemes(); if (hub && hubPage === 'themes' && !lookAt && hub.win.classList.contains('open')) paintHub(); }   // (General Settings' swatches too)
     } finally { themeSwBusy = false; }
@@ -12734,9 +13843,12 @@
     if (mt) { e.preventDefault(); e.stopPropagation(); if (S.wear !== mt.dataset.mytheme) { myPreviewOf = ''; myWear(mt.dataset.mytheme); } return; }   // (Neopets Enhance's or yours: on at once, in this browser; the menu stays open)
     const th = t.closest('a[data-bnp="theme"]');
     if (th) { e.preventDefault(); e.stopPropagation(); themePick(Number(th.dataset.theme)); return; }   // (the menu stays open: the ✓ moves, and another can be tried)
-    const go = t.closest('[data-dgo]');
-    if (go) goingTo(go.dataset.dgo);   // (if Neopets sends you somewhere else, that daily isn't open to you yet)
   }, true);
+  document.addEventListener('click', (e) => {   // (a daily opened in this tab: if Neopets sends you somewhere else, that daily isn't open to you yet. In a new tab, or while arranging: nothing)
+    const go = e.target instanceof Element && e.target.closest('a[data-dgo]');
+    if (!go || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || (go.target && go.target !== '_self')) return;
+    goingTo(go.dataset.dgo);
+  });
   document.addEventListener('keydown', (e) => {   // (the arrows and the ✎ answer Enter and Space too)
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const t = e.target;
@@ -12850,10 +13962,67 @@
   // ═══════════════════════════════════════════════════════════════════════════
   // The side menu: a pin (drawn like Neopets' own lock), Switch Pet beside the active pet, Nav Settings under Settings
   // ═══════════════════════════════════════════════════════════════════════════
+  function sideRoom() {   // (the side menu pinned: the page beside it, never under it, with an edge like NeoChat's; NeoChat pinned too, the page between them)
+    const root = document.documentElement, side = document.getElementById('navprofiledropdown__2020');
+    const was = root.classList.contains('bnp-side-pinned') ? root.style.getPropertyValue('--bnp-side-w') : '';
+    const cs = side && getComputedStyle(side);
+    const on = !!cs && !!S.features.pinned && side.classList.contains('bnp-pinned') && cs.position === 'fixed' && cs.display !== 'none' && root.clientWidth >= 900;   // (on a narrow window it lies over the page, as Neopets' own does)
+    root.classList.toggle('bnp-side-pinned', on);
+    if (on) {
+      const edge = winBorder(cs.backgroundColor);
+      if (edge) root.style.setProperty('--bnp-side-edge', edge); else root.style.removeProperty('--bnp-side-edge');
+      root.style.setProperty('--bnp-side-w', `${Math.round(side.getBoundingClientRect().width)}px`);
+    } else for (const v of ['--bnp-side-w', '--bnp-side-edge']) root.style.removeProperty(v);
+    pageMax();
+    if ((on ? root.style.getPropertyValue('--bnp-side-w') : '') !== was) { clearTimeout(sideRoom.t); sideRoom.t = setTimeout(() => dispatchEvent(new Event('resize')), 60); }   // (Neopets' page and the Shop Dock fit themselves to the room)
+  }
+  function pageMax() {   // (Neopets' box at its own width on this page, some pages' wider than others: the most it's let be beside what's pinned)
+    const root = document.documentElement, box = document.getElementById('container__2020'), pins = ['bnp-side-pinned', 'bnp-ncl-pinned'].filter((c) => root.classList.contains(c));
+    if (!box || !pins.length) { root.style.removeProperty('--bnp-page-max'); return; }
+    root.classList.remove(...pins);
+    const w = box.getBoundingClientRect().width;
+    root.classList.add(...pins);
+    if (w > 300) root.style.setProperty('--bnp-page-max', `${Math.round(w)}px`);
+    pinBox();
+  }
+  function pinBox() {   // (something pinned: Neopets' box stays where it is without it, centred in the window, as long as nothing pinned covers it; else it moves only as far as it must. Then the row under the bar (its icons, your Neopoints and Neocash) at the edges of the room between what's pinned, as Neopets has it at the window's; where that's over the box, just inside the box's edge. All measured where they are, so it holds on every kind of page: old or new, the row fixed or in the page)
+    const root = document.documentElement, side = root.classList.contains('bnp-side-pinned'), ncl = root.classList.contains('bnp-ncl-pinned'), nclLeft = ncl && root.classList.contains('bnp-ncl-pinleft');
+    const box = (root.classList.contains('bnp-old') && document.getElementById('main')) || document.getElementById('container__2020') || document.getElementById('main');   // (an older page's box is its #main)
+    const rows = [...document.querySelectorAll('.navsub-left__2020, .navsub-right__2020')];
+    for (const el of rows) el.style.removeProperty('translate');   // (where the page and its rules put it)
+    if (box) for (const p of ['margin-left', 'margin-right', 'max-width']) box.style.removeProperty(p);
+    const was = root.classList.contains('bnp-pin-roomy');
+    if (!(side || ncl) || !box) { root.classList.remove('bnp-pin-roomy'); return; }
+    const vw = root.clientWidth, px = (v) => parseFloat(getComputedStyle(root).getPropertyValue(v)) || 0;
+    const sw = side ? px('--bnp-side-w') : 0, nw = ncl ? px('--bnp-ncl-pagew') : 0, L = sw + (nclLeft ? nw : 0), R = ncl && !nclLeft ? nw : 0, GAP = 16;
+    const nat = px('--bnp-page-max') || box.getBoundingClientRect().width;   // (the box's own width on this page, without pins)
+    const roomy = nat >= 300 && nat <= vw - 2 * Math.max(L, R) - 8;   // (room for it centred without touching what's pinned: the page just as it is without pins)
+    root.classList.toggle('bnp-pin-roomy', roomy);
+    if (roomy !== was) dispatchEvent(new Event('resize'));   // (Neopets' page and the Shop Dock fit themselves to the room)
+    let b = box.getBoundingClientRect();
+    if (b.width < 300) return;
+    if (!roomy) {   // (no room for that: as near the window's middle as it can be, clear of what's pinned)
+      if (vw - R - GAP - b.width < L + GAP) { box.style.setProperty('max-width', `${Math.max(300, vw - L - R - 2 * GAP)}px`, 'important'); b = box.getBoundingClientRect(); }   // (too wide for the room between them: narrower, never under one)
+      const lo = L + GAP, hi = vw - R - GAP - b.width, want = hi < lo ? lo : Math.min(Math.max((vw - b.width) / 2, lo), hi), dx = Math.round(want - b.left);
+      if (Math.abs(dx) >= 1) { const ml = parseFloat(getComputedStyle(box).marginLeft) || 0; box.style.setProperty('margin-left', `${ml + dx}px`, 'important'); box.style.setProperty('margin-right', 'auto', 'important'); b = box.getBoundingClientRect(); }
+    }
+    for (const el of rows) {
+      if (!el.offsetWidth) continue;
+      const r = el.getBoundingClientRect(), isLeft = el.matches('.navsub-left__2020');
+      let x = isLeft ? L + 10 : vw - R - 5 - r.width;   // (the room's edge)
+      if (x < b.right && x + r.width > b.left) x = isLeft ? b.left + 8 : b.right - 8 - r.width;   // (over the box there: inside it)
+      const d = Math.round(x - r.left);
+      if (Math.abs(d) >= 1) el.style.setProperty('translate', `${d}px 0`, 'important');
+    }
+  }
+  addEventListener('resize', () => { clearTimeout(pinBox.t); pinBox.t = setTimeout(() => { try { pinBox(); } catch (_) { /* */ } }, 160); });
+  addEventListener('load', () => setTimeout(() => { try { pinBox(); } catch (_) { /* */ } }, 600));   // (the page's own box may still have been growing)
+  addEventListener('resize', (e) => { if (e.isTrusted && S.features.pinned) { clearTimeout(sideRoom.r); sideRoom.r = setTimeout(() => { try { sideRoom(); } catch (_) { /* */ } }, 150); } });
   function sideExtras() {
     const side = $('#navprofiledropdown__2020');
     if (!side) return;
     side.classList.toggle('bnp-pinned', !!S.features.pinned);
+    try { sideRoom(); } catch (e) { report(e); }
     let lock = side.querySelector('[data-bnp="lock"]');
     const welcome = side.querySelector('.nav-profile-dropdown-text');
     if (S.features.pinBtn && welcome) {
@@ -12907,7 +14076,7 @@
       a.href = '#';
       a.setAttribute('data-bnp', 'hubside');
       a.dataset.hub = '';
-      a.innerHTML = '<li class="profile-dropdown-subsection"><div class="nav-settings-icon profile-dropdown-link-icon"></div><h4>${esc(APP)}</h4></li>';
+      a.innerHTML = `<li class="profile-dropdown-subsection"><div class="nav-settings-icon profile-dropdown-link-icon"></div><h4>${esc(APP)}</h4></li>`;
       sec.append(a);
     }
   }
@@ -13150,13 +14319,13 @@
   }
   function qrAccent(app) { const h = themeHead(); if (h) { app.style.setProperty('--bqr-head', h.bg); app.style.setProperty('--bqr-headink', h.ink); } }
   function noteLodge(pets) {   // (when each pet leaves the Neolodge, for its reminder: "12 days, 3 hours, 20 minutes" from now)
-    const out = {}, now = Date.now();
+    const out = {}, now = Date.now(), was = get('lodge', {}) || {};
     for (const p of pets) {
       const n = p.notices.find((x) => x.kind === 'lodge');
       if (!n) continue;
       const part = (u) => { const m = new RegExp(`(\\d+)\\s*${u}`, 'i').exec(n.text); return m ? +m[1] : 0; };
       const ms = ((part('day') * 24 + part('hour')) * 60 + part('minute')) * 60000;
-      if (ms > 0) out[p.name] = Math.round((now + ms) / 60000) * 60000;
+      if (ms > 0) { const end = Math.round((now + ms) / 60000) * 60000; out[p.name] = Number(was[p.name]) && Math.abs(was[p.name] - end) <= 5 * 60000 ? was[p.name] : end; }   // (read again within a few minutes of before: the same one)
     }
     set('lodge', out);
   }
@@ -13454,7 +14623,7 @@
     const t = e.target instanceof Element ? e.target : null;
     if (!t) return;
     const swl = t.closest('[data-sw]');
-    if (swl) { try { sessionStorage.setItem('bnp-sw', swl.dataset.sw); } catch (_) { /* (the Shop Wizard then just waits for its Search button) */ } return; }   // (the Shop Wizard runs this search by itself when it opens)
+    if (swl) { if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey && !e.button && !(swl.target && swl.target !== '_self')) { try { sessionStorage.setItem('bnp-sw', swl.dataset.sw); } catch (_) { /* (the Shop Wizard then just waits for its Search button) */ } } return; }   // (the Shop Wizard runs this search by itself when it opens)
     const f = t.closest('[data-qf]');
     if (f) { qr.prefs.show = f.dataset.qf === qr.prefs.show ? 'all' : f.dataset.qf; qrSave(); qrPaint(); return; }
     const v = t.closest('[data-qv]');
@@ -13796,27 +14965,40 @@
   // The Shop Wizard during a faerie quest: Neopets shows only your quest there, and no search. Its own search form back (as Item Helper's
   // SW Quest Bypass did), your quest's item filled in, and each of its items a click from a search. A search is one click, as ever, and
   // goes to Neopets' own Shop Wizard search, as its own form sends it
+  const SWQ_SAYS = /(can['’]?t|cannot|can not|won['’]?t) help you|helping someone with a faerie quest|while you['’]re on a faerie quest/i;   // (the Shop Wizard turning you away for a quest, in Neopets' own words)
   function swQuest() {
     if (location.pathname !== '/shops/wizard.phtml' || !S.features.fqSw) return;
     const quest = $('.wizard-faeriequest__2020');
-    if (!quest || $('#bnp-swq') || $('#shopwizard')) return;
+    if (!quest || $('#bnp-swq') || $('#shopwizard') || !quest.getClientRects().length) return;   // (only while Neopets shows its quest panel in its search's place)
+    const sighs = [];
+    for (let p = quest.nextElementSibling; p && p.tagName === 'P'; p = p.nextElementSibling) sighs.push(p);
+    if (!SWQ_SAYS.test(`${quest.textContent} ${sighs.map((p) => p.textContent).join(' ')}`)) return;   // (and its words say it's for a quest: never on a page that only has the panel)
     styles();
     const q = fq(), items = q && q.st !== 'offer' ? q.items : [], want = new URLSearchParams(location.search).get('string') || (items[0] ? items[0].n : '');
     const wrap = document.createElement('div');
     wrap.id = 'bnp-swq';
     wrap.innerHTML = `<div id="shopWizardFormResults" class="wizard-results__2020">${swqForm(want)}</div>`;
     quest.before(wrap);
-    for (let p = quest.nextElementSibling; p && p.tagName === 'P';) { const n = p.nextElementSibling; p.hidden = true; p = n; }   // (its "sighs and says": the Shop Wizard can look now)
+    for (const p of sighs) p.hidden = true;   // (its "sighs and says": the strip says it)
     const strip = document.createElement('div');
     strip.className = 'bnp-swq-strip';
-    strip.innerHTML = `<p><b>On a faerie quest?</b> The Shop Wizard can still look for anything, with Neopets’ own search${items.length ? `, and for ${items.length > 1 ? 'the items she asked for' : 'the item she asked for'} with a click:` : '.'}</p>${items.length ? `<div class="bnp-swq-items">${items.map((it) => `<button type="button" class="bnp-swq-it" data-swq="${esc(it.n)}" title="Look for ${esc(it.n)} on the Shop Wizard">${it.p ? `<img src="${esc(it.p)}" alt="" width="50" height="50">` : ''}<span><b>${esc(it.n)}</b><small>Search for it</small></span></button>`).join('')}</div>` : ''}`;
+    strip.innerHTML = `<p><b>Neopets says you’re on a faerie quest</b>, so its Shop Wizard won’t look for you here. Its own search is back above${items.length ? `, and ${items.length > 1 ? 'the items she asked for are' : 'the item she asked for is'} a click away:` : '.'}</p>${items.length ? `<div class="bnp-swq-items">${items.map((it) => `<button type="button" class="bnp-swq-it" data-swq="${esc(it.n)}" title="Look for ${esc(it.n)} on the Shop Wizard">${it.p ? `<img src="${esc(it.p)}" alt="" width="50" height="50">` : ''}<span><b>${esc(it.n)}</b><small>Search for it</small></span></button>`).join('')}</div>` : ''}<p class="bnp-swq-acts"><a class="bnp-pillbtn" href="/quests.phtml">Your faerie quest</a><button type="button" class="bnp-pillbtn" data-swq-set title="Settings, at its switch">Its setting</button></p>`;
     quest.after(strip);
     const box = $('#shopWizardFormResults');
     const form = () => ({ shopwizard: ($('#shopwizard') || {}).value || '', table: ($('#wizard-area') || {}).value || 'shop', criteria: ($('#criteria') || {}).value || 'exact', min_price: ($('#min_price') || {}).value || '0', max_price: ($('#max_price') || {}).value || '999999' });
-    let busy = false;
+    let busy = false, searched = false;
+    const undo = () => {   // (Neopets' own search came after all: everything as it was)
+      strip.remove();
+      for (const p of sighs) p.hidden = false;
+      if (wrap.querySelector('#shopwizard[data-bnp-swq]') || !wrap.querySelector('#shopwizard')) wrap.remove(); else wrap.replaceWith(...wrap.childNodes);
+    };
+    const recheck = () => { if (!searched && wrap.isConnected && [...document.querySelectorAll('#shopwizard')].some((x) => !x.hasAttribute('data-bnp-swq'))) undo(); };
+    addEventListener('load', () => setTimeout(recheck, 300), { once: true });
+    setTimeout(recheck, 2500);
     const search = async (f) => {   // (Neopets' own Shop Wizard search, as its form sends it: the answer shown where the form was)
       if (busy || !String(f.shopwizard || '').trim()) return;
       busy = true;
+      searched = true;
       box.classList.add('is-busy');
       try {
         const r = await fetch('/np-templates/ajax/wizard.php', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'x-requested-with': 'XMLHttpRequest' }, body: new URLSearchParams({ type: 'process_wizard', feedset: '0', ...f }).toString() });
@@ -13840,7 +15022,9 @@
       else if (e.target.closest('#bnp-sw-go')) { e.preventDefault(); search(form()); }
     });
     strip.addEventListener('click', (e) => {
-      const b = e.target instanceof Element ? e.target.closest('[data-swq]') : null;
+      const t = e.target instanceof Element ? e.target : null;
+      if (t && t.closest('[data-swq-set]')) { hubAtFeat('dailies', 'fqSw'); return; }
+      const b = t && t.closest('[data-swq]');
       if (!b) return;
       if (!$('#shopwizard')) box.innerHTML = swqForm('');
       $('#shopwizard').value = b.dataset.swq;
@@ -13853,7 +15037,7 @@
       <div class="wizard-body">
         <div class="wizard-char-container"><div class="wizard-char wizard-char-img"></div></div>
         <div>
-          <div class="wizard-search"><input type="text" id="shopwizard" value="${esc(want)}" size="50" maxlength="60" aria-label="What are you looking for?" autocomplete="off"><div class="wizard-button-search button-default__2020 button-blue__2020" id="bnp-sw-go" role="button" tabindex="0" title="Search" aria-label="Search"><div class="button-search-white"></div></div></div>
+          <div class="wizard-search"><input type="text" id="shopwizard" data-bnp-swq value="${esc(want)}" size="50" maxlength="60" aria-label="What are you looking for?" autocomplete="off"><div class="wizard-button-search button-default__2020 button-blue__2020" id="bnp-sw-go" role="button" tabindex="0" title="Search" aria-label="Search"><div class="button-search-white"></div></div></div>
           <div class="wizard-filters"><select id="criteria" aria-label="How it matches"><option value="exact">Identical to</option><option value="containing">Containing my phrase</option></select><select id="wizard-area" aria-label="Where"><option value="shop">In Shops</option><option value="gallery">In Galleries</option></select></div>
           <div class="wizard-price"><p class="wizard-price-text">Price:</p><input type="text" id="min_price" size="6" maxlength="6" value="0" placeholder="Min" aria-label="Lowest price"><div class="wizard-dash"></div><input type="text" id="max_price" size="6" maxlength="6" value="999999" placeholder="Max" aria-label="Highest price"></div>
         </div>
@@ -13978,6 +15162,7 @@
     }
     go.index = goIndex();
     go.input.value = '';
+    document.body.append(go.veil, go.win);   // (last on the page: in front of Settings, which sits as high)
     go.veil.classList.add('open');
     go.win.classList.add('open');
     goPaint();
@@ -13989,13 +15174,16 @@
     let name = esc(it.label);
     const qn = goNorm(q);
     if (qn && goNorm(it.label).startsWith(qn)) name = `<b>${esc(it.label.slice(0, q.trim().length))}</b>${esc(it.label.slice(q.trim().length))}`;
-    return `<a class="bnp-go-row" href="${esc(it.act ? '#' : it.href)}" role="option" data-gi="${i}" aria-selected="${i === go.sel}"><span class="bnp-go-ic" style="${esc(icoCss(it.icon))}"></span><span class="bnp-go-name">${name}</span>${st ? `<span class="bnp-go-st${it.st.s === 'ready' ? ' is-ready' : ''}">${esc(st)}</span>` : it.st && it.st.s === 'ready' ? '<span class="bnp-go-st is-ready">ready</span>' : ''}<span class="bnp-go-kind">${esc(it.kind)}</span></a>`;
+    return `<a class="bnp-go-row" href="${esc(it.act ? '#' : it.href)}" role="option" data-gi="${i}" aria-selected="${i === go.sel}"><span class="bnp-go-ic" style="${esc(icoCss(it.icon))}"></span><span class="bnp-go-name">${name}</span>${it.note ? `<span class="bnp-go-st">${esc(it.note)}</span>` : ''}${st ? `<span class="bnp-go-st${it.st.s === 'ready' ? ' is-ready' : ''}">${esc(st)}</span>` : it.st && it.st.s === 'ready' ? '<span class="bnp-go-st is-ready">ready</span>' : ''}<span class="bnp-go-kind">${esc(it.kind)}</span></a>`;
   }
   function goPaint() {
     const text = go.input.value;
     const found = goFind(go.index, text, 40);
     const q = goNorm(text);
-    if (q) for (const k of ['sw', 'idb', 'np']) { const s = scopeOf(k); found.push({ label: `${k === 'np' ? 'Search Neopets for' : s.name + ':'} “${text.trim()}”`, href: s.url ? s.url(text.trim()) : `/search.phtml?q=${encodeURIComponent(text.trim())}`, icon: iconOf(s.icon), kind: 'Search', search: s }); }
+    if (q) {
+      const t = text.trim(), tl = t.toLowerCase(), cache = itPriceCache(), known = Object.keys(cache).find((n) => n.toLowerCase() === tl), r = known && cache[known].r;   // (an item priced before: its picture and price on the first row)
+      ['sw', 'tp', 'au', 'sdb', 'idb', 'jn', 'np'].forEach((k, i) => { const s = scopeOf(k); found.push({ label: `${k === 'np' ? 'Search Neopets for' : s.name + ':'} “${known || t}”`, href: s.url ? s.url(known || t) : `/search.phtml?q=${encodeURIComponent(t)}`, icon: (i === 0 && r && r.img) || iconOf(s.icon), kind: k === 'np' ? 'Search' : 'Find the item', note: i === 0 && r && r.p > 0 ? `~${npShort(r.p)} NP` : '', search: s }); });
+    }
     go.rows = found;
     go.sel = 0;
     go.list.innerHTML = found.length ? found.map((it, i) => goRowHtml(it, i, text)).join('') : `<p class="bnp-go-none">${q ? 'Nothing by that name.' : 'Type a page’s name: Tombola, Shop Wizard, Fresh Foods, Kreludor…'}</p>`;
@@ -14009,9 +15197,11 @@
   }
   function goGo(it, newTab) {   // (there: in this tab, or a new one; BetaNav Plus's own open where they are)
     if (it.act) { goClose(); if (it.act === 'board') openBoard(); else if (it.act.startsWith('hub:')) openHub(it.act.slice(4)); return; }
-    if (it.daily) goingTo(it.daily.id);
-    if (it.search && it.search.k === 'sw') { try { sessionStorage.setItem('bnp-sw', go.input.value.trim()); } catch (_) { /* */ } }
+    if (it.daily && !newTab) goingTo(it.daily.id);
+    if (it.search && it.search.k === 'sw' && !newTab) { try { sessionStorage.setItem('bnp-sw', go.input.value.trim()); } catch (_) { /* */ } }   // (a new tab searches by itself; this one, not later unasked)
+    if (!safeHref(it.href)) { goClose(); return; }
     const url = new URL(it.href, SITE + '/').href;
+    if (it.search && it.search.away) { goClose(); window.open(url, '_blank', 'noopener'); return; }   // (itemdb, JellyNeo: beside this page, never in place of it)
     if (newTab) { try { GM_openInTab(url, { active: false, insert: true, setParent: true }); } catch (_) { window.open(url, '_blank', 'noopener'); } return; }
     goClose();
     location.href = url;
@@ -14145,7 +15335,7 @@
   function paintDock() {   // (open: built and kept up to date; closed: gone; nothing at all on pages while it's closed)
     if (!document.body) return;
     const d = sdock();
-    if (!S.features.shopDock || !d.open) { if (cpop && cpop.o.id === 'sdock') cpPopClose(); if (sdockEl) { sdockEl.remove(); sdockEl = null; } dockEdit = false; return; }
+    if (!S.features.shopDock || !d.open) { if (cpop && cpop.o.id === 'sdock') cpPopClose(); if (sdockEl) { sdockEl.remove(); sdockEl = null; remBesideDock(); } dockEdit = false; return; }
     styles();
     if (!sdockEl) {
       sdockEl = document.createElement('div');
@@ -14160,12 +15350,16 @@
       winDrag(sdockEl, () => { const r = sdockEl.getBoundingClientRect(); set('sdock', { ...sdock(), snap: false, x: Math.round(r.left), y: Math.round(r.top) }); sdockEl.classList.remove('is-snapped'); });   // (put down somewhere: it stays there)
       dockDrag();
       themeWin(sdockEl);
-      let t = 0, narrow = dockNarrow();
-      addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { if (dockNarrow() !== narrow) { narrow = dockNarrow(); paintDock(); } dockFit(); }, 150); });
-      whenLoaded(() => { dockFit(); themeWin(sdockEl); });   // (the bar and the theme, finished: fitted again)
+      if (!paintDock.on) {   // (once a page: the window's size, for whichever dock is open then)
+        paintDock.on = true;
+        let t = 0, narrow = dockNarrow();
+        addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { if (!sdockEl) return; if (dockNarrow() !== narrow) { narrow = dockNarrow(); paintDock(); } dockFit(); }, 150); });
+      }
+      whenLoaded(() => { if (!sdockEl) return; dockFit(); themeWin(sdockEl); });   // (the bar and the theme, finished: fitted again)
     }
     const folded = dockFolded(d);
     sdockEl.classList.toggle('is-folded', folded);
+    requestAnimationFrame(remBesideDock);   // (the notes beside it, as it is now)
     sdockEl.classList.toggle('is-edit', dockEdit);
     sdockEl.classList.toggle('no-names', d.names === false);
     sdockEl.querySelector('[data-dk="edit"]').setAttribute('aria-pressed', String(dockEdit));
@@ -14223,11 +15417,20 @@
         const b = t.closest('[data-pk]');
         if (!b || b.matches('input')) return;
         if (b.dataset.pk === 'x') closeShopPick();
-        if (b.dataset.pk === 'none') setSdock({ list: [] });
+        if (b.dataset.pk === 'none') {   // (every shop out; pressed again, Put them back)
+          if (b.dataset.back) { try { setSdock({ list: JSON.parse(b.dataset.back) }); } catch (_) { /* */ } delete b.dataset.back; b.textContent = 'None'; return; }
+          const was = sdock().list;
+          if (!was.length) return;
+          b.dataset.back = JSON.stringify(was);
+          setSdock({ list: [] });
+          b.textContent = 'Put them back';
+        }
       });
       themeWin(win);
     }
     shopPick.q.value = '';
+    const none = shopPick.win.querySelector('[data-pk="none"]');
+    if (none) { delete none.dataset.back; none.textContent = 'None'; }
     shopPick.veil.classList.add('open');
     shopPick.win.classList.add('open');
     paintShopPick();
@@ -14311,7 +15514,7 @@
     const k = b.dataset.dk;
     if (k === 'x') dockToggle(false);
     else if (k === 'fold') { const d = sdock(); if (dockNarrow()) setSdock(dockFolded(d) ? { folded: false, narrowOpen: true } : { narrowOpen: false }); else setSdock({ folded: !d.folded }); }
-    else if (k === 'edit') { dockEdit = !dockEdit; if (sdock().folded) setSdock({ folded: false }); else paintDock(); }
+    else if (k === 'edit') { dockEdit = !dockEdit; const d = sdock(); if (dockEdit && dockFolded(d)) setSdock(dockNarrow() ? { folded: false, narrowOpen: true } : { folded: false }); else paintDock(); }   // (folded, or a narrow window: opened to show its options)
     else if (k === 'choose') openShopPick();
     else if (k === 'bgown') dockColour(b);
   }
@@ -14408,14 +15611,20 @@
   const hubLast = { menu: 'community', folder: 'boards' };
   function openHub(page) {
     if (!hub || !hub.win.isConnected || !hub.veil.isConnected) { if (hub) { hub.win.remove(); hub.veil.remove(); } buildHub(); }   // (built again if the page lost it on the way)
+    if (hub.win.classList.contains('is-peek')) hubPeek(false);   // (peeking: back first, so it shows)
     page = PAGE_WAS[page] || page;
     if (page && PAGES.some((p) => p[0] === page)) { if (page !== hubPage) hubSel = null; hubPage = page; }
     hub.find.value = '';   // (a page asked for: shown, not what you'd looked for)
-    hub.idx = null;   // (what's found: as the pages are now)
+    hub.idx = null;   // (what's found: as the pages are now, the list made again soon after it opens)
+    hub.idxPrep = null;
+    clearTimeout(hub.idxT);
+    hub.idxT = setTimeout(hubFindPrep, 1200);
     hub.win.classList.add('open');
     hub.veil.classList.add('open');
     try { themeHub(); } catch (e) { report(e); }   // (the window opens whatever its dressing does)
     try { paintHub(); } catch (e) { report(e); hub.main.innerHTML = '<p class="bnp-note">This page didn’t come just now: choose another, or reload the page.</p>'; }
+    if (hubPage === 'themes' && lookAt && myKey(lookAt) && !myPreviewOf) { try { myLookEditStart(myReal(myKey(lookAt))); myPreview(lookAt); } catch (e) { report(e); } }   // (back on a theme you were changing: on the page again as you change it)
+    pageBlur();
     hub.win.focus({ preventScroll: true });
   }
   let peekBack = null, peekWas = null;
@@ -14445,10 +15654,21 @@
       try { PAGE.toggleDropdownArrow(`arrow-${id}`); } catch (_) { /* */ }
     }, 60);
   }
+  function pageBlur() {   // (the page behind Settings and the Dailies window, blurred a little as well as darkened: each of its parts under the dimming, by itself; never what's over it, never while you peek. NeoChat's window: only if you've chosen it)
+    const big = [hub, board].some((w) => w && w.win.classList.contains('open') && !w.win.classList.contains('is-peek'));
+    const nc = !big && !!ncl && !!ncl.veil && ncl.veil.classList.contains('open') && /blur|both/.test(S.features.nclDim || '');
+    const on = (big && !!S.features.winBlur) || nc, top = big ? 2147483000 : 2147482990;   // (Settings' dimming, or NeoChat's window: what's at it or over it stays sharp)
+    document.documentElement.classList.toggle('bnp-blur', on);
+    for (const el of document.body ? document.body.children : []) {
+      const under = on && !el.matches('.bnp-veil, script, style, link, noscript, template') && !(parseInt(getComputedStyle(el).zIndex, 10) >= top);
+      if (el.classList.contains('bnp-blurme') !== under) el.classList.toggle('bnp-blurme', under);
+    }
+  }
   function hubPeek(on) {   // (Settings out of sight for a moment: the page as it is now, the part you're changing scrolled into view)
     if (!hub) return;
     hub.win.classList.toggle('is-peek', on);
     hub.veil.classList.toggle('is-peek', on);
+    if (on && hub.win.contains(document.activeElement)) document.activeElement.blur();   // (keys on the page go to the page while Settings is out of sight)
     if (on) {
       if (!peekBack) {
         peekBack = document.createElement('button');
@@ -14479,8 +15699,11 @@
         else if (dd.isConnected && dd.style.display === 'block') { dd.style.display = 'none'; dd.classList.remove('nav-dropdown-active'); }
       }
     }
+    pageBlur();
   }
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && hub && hub.win.classList.contains('is-peek')) { e.preventDefault(); e.stopPropagation(); hubPeek(false); } }, true);
+  function hubSavePending() { if (mySet.t || nctSet.t) { clearTimeout(mySet.t); clearTimeout(nctSet.t); mySet.t = nctSet.t = 0; saveNow(); } }   // (a theme's change still waiting its moment: kept now)
+  addEventListener('pagehide', () => { try { myColourClose(); hubSavePending(); } catch (_) { /* */ } });
   function closeHub() {
     if (!hub) return;
     hubPeek(false);
@@ -14491,10 +15714,12 @@
     myImp = false;
     myImpPaint();
     myColourClose();
+    hubSavePending();
     myLookEditEnd();
     myPreviewEnd();
     hub.win.classList.remove('open');
     hub.veil.classList.remove('open');
+    pageBlur();
     const ic = hub.win.querySelector('.bnp-icons');
     if (ic) ic.remove();
   }
@@ -14510,7 +15735,7 @@
     win.setAttribute('aria-modal', 'true');
     win.setAttribute('aria-label', 'Settings');
     win.tabIndex = -1;
-    const rail = RAIL.map(([h, keys]) => `<h5>${esc(h)}</h5>${keys.map((k) => (RAIL_KIND[k] ? `<button type="button" data-kind="${RAIL_KIND[k][0]}">${esc(RAIL_KIND[k][1])}</button>` : `<button type="button" data-page="${k}">${esc((PAGES.find((p) => p[0] === k) || [k, k])[1])}</button>`)).join('')}`).join('');
+    const rail = RAIL.map(([h, keys]) => `<div class="bnp-railgrp"><h5>${esc(h)}</h5>${keys.map((k) => (RAIL_KIND[k] ? `<button type="button" data-kind="${RAIL_KIND[k][0]}">${esc(RAIL_KIND[k][1])}</button>` : `<button type="button" data-page="${k}">${esc((PAGES.find((p) => p[0] === k) || [k, k])[1])}</button>`)).join('')}</div>`).join('');   // (each group a card of its own, its name across the top)
     win.innerHTML = `
       <div class="popup-header__2020 bnp-hub-head">
         <h3><i class="bnp-hub-gear" data-g="hubgear" aria-hidden="true" hidden></i>Settings</h3>
@@ -14576,6 +15801,7 @@
     hub.find.addEventListener('keydown', (e) => { if (e.key === 'Escape' && hub.find.value) { e.preventDefault(); e.stopPropagation(); hub.find.value = ''; paintHub(); } else if (e.key === 'Enter') { const first = hub.main.querySelector('[data-hubhit]'); if (first) { e.preventDefault(); first.click(); } } });
     hub.main.addEventListener('click', hubClick);
     hub.main.addEventListener('change', hubChange);
+    hub.main.addEventListener('input', (e) => { const t = e.target; if (t instanceof HTMLInputElement && t.type === 'range' && (t.dataset.feat || t.dataset.rem)) { const o = t.parentElement.querySelector('output'); if (o) o.textContent = `${t.value}%`; } });
     hub.main.addEventListener('input', hubInput);
     hub.main.addEventListener('error', (e) => {   // (a picture Neopets never made: its stand-in, once)
       const t = e.target;
@@ -14592,17 +15818,34 @@
     hubGearPaint();
     hubPal(true);
   }
+  const rgbIn = (c) => {   // (a colour as [r, g, b]: rgb() or #hex; null for anything else, a see-through one too)
+    if (/rgba\([^)]*,\s*0\)|transparent/.test(c || '')) return null;
+    let m = /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/.exec(c || '');
+    if (m) return [m[1], m[2], m[3]].map(Number);
+    if (!(m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(c || '').trim()))) return null;
+    const h = m[1].length === 3 ? m[1].replace(/./g, '$&$&') : m[1];
+    return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+  };
+  function winBorder(headBg) {   // (a window's outline: your theme's pop-up outline; else the line under its top bar, as Neopets pairs them; else ours. Darker when it's the colour of the window's own header, or the window's edge is lost against the page)
+    const site = $('.togglePopup__2020'), cs = site && getComputedStyle(site), own = !!cs && parseFloat(cs.borderTopWidth) > 0;
+    const bar = !own && ($('#navtop__2020') || $('.nav-top__2020')), bs = bar && getComputedStyle(bar), line = !!bs && parseFloat(bs.borderBottomWidth) > 0 && !!rgbIn(bs.borderBottomColor);
+    const c = own ? cs.borderTopColor : line ? bs.borderBottomColor : 'rgb(77, 77, 77)', a = rgbIn(c), b = rgbIn(headBg);
+    const same = !!a && !!b && a.every((v, i) => Math.abs(v - b[i]) < 16);
+    return own || line || same ? `${own ? cs.borderTopWidth : '3px'} ${own ? cs.borderTopStyle : 'solid'} ${same ? `color-mix(in srgb, ${c} 45%, #000)` : c}` : '';
+  }
   function themeWin(win) {   // (a window wears your theme: its pop-up outline, and its header colour for what's chosen)
-    const site = $('.togglePopup__2020');
-    if (site) {
-      const cs = getComputedStyle(site);
-      if (parseFloat(cs.borderTopWidth) > 0) win.style.setProperty('--bnp-border', `${cs.borderTopWidth} ${cs.borderTopStyle} ${cs.borderTopColor}`);
-    }
-    const head = win.querySelector('.bnp-hub-head'), h3 = head.querySelector('h3');
-    const bg = getComputedStyle(head).backgroundColor, fg = getComputedStyle(h3).color;
-    if (bg && !/rgba\(0, 0, 0, 0\)|transparent/.test(bg)) { win.style.setProperty('--bnp-accent', bg); win.style.setProperty('--bnp-accent-text', fg); }
+    const head = win.querySelector('.bnp-hub-head'), h3 = head.querySelector('h3'), layer = head.querySelector('.popup-header-pattern__2020');
+    const clear = (c) => !c || /rgba\([^)]*,\s*0\)|transparent/.test(c), hb = getComputedStyle(head).backgroundColor, pb = layer ? getComputedStyle(layer).backgroundColor : '';
+    const mine = !win.closest('.bnp-ncl, .bnp-nct-pv');   // (NeoChat and its themes' samples: their own theme's colours, from their own look)
+    let bg = !clear(pb) ? pb : !clear(hb) ? hb : '', fg = getComputedStyle(h3).color;   // (the colour you see: the pattern's layer, painted over the header's, where the theme colours it)
+    if (!bg && mine) { const t = themeHead(); if (t) { bg = t.bg; fg = t.ink; } }   // (a header in a gradient or only a picture, as Altadorian Constellations has: the colour your theme's pop-ups stand for everywhere else)
+    const edge = winBorder(bg || hb);
+    if (edge) win.style.setProperty('--bnp-border', edge); else win.style.removeProperty('--bnp-border');   // (none kept from a theme worn before)
+    if (bg) { win.style.setProperty('--bnp-accent', bg); win.style.setProperty('--bnp-accent-text', inkReads(fg, bg)); }
+    else if (mine) { win.style.removeProperty('--bnp-accent'); win.style.removeProperty('--bnp-accent-text'); }   // (never the last theme's)
     const b = themeBar();
     if (b) { win.style.setProperty('--bnp-bar', b.bar); win.style.setProperty('--bnp-bar-ink', inkReads(b.ink, b.bar)); }   // (never dark writing on a dark bar)
+    else if (mine) { win.style.removeProperty('--bnp-bar'); win.style.removeProperty('--bnp-bar-ink'); }
     footLook(win);
   }
   let themeBarKept = null;
@@ -15242,7 +16485,7 @@
       foot.prepend(el);
       win.style.setProperty('--bnp-pal-w', `${pw}px`);
       win.classList.add('bnp-has-pal');
-      requestAnimationFrame(() => win.style.setProperty('--bnp-pal-rise', `${Math.max(0, ph - foot.offsetHeight)}px`));   // (the list above them scrolls up past them)
+      requestAnimationFrame(() => { const fh = foot.bnpH || (foot.bnpH = foot.offsetHeight), v = `${Math.max(0, ph - fh)}px`; if (win.style.getPropertyValue('--bnp-pal-rise') !== v) win.style.setProperty('--bnp-pal-rise', v); });   // (the list above them scrolls up past them. The foot's height measured once)
     }).catch(report);
   }
   function hubPal(next) { winPal('corner', next); }
@@ -15604,12 +16847,12 @@
   }
   function myHistStep(t, back) {
     const h = myHist.get(myHistKey(t)), from = h && (back ? h.past : h.next), to = h && (back ? h.next : h.past);
+    myColourClose();   // (a picker still open: shut first, so its colour is in the steps before they're read)
     if (!from || !from.length) { toast(back ? 'Nothing to undo' : 'Nothing to redo'); return; }
     to.push(myHistSnap(t));
     const st = JSON.parse(from.pop());
     h.key = '';
     if (!t.varOf) { const all = { ...(S.looks || {}) }; if (st.looks) all[`my:${t.id}`] = st.looks; else delete all[`my:${t.id}`]; S.looks = all; }
-    myColourClose();
     myRestore(t, st);
     lookAdj = null;
     changed();
@@ -15633,7 +16876,7 @@
   function mySetMany(t, entries, icons) {   // ([[path, value], …] at once: one save and one redraw for them all)
     for (const [p, val] of entries) myPut(t, p, val);
     clearTimeout(mySet.t);
-    mySet.t = setTimeout(saveNow, 700);
+    mySet.t = setTimeout(() => { mySet.t = 0; saveNow(); }, 700);
     myShowNow(t, icons);
   }
   function mySet(t, path, val, alone) {   // (one part of one of your themes, however deep: kept a moment later, shown at once)
@@ -15642,7 +16885,7 @@
     if (!alone && val != null && val !== '') for (const p2 of MY_NEEDS[path] || []) if (!myGet(t, p2)) { const was = myProbeColour(p2); if (was) mySet(t, p2, was, true); }
     if (!alone && val != null && val !== '') for (const pr of MY_PAIRS) { const p2 = pr[0] === path ? pr[1] : pr[1] === path ? pr[0] : ''; if (p2 && !myGet(t, p2)) { const was = myProbeColour(p2); if (was) mySet(t, p2, was, true); } }
     clearTimeout(mySet.t);
-    mySet.t = setTimeout(saveNow, 700);   // (a slider dragged: one save when you let go, never one a step)
+    mySet.t = setTimeout(() => { mySet.t = 0; saveNow(); }, 700);   // (a slider dragged: one save when you let go, never one a step)
     myShowNow(t, /^(icons|logo)\.|\.(tint|pat)(\.|$)/.test(path));
   }
   function myShowNow(t, icons) {   // (the theme being changed, on the page as it is now: the look of it being changed)
@@ -15971,7 +17214,7 @@
       if (!a || !b0) return '';
       let b = b0;
       const part = MY_LOOK_PATTED[path], src = part && !myGet(t, `${part}.pat`) ? myPatSrc(t, part) : '', av = src && myPatAvgSeen.get(src);   // (writing over its base's pattern: read against the pattern as it shows)
-      if (src && !av) myPatAvg(src).then((v) => { if (v && v.cover >= 0.9 && hub && hub.win.classList.contains('open') && lookAt) { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; } }).catch(() => { /* */ });
+      if (src && !av) myPatAvg(src).then((v) => { if (v && v.cover >= 0.9 && hub && hub.win.classList.contains('open') && lookAt && hubPage === 'themes' && !hub.find.value.trim()) { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; } }).catch(() => { /* */ });
       if (av && av.cover >= 0.9) {
         const cols = on.some((p) => myGet(t, p)), bl = myGet(t, `${part}.blend`);
         b = cols && (!bl || bl === 'multiply') ? unitHex(hexUnit(b0).map((x, i) => x * hexUnit(av.hex)[i])) : av.hex;   // (printed on your colours, or the pattern itself)
@@ -16043,18 +17286,18 @@
     };
     const decoCard = (at, note) => {   // (pictures of your own on a part of the page)
       const list = (Array.isArray(myGet(t, 'deco')) ? myGet(t, 'deco') : []).filter((d) => d && d.at === at);
-      const dseg = (d, key, opts) => `<span class="bnp-seg" role="group">${opts.map(([val, l]) => { const cur = key === 'w' ? (d.w === 'h' ? 'h' : Number(d.w) > 0 ? '120' : '') : String(d[key] == null ? '' : d[key]); return `<button type="button" data-mydecoset="${d.id}:${key}:${val}" aria-pressed="${cur === val}">${l}</button>`; }).join('')}</span>`;
-      const dsl = (d, key, name, min, max, dv) => { const n = d[key] == null ? dv : Number(d[key]); return `<label class="bnp-myslide"><span>${esc(name)}</span><input type="range" min="${min}" max="${max}" value="${n}" data-mydecor="${d.id}:${key}"><b>${n}px</b></label>`; };
+      const dseg = (d, key, opts) => `<span class="bnp-seg" role="group">${opts.map(([val, l]) => { const cur = key === 'w' ? (d.w === 'h' ? 'h' : Number(d.w) > 0 ? '120' : '') : String(d[key] == null ? '' : d[key]); return `<button type="button" data-mydecoset="${esc(d.id)}:${key}:${val}" aria-pressed="${cur === val}">${l}</button>`; }).join('')}</span>`;
+      const dsl = (d, key, name, min, max, dv) => { const n = d[key] == null ? dv : Number(d[key]); return `<label class="bnp-myslide"><span>${esc(name)}</span><input type="range" min="${min}" max="${max}" value="${n}" data-mydecor="${esc(d.id)}:${key}"><b>${n}px</b></label>`; };
       const row = (d) => {
         const said = [MY_DECO_SPOT_NAMES[d.spot || 'cb'] || '', d.w === 'h' ? 'its height' : Number(d.w) > 0 ? `${Math.round(Number(d.w))}px wide` : 'its own size', d.over ? 'in front' : 'behind'].join(', ');
-        return `<details class="bnp-fold bnp-mydeco" data-fold="deco:${d.id}"${myFolds[`deco:${d.id}`] ? ' open' : ''}><summary><i class="bnp-mydecothumb" style="${myPic(d.pic) ? `background-image:url('${esc(cssUrl(myPic(d.pic)))}')` : ''}"></i><span>${myPic(d.pic) ? esc(said) : 'A new one: its picture first'}</span></summary><div class="bnp-myplace">
-          <label class="bnp-f bnp-myurl"><span>Its picture</span><input type="url" data-mydecopic="${d.id}" value="${esc(d.pic || '')}" placeholder="https://…" spellcheck="false" autocomplete="off"><small class="bnp-mypicinfo" data-mypicinfo="deco:${d.id}"></small></label>${picStrip(d.pic || '', `data-deco="${d.id}"`)}
-          <div class="bnp-myrow"><span class="bnp-mytint-h">Where</span><span class="bnp-myspots" role="group" aria-label="Where">${MY_DECO_SPOTS.map(([k2, ic]) => `<button type="button" data-mydecoset="${d.id}:spot:${k2}" aria-pressed="${(d.spot || 'cb') === k2}" title="${MY_DECO_SPOT_NAMES[k2]}">${ic}</button>`).join('')}</span></div>
+        return `<details class="bnp-fold bnp-mydeco" data-fold="deco:${esc(d.id)}"${myFolds[`deco:${esc(d.id)}`] ? ' open' : ''}><summary><i class="bnp-mydecothumb" style="${myPic(d.pic) ? `background-image:url('${esc(cssUrl(myPic(d.pic)))}')` : ''}"></i><span>${myPic(d.pic) ? esc(said) : 'A new one: its picture first'}</span></summary><div class="bnp-myplace">
+          <label class="bnp-f bnp-myurl"><span>Its picture</span><input type="url" data-mydecopic="${esc(d.id)}" value="${esc(d.pic || '')}" placeholder="https://…" spellcheck="false" autocomplete="off"><small class="bnp-mypicinfo" data-mypicinfo="deco:${esc(d.id)}"></small></label>${picStrip(d.pic || '', `data-deco="${esc(d.id)}"`)}
+          <div class="bnp-myrow"><span class="bnp-mytint-h">Where</span><span class="bnp-myspots" role="group" aria-label="Where">${MY_DECO_SPOTS.map(([k2, ic]) => `<button type="button" data-mydecoset="${esc(d.id)}:spot:${k2}" aria-pressed="${(d.spot || 'cb') === k2}" title="${MY_DECO_SPOT_NAMES[k2]}">${ic}</button>`).join('')}</span></div>
           <div class="bnp-myslides">${dsl(d, 'x', 'Left and right', -900, 900, 0)}${dsl(d, 'y', 'Up and down', -400, 400, 0)}${Number(d.w) > 0 ? dsl(d, 'w', 'Its width', 8, 1600, 120) : ''}</div>
           <div class="bnp-myrow"><span class="bnp-mytint-h">Its size</span>${dseg(d, 'w', [['', 'Its own'], ['120', 'A width'], ['h', 'The part’s height']])}</div>
           <div class="bnp-myrow"><span class="bnp-mytint-h">Repeated</span>${dseg(d, 'rep', [['', 'Once'], ['x', 'Across'], ['y', 'Down']])}</div>
           <div class="bnp-myrow"><span class="bnp-mytint-h">Layer</span>${dseg(d, 'over', [['', at === 'page' ? 'Behind the pages’ box' : 'Behind its writing and icons'], ['1', 'In front of everything']])}</div>
-          <p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn is-danger" data-mydecodel="${d.id}">Take it away</button></p></div></details>`;
+          <p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn is-danger" data-mydecodel="${esc(d.id)}">Take it away</button></p></div></details>`;
       };
       return card('Decorations', note, `${list.length ? list.map(row).join('') : '<p class="bnp-note">None yet. Any picture by its address: placed where you like, its size, once or repeated, behind or in front.</p>'}${sizes('Any size: shown at its own, or at the width you set. For sharp screens, one twice the size you want, drawn at A width.')}${at === 'page' && list.length ? `<label class="bnp-switch"><input type="checkbox" data-mycheck="page.decoStill"${myGet(t, 'page.decoStill') ? ' checked' : ''}><span>They stay still as the page scrolls</span></label>` : ''}<p class="bnp-lookback-row"><button type="button" class="bnp-pillbtn" data-mydecoadd="${at}">+ Add a picture</button></p>`);
     };
@@ -16214,27 +17457,25 @@
     const r = myReal(t);
     if (myPreviewOf === r.id || S.wear === r.id) { if (moved || !t.varOf) myOn(r, false); else myShowNow(t, true); }
   }
-  function myImportOne(o) {   // (one theme from a file or a code: a new one of yours, as it came; nothing you have changes)
+  function myImportOne(o, cut) {   // (one theme from a file or a code: a new one of yours, as it came; nothing you have changes)
     if (!o || typeof o !== 'object' || !/^[a-z]+$/.test(String(o.base || '')) || (o.v != null && (typeof o.v !== 'object' || Array.isArray(o.v)))) return null;
     const named = String(o.name || 'A theme').slice(0, 34), taken = new Set((S.myThemes || []).map((x) => x.name));
     let name = named;
     for (let i = 2; taken.has(name); i++) name = `${named} (${i})`;   // (a name you have already: numbered)
-    const n = { id: `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, name, base: o.base, v: o.v || {} };
-    if (o.about && typeof o.about === 'object') n.about = { by: String(o.about.by || '').slice(0, 40), note: String(o.about.note || '').slice(0, 400) };
-    if (Array.isArray(o.vars)) { const vars = o.vars.filter((x) => myPlain(x) && typeof x.id === 'string' && myPlain(x.v)).slice(0, 30).map((x) => ({ id: x.id.slice(0, 24), name: String(x.name || 'A look').slice(0, 30), ...(/^[a-z]+$/.test(String(x.base || '')) ? { base: x.base } : {}), v: x.v })); if (vars.length) n.vars = vars; }   // (its looks)
-    if (myPlain(o.varShow)) { const sh = o.varShow; n.varShow = { ...(['turns', 'time'].includes(sh.mode) ? { mode: sh.mode } : {}), ...(typeof sh.one === 'string' ? { one: sh.one } : {}), ...(Array.isArray(sh.turns) ? { turns: sh.turns.filter((x) => typeof x === 'string') } : {}), ...(myPlain(sh.times) ? { times: Object.fromEntries(Object.entries(sh.times).filter(([, x]) => myLookMins(x) != null)) } : {}) }; }
+    const n = myThemeClean({ ...o, id: `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, name }, cut);   // (its parts, its looks and who made it: each checked, anything that could reach past a theme's own rules left out)
     S.myThemes = [...(S.myThemes || []), n];
-    if (o.looks && typeof o.looks === 'object' && !Array.isArray(o.looks)) S.looks = { ...(S.looks || {}), [`my:${n.id}`]: o.looks };
-    if (Array.isArray(o.saves) && o.saves.length) mySavesSet(n.id, o.saves.filter((s) => s && typeof s === 'object' && s.v && typeof s.v === 'object' && !Array.isArray(s.v)).slice(0, 60).map((s) => ({ at: Number(s.at) || Date.now(), name: String(s.name || '').slice(0, 40), base: /^[a-z]+$/.test(String(s.base || '')) ? s.base : n.base, v: s.v, ...(Array.isArray(s.vars) ? { vars: s.vars } : {}), ...(myPlain(s.varShow) ? { varShow: s.varShow } : {}) })));
+    if (myPlain(o.looks)) S.looks = { ...(S.looks || {}), [`my:${n.id}`]: myLooksClean(o.looks) };
+    if (Array.isArray(o.saves) && o.saves.length) mySavesSet(n.id, o.saves.slice(0, 60).map((s) => mySaveClean(s, n.base, cut)).filter(Boolean));
     return n;
   }
   function myImportText(txt) {   // (a file or a code: one theme, or a file of them all → { first, n } or null)
     let o = null;
     try { o = JSON.parse(String(txt || '').trim()); } catch (_) { return null; }
-    const list = o && Array.isArray(o.neopetsEnhanceThemes) ? o.neopetsEnhanceThemes : [o];
+    const list = o && Array.isArray(o.neopetsEnhanceThemes) ? o.neopetsEnhanceThemes.slice(0, 100) : [o];
     let first = null, n = 0;
-    for (const x of list) { const t = myImportOne(x); if (t) { n++; if (!first) first = t; } }
-    return first ? { first, n } : null;
+    const cut = { n: 0 };
+    for (const x of list) { const t = myImportOne(x, cut); if (t) { n++; if (!first) first = t; } }
+    return first ? { first, n, cut: cut.n } : null;
   }
   function myImported(r) {   // (brought in: open, and shown on the page)
     myImp = false;
@@ -16243,7 +17484,7 @@
     lookAt = `my:${r.first.id}`;
     myTab = 'bar';
     myPreview(lookAt);
-    changed(r.n > 1 ? `${r.n} themes are yours now: ${r.first.name} is open` : `${r.first.name} is one of yours now`);
+    changed(`${r.n > 1 ? `${r.n} themes are yours now: ${r.first.name} is open` : `${r.first.name} is one of yours now`}${r.cut ? ` (${r.cut} part${r.cut === 1 ? '' : 's'} left out to keep your pages safe)` : ''}`);
     hub.main.scrollTop = 0;
   }
   let myImp = false;
@@ -16332,7 +17573,10 @@
   // the colour picker: the boards' own, for a theme's colours
   let mcp = null;
   function myColourOpen(anchor, tg) {   // (tg: another target, as NeoChat Themes' is: { put(hex), done(), theirs, theirsName, based, basedName })
+    const again = ['mycol', 'paths', 'nctcol'].filter((k) => anchor.dataset[k] != null).map((k) => `[data-${k}="${CSS.escape(anchor.dataset[k])}"]`).join('');
     myColourClose();
+    if (!anchor.isConnected && again && hub) anchor = hub.main.querySelector(again) || anchor;   // (the page drawn again as the last one shut: the same swatch, as it is now)
+    if (!anchor.isConnected) return;
     const path = anchor.dataset.mycol || '', paths = anchor.dataset.paths ? anchor.dataset.paths.split(',') : null, t = tg ? null : myEditable(lookAt), start = myHex(anchor.dataset.hex) || '#888888', tint = tg ? null : /^(.+\.tint)\./.exec(path), seeThrough = !tint;   // (a picture's colour is always solid)
     if (!t && !tg) return;
     if (tint) myTintTouch(t, tint[1]);   // (a picture's colour: its older settings written the new way first)
@@ -16419,8 +17663,10 @@
   }
   function myColourClose() {
     if (!mcp) return;
+    const pending = !!mcp.raf;   // (a colour picked that hasn't gone in yet: put now. One that has: never put twice, so Undo's first step is a real one)
     cancelAnimationFrame(mcp.raf);
-    if (mcp.hex !== mcp.start) { myColourPut(); nbJsonSet('bnp-cprecent', [mcp.hex, ...nbJson('bnp-cprecent', []).filter((c) => c !== mcp.hex)].slice(0, 10)); }
+    if (pending) myColourPut();
+    if (mcp.hex !== mcp.start) nbJsonSet('bnp-cprecent', [mcp.hex, ...nbJson('bnp-cprecent', []).filter((c) => c !== mcp.hex)].slice(0, 10));
     mcp.el.remove();
     const tg = mcp.tg;
     mcp = null;
@@ -16757,7 +18003,7 @@
     const list = (Array.isArray(myGet(t, 'deco')) ? myGet(t, 'deco') : []).map((x) => (x && x.id === id ? Object.fromEntries(Object.entries({ ...x, ...patch }).filter(([, val]) => val !== '' && val != null)) : x));
     myPut(t, 'deco', list);
     clearTimeout(mySet.t);
-    mySet.t = setTimeout(saveNow, 700);
+    mySet.t = setTimeout(() => { mySet.t = 0; saveNow(); }, 700);
     myShowNow(t, false);
   }
   const MY_TAKE = { bar: ['bar'], menus: ['menu', 'prof', 'news'], pop: ['pop'], page: ['page', 'link', 'box'], foot: ['foot'], home: ['home'], boards: ['boards'] };   // (each tab's part of the page, and the parts of a theme of yours it is)
@@ -17276,7 +18522,7 @@
     const t = e.target.closest('[data-look], [data-lookback], [data-lookadd], [data-lookdel], [data-lookreset], [data-lookon], [data-lpclose], [data-lpfrom], [data-lpchar], [data-lppose], [data-lpback], [data-lpadd], [data-lookgo], [data-mywear], [data-mynew], [data-mycopy], [data-myren], [data-mydel], [data-mytab], [data-mycol], [data-myclear], [data-myicons], [data-mylogo], [data-mypat], [data-mypickclose], [data-mypatuse], [data-mypatadd], [data-mypaturlgo], [data-lookurlgo], [data-lookurlslot], [data-mypicuse], [data-mypicsave], [data-mypicdel], [data-mypicmore], [data-myboardcols], [data-myshow], [data-mycardfold], [data-mycardh], [data-mylook], [data-mylooknew], [data-mylookshow], [data-mylookmode], [data-mylookone], [data-mylookturn], [data-mylookren], [data-mylookcopy], [data-mylookdel], [data-mylookmakefrom], [data-mylookcol], [data-mylookpart], [data-mylookmake], [data-mylookcancel], [data-mytint], [data-tilepick], [data-myvary], [data-lookadj], [data-lookadjm], [data-lookadjreset], [data-lookadjdone], [data-myset], [data-myscene], [data-myexport], [data-myimport], [data-myimportopen], [data-myimpclose], [data-myimpfile], [data-myfile], [data-myfileall], [data-mysave], [data-mysaveback], [data-mysavedel], [data-myundo], [data-myredo], [data-myclearpart], [data-myturnkeep], [data-myturnback], [data-myaltshow], [data-myaltdel], [data-mydecoadd], [data-mydecodel], [data-mydecoset], [data-myuntake], [data-myfindgo]');
     if (!t) return;
     const d = t.dataset;
-    if ('lookgo' in d) { goPage('themes'); return; }
+    if ('lookgo' in d) { openHub('themes'); return; }
     if (d.lookadj) {   // (their size and place: the adjuster opens under the lists, or closes)
       const [slot, i] = d.lookadj.split(':');
       lookAdj = lookAdj && lookAdj.slot === slot && lookAdj.i === Number(i) ? null : { slot, i: Number(i) };
@@ -17331,7 +18577,8 @@
       const [slot, i] = d.lookdel.split(':'), list = lookOf(lookAt)[slot].slice(), [gone] = list.splice(Number(i), 1);
       const was = lookOf(lookAt)[slot];
       lookSet(lookAt, slot, list);
-      changed(`${gone === 'own' ? 'Neopets’ own' : (gone && gone.n) || 'They'} won’t stand there now`, () => { lookSet(lookAt, slot, was); lookDone(); });
+      const f = lookAt;
+      changed(`${gone === 'own' ? 'Neopets’ own' : (gone && gone.n) || 'They'} won’t stand there now`, () => { lookSet(f, slot, was); lookDone(); });
       if (lookAt === nbcTheme()) { footPals(); hubPal(); boardPal(); }
       return;
     }
@@ -17536,11 +18783,13 @@
     pop.style.top = `${Math.round(r.bottom - m.top + hub.main.scrollTop + 10)}px`;
     pop.style.left = `${Math.round(Math.max(12, Math.min(r.left - m.left + r.width / 2 - 34, hub.main.clientWidth - pop.offsetWidth - 12)))}px`;
     pop.style.setProperty('--at', `${Math.round(r.left - m.left + r.width / 2 - parseFloat(pop.style.left))}px`);
-    const ok = pop.querySelector('[data-warnok]');
-    ok.addEventListener('click', () => pop.remove());
+    const ok = pop.querySelector('[data-warnok]'), shut = () => { pop.remove(); document.removeEventListener('pointerdown', away, true); };
+    const away = (e) => { if (!pop.isConnected || !pop.contains(e.target)) shut(); };   // (a click anywhere else puts it away too)
+    ok.addEventListener('click', shut);
+    setTimeout(() => { if (pop.isConnected) document.addEventListener('pointerdown', away, true); }, 0);
     ok.focus({ preventScroll: true });
   }
-  const OFTEN = { nclEvery: { 1: 'about every minute', 2: 'about every 2 minutes' }, live: { 30: 'about every 30 seconds', 60: 'about every minute', 120: 'about every 2 minutes' }, boardLive: { 60: 'about every minute', 120: 'about every 2 minutes' } };   // (the choices that look often enough to say so)
+  const OFTEN = { nclEvery: { 2: 'about every 2 minutes' }, live: { 30: 'about every 30 seconds', 60: 'about every minute', 120: 'about every 2 minutes' }, boardLive: { 60: 'about every minute', 120: 'about every 2 minutes' } };   // (the choices that look often enough to say so)
   function oftenWarn(k, v) {   // (one of those, just picked: what it means)
     const how = (OFTEN[k] || {})[v];
     if (!how) return;
@@ -17559,7 +18808,7 @@
   }
   const hubTabbed = (p) => p[2] === 'menu' || (p[2] === 'folder' && p[0] !== 'dailies');
   function hubPageHtml(p) {   // (a page of these settings: a Menus or Folders one with its tabs on top)
-    const pages = { themes: () => { const h = themesPage(); queueMicrotask(() => { lookFigs(); lookTileFigs(); myPrevs(); lookAdjPaint(); }); return h; }, general: () => featuresPage('general'), neomail: () => featuresPage('neomail'), shops: () => featuresPage('shops'), tradingpost: tpHubPage, neochat: nclHubPage, nclthemes: () => { const h = nctPage(); queueMicrotask(nctMount); return h; }, otherpages: otherPagesPage, dailies: dailiesHubPage, backup: backupPage, updates: updatesPage, dti: dtiHubPage, clock: clockPage, reminders: remPage, randomevents: rePage, avatars: avPage, items: itemsHubPage, neoboards: nbHubPage, tabs: tabsPage };
+    const pages = { themes: () => { const h = themesPage(); if (!hubIndexing) queueMicrotask(() => { lookFigs(); lookTileFigs(); myPrevs(); lookAdjPaint(); }); return h; }, general: () => featuresPage('general'), neomail: () => featuresPage('neomail'), shops: () => featuresPage('shops'), tradingpost: tpHubPage, neochat: nclHubPage, nclthemes: () => { const h = nctPage(); queueMicrotask(nctMount); return h; }, otherpages: otherPagesPage, dailies: dailiesHubPage, backup: backupPage, updates: updatesPage, dti: dtiHubPage, clock: clockPage, reminders: remPage, randomevents: rePage, avatars: avPage, items: itemsHubPage, neoboards: nbHubPage, tabs: tabsPage };
     const tabs = hubTabbed(p) ? `<div class="bnp-subtabs" role="tablist" aria-label="${p[2] === 'menu' ? 'Menus' : 'Folders'}">${hubTabs(p[2]).map(([k, n]) => `<button type="button" role="tab" data-page="${k}" aria-selected="${k === p[0]}">${esc(n)}</button>`).join('')}</div>` : '';
     return tabs + (p[2] === 'menu' ? menuPage(p[0]) : pages[p[0]] ? pages[p[0]]() : folderPage(p[0]));
   }
@@ -17580,6 +18829,7 @@
     cutFill(hub.main);   // (pictures of yours with a character drawn on white: cut)
     if (p[0] === 'tabs') tabAfterPaint();
     if (p[0] === 'avatars') avAfterPaint();
+    if (p[0] === 'shops') npChartMount();
     if (p[2] === 'menu') paintPreview(p[0]);
     if (p[0] === 'clock') { const tick = () => { const b = hub.main.querySelector('[data-g="clockprev"]'); if (!b || !hub.win.classList.contains('open')) { clearInterval(paintHub.tick); return; } b.textContent = clockOn() ? clockText(S.features.clockZone === 'nst' ? LA : zoneNow(), S.features.clockZone === 'nst' ? 'NST' : '') : clockText(LA, 'NST'); }; tick(); paintHub.tick = setInterval(tick, 1000); }
   }
@@ -17599,7 +18849,7 @@
         : HUB_ICONS[p[0]] ? tabIconOf(HUB_ICONS[p[0]]) : p[2] === 'menu' ? tabIconOf(MENU_ICONS[p[0]] || ['nat:explore-icon']) : p[2] === 'folder' && FOLDERS[p[0]] ? tabIconOf(FOLDERS[p[0]].icon) : '';
     } catch (_) { u = ''; }
     if (!u) return;
-    h2.insertAdjacentHTML('afterbegin', `<i class="bnp-mhead-ic" data-crisp="${esc(u)}" data-trim style="background-image:url('${esc(cssUrl(u))}')" aria-hidden="true"></i>`);
+    h2.insertAdjacentHTML('afterbegin', `<i class="bnp-mhead-ic" data-crisp="${esc(u)}" data-crisp-px="32" data-trim style="background-image:url('${esc(cssUrl(u))}')" aria-hidden="true"></i>`);
     crispIn(h2);
   }
   function hubJumps() {   // (a long page: its parts as links along the top, staying there as you scroll)
@@ -17632,39 +18882,67 @@
     const words = (node) => [...node.childNodes].map((n) => (n.nodeType === 3 ? n.nodeValue : n.nodeType === 1 && !n.matches('small, .bnp-note, input, select, textarea, button, .bnp-ico, em') ? words(n) : '')).join('');
     return words(lab).replace(/\s+/g, ' ').trim();
   }
-  function hubFindIndex() {
-    if (hub.idx) return hub.idx;
-    const idx = [], tpl = document.createElement('template');
-    for (const p of PAGES) {
-      idx.push({ pos: idx.length, k: p[0], i: -1, t: p[1], d: '', c: '', n: hubNorm(p[1]) });
-      if (p[0] === 'mygames') continue;   // (its list of every game: only its name)
-      try { tpl.innerHTML = hubPageHtml(p); } catch (e) { report(e); continue; }
-      let card = '';
-      const seen = {};
-      for (const el of tpl.content.querySelectorAll(HUB_FIND_SEL)) {
-        if (el.matches('h4')) card = el.textContent.trim();
-        const t = hubTitle(el);
-        if (!t) continue;
-        const i = (seen[t] = (seen[t] ?? -1) + 1), small = el.querySelector('small'), d = small ? small.textContent.replace(/\s+/g, ' ').trim() : '';   // (i: which one of that name on its page)
-        idx.push({ pos: idx.length, k: p[0], i, t, d, c: el.matches('h4, h5') ? '' : card, n: hubNorm(`${t} ${d} ${card} ${p[1]}`) });
-      }
+  function hubFindPage(idx, p, tpl) {   // (one page's switches, fields and headings, into the list Find looks through)
+    idx.push({ pos: idx.length, k: p[0], i: -1, t: p[1], d: '', c: '', n: hubNorm(p[1]) });
+    if (p[0] === 'mygames') return;   // (its list of every game: only its name)
+    hubIndexing = true;
+    try { tpl.innerHTML = hubPageHtml(p); } catch (e) { report(e); return; } finally { hubIndexing = false; }   // (made only to be read: nothing it would start on its own page)
+    let card = '';
+    const seen = {};
+    for (const el of tpl.content.querySelectorAll(HUB_FIND_SEL)) {
+      if (el.matches('h4')) card = el.textContent.trim();
+      const t = hubTitle(el);
+      if (!t) continue;
+      const i = (seen[t] = (seen[t] ?? -1) + 1), small = el.querySelector('small'), d = small ? small.textContent.replace(/\s+/g, ' ').trim() : '';   // (i: which one of that name on its page)
+      idx.push({ pos: idx.length, k: p[0], i, t, d, c: el.matches('h4, h5') ? '' : card, n: hubNorm(`${t} ${d} ${card} ${p[1]}`) });
     }
-    for (const p of NBC_PARTS) idx.push({ pos: idx.length, k: 'neoboards', i: -2, part: p.k, t: `Board colours: ${p.l}`, d: p.w || '', c: 'Colours', n: hubNorm(`${p.l} ${p.w || ''} board colours colors colour color neoboards`) });   // (each part in the Board colours window)
-    return (hub.idx = idx);
+  }
+  function hubFindParts(idx) { for (const p of NBC_PARTS) idx.push({ pos: idx.length, k: 'neoboards', i: -2, part: p.k, t: `Board colours: ${p.l}`, d: p.w || '', c: 'Colours', n: hubNorm(`${p.l} ${p.w || ''} board colours colors colour color neoboards`) }); }
+  function hubFindIndex() {   // (all of it now: what's been made in quiet moments, and the rest)
+    if (hub.idx) return hub.idx;
+    const st = hub.idxPrep || { at: 0, idx: [], tpl: document.createElement('template') };
+    hub.idxPrep = null;
+    while (st.at < PAGES.length) hubFindPage(st.idx, PAGES[st.at++], st.tpl);
+    hubFindParts(st.idx);
+    return (hub.idx = st.idx);
+  }
+  function hubFindPrep() {   // (the list made a page at a time while nothing else is happening: typing in Find finds at once)
+    if (!hub || hub.idx || hub.idxPrep) return;
+    const st = hub.idxPrep = { at: 0, idx: [], tpl: document.createElement('template') }, later = window.requestIdleCallback ? (fn) => requestIdleCallback(fn, { timeout: 3000 }) : (fn) => setTimeout(fn, 60);
+    const step = (dl) => {
+      if (!hub || hub.idxPrep !== st || !hub.win.classList.contains('open')) return;
+      do { hubFindPage(st.idx, PAGES[st.at++], st.tpl); } while (st.at < PAGES.length && dl && dl.timeRemaining && dl.timeRemaining() > 6);
+      if (st.at < PAGES.length) { later(step); return; }
+      hubFindParts(st.idx);
+      hub.idx = st.idx;
+      hub.idxPrep = null;
+    };
+    later(step);
   }
   function hubFindHtml(q) {
     const words = hubNorm(q).split(' ').filter(Boolean), idx = hubFindIndex();
     const hits = idx.filter((x) => words.every((w) => x.n.includes(w)));
     const score = (x) => (words.every((w) => hubNorm(x.t).includes(w)) ? 0 : 1) + (x.i === -1 ? -1 : 0);   // (a page by that name, then what's called it, then what says it)
     hits.sort((a, b) => score(a) - score(b));
-    const res = words.map((w) => new RegExp('(' + w.replace(/[.*+?^$()|[\]\\{}]/g, '\\$&') + ')', 'gi'));
-    const mark = (s) => res.reduce((h, re) => h.replace(re, '<mark>$1</mark>'), esc(s));
+    const re = words.length ? new RegExp(`(${words.map((w) => w.replace(/[.*+?^$()|[\]\\{}]/g, '\\$&')).sort((a, b) => b.length - a.length).join('|')})`, 'gi') : null;
+    const mark = (s) => (re ? String(s).split(re).map((x, i) => (i % 2 ? `<mark>${esc(x)}</mark>` : esc(x))).join('') : esc(s));   // (all the words at once, over the text itself: never inside a mark)
     const name = (k) => (PAGES.find((p) => p[0] === k) || [k, k])[1];
     const byPage = new Map();
     for (const x of hits.slice(0, 60)) { if (!byPage.has(x.k)) byPage.set(x.k, []); byPage.get(x.k).push(x); }
     return `<div class="bnp-mhead"><h2>Find a setting</h2><span class="bnp-note">${hits.length ? `${hits.length} for “${esc(q)}”${hits.length > 60 ? ' (the first 60)' : ''}: click one to go to it` : ''}</span></div>
       ${hits.length ? [...byPage].map(([k, xs]) => `<h5>${esc(name(k))}</h5><div class="bnp-hits">${xs.map((x) => `<button type="button" class="bnp-hit" data-hubhit="${x.pos}"><b>${x.i === -1 ? `The ${esc(name(k))} page` : mark(x.t)}</b>${x.c ? `<em>${esc(x.c)}</em>` : ''}${x.d ? `<small>${mark(x.d.length > 150 ? `${x.d.slice(0, 149).replace(/\s+\S*$/, '')}…` : x.d)}</small>` : ''}</button>`).join('')}</div>`).join('')
         : `<p class="bnp-note">Nothing here says “${esc(q)}”. Try another word (a page’s name, like Shop Wizard, or what it does), or look through the list on the left.</p>`}`;
+  }
+  function hubAtFeat(page, k) {   // (Settings opened at one feature's switch: its page, its tab, scrolled to it, lit for a moment)
+    openHub(page);
+    const inp = hub.main.querySelector(`[data-feat="${k}"]`), el = inp && (inp.closest('.bnp-switch') || inp);
+    if (!el) return;
+    const pane = el.closest('[data-dpanel][hidden]');
+    if (pane) dtabShow(pane.dataset.dpanel);
+    el.scrollIntoView({ block: 'center' });
+    el.classList.remove('bnp-lit');
+    void el.offsetWidth;
+    el.classList.add('bnp-lit');
   }
   function hubFindGo(pos) {   // (a found one: its page, scrolled to it, lit for a moment)
     const x = (hub.idx || [])[pos];
@@ -17720,13 +18998,18 @@
     const hours = [...Array(24).keys()].map((h) => [h, `${h % 12 || 12} ${h < 12 ? 'am' : 'pm'}`]);
     const coming = remEvents(now, now + 48 * 3600000).filter((e) => e.at > now && !remFired()[e.key]).slice(0, 10);
     const lodge = Object.keys(get('lodge', {}) || {}).length, train = Object.keys(get('train', {}) || {}).length;
-    const custom = (R.custom || []).map((c) => `<div class="bnp-rc"><span class="bnp-ico" style="background-image:url('${esc(cssUrl(c.icon || iconOf(FOLDERS.dailies.icon)))}')"></span><span class="bnp-dname">${esc(c.label)}<small>${c.kind === 'once' ? `Once, ${new Date(c.at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}` : c.kind === 'every' ? `Every ${c.hours} hours` : `Every day at ${fmtNst(nstAtDay(0, c.mins || 0, now))} NST`}${c.href ? ` · ${esc(c.href)}` : ''}</small></span><button type="button" class="bnp-chip-x" data-rcdel="${esc(c.id)}" title="Delete it" aria-label="Delete ${esc(c.label)}">×</button></div>`).join('');
-    return `<div class="bnp-mhead"><h2>Reminders</h2><span class="bnp-note">A note when something on Neopets is due. Only one of your Neopets tabs says it.</span></div>
+    const custom = (R.custom || []).map((c) => `<div class="bnp-rc"><span class="bnp-ico" style="background-image:url('${esc(cssUrl(c.icon || iconOf(FOLDERS.dailies.icon)))}')"></span><span class="bnp-dname">${esc(c.label)}<small>${c.kind === 'once' ? `Once, ${new Date(c.at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}` : c.kind === 'every' ? `Every ${esc(String(c.hours))} hours` : `Every day at ${fmtNst(nstAtDay(0, c.mins || 0, now))} NST`}${c.href ? ` · ${esc(c.href)}` : ''}</small></span><button type="button" class="bnp-chip-x" data-rcdel="${esc(c.id)}" title="Delete it" aria-label="Delete ${esc(c.label)}">×</button></div>`).join('');
+    return `<div class="bnp-mhead"><h2>Reminders</h2><span class="bnp-note">A note when something on Neopets is due: one sound and one desktop notice, however many Neopets tabs you have open.</span></div>
       <div class="bnp-card">
         ${sw('on', 'Reminders', 'All of them, on or off.')}
         <div class="bnp-remhow"${R.on ? '' : ' hidden'}>
-          ${sw('popup', 'A pop-up on the page', 'In the corner under the top bar, in your theme: Go, Remind me in 10 minutes, or × to close it (⚙ opens these settings). Closed on one tab, it goes from all of them; opening the Dailies board puts the dailies’ ones away.')}
-          ${sw('sound', 'A sound', 'A little chime (the Snowager’s is icy). Browsers let a page play one only after you’ve clicked on it.')}
+          ${sw('popup', 'A pop-up on the page', 'In the corner under the top bar, in your theme, on each of your Neopets tabs and the pages you open next, till you close it or it’s no longer true (the Snowager awake, the daily done…): Go, Remind me in 10 minutes, or × (⚙ opens these settings). Closed on one tab, it goes from all of them; opening the Dailies board puts the dailies’ ones away.')}
+          ${sw('sound', 'A sound', 'Browsers let a page play one only once you’ve clicked on it: a tab you haven’t clicked in passes it to one you have.')}
+          <div class="bnp-remsnd"${R.sound ? '' : ' hidden'}>
+            <div class="bnp-f bnp-nclseg"><span>Which</span><span class="bnp-seg" role="group" aria-label="Which sound">${[['', 'Each its own', 'A chime; a bell for the ones with a deadline; an icy tinkle for the Snowager'], ...NCL_SOUNDS.filter(([v]) => v)].map(([v, l, tip]) => `<button type="button" data-rset="tone" data-v="${v}" aria-pressed="${(SOUNDS[R.tone] ? R.tone : '') === v}"${tip ? ` title="${tip}"` : ''}>${l}</button>`).join('')}</span></div>
+            <label class="bnp-f bnp-nclvol"><span>How loud</span><input type="range" min="5" max="100" step="5" data-rem="vol" value="${Math.round(remVol() * 100)}" aria-label="How loud reminders are"><output>${Math.round(remVol() * 100)}%</output></label>
+            <p class="bnp-note">Each one plays as you pick it, and again when you let go of How loud. NeoChat’s sound is its own, in Settings › NeoChat.</p>
+          </div>
           ${sw('desktop', 'A desktop notice', 'It shows even when Neopets is in a tab you aren’t looking at. Click it to go there.')}
           ${sw('quiet', 'Quiet hours', 'No sounds or desktop notices then (pop-ups still wait on the page). Your own clock:', ` <span class="bnp-inl">from ${sel('quietFrom', hours)} to ${sel('quietTo', hours)}</span>`)}
           <div class="bnp-tools"><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-rset="test">Try one now</button></div>
@@ -17755,6 +19038,7 @@
       <div class="bnp-card">
         ${sw('freebies', 'Monthly Freebies', 'On the 1st of each month.')}
         ${sw('advent', 'Advent Calendar', 'Each day in December.')}
+        ${sw('backup', 'A backup of your settings', 'Once a month, or once a week until you’ve saved your first: your settings live only in this browser.')}
       </div>
       <h5>Your own</h5>
       <div class="bnp-card">
@@ -17787,19 +19071,23 @@
     saveNow();
     remSchedule();
     if (k === 'on' || k === 'sound') soundReady();
+    if (k === 'vol') remSound(SOUNDS[S.rem.tone] ? S.rem.tone : 'chime', remVol());   // (heard at its new loudness)
     const keep = hub.main.scrollTop;
     paintHub();
     hub.main.scrollTop = keep;
   }
   function remShortcut(t) {
     const k = t.dataset.rset;
-    if (k === 'test') { remFire([{ key: 'test', kind: 'test', title: 'This is a reminder', text: 'They come like this: here, with a sound, and on your desktop.', icon: iconOf(FOLDERS.dailies.icon), board: true, sound: 'chime' }]); return; }
-    if (k === 'rcthis') { const i = hub.main.querySelector('[data-rc="href"]'); if (i) i.value = location.pathname + location.search; return; }
+    if (k === 'tone') { S.rem.tone = SOUNDS[t.dataset.v] ? t.dataset.v : ''; saveNow(); remSound(S.rem.tone || 'chime', remVol()); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return; }   // (heard as it's picked)
+    if (k === 'test') { remClose({ keys: ['test'] }); remFire([{ key: 'test', kind: 'test', title: 'This is a reminder', text: 'They come like this: here, with a sound, and on your desktop.', icon: iconOf(FOLDERS.dailies.icon), board: true, sound: 'chime' }], true); return; }
+    if (k === 'rcthis') { const i = hub.main.querySelector('[data-rc="href"]'); if (i) i.value = pageHere(); return; }
     if (k === 'rcadd') {
       const v = (n) => (hub.main.querySelector(`[data-rc="${n}"]`) || {}).value || '';
       const label = v('label').trim().slice(0, 60), kind = v('kind');
       if (!label) { toast('Say what it’s for first'); return; }
-      const c = { id: 'r' + uid(), label, href: v('href').trim(), kind };
+      const href = v('href').trim();
+      if (href && !safeHref(href)) { toast('That address can’t be opened: it needs to be a web page'); return; }
+      const c = { id: 'r' + uid(), label, href, kind };
       if (kind === 'daily') c.mins = Number(v('mins')) || 0;
       if (kind === 'every') { c.hours = Number(v('hours')) || 1; c.start = Date.now() + c.hours * 3600000; }
       if (kind === 'once') { c.at = new Date(v('at')).getTime(); if (!(c.at > Date.now())) { toast('Pick a time that’s still to come'); return; } }
@@ -17926,7 +19214,7 @@
     const kind = { ...RE_TAG, msg: 'Message' };
     const rows = [['When (your time)', 'When (NST)', 'Kind', 'What happened', 'Item', 'Neopoints', 'Land', 'Page']];
     for (const e of reLog()) rows.push([new Date(e.t).toLocaleString(), `${nstOf(e.t).day} ${fmtNst(e.t)}`, kind[e.k] || e.k, e.x, e.it || '', e.n ? `${e.n} ${e.cur || 'NP'}` : e.pct ? `-${e.pct}%` : '', e.land || '', e.p ? (/^https?:/.test(e.p) ? e.p : SITE + e.p) : '']);
-    const csv = '﻿' + rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const csv = '﻿' + rows.map((r) => r.map((c) => { const s = String(c), x = /^[=+\-@\t\r]/.test(s) && !/^-?[\d.,]+%?$/.test(s) ? `'${s}` : s; return `"${x.replace(/"/g, '""')}"`; }).join(',')).join('\r\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = `random-events-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -17976,7 +19264,7 @@
     try {
       const u = new URL(String(h || ''), SN + '/avatars/');
       if (!/^https?:$/.test(u.protocol)) return '';
-      if (/^(www\.)?neopets\.com$/i.test(u.hostname)) return u.pathname + u.search + u.hash;
+      if (/^(www\.)?neopets\.com$/i.test(u.hostname)) return u.pathname.replace(/^\/{2,}/, '/') + u.search + u.hash;   // (never //somewhere-else)
       if (/(^|\.)neopets\.com$/i.test(u.hostname) || /(^|\.)sunnyneo\.com$/i.test(u.hostname)) { u.protocol = 'https:'; return u.href; }
     } catch (_) { /* */ }
     return '';
@@ -18056,6 +19344,7 @@
       const top = avParse(await snGet(avPath(0, 1, 15, true)));
       const known = new Map(old.list.map((a) => [a.i, a]));
       const fresh = top.filter((a) => !known.has(a.i));
+      if (top.length && fresh.length === top.length) { await avFetchAll(); return; }   // (all 15 newest are new: there may be more, so all of it)
       if (fresh.length) {   // (new ones: each kind's newest few say where they go)
         const kinds = new Map(fresh.map((a) => [a.i, []]));
         avBusy.of = AV_KINDS.length;
@@ -18240,6 +19529,7 @@
     const icoTiles = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M1 1h6v6H1zm8 0h6v6H9zM1 9h6v6H1zm8 0h6v6H9z"/></svg>';
     const icoList = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M1 2h3v3H1zm5 .5h9v2H6zM1 6.5h3v3H1zm5 .5h9v2H6zM1 11h3v3H1zm5 .5h9v2H6z"/></svg>';
     const icoFind = '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M7 12.5a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11zm4-1.5 3.5 3.5"/></svg>';
+    const picksTop = S.features.avPicksAt === 'top';   // (Its picture in your menus: under the summary, or after the avatars)
     return `${head}
       <div class="bnp-avsum">
         <div class="bnp-avsum-big"><b>${sumHave.toLocaleString()}</b><span>of ${sumOf.toLocaleString()}</span></div>
@@ -18250,6 +19540,7 @@
         </div>
       </div>
       ${own}${avBusy ? '<p class="bnp-note bnp-avown">Looking for new avatars on SunnyNeo…</p>' : avErr ? `<p class="bnp-note bnp-avown">SunnyNeo’s list couldn’t be checked just now (${esc(avErr)}).</p>` : ''}
+      ${picksTop ? avPicks(D) : ''}
       <div class="bnp-retools bnp-avtools">
         <label class="bnp-avq">${icoFind}<input type="search" class="bnp-research" data-av-q value="${esc(v.q)}" placeholder="Find an avatar, or how it’s got…" aria-label="Find an avatar" spellcheck="false"></label>
         ${seg('avs', [['all', 'All'], ['need', 'Still to get', 'The ones you don’t have yet (not the retired ones)'], ['have', 'Yours']], 'Show')}
@@ -18261,7 +19552,7 @@
       </div>
       <div class="bnp-rechips bnp-avchips" data-g="avchips">${avChips(D, nNew)}</div>
       <div class="bnp-avlist" data-g="avlist">${avListHtml(D)}</div>
-      ${avPicks(D)}
+      ${picksTop ? '' : avPicks(D)}
       ${how}`;
   }
   function avRel() {   // (the newest avatar there is: the highest number on SunnyNeo's list)
@@ -18272,13 +19563,14 @@
     const on = ['worn', 'new', 'rel'].includes(S.features.avIcon) ? S.features.avIcon : 'worn', byF = new Map(D.list.map((a) => [avKey(a.f), a]));
     const w = avWorn(), n = avNewest(), r = avRel(), rd = r && D.list.find((a) => a.i === r.i);
     const one = (k, title, file, say) => { const a = file ? byF.get(avKey(file)) : null; return `<button type="button" class="bnp-avpick${on === k ? ' is-on' : ''}" data-featv="avIcon:${k}" aria-pressed="${on === k}"><span class="bnp-avt-pic"><img src="${esc(file ? avPic(file) : AV_DEFAULT_PIC)}" alt="" width="50" height="50"></span><span class="bnp-avpick-t"><small>${title}</small><b>${esc(a ? a.n : file ? avKey(file) : 'Not known yet')}</b><em>${say}</em></span>${on === k ? '<span class="bnp-avpick-on">In your menus</span>' : ''}</button>`; };
-    return `<div class="bnp-card bnp-avpicks"><h4>Its picture in your menus</h4><p class="bnp-note bnp-cardlead">Avatar Collection, in your menus, shows one of these: click one to choose it.</p>
+    const top = S.features.avPicksAt === 'top';
+    return `<div class="bnp-card bnp-avpicks${top ? ' is-top' : ''}"><h4>Its picture in your menus</h4><p class="bnp-note bnp-cardlead">Avatar Collection, in your menus, shows one of these: click one to choose it.</p>
       <div class="bnp-avpick-row">
         ${one('worn', 'The one you wear', w, w ? 'As last seen on your posts or pen' : 'Seen once you post, or visit Neoboard Settings')}
         ${one('new', 'Your newest', n, n ? 'The last one you got' : 'Known once Neoboard Settings is read')}
         ${one('rel', 'Newest released', r && r.f, !r ? 'Known once SunnyNeo’s list is here' : rd && rd.have ? '✓ Yours already' : 'Not yours yet')}
       </div>
-      ${r && rd && !rd.have ? `<p class="bnp-avpick-how"><button type="button" class="bnp-pillbtn" data-avgo="${r.i}">How to get ${esc(r.n)}</button></p>` : ''}
+      <div class="bnp-avpick-foot"><span class="bnp-avopt"><small>This card</small><span class="bnp-seg" role="group" aria-label="Where this card goes on the page"><button type="button" data-featv="avPicksAt:top" aria-pressed="${top}">At the top</button><button type="button" data-featv="avPicksAt:end" aria-pressed="${!top}">At the bottom</button></span></span>${r && rd && !rd.have ? `<button type="button" class="bnp-pillbtn" data-avgo="${r.i}">How to get ${esc(r.n)}</button>` : ''}</div>
     </div>`;
   }
   function avChips(D, nNew) {   // (a kind: yours of it / all of it, with a bar, and a tick once you have them all; one in several kinds counts under its main one, as its part of the page does)
@@ -18846,7 +20138,7 @@
     if (k === 'edit' && i >= 0) { tabEdit = id; const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; tabAfterPaint(); const f = hub.main.querySelector('[data-g="tbform"]'); if (f) f.scrollIntoView({ block: 'center' }); return; }
     if (k === 'del' && i >= 0) { const before = clone(T.rules); T.rules.splice(i, 1); if (tabEdit === id) tabEdit = null; tabsChanged('Deleted', () => { T.rules = before; tabsChanged(); }); return; }
     if ((k === 'up' || k === 'down') && i >= 0) { const j = i + (k === 'up' ? -1 : 1); if (j < 0 || j >= T.rules.length) return; [T.rules[i], T.rules[j]] = [T.rules[j], T.rules[i]]; tabsChanged(); return; }
-    if (k === 'sreset') { const before = clone(T.shops[tabShop]); delete T.shops[tabShop]; tabsChanged(`${TAB_SHOPS[tabShop]} is back to its own`, () => { T.shops[tabShop] = before; tabsChanged(); }); return; }
+    if (k === 'sreset') { const sid = tabShop, before = clone(T.shops[sid]); delete T.shops[sid]; tabsChanged(`${TAB_SHOPS[sid]} is back to its own`, () => { S.tabs.shops[sid] = before; tabsChanged(); }); return; }   // (Undo: that shop, whichever is chosen by then)
     if (k === 'import') { hub.main.querySelector('[data-tbf="file"]').click(); return; }
     if (k === 'export') {
       const data = { app: 'neotabs', from: APP, shopTabCustom: {}, shopTabCrop: {}, urlRules: T.rules.map(({ pattern, title, icon }) => ({ pattern, title, icon })) };
@@ -18877,14 +20169,19 @@
   }
   async function tabsImport(file) {   // (the Restock Highlighter's neotabs-rules.json: its shops and its address rules)
     const T = S.tabs, before = clone(T);
-    let d;
-    try { d = JSON.parse(await file.text()); } catch (_) { toast('That file isn’t one of these'); return; }
-    if (!d || typeof d !== 'object') { toast('That file isn’t one of these'); return; }
+    let d = null;
+    try { d = file.size > 2e6 ? null : JSON.parse(await file.text()); } catch (_) { d = null; }
+    if (!d || typeof d !== 'object' || Array.isArray(d)) { toast('That file isn’t one of these'); return; }
+    const own = (o) => !!o && typeof o === 'object' && !Array.isArray(o), known = (sid) => Object.prototype.hasOwnProperty.call(TAB_SHOPS, sid);   // (Neopets' own shops, by number)
+    const pic = (u) => (typeof u === 'string' && u.length < 2000 && /^https?:\/\/[^\s"'<>\\]+$/i.test(u) ? u : '');
     let shops = 0, rules = 0;
-    for (const [sid, o] of Object.entries(d.shopTabCustom || {})) { if (!o || typeof o !== 'object') continue; const s = T.shops[sid] || (T.shops[sid] = {}); if (o.title) s.title = String(o.title).slice(0, 60); if (o.icon && /^https?:\/\//i.test(o.icon)) s.icon = String(o.icon); shops++; }
-    for (const [sid, o] of Object.entries(d.shopTabCrop || {})) { if (!o || o.enabled === false || o.x == null) continue; const s = T.shops[sid] || (T.shops[sid] = {}); s.x = Math.max(0, Math.min(100, Number(o.x) || 0)); shops++; }
-    for (const o of d.urlRules || d.customPageTabs || []) { if (!o || !o.pattern || T.rules.some((x) => x.pattern === o.pattern)) continue; T.rules.push({ id: 'r' + uid(), pattern: String(o.pattern), title: String(o.title || '').slice(0, 60), icon: /^https?:\/\//i.test(o.icon || '') ? String(o.icon) : '' }); rules++; }
-    if (!shops && !rules) { toast('Nothing new in it'); return; }
+    try {
+      for (const [sid, o] of Object.entries(own(d.shopTabCustom) ? d.shopTabCustom : {})) { if (!known(sid) || !own(o)) continue; const s = T.shops[sid] || (T.shops[sid] = {}); if (o.title) s.title = String(o.title).slice(0, 60); if (pic(o.icon)) s.icon = pic(o.icon); shops++; }
+      for (const [sid, o] of Object.entries(own(d.shopTabCrop) ? d.shopTabCrop : {})) { if (!known(sid) || !own(o) || o.enabled === false || o.x == null) continue; const s = T.shops[sid] || (T.shops[sid] = {}); s.x = Math.max(0, Math.min(100, Number(o.x) || 0)); shops++; }
+      const list = Array.isArray(d.urlRules) ? d.urlRules : Array.isArray(d.customPageTabs) ? d.customPageTabs : [];
+      for (const o of list) { if (T.rules.length >= 200) break; if (!own(o) || typeof o.pattern !== 'string' || !o.pattern.trim() || o.pattern.length > 300 || T.rules.some((x) => x.pattern === o.pattern)) continue; T.rules.push({ id: 'r' + uid(), pattern: o.pattern, title: String(o.title || '').slice(0, 60), icon: pic(o.icon) }); rules++; }
+    } catch (e) { report(e); S.tabs = before; toast('That file couldn’t be read: nothing has changed'); return; }
+    if (!shops && !rules) { S.tabs = before; toast('Nothing new in it'); return; }
     tabsChanged(`Brought in: ${rules} rule${rules === 1 ? '' : 's'}, ${shops} shop setting${shops === 1 ? '' : 's'}`, () => { S.tabs = before; tabsChanged(); });
   }
   function clockPage() {
@@ -18892,7 +20189,9 @@
     const off = (z) => { try { return (new Intl.DateTimeFormat('en-US', { timeZone: z, timeZoneName: 'shortOffset' }).formatToParts(new Date()).find((x) => x.type === 'timeZoneName') || {}).value || ''; } catch (_) { return ''; } };
     const city = (z) => z.slice(z.indexOf('/') + 1).replace(/_/g, ' ').replace(/\//g, ' › ');
     const z = S.features.clockZone || 'nst';
-    const groups = [...zoneList()].map(([region, zones]) => `<optgroup label="${esc(region)}">${zones.map((x) => `<option value="${esc(x)}"${z === x ? ' selected' : ''}>${esc(city(x))} (${esc(off(x))})</option>`).join('')}</optgroup>`).join('');
+    const hour = Math.floor(Date.now() / 3600e3);   // (every zone's offset, worked out once an hour: there are hundreds)
+    if (!clockPage.zones || clockPage.zones.hour !== hour) clockPage.zones = { hour, list: [...zoneList()].map(([region, zones]) => [region, zones.map((x) => [x, `${city(x)} (${off(x)})`])]) };
+    const groups = clockPage.zones.list.map(([region, zones]) => `<optgroup label="${esc(region)}">${zones.map(([x, l]) => `<option value="${esc(x)}"${z === x ? ' selected' : ''}>${esc(l)}</option>`).join('')}</optgroup>`).join('');
     return `<div class="bnp-mhead"><h2>Clock</h2><span class="bnp-note">The clock in the top bar and in the side menu.</span></div>
       <div class="bnp-clockprev"><span>It shows</span><b data-g="clockprev"></b><small>Point at the clock to see NST.</small></div>
       <div class="bnp-card">
@@ -18906,7 +20205,7 @@
   // ---- a menu: its items to show, hide, move, rename and add to; and how it looks ----
   function nativeInfo(k) { return natNow().get(k) || null; }
   function natRemember() {   // (each of Neopets' own links in your menus: its name as Neopets has it now, kept for if Neopets ever takes it out. Saved only when one changes)
-    if (natNow().size < 8) return;   // (the menus aren't all here: nothing to learn)
+    if (natNow().size < 8 || document.documentElement.classList.contains('bnp-old')) return;   // (the menus aren't all here, or they're a kept copy: nothing to learn)
     let more = false;
     for (const list of Object.values(S.menus || {})) if (Array.isArray(list)) walk(list, (e) => { if (e.t !== 'n') return; const n = nativeInfo(e.k), l = n && String(n.label || '').trim().slice(0, 60); if (l && e.lbl !== l) { e.lbl = l; more = true; } });
     if (more) save();
@@ -19222,8 +20521,8 @@
       else if (e.t === 'n' || e.t === 'x') delete e.label;
     }
     if (t.dataset.field === 'href') {
-      if (e.t === 'l' && e.special === 'guild') set('guild', { ...(get('guild', null) || {}), url: v, none: false });
-      else if (v) e.href = v;
+      if (e.t === 'l' && e.special === 'guild') { if (!v || safeHref(v)) set('guild', { ...(get('guild', null) || {}), url: v, none: false }); }
+      else if (v && safeHref(v)) e.href = v;
     }
     clearTimeout(hubInput.t);
     hubInput.t = setTimeout(() => {
@@ -19310,6 +20609,7 @@
     if (box.dataset.kind === 'addlink') {
       const href = hrefIn.value.trim();
       if (!label || !href) { (label ? hrefIn : nameIn).focus(); toast('A link needs a name and an address'); return; }
+      if (!safeHref(href)) { hrefIn.focus(); toast('That address can’t be opened: it needs to be a web page'); return; }
       S.menus[m].push({ t: 'l', id: uid(), label, href, icon: icon || '' });
       changed(`Added ${label} at the end: drag it where you like`);
     } else {
@@ -19412,7 +20712,7 @@
 
   // ---- games: My Games (a folder on Games Room in the Games menu), every game's name and picture, a heart on each game's own page ----
   const GAME_STORE = 'bnp-games';
-  let GAMES, gameBusy = false, gameQ = '';
+  let GAMES, gameBusy = false, gameQ = '', gameTried = 0;
   const gamePic = (id) => `${NPI}games/pages/icons/sml/s-${id}.png`;
   const gameHref = (id) => `/games/game.phtml?game_id=${id}`;
   function gameList() {   // (every game Neopets lists, kept in this browser: only read when you choose games, so pages never wait on it)
@@ -19434,10 +20734,13 @@
   async function gameFetch() {   // (the High Scores page names every game; the classic games page a few more. Once a week at most)
     if (gameBusy) return;
     gameBusy = true;
+    gameTried = Date.now();
+    try { localStorage.setItem('bnp-games-try', String(gameTried)); } catch (_) { /* */ }
     try {
       const byId = new Map();
       for (const path of ['/games/hiscores.phtml', '/games/classic.phtml']) {
-        const r = await fetch(path, { credentials: 'include' });
+        const r = await fetch(SITE + path, { credentials: 'include' });
+        if (!r.ok) continue;
         for (const g of gameRead(new DOMParser().parseFromString(await r.text(), 'text/html'))) if (!byId.has(g.i)) byId.set(g.i, g);
       }
       if (byId.size >= 50) {
@@ -19488,7 +20791,8 @@
   }
   function gamesFolderPage() {
     const L = gameList(), fav = S.games, on = new Set(fav.map((g) => g.i));
-    if (!gameBusy && (!L || Date.now() - L.at > 7 * DAY_MS)) setTimeout(gameFetch, 0);
+    const tried = (() => { try { return Math.max(gameTried, Number(localStorage.getItem('bnp-games-try')) || 0); } catch (_) { return gameTried; } })(), missed = Date.now() - tried < 30 * 60e3;   // (tried a little while ago: not again yet)
+    if (!gameBusy && (!L || Date.now() - L.at > 7 * DAY_MS) && !missed && location.hostname === 'www.neopets.com') setTimeout(gameFetch, 0);
     return `<div class="bnp-mhead"><h2>My Games</h2><span class="bnp-note">The folder on Games Room in the Games menu: your favourite games, one click away. The heart on a game’s own page puts it in too.</span></div>
       <div class="bnp-card bnp-fcard"><h4>In the folder<span class="bnp-dcount">${fav.length}</span></h4>
         ${chips('games', fav.map((g) => g.i), (id) => gameName(id), (id) => gameIcon(id))}
@@ -19497,7 +20801,7 @@
       <div class="bnp-card bnp-fcard"><h4>Every game${L ? `<span class="bnp-dcount">${L.list.length}</span>` : ''}</h4>
         ${L ? `<div class="bnp-dfindrow"><div class="bnp-dfind"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m10.5 10.5 3.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input type="search" class="bnp-gq" data-gq value="${esc(gameQ)}" placeholder="Find a game: Meerca Chase, Kass Basher…" aria-label="Find a game" spellcheck="false" autocomplete="off"></div></div>
         <p class="bnp-note bnp-cardlead">A click puts a game in the folder, or takes it out.</p>
-        <div class="bnp-checks bnp-dpicks bnp-fpicks" data-g="gpick">${gamePickHtml(L, on)}</div>` : `<p class="bnp-note">${gameBusy ? 'Getting the list from the High Scores page…' : 'The list comes from the High Scores page.'}</p>`}
+        <div class="bnp-checks bnp-dpicks bnp-fpicks" data-g="gpick">${gamePickHtml(L, on)}</div>` : `<p class="bnp-note">${gameBusy ? 'Getting the list from the High Scores page…' : missed ? 'The High Scores page couldn’t be read just now: it’s tried again in a while.' : 'The list comes from the High Scores page.'}</p>`}
       </div>`;
   }
   function gamePickHtml(L, on) {
@@ -20047,9 +21351,9 @@
     if (k === 'untick') {
       const log = dlog(), today = nstDay(), before = clone(log);
       for (const id of Object.keys(log)) if (log[id].at && nstOf(log[id].at).day === today) delete log[id];
-      set('dlog', log);
+      set(dkey(), log);
       dailiesChanged();
-      changed('Today’s ticks are cleared', () => { DLOG = before; set('dlog', before); dailiesChanged(); changed(); });
+      changed('Today’s ticks are cleared', () => { DLOG = before; set(dkey(), before); dailiesChanged(); changed(); });
       return;
     }
     if (k === 'board') { closeHub(); openBoard(); return; }
@@ -20067,7 +21371,7 @@
       else dailyBulk(`taking out ${name}`, () => { S.dailies = S.dailies.filter((id) => !ids.includes(id)); }, `${name}: all out of your list`);
       return;
     }
-    if (k === 'dcthis') { const i = hub.main.querySelector('[data-dc="href"]'); if (i) i.value = location.pathname + location.search; return; }
+    if (k === 'dcthis') { const i = hub.main.querySelector('[data-dc="href"]'); if (i) i.value = pageHere(); return; }
     if (k === 'dcadd') {
       const val = (n) => (hub.main.querySelector(`[data-dc="${n}"]`) || {}).value || '';
       const label = val('label').trim().slice(0, 40), href = val('href').trim(), icon = val('icon').trim();
@@ -20156,6 +21460,7 @@
         <div class="bnp-f"><span>Their footers</span><span class="bnp-seg" role="group">${[['pop', 'Like Neopets’ pop-ups'], ['page', 'Like the foot of the page']].map(([v, l]) => `<button type="button" data-featv="hubFoot:${v}" aria-pressed="${(f.hubFoot || 'pop') === v}">${l}</button>`).join('')}</span></div>
         ${sw('hubPal', 'A Neopian in Settings’ corner', palNote())}
         ${sw('boardPal', 'A Neopian in the Dailies window’s corner', palNote('board'))}
+        ${sw('winBlur', 'Blur the page behind them', 'While Settings or the Dailies window is open, the page behind is blurred a little as well as darkened, so the window stands out. NeoChat leaves the page as it is.')}
       </div>`],
       ['shops', `<div class="bnp-card"><h4>Shops</h4>
         ${sw('shopDock', 'The Shop Dock', 'Your favourite shops in a little window, each as its shopkeeper: open it from the Shops menu and it stays open on every page until you close it. It fits itself beside the page; drag it anywhere else, fold it up, or close it. ✎ chooses your shops and sets how it looks (the tiles, and a colour of your own behind them); drag tiles into your own order.')}
@@ -20164,6 +21469,7 @@
       ['shops', `<div class="bnp-card"><h4>Bank and shop till</h4>
         ${sw('fillAll', '“All of it” in one click', 'Under the bank’s Deposit and Withdraw boxes and beside your shop till’s: a link with how much you have (on hand, in the bank, in the till) that fills it in. Neopets’ own button does the rest.')}
       </div>`],
+      ['shops', npCardHtml],   // (made only when its page shows)
       ['shops', `<div class="bnp-card"><h4>Stock Market</h4>
         ${sw('stocks', 'Buying and selling stocks, made easy', 'The full list marks the stocks at 15 NP (the lowest Neopets sells at), with Only 15 NP and Cheapest first, and a Buy by each one that fills in Neopets’ buy form: the ticker, 1,000 shares and about what it costs. Your portfolio marks each company at your selling price and shows what each has made in NP; Open every company shows all your shares at once, and All by each lot fills in its sell box. Neopets’ own buttons buy and sell.')}
         <label class="bnp-f"><span>Your selling price</span><select data-feat="stockSell">${[30, 40, 50, 60, 70, 80, 90, 100, 120, 150].map((n) => `<option value="${n}"${(Number(f.stockSell) || 60) === n ? ' selected' : ''}>${n} NP</option>`).join('')}</select><span class="bnp-note">and over: marked in your portfolio</span></label>
@@ -20186,6 +21492,9 @@
       ['otherpages', `<div class="bnp-card"><h4>Neopets’ Settings pages</h4>
         ${sw('set2', 'Settings in the boards’ look', 'Neopets’ own Settings (General, Account, Profile, Privacy, Email, Neoboards…) as cards in your theme, with switches for its tick boxes. General shows every site theme as its own swatch; Neoboards shows your posts as they’ll look while you change your avatar, NeoTitle, NeoHTML and signature, finds a NeoTitle by a few letters, and builds NeoHTML by clicking. Neopets’ own fields do the saving, as ever.')}
       </div>`],
+      ['otherpages', `<div class="bnp-card"><h4>User lookups</h4>
+        ${sw('lookup9999', 'Every lookup at place=9999', 'Every user lookup link on Neopets opens with place=9999 (Random Friend’s links too): the same page, without the captcha. DTI Enhance has the same switch; with both on, each leaves the other’s alone. Off: Neopets’ links as they are, from the next page.')}
+      </div>`],
       ['otherpages', `<div class="bnp-card"><h4>Search results</h4>
         ${sw('searchPage', 'A better search results page', 'Neopets’ search results as cards in parts (items, NC Mall, pets, places, games, Neopedia, trading cards…) with chips to show one part and a box to narrow them. Every item is one click from the Shop Wizard, Trading Post, Auctions, your SDB, itemdb or JellyNeo, and shows its rarity, value and shop right there. An item’s own page gets the same.')}
       </div>`],
@@ -20197,7 +21506,7 @@
       </div>`],
     ];
     const [h, note] = FEAT_PAGES[area] || ['', ''];
-    const body = cards.filter((c) => c[0] === area).map((c) => c[1]).join('');
+    const body = cards.filter((c) => c[0] === area).map((c) => (typeof c[1] === 'function' ? c[1]() : c[1])).join('');
     return inner ? body : `<div class="bnp-mhead"><h2>${h}</h2><span class="bnp-note">${note}</span></div>
       ${body}`;
   }
@@ -20222,7 +21531,9 @@
       if (k === 'fquest') paintFq();
       if (k === 'scView') { if (S.features.scView) scPage(); else scOff(); }
       if (k === 'hubPal') hubPal();
+      if (k === 'lookup9999') lookup9999();
       if (k === 'boardPal') boardPal();
+      if (k === 'winBlur') pageBlur();
       if (k === 'nmPopup' && !S.features.nmPopup) nmwClose();
       if (k === 'nmMini') nmMiniPaint();
       if (/^ncl/.test(k)) nclSettingsChanged(k);
@@ -20265,7 +21576,7 @@
   }
   function dtiHubPage() {   // (Enhance › DTI Enhance)
     const mine = dtiMine(), k = get('dtiv', {}) || {}, newest = k.v || '', newer = !!(mine && newest && verNewer(newest, mine));
-    if (Date.now() - (k.at || 0) >= 6 * 3600000) dtiNewest().then(() => { if (hub && hubPage === 'dti') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; } });
+    if (!hubIndexing && Date.now() - (k.at || 0) >= 6 * 3600000) dtiNewest().then(() => { if (hub && hubPage === 'dti') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; } });
     const when = k.at ? new Date(k.at).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '';
     return `<div class="bnp-mhead"><h2>DTI Enhance</h2><span class="bnp-note">Dress to Impress, made over: a script by the maker of ${esc(APP)}.</span></div>
       <div class="bnp-card"><h4>DTI Enhance</h4>
@@ -20296,20 +21607,24 @@
   }
   function backupPage() {
     return `<div class="bnp-mhead"><h2>Back up</h2><span class="bnp-note">Your menus, folders and features live only in this browser’s Tampermonkey: keep a copy, or take them to another browser.</span></div>
-      <div class="bnp-card"><h4>Save a backup</h4><p class="bnp-note">One small file with all of it.</p><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-bk="save">Save a backup</button></div>
+      ${(() => { const me = nclMe(), own = acctOwnOf(me); return `<div class="bnp-card"><h4>Your accounts</h4><p class="bnp-note">${me ? `This is <b>${esc(me)}</b>. ` : ''}Your accounts can share these settings (menus, themes, features and the rest), or this one can have its own: a copy of the shared ones to start with, yours to change. Each account always keeps its own dailies done.</p>
+        <div class="bnp-seg" role="group" aria-label="This account’s settings"><button type="button" data-bk="acct:shared" aria-pressed="${!own}">Shared with your other accounts</button><button type="button" data-bk="acct:own" aria-pressed="${own}">Its own</button></div>
+        ${own ? '<p class="bnp-note">Shared again any time: its own are kept for if you come back to them. <button type="button" class="bnp-pillbtn" data-bk="acctcopy">Start its own again from the shared ones</button></p>' : ''}</div>`; })()}
+      <div class="bnp-card"><h4>Save a backup</h4><p class="bnp-note">One small file with all of it. ${(() => { const at = Number(get('bkat', 0)) || 0, d = at ? Math.floor((Date.now() - at) / DAY_MS) : -1; return d < 0 ? 'None saved from this browser yet.' : `Your last one: ${d ? `${d} day${d === 1 ? '' : 's'} ago` : 'today'}.`; })()}</p><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-bk="save">Save a backup</button></div>
       <div class="bnp-card"><h4>Restore a backup</h4><p class="bnp-note">A backup file from here: its settings replace these (Undo after, for a few seconds).</p><input type="file" accept=".json,application/json" data-bk="file" hidden><button type="button" class="button-default__2020 button-yellow__2020 bnp-small" data-bk="restore">Restore a backup…</button></div>
-      <div class="bnp-card"><h4>Start over</h4><p class="bnp-note">Every menu back to how it started and the features to their first settings (your boards stay picked).</p><button type="button" class="button-default__2020 button-red__2020 bnp-small" data-bk="reset">Start over</button></div>`;
+      <div class="bnp-card"><h4>Start over</h4><p class="bnp-note">Every menu back to how it started and the features to their first settings. What you made stays: your themes, dailies, reminders, NeoTabs rules, games and boards.</p><button type="button" class="button-default__2020 button-red__2020 bnp-small" data-bk="reset">Start over</button></div>`;
   }
   document.addEventListener('click', (e) => {   // (the hub's other buttons: folder shortcuts, chips, backup)
     if (!hub || !(e.target instanceof Element) || !hub.win.contains(e.target)) return;
-    const t = e.target.closest('[data-dtab], [data-dedit], [data-secfold], [data-updnow], [data-dset], [data-bk], [data-unchip], [data-dcdel], [data-rset], [data-rcdel], button[data-re], [data-rek], [data-redel], button[data-tb], [data-avs], [data-avr], [data-avo], [data-avv], [data-avk], [data-avx], button[data-av], [data-avdo], [data-avgo], button[data-game], button[data-itk], button[data-its], button[data-ittest], button[data-itnc], button[data-nbh], button[data-nbov], [data-tablk], button[data-featv], button[data-tpforget], button[data-nclset], button[data-dtiv]');
+    const t = e.target.closest('[data-dtab], [data-dedit], [data-secfold], [data-updnow], [data-dset], [data-bk], [data-unchip], [data-dcdel], [data-rset], [data-rcdel], button[data-re], [data-rek], [data-redel], button[data-tb], [data-avs], [data-avr], [data-avo], [data-avv], [data-avk], [data-avx], button[data-av], [data-avdo], [data-avgo], button[data-game], button[data-itk], button[data-its], button[data-ittest], button[data-itnc], button[data-nbh], button[data-nbov], [data-tablk], button[data-featv], button[data-tpforget], button[data-nclset], button[data-dtiv], button[data-nclhb], button[data-nprange], button[data-npforget]');
     if (!t) return;
     if (t.dataset.nbh || t.dataset.nbov) { nbHubClick(t); return; }
     if (t.dataset.dtab) { dtabShow(t.dataset.dtab); return; }   // (another of the Dailies page's tabs)
     if (t.dataset.dedit) { e.preventDefault(); deditOpen(t, t.dataset.dedit, hub.win); return; }   // (a daily's own settings)
     if (t.dataset.secfold) { secFold(t.dataset.secfold); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return; }   // (a section folded away, or shown again)
     if ('updnow' in t.dataset) { t.disabled = true; t.textContent = 'Looking…'; updCheck(true).then((u) => { toast(!u ? 'GitHub couldn’t be reached just now: try again' : verNewer(u.v, myVersion()) ? `${APP} ${u.v} is out` : 'You have the newest'); if (hub && hubPage === 'updates') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; } }).catch(report); return; }   // (Updates: looked for now)
-    if (t.dataset.featv) { const [k, v] = t.dataset.featv.split(':'); S.features[k] = v; changed(); for (const h of $$('.bnp-hub-head')) { try { themeWin(h.parentElement); } catch (_) { /* */ } } if (/^ncl/.test(k)) nclSettingsChanged(k); oftenWarn(k, v); return; }   // (a choice of pills: this one)
+    if (t.dataset.nclhb) { const k = t.dataset.nclhb, hide = new Set(nclHideList()); if (hide.has(k)) hide.delete(k); else hide.add(k); S.features.nclHide = [...hide]; changed(); nclHeadPaint(); return; }   // (NeoChat's header: that button shown, or hidden)
+    if (t.dataset.featv) { const [k, v] = t.dataset.featv.split(':'); S.features[k] = v; changed(); for (const h of $$('.bnp-hub-head')) { try { themeWin(h.parentElement); } catch (_) { /* */ } } if (/^ncl/.test(k)) nclSettingsChanged(k); if (/^tp/.test(k) && tpOn()) { try { tpApply(); tpPaint(); } catch (e) { report(e); } } oftenWarn(k, v); if (k === 'avPicksAt' && v === 'top') { const c = hub.main.querySelector('.bnp-avpicks'); hub.main.scrollTop = 0; if (c) { c.scrollIntoView({ block: 'nearest' }); c.classList.add('bnp-lit'); } } return; }   // (a choice of pills: this one. The avatars' menu-picture card moved to the top: you go with it)   // (a choice of pills: this one)
     if (t.dataset.tablk) { S.features.tabLookup = t.dataset.tablk; lookupPick = null; changed(); tabsApply(true); return; }   // (a lookup's tab picture: this one, from now on)
     if (t.dataset.itk || t.dataset.itnc || 'ittest' in t.dataset) { itemsHubClick(t); return; }
     if (t.dataset.game) { const on = gameToggle(t.dataset.game); changed(`${gameName(t.dataset.game)} is ${on ? 'in My Games' : 'out of My Games'}`); return; }
@@ -20319,6 +21634,19 @@
     if ('dtiv' in t.dataset) { t.disabled = true; t.textContent = 'Looking…'; dtiNewest(true).then(() => { if (hub && hubPage === 'dti') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; } }); return; }   // (DTI Enhance's newest: looked for now)
     if (t.dataset.nclset === 'open') { closeHub(); nclOpen(); return; }
     if (t.dataset.nclset === 'looks') { openHub('nclthemes'); return; }
+    if (t.dataset.nclset === 'nfload') { nfLoadRun(); return; }
+    if (t.dataset.nclset === 'unmute') { nclMuteSet(t.dataset.k, false); if (ncl) { nclPaint(); nclBubPaint(); } const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return; }
+    if (t.dataset.nclset === 'snipdel') { const list = nclSnips().slice(); list.splice(Number(t.dataset.i), 1); S.nclSnips = list; saveNow(); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return; }
+    if (t.dataset.nprange) { try { localStorage.setItem('bnp-nprange', t.dataset.nprange); } catch (_) { /* */ } npRepaint(); return; }
+    if ('npforget' in t.dataset) {
+      if (!t.classList.contains('is-sure')) { t.classList.add('is-sure'); t.textContent = 'Click again: forget them'; setTimeout(() => { if (t.isConnected) { t.classList.remove('is-sure'); t.textContent = 'Forget them'; } }, 4000); return; }
+      try { localStorage.removeItem(nplKey()); } catch (_) { /* */ }
+      npRepaint();
+      toast('Your Neopoints’ history is forgotten (this account’s, in this browser)');
+      return;
+    }
+    if (t.dataset.nclset === 'size') { nclSizeReset(); toast('NeoChat’s window is its first size again'); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return; }
+    if (t.dataset.nclset === 'nfstop') { if (nfLoad) nfLoad.on = false; t.disabled = true; return; }
     if (t.dataset.nclset === 'forget') {   // (a second click to be sure: this account's conversations gone from here, not from Neopets)
       if (!t.classList.contains('is-sure')) { t.classList.add('is-sure'); t.textContent = 'Click again: forget them all'; setTimeout(() => { if (t.isConnected) { t.classList.remove('is-sure'); t.textContent = 'Forget what it’s kept'; } }, 4000); return; }
       const all = nclAll(); delete all[nclMe()]; set('ncl', all); if (ncl) nclPaint(); toast('NeoChat’s conversations are forgotten (your Neomail is still on Neopets)'); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep;
@@ -20354,11 +21682,25 @@
       return;
     }
     const k = t.dataset.bk;
+    if (k === 'acct:own' || k === 'acct:shared' || k === 'acctcopy') {   // (this account's settings: its own, or shared again)
+      const me = nclMe();
+      if (!me) { toast('Neopets hasn’t said which account this is here: open any Neopets page, then try again'); return; }
+      const own = { ...(get('acctown', {}) || {}) };
+      if (k === 'acctcopy' || (k === 'acct:own' && !get(`settings@${me}`, null))) set(`settings@${me}`, clone(get('settings', null) || S));   // (a copy of the shared ones to start with)
+      if (k === 'acct:own' || k === 'acctcopy') own[me] = 1; else delete own[me];
+      set('acctown', own);
+      SKEY = own[me] ? `settings@${me}` : 'settings';
+      settingsWatch();
+      settingsNow(get(SKEY, null) || clone(S));
+      toast(k === 'acct:shared' ? `${me} shares the settings again` : k === 'acctcopy' ? `${me}’s own settings start again from the shared ones` : `${me} has settings of its own now: change anything, the other accounts keep theirs`);
+      return;
+    }
     if (k === 'save') {
       const data = { app: 'beta-nav', v: 3, at: Date.now(), settings: S, open: OPEN, nb: { marks: nbMarks(), people: nbPeople() }, themesaves: get('themesaves', {}), mypics: get('mypics', []), ncl: nclAll() };   // (with your Neoboards bookmarks and people, your themes' saved versions, Your pictures and NeoChat's conversations)
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
       a.download = `beta-nav-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      set('bkat', Date.now());   // (the backup reminder counts from here)
       document.body.append(a);
       a.click();
       a.remove();
@@ -20368,8 +21710,9 @@
     else if (k === 'reset') {
       armed(t, () => {
         const before = clone(S);
-        S = tidy({ ...fresh(), boards: S.boards.slice(), features: { ...FEAT, pinned: S.features.pinned } });
-        changed('Everything is back to how it started', () => { S = before; changed(); });
+        const mine = { boards: S.boards, myThemes: S.myThemes, wear: S.wear, nclThemes: S.nclThemes, nclWear: S.nclWear, looks: S.looks, dailies: S.dailies, dailyGroups: S.dailyGroups, dailyCustom: S.dailyCustom, dailyArt: S.dailyArt, dailyIcon: S.dailyIcon, dailyLimit: S.dailyLimit, dailySaves: S.dailySaves, dailyLayout: S.dailyLayout, games: S.games, tabs: S.tabs, guild: S.guild, nclSnips: S.nclSnips, rem: { custom: (S.rem && S.rem.custom) || [] } };   // (what you made: kept)
+        S = tidy({ ...fresh(), ...clone(mine), features: { ...FEAT, pinned: S.features.pinned } });
+        changed('Menus and features are back to how they started: what you made is kept', () => { S = before; changed(); });
       });
     }
   });
@@ -20378,22 +21721,31 @@
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
     if (!file) return;
+    let data = null;
+    try { data = file.size > 8e6 ? null : JSON.parse(await file.text()); } catch (_) { data = null; }
+    if (!myPlain(data) || data.app !== 'beta-nav' || !myPlain(data.settings) || data.settings.v !== 3) { toast(`That file isn’t a ${APP} backup`); return; }
+    const before = clone(S), openBefore = clone(OPEN), nbBefore = { marks: nbMarks(), people: clone(nbPeople()) };
+    const savesBefore = get('themesaves', {}), picsBefore = get('mypics', null), nclBefore = nclAll();
+    const nbPut = (nb) => { if (!myPlain(nb)) return; if (Array.isArray(nb.marks)) set('nbmarks', nb.marks.filter(myPlain).slice(0, 2000)); if (myPlain(nb.people)) { set('nbpeople', nb.people); NBP = null; } };
+    const back = () => { S = before; OPEN = openBefore; set('open', OPEN); nbPut(nbBefore); set('themesaves', savesBefore); set('mypics', picsBefore || []); set('ncl', nclBefore); };   // (as it all was: Your pictures too, even none)
     try {
-      const data = JSON.parse(await file.text());
-      if (!data || data.app !== 'beta-nav' || !data.settings || data.settings.v !== 3) throw new Error('not ours');
-      const before = clone(S), openBefore = clone(OPEN), nbBefore = { marks: nbMarks(), people: clone(nbPeople()) };
-      S = tidy(data.settings);
+      const next = tidy(data.settings);   // (everything checked before anything here changes)
+      next.nclThemes = next.nclThemes.map((t) => ({ ...t, v: nctClean(t.v) }));
+      const saves = {};
+      if (myPlain(data.themesaves)) for (const [id, list] of Object.entries(data.themesaves)) if (/^t[a-z0-9]+$/.test(id) && Array.isArray(list)) { const base = (next.myThemes.find((x) => x.id === id) || {}).base || 'basic', kept = list.slice(0, 60).map((s) => mySaveClean(s, base)).filter(Boolean); if (kept.length) saves[id] = kept; }
+      const open = myPlain(data.open) ? Object.fromEntries(Object.entries(data.open).filter(([k, x]) => k.length < 80 && (typeof x === 'number' || typeof x === 'boolean'))) : null;
+      const pics = Array.isArray(data.mypics) ? data.mypics.filter((x) => x && typeof x.u === 'string' && PIC_URL.test(x.u)).slice(0, MY_PICS_MAX) : null;
+      const chats = myPlain(data.ncl) ? nclMerge(clone(nclBefore), data.ncl) : null;   // (NeoChat's conversations: added to these, never in their place)
+      S = next;
       addNewDefaults();
-      if (data.open && typeof data.open === 'object') { OPEN = data.open; set('open', OPEN); }
-      const nbPut = (nb) => { if (!nb || typeof nb !== 'object') return; if (Array.isArray(nb.marks)) set('nbmarks', nb.marks); if (nb.people && typeof nb.people === 'object' && !Array.isArray(nb.people)) { set('nbpeople', nb.people); NBP = null; } };
+      if (open) { OPEN = open; set('open', OPEN); }
       nbPut(data.nb);
-      const savesBefore = get('themesaves', {}), picsBefore = get('mypics', null), nclBefore = nclAll();
-      if (data.ncl && typeof data.ncl === 'object') set('ncl', nclMerge(clone(nclBefore), data.ncl));   // (NeoChat's conversations: added to these, never in their place)
-      if (data.themesaves && typeof data.themesaves === 'object' && !Array.isArray(data.themesaves)) set('themesaves', data.themesaves);
-      if (Array.isArray(data.mypics)) set('mypics', data.mypics.filter((x) => x && typeof x.u === 'string' && PIC_URL.test(x.u)).slice(0, MY_PICS_MAX));
-      changed('Restored', () => { S = before; OPEN = openBefore; set('open', OPEN); nbPut(nbBefore); set('themesaves', savesBefore); if (picsBefore) set('mypics', picsBefore); set('ncl', nclBefore); changed(); });
+      if (chats) set('ncl', chats);
+      if (myPlain(data.themesaves)) set('themesaves', saves);
+      if (pics) set('mypics', pics);
+      changed('Restored', () => { back(); changed(); });
       if (ncl) nclPaint();
-    } catch (_) { toast(`That file isn’t a ${APP} backup`); }
+    } catch (err) { report(err); try { back(); changed(); } catch (_) { /* */ } toast('That backup couldn’t be restored: nothing has changed'); }
   });
   (function chipDrag() {   // (dragging chips to reorder boards and dailies)
     let from = null;
@@ -20430,9 +21782,10 @@
   // Old pages in the beta look: the bar, side menu and footer from the last beta page you were on, your theme's background,
   // and the page's own content in the middle. The page holds back a moment for its new look, so the old one never flashes
   // ═══════════════════════════════════════════════════════════════════════════
-  const CHROME_V = 2;
+  const CHROME_V = 3;   // (3: whose bar it is)
   const isLookup = () => /^\/(userlookup|petlookup)\.phtml$/i.test(location.pathname);
   function wantOld() {
+    if (location.hostname !== 'www.neopets.com' || /^\/~/.test(location.pathname)) return false;   // (a petpage is its owner's; other Neopets addresses have no old pages)
     if (S.features.qr && location.pathname === '/quickref.phtml') return true;   // (QuickRef always has it)
     if (S.features.poundPages && isPoundPage()) return true;   // (so do the Pound's adopt and transfer pages)
     if (nmOn() || (S.features.nm2 && nmNeoChat())) return true;   // (and every Neomail page, for Neomail 2; NeoChat's too, in the same frame, its insides left to it)
@@ -20445,39 +21798,55 @@
     if (!document.getElementById('navtop__2020') || !document.getElementById('container__2020') || !document.getElementById('navprofiledropdown__2020')) return;
     const css = $$('link[rel="stylesheet"]').map((l) => l.href).filter((h) => /\/themes\/h5\/(common\/(navigation|template)\.css|[^/]+\/theme-[^/?]+\.css)/.test(h));
     const js = $$('script[src]').map((s) => s.src).filter((s) => /\/themes\/h5\/common\/js\/header\.js/.test(s));
-    const prev = get('chrome', null);
-    if (prev && prev.v === CHROME_V && Date.now() - (prev.at || 0) < 30 * 60e3 && (prev.css || []).join() === css.join() && prev.box && 'img' in prev.box) return;   // (kept fresh: every half hour, or at once when the theme changes)
+    const prev = get('chrome', null), wornId = (myWorn() || {}).id || '', who = nbMe();
+    if (!who) return;   // (whose bar it is, or none kept: an old page shows it only to the same account)
+    if (prev && prev.v === CHROME_V && prev.who === who && Date.now() - (prev.at || 0) < 30 * 60e3 && (prev.css || []).join() === css.join() && prev.box && 'img' in prev.box && prev.bgOf === wornId) return;   // (kept fresh: every half hour, or at once when the theme changes, yours or Neopets', or another account is on)
     const grab = (sel, keepStyle) => {
       const el = $(sel);
       if (!el) return '';
       const c = el.cloneNode(true);
-      c.querySelectorAll('script, noscript, [data-bnp], .neofriendStatus, .neofriendsOnline').forEach((x) => x.remove());
+      for (const a of c.querySelectorAll('[data-bnp] a[href]:not([data-bnp])')) {   // (Neopets' own links in a folder of yours: back in their menu, so an old page's menus find them)
+        let box = null;
+        for (let p = a.parentElement; p && p !== c; p = p.parentElement) if (p.hasAttribute('data-bnp')) box = p;
+        if (!box || !box.parentElement) continue;
+        box.before(a);
+        a.classList.remove('bnp-hide');
+        for (const x of a.querySelectorAll('.bnp-sub, .bnp-hide')) x.classList.remove('bnp-sub', 'bnp-hide');
+      }
+      c.querySelectorAll('script, noscript, [data-bnp], .neofriendStatus, .neofriendsOnline, input[name="_ref_ck"]').forEach((x) => x.remove());
       [c, ...c.querySelectorAll('.nav-dropdown-active, .nav-dropdown-arrow-rotate, .bnp-pinned')].forEach((x) => x.classList.remove('nav-dropdown-active', 'nav-dropdown-arrow-rotate', 'bnp-pinned', 'nav-profile-locked'));
+      for (const x of [c, ...c.querySelectorAll('[href], [action], [src]')]) for (const at of ['href', 'action', 'src']) {   // (the page's token never kept: taken out of every address)
+        const v = x.getAttribute(at);
+        if (!v || !/_ref_ck/i.test(v)) continue;
+        try { const u = new URL(v, location.href); u.searchParams.delete('_ref_ck'); x.setAttribute(at, u.origin === location.origin ? u.pathname + u.search + u.hash : u.href); } catch (_) { x.removeAttribute(at); }
+      }
       if (!keepStyle) c.removeAttribute('style');
-      return c.outerHTML.replace(/([?&])_ref_ck=[^"'&\s]*/gi, '$1');
+      return c.outerHTML.replace(/([?&]|&amp;)_ref_ck=[^"'&\s<]*/gi, '$1').replace(/(_ref_ck['"]?\s*[:=]\s*['"]?)[0-9a-f]{16,}/gi, '$1');   // (and any left in the writing)
     };
     const bs = getComputedStyle(document.body), box = getComputedStyle(document.getElementById('container__2020'));
     const snap = {
       v: CHROME_V, at: Date.now(), css, js,
       top: grab('#navtop__2020', true), bottom: grab('#navbottom__2020', true), side: grab('#navprofiledropdown__2020', true),
       news: grab('#navnewsdropdown__2020', true), money: grab('.navsub-right__2020'), footer: grab('#footer__2020', true),
-      bg: myWorn() && prev && Array.isArray(prev.bg) ? prev.bg : ['backgroundColor', 'backgroundImage', 'backgroundSize', 'backgroundRepeat', 'backgroundPosition', 'backgroundAttachment'].map((p) => bs[p]),   // (under a theme of yours: your account's own, kept from before; yours draws itself)
-      box: { bg: box.backgroundColor, img: box.backgroundImage, size: box.backgroundSize, rep: box.backgroundRepeat, pos: box.backgroundPosition, radius: box.borderTopLeftRadius, side: `${box.borderLeftWidth} ${box.borderLeftStyle} ${box.borderLeftColor}`, shadow: box.boxShadow },
+      who, bg: ['backgroundColor', 'backgroundImage', 'backgroundSize', 'backgroundRepeat', 'backgroundPosition', 'backgroundAttachment'].map((p) => (p === 'backgroundImage' && /\bblob:/.test(bs[p]) ? 'none' : bs[p])), bgOf: wornId,   // (the page's background as it is, and which theme of yours it was under ('' none): an old page uses it only while that's so)
+      box: { bg: box.backgroundColor, img: /\bblob:/.test(box.backgroundImage) ? 'none' : box.backgroundImage, size: box.backgroundSize, rep: box.backgroundRepeat, pos: box.backgroundPosition, radius: box.borderTopLeftRadius, side: `${box.borderLeftWidth} ${box.borderLeftStyle} ${box.borderLeftColor}`, shadow: box.boxShadow },
     };
     if (snap.top && snap.side) set('chrome', snap);
   }
   function oldCss(snap) {   // (the old layout's own top, sidebar and footer step aside; its box becomes the beta page's)
-    const [bgc, bgi, bgs, bgr, bgp, bga] = snap.bg || [];
+    const sameBg = 'bgOf' in snap && snap.bgOf === ((myWorn() || {}).id || '') && !snap.bgOf;   // (the background kept is your account's own, as it is now: a theme of yours draws its own; one kept under another, the sheets draw)
+    const [bgc, bgi, bgs, bgr, bgp, bga] = sameBg ? snap.bg || [] : [];
     const box = snap.box || {}, clear = (c) => !c || /rgba\([^)]*,\s*0\)|transparent/.test(c);
+    const mine = myWorn(), ownBox = !!mine && myBoxOwn(myLive(mine));   // (a theme of yours with a box of its own draws it here itself, as on any page)
     // (the beta box: since Oct 2026 a wash of your theme's colour fading to white, drawn as a picture over no colour; before, plain
     // white. A box that would come out see-through is white)
-    const boxBg = box.img && box.img !== 'none'
+    const boxBg = ownBox ? '' : box.img && box.img !== 'none' && !/\bblob:/.test(box.img)
       ? `background-color: ${clear(box.bg) ? 'transparent' : box.bg} !important; background-image: ${box.img} !important; background-size: ${box.size || 'auto'} !important; background-repeat: ${box.rep || 'repeat'} !important; background-position: ${box.pos || '0 0'} !important;`
       : `background: ${clear(box.bg) ? '#fff' : box.bg} !important;`;
     return `
       html.bnp-oldwait body, html.bnp-qrwait td.content { visibility: hidden !important; }
       html.bnp-old body { margin: 0 !important; }
-      html:not(.bnp-my).bnp-old body { margin: 0 !important; background-color: ${bgc || '#fff'} !important; background-image: ${bgi || 'none'} !important; background-size: ${bgs || 'auto'} !important; background-repeat: ${bgr || 'repeat'} !important; background-position: ${bgp || '0 0'} !important; background-attachment: ${bga || 'scroll'} !important; }
+      ${sameBg ? `html:not(.bnp-my).bnp-old body { margin: 0 !important; background-color: ${bgc || '#fff'} !important; background-image: ${bgi || 'none'} !important; background-size: ${bgs || 'auto'} !important; background-repeat: ${bgr || 'repeat'} !important; background-position: ${bgp || '0 0'} !important; background-attachment: ${bga || 'scroll'} !important; }` : ''}
       html.bnp-old #header, html.bnp-old #footer, html.bnp-old #ban, html.bnp-old td.sidebar, html.bnp-old #pushdown_banner { display: none !important; }
       html.bnp-old #main { position: relative !important; top: 0 !important; left: 0 !important; width: 1080px !important; max-width: calc(100vw - 16px) !important; min-height: calc(100vh - 110px); margin: 10px auto 0 !important; padding: 104px 0 64px !important; box-sizing: border-box !important; ${boxBg} border: 0 !important; border-left: ${box.side || '0 none'} !important; border-right: ${box.side || '0 none'} !important; border-radius: ${box.radius || '0'} !important; box-shadow: ${box.shadow || 'none'} !important; }
       html.bnp-old #navtop__2020, html.bnp-old #navbottom__2020, html.bnp-old #navprofiledropdown__2020, html.bnp-old #navnewsdropdown__2020, html.bnp-old #footer__2020 { text-align: left; }
@@ -20500,6 +21869,7 @@
     }
     const root = document.documentElement;
     root.classList.add('bnp-oldwait');
+    setTimeout(() => root.classList.remove('bnp-oldwait'), 2500);   // (never kept hidden for long, whatever happens below)
     const st = document.createElement('style');
     st.id = 'bnp-old-style';
     st.textContent = oldCss(snap);
@@ -20563,6 +21933,10 @@
   }
   function finishOld() {   // (the page has loaded: its footer, fresh numbers, and Neopets' own menu code)
     if (!oldSnap) return;
+    const head = document.getElementById('header'), me = head && head.querySelector('.user a[href*="userlookup.phtml"][href*="user="]');
+    let who = '';
+    try { who = me ? decodeURIComponent((/[?&]user=([^&#]+)/.exec(me.getAttribute('href')) || [])[1] || '').toLowerCase() : ''; } catch (_) { /* */ }
+    if (head && who !== (oldSnap.who || '')) { set('chrome', null); undoOld(); return; }   // (the kept bar is another account's, or you're logged out: this page as Neopets made it, till a beta page of this account's is seen)
     if (!document.getElementById('main') || !document.getElementById('navtop__2020') || !document.getElementById('content')) { undoOld(); return; }
     if (oldSnap.footer && !document.getElementById('footer__2020')) { document.body.insertAdjacentHTML('beforeend', oldSnap.footer); document.body.lastElementChild.setAttribute('data-bnp-old', ''); }
     refreshFromOld();
@@ -20591,7 +21965,7 @@
     }
   }
   function tickClocks() {   // (old pages tick one clock: the bar's other one keeps time with it)
-    if (clockOn()) return;
+    if (clockOn()) { if (!clockWrapped) paintClock(); return; }   // (your own clock: ticked here when Neopets' own clock isn't on the page to tick it)
     const src = document.getElementById('nst');
     if (!src) return;
     for (const el of document.getElementsByClassName('nst')) if (el !== src && el.innerHTML !== src.innerHTML) el.innerHTML = src.innerHTML;
@@ -20611,7 +21985,7 @@
   }
   function serverSkew() {   // (how far this computer's clock is from Neopets', read off Neopets' own clock on the page)
     const P = PAGE, h = Number(P.nh), m = Number(P.nm), s = Number(P.ns), a = String(P.na || '');
-    if (![h, m, s].every(Number.isFinite) || !/^(am|pm)$/i.test(a)) return 0;
+    if (![h, m, s].every(Number.isFinite) || !/^(am|pm)$/i.test(a)) return null;   // (not on the page yet: read again later)
     const server = ((h % 12) + (/pm/i.test(a) ? 12 : 0)) * 3600 + m * 60 + s;
     let d = server - secsIn(LA, new Date());
     if (d > 43200) d -= 86400;
@@ -20713,7 +22087,7 @@
       tc.update = function () { const r = orig.apply(this, arguments); try { paintClock(); } catch (_) { /* */ } return r; };
       clockWrapped = true;
     }
-    if (clockSkew == null) clockSkew = serverSkew();
+    if (clockSkew == null) clockSkew = serverSkew();   // (null till Neopets' clock is there to read)
     paintClock();
   }
   const isClock = (el) => el instanceof Element && el.closest('.nst, #nst, .nav-top-nst');
@@ -21070,15 +22444,14 @@
     @media (max-width: 560px) { .bqr-cards { grid-template-columns: 1fr; } .bqr-card-body { grid-template-columns: 1fr; } .bqr-pic img { margin: auto; } }
     .bnp-notice { position: fixed; z-index: 2147482500; top: 78px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; width: max-content; max-width: min(720px, calc(100vw - 24px)); padding: 10px 12px 10px 16px; border: 2px solid rgba(0, 0, 0, .25); border-radius: 12px; background: #fffbe6; color: #363636; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); font: 13px/1.45 "MuseoSansRounded500", Arial, sans-serif; text-align: left; }
     .bnp-notice b { flex: none; font: 15px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
-    .bnp-notice button { flex: none; width: 26px; height: 26px; margin: 0; padding: 0; border: 0; border-radius: 6px; background: none; color: inherit; font: 20px/1 Arial, sans-serif; cursor: pointer; opacity: .6; }
-    .bnp-notice button:hover { opacity: 1; background: rgba(0, 0, 0, .08); }
+    .bnp-notice button:not(.button-default__2020) { flex: none; width: 26px; height: 26px; margin: 0; padding: 0; border: 0; border-radius: 6px; background: none; color: inherit; font: 20px/1 Arial, sans-serif; cursor: pointer; opacity: .6; }
+    .bnp-notice button:not(.button-default__2020):hover { opacity: 1; background: rgba(0, 0, 0, .08); }
     .bnp-notice.bnp-updnote { flex-wrap: wrap; row-gap: 6px; }
     .bnp-notice.bnp-copybox { z-index: 2147483100; flex-wrap: wrap; row-gap: 6px; width: min(560px, calc(100vw - 24px)); }   /* (a code to copy yourself) */
     .bnp-notice.bnp-copybox textarea { flex: 1 1 100%; order: 3; height: 90px; margin: 0; padding: 6px 8px; border: 1px solid #cfc7b0; border-radius: 8px; font: 12px/1.35 Consolas, monospace; resize: vertical; }
     .bnp-notice.bnp-copybox > span { order: 4; font-size: 12.5px; }   /* (an update: its buttons, and what's new under them) */
     .bnp-notice.bnp-updnote button.bnp-linkbtn { width: auto; height: 26px; padding: 0 12px; border: 1px solid #d3ccb7; border-radius: 999px; background: #faf9f5; box-shadow: 0 2px 0 #e4dece; color: #4a4536; font: 12.5px/1 "MuseoSansRounded700", Arial, sans-serif; opacity: 1; }
     .bnp-notice.bnp-updnote a.bnp-small, .bnp-notice.bnp-updnote button.bnp-small { flex: none; width: auto; height: auto; margin: 0; padding: 3px 16px 5px; border-radius: 999px; text-decoration: none; font: 14px "Cafeteria", Arial, sans-serif; opacity: 1; }
-    .bnp-notice.bnp-updnote button.bnp-small:hover { background: revert-layer; }
     .bnp-hub a.bnp-pillbtn { text-decoration: none; color: #4a4536; }
     .bnp-updnote .bnp-updnotes { flex: 1 1 100%; margin: 2px 0 0; padding: 0 0 0 20px; font-size: 12.5px; }
     .bnp-hub h5.bnp-sechead { align-items: center; }   /* (a section that folds away) */
@@ -21330,8 +22703,26 @@
     .bnp-linkbtn:hover, .bnp-linkbtn:focus-visible, .bnp-nbc-lb:hover:not(:disabled), .bnp-nbc-lb:focus-visible { border-color: color-mix(in srgb, var(--bnp-bar, var(--bnp-accent, #fed123)) 70%, #000); background: var(--bnp-bar, var(--bnp-accent, #fed123)); color: var(--bnp-bar-ink, var(--bnp-accent-text, #363636)); text-decoration: none; }
     .bnp-linkbtn:disabled, .bnp-nbc-lb:disabled { opacity: .5; cursor: default; }
     /* Nav Settings */
-    .bnp-veil { position: fixed; inset: 0; z-index: 2147483000; background: rgba(12, 14, 20, .34); backdrop-filter: blur(3px) saturate(.85); opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .bnp-veil { position: fixed; inset: 0; z-index: 2147483000; background: rgba(12, 14, 20, .42); opacity: 0; pointer-events: none; transition: opacity .2s; }
     .bnp-veil.open { opacity: 1; pointer-events: auto; }
+    .bnp-hub .bnp-nclhb-bar { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; margin: 6px 0 12px; padding: 10px; border-radius: 12px; }   /* (Settings › NeoChat: its header in small, in your theme) */
+    .bnp-hub .bnp-nclhb-bar .popup-header-pattern__2020 { border-radius: 12px; }
+    .bnp-hub .bnp-nclhb-grp { position: relative; z-index: 1; display: flex; gap: 4px; }
+    .bnp-hub .bnp-nclhb { display: grid; justify-items: center; align-content: center; gap: 3px; width: 56px; height: 56px; margin: 0; padding: 4px 2px 3px; border: 2px solid rgba(0, 0, 0, .28); border-radius: 10px; background: rgba(255, 255, 255, .94); box-shadow: 0 2px 0 rgba(0, 0, 0, .18); color: #3b3b3b; cursor: pointer; transition: opacity .12s; }
+    .bnp-hub .bnp-nclhb svg, .bnp-hub .bnp-nclhb > i { display: block; width: 20px; height: 20px; background: center / contain no-repeat; }
+    .bnp-hub .bnp-nclhb small { font: 10.6px/1.1 "MuseoSansRounded700", Arial, sans-serif; text-align: center; }
+    .bnp-hub .bnp-nclhb[aria-pressed="false"] { border-style: dashed; background: rgba(255, 255, 255, .5); box-shadow: none; opacity: .55; }   /* (hidden in NeoChat: faded, dashed) */
+    .bnp-hub .bnp-nclhb:not(.is-keep):hover, .bnp-hub .bnp-nclhb:not(.is-keep):focus-visible { border-color: rgba(0, 0, 0, .55); opacity: 1; outline: none; }
+    .bnp-hub .bnp-nclhb.is-keep { cursor: default; }
+    .bnp-hub .bnp-nfload-go { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 10px 0 4px; }   /* (Neofriends' avatars, loading: how far it's got) */
+    .bnp-hub .bnp-nfload-bar { flex: 1 1 260px; height: 12px; overflow: hidden; border: 1px solid #d3ccb7; border-radius: 999px; background: #efeadb; }
+    .bnp-hub .bnp-nfload-bar i { display: block; height: 100%; border-radius: 999px; background: var(--bnp-bar, var(--bnp-accent)); transition: width .3s; }
+    .bnp-hub .bnp-nfload-go span { color: #4a4536; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-nfload-why { margin-top: 2px; }
+    .bnp-hub .bnp-nclvol input[type="range"] { flex: 0 1 240px; width: 240px; margin: 0; accent-color: var(--bnp-bar, var(--bnp-accent)); }
+    .bnp-hub .bnp-nclvol output { min-width: 3.4em; color: #4a4536; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-nclhb-x { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #d23b2f; color: #fff; font: bold 15px/1 Arial, sans-serif; }
+    html.bnp-blur .bnp-blurme { filter: blur(3px) saturate(.85); }   /* (the page under Settings or Dailies: each part blurred by itself, drawn once; a blurring dimmer is redrawn every frame in Firefox) */
     .bnp-hub { --bnp-accent: #fed123; --bnp-accent-text: #363636; position: fixed; z-index: 2147483001; left: 50%; top: 50%; transform: translate(-50%, -50%); display: none; flex-direction: column; width: min(1000px, calc(100vw - 24px)); height: min(760px, calc(100vh - 24px)); border: var(--bnp-border, 3px solid #4d4d4d); border-radius: 15px; overflow: hidden; background: #fff; box-shadow: 0 12px 40px rgba(0, 0, 0, .45); box-sizing: border-box; color: #363636; font: 14.84px/1.4 "MuseoSansRounded500", Arial, sans-serif; text-align: left; letter-spacing: normal; text-transform: none; outline: none; }
     .bnp-hub.open { display: flex; }
     .bnp-hub *, .bnp-hub *::before, .bnp-hub *::after { box-sizing: border-box; }
@@ -21719,6 +23110,9 @@
     .bnp-hub .bnp-rail { overflow-y: auto; padding: 10px 10px 12px; border-right: 1px solid #e6e2d6; background: #faf9f5; }
     .bnp-hub .bnp-rail h5 { justify-content: center; text-align: center; margin: 12px 0 4px; padding: 4px 10px 5px; border-radius: 8px; background: var(--bnp-bar, var(--bnp-accent, #5d5590)); box-shadow: 0 2px 0 color-mix(in srgb, var(--bnp-bar, var(--bnp-accent, #5d5590)) 68%, #000); color: var(--bnp-bar-ink, #fff); font: 12.19px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; letter-spacing: .09em; }   /* (each group's name on your theme's own bar colour, its writing white: the groups stand right out) */
     .bnp-hub .bnp-rail h5:first-of-type { margin-top: 0; }
+    .bnp-hub .bnp-railgrp { margin: 0 0 12px; padding: 0 4px 4px; border: 2px solid color-mix(in srgb, var(--bnp-bar, var(--bnp-accent, #5d5590)) 30%, #e6e2d6); border-radius: 12px; background: #fff; }   /* (a group: one card, its name across its top) */
+    .bnp-hub .bnp-railgrp:last-child { margin-bottom: 0; }
+    .bnp-hub .bnp-railgrp h5 { margin: -2px -6px 5px; border-radius: 11px 11px 0 0; }
     .bnp-hub .bnp-rail button { display: block; width: 100%; margin: 1px 0; padding: 5px 10px; border: 0; border-radius: 8px; background: none; color: #363636; font: 15.9px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-align: left; cursor: pointer; }
     .bnp-hub .bnp-rail button:hover { background: #efece2; }
     .bnp-hub .bnp-rail button[aria-current="true"] { background: var(--bnp-accent); color: var(--bnp-accent-text); }
@@ -21969,6 +23363,7 @@
     .bnp-hub .bnp-avstat.is-done { border-color: #bfe0b0; background: #f1f9ec; color: #2b8a27; font-family: "MuseoSansRounded700", Arial, sans-serif; cursor: default; }
     .bnp-hub .bnp-avpicks .bnp-cardlead { margin: 0 0 4px; }
     .bnp-hub .bnp-avpicks { margin-top: 30px; }
+    .bnp-hub .bnp-avpicks.is-top { margin-top: 0; }   /* (at the top, under the summary, as it was) */
     .bnp-hub .bnp-avpick-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 6px; }
     .bnp-hub .bnp-avpick { position: relative; display: flex; align-items: center; gap: 12px; min-width: 0; margin: 0; padding: 10px 12px; border: 2px solid #e3dfd2; border-radius: 12px; background: #fff; color: inherit; text-align: left; cursor: pointer; transition: border-color .12s, box-shadow .12s; }
     .bnp-hub .bnp-avpick:hover { border-color: #c9c1a8; }
@@ -21979,8 +23374,8 @@
     .bnp-hub .bnp-avpick-t b { overflow: hidden; color: #2a2a2a; font: 14.31px "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
     .bnp-hub .bnp-avpick-t em { color: #6f6a58; font: 12.19px/1.3 "MuseoSansRounded500", Arial, sans-serif; font-style: normal; }
     .bnp-hub .bnp-avpick-on { position: absolute; top: -10px; right: 10px; padding: 0 9px; border-radius: 999px; background: var(--bnp-accent); color: var(--bnp-accent-text); font: 11.13px/20.14px "MuseoSansRounded700", Arial, sans-serif; }
-    .bnp-hub .bnp-avpick-how { display: flex; justify-content: flex-end; margin: 10px 0 0; }
-    .bnp-hub .bnp-avpick-how .bnp-pillbtn { margin: 0; }
+    .bnp-hub .bnp-avpick-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 10px 0 0; }   /* (where the card goes, at its left; how to get the newest, at its right) */
+    .bnp-hub .bnp-avpick-foot .bnp-pillbtn { margin: 0 0 0 auto; }
     .bnp-hub .bnp-avtools { gap: 8px 10px; }
     .bnp-hub .bnp-avq { position: relative; display: flex; flex: 1 1 240px; min-width: 170px; margin: 0; }
     .bnp-hub .bnp-avq svg { position: absolute; top: 50%; left: 11px; color: #9a9581; transform: translateY(-50%); pointer-events: none; }
@@ -22003,6 +23398,7 @@
     .bnp-hub .bnp-main h5.bnp-avsec .bnp-avsec-bar + em { margin-left: 0; }
     .bnp-hub .bnp-main h5.bnp-avsec.is-done em::before { content: "✓ "; }
     .bnp-hub .bnp-avt { transition: transform .12s, box-shadow .12s, border-color .12s; }
+    .bnp-hub .bnp-avgrid > .bnp-avt { content-visibility: auto; contain-intrinsic-size: auto 96px; }   /* (hundreds of avatars, the ones you don't have greyed: only those near the screen drawn) */
     .bnp-hub .bnp-avt:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0, 0, 0, .08); }
     .bnp-hub .bnp-avsrc { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 10px 0 0; padding-top: 12px; border-top: 1px solid #efeadb; }
     .bnp-hub .bnp-avsrc > span { display: grid; gap: 2px; min-width: 0; }
@@ -22398,6 +23794,9 @@
     .bnp-swq-it small { color: #7a4fb0; font: 12px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-swq-new { margin: 12px 0 0; text-align: center; }
     .bnp-swq-new .bnp-small { width: auto; }
+    .bnp-swq-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+    .bnp-swq-acts .bnp-pillbtn { display: inline-flex; align-items: center; height: 30px; margin: 0; padding: 0 14px; border: 1px solid #d3c3ea; border-radius: 999px; background: #fff; box-shadow: 0 2px 0 #e6daf5; color: #4b3566; font: 13px "MuseoSansRounded700", Arial, sans-serif; text-decoration: none; white-space: nowrap; cursor: pointer; }
+    .bnp-swq-acts .bnp-pillbtn:hover, .bnp-swq-acts .bnp-pillbtn:focus-visible { border-color: #8a5cc4; background: #8a5cc4; color: #fff; outline: none; }
     .bnp-avfind { position: sticky; top: 0; z-index: 3; display: flex; flex-direction: column; gap: 8px; margin: 0 0 10px; padding: 6px 2px 8px; border-bottom: 2px solid var(--nb-line, #ece6d3); background: #fff; }
     .bnp-avfind-row { display: flex; align-items: center; gap: 10px; }
     .bnp-avfind input { flex: 1; min-width: 0; height: 34px; margin: 0; padding: 4px 14px; border: 2px solid #d8d3c2; border-radius: 999px; background: #fff; color: #222; font: 14px "MuseoSansRounded500", Arial, sans-serif; }
@@ -22485,8 +23884,8 @@
     .bnp-sdock.is-folded .bnp-sdock-body { display: none; }
     .bnp-sdock-body { overflow-y: auto; padding: 8px; }
     .bnp-sdock-grid { display: grid; grid-template-columns: repeat(var(--sd-cols, 3), calc(var(--sd-w, 86px) + 2px)); justify-content: center; gap: 6px; }
-    /* its tiles: the Restock Highlighter's own. A see-through edge on its dark (the shopkeeper under it at the sides), a shade under the name; lighter under the pointer */
-    .bnp-sdock .bnp-sdock-tile { position: relative; display: block; box-sizing: content-box; width: var(--sd-w, 86px); height: var(--sd-h, 70px); overflow: hidden; border: 1px solid rgba(255, 255, 255, .08); border-radius: 8px; background-color: #0e0e1a; background-repeat: no-repeat; text-decoration: none; cursor: pointer; transition: border-color .15s, filter .15s; }
+    /* its tiles: the Restock Highlighter's own. A soft edge on the dock's dark (the shopkeeper's white kept inside it, never shining through), a shade under the name; lighter under the pointer */
+    .bnp-sdock .bnp-sdock-tile { position: relative; display: block; box-sizing: content-box; width: var(--sd-w, 86px); height: var(--sd-h, 70px); overflow: hidden; border: 1px solid rgba(255, 255, 255, .14); border-radius: 8px; background-color: #0e0e1a; background-repeat: no-repeat; background-clip: padding-box; text-decoration: none; cursor: pointer; transition: border-color .15s, filter .15s; }
     .bnp-sdock .bnp-sdock-tile::before { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, .55) 0%, rgba(0, 0, 0, 0) 55%); pointer-events: none; }
     .bnp-sdock .bnp-sdock-tile:hover { border-color: rgba(255, 255, 255, .3); filter: brightness(1.18); }
     .bnp-sdock .bnp-sdock-tile.is-here { border-color: rgba(255, 255, 255, .55); }   /* (the shop you're in) */
@@ -22774,16 +24173,67 @@
     .bnp-go.bnp-ncl { z-index: 2147482990; top: 6vh; width: min(860px, calc(100vw - 24px)); height: min(640px, 88vh); max-height: none; border-radius: var(--nct-winRad, 15px); box-shadow: 0 14px 44px var(--nct-winGlow, rgba(0, 0, 0, .45)); }   /* (under Settings and its veil: its gear opens Settings over it) */
     .bnp-go.bnp-ncl.is-placed { transform: none; }
     .bnp-go.bnp-ncl.is-min { display: none; }
-    .bnp-go.bnp-ncl.is-max { inset: 0 !important; width: auto; height: auto; max-width: none; transform: none; border-radius: 0; }   /* (full screen: all of the browser's window) */
+    .bnp-go.bnp-ncl.is-max { inset: 0 !important; width: auto !important; height: auto !important; max-width: none; transform: none; border-radius: 0; }   /* (full screen: all of the browser's window) */
+    .bnp-go.bnp-ncl.is-pinned:not(.is-max) { inset: var(--bnp-ncl-pintop, 0px) 0 0 auto !important; width: var(--bnp-ncl-pinw, 400px) !important; height: auto !important; max-width: none; transform: none !important; border-width: 0 0 0 3px; border-radius: 0; box-shadow: -8px 0 24px rgba(0, 0, 0, .2); }   /* (pinned: at the side, under the top bar, the page beside it) */
+    .bnp-go.bnp-ncl.is-pinned.is-left:not(.is-max) { inset: var(--bnp-ncl-pintop, 0px) auto 0 0 !important; border-width: 0 3px 0 0; box-shadow: 8px 0 24px rgba(0, 0, 0, .2); }
+    .bnp-go.bnp-ncl.is-pinned .bnp-hub-head { cursor: default; }
+    html.bnp-ncl-pinned:not(.bnp-pin-roomy) { padding-right: var(--bnp-ncl-pagew, 400px) !important; }   /* (the room beside it: the page itself narrower (Neopets' body keeps the window's width whatever its margins)) */
+    html.bnp-ncl-pinned.bnp-ncl-pinleft:not(.bnp-pin-roomy) { padding-right: 0 !important; padding-left: var(--bnp-ncl-pagew, 400px) !important; }
+    html.bnp-ncl-pinned #container__2020 { max-width: min(var(--bnp-page-max, 1300px), calc(100vw - var(--bnp-ncl-pagew, 400px) - 66px)) !important; }   /* (Neopets' box: its own width on this page, as wide as the room beside NeoChat lets it be) */
+    html.bnp-side-pinned:not(.bnp-pin-roomy) { padding-left: var(--bnp-side-w, 280px) !important; }   /* (the side menu pinned: the page beside it) */
+    html.bnp-side-pinned.bnp-ncl-pinned.bnp-ncl-pinleft:not(.bnp-pin-roomy) { padding-left: calc(var(--bnp-ncl-pagew, 400px) + var(--bnp-side-w, 280px)) !important; }
+    html.bnp-side-pinned #container__2020 { max-width: min(var(--bnp-page-max, 1300px), calc(100vw - var(--bnp-side-w, 280px) - 40px)) !important; }
+    html.bnp-side-pinned.bnp-ncl-pinned #container__2020 { max-width: min(var(--bnp-page-max, 1300px), calc(100vw - var(--bnp-ncl-pagew, 400px) - var(--bnp-side-w, 280px) - 66px)) !important; }
+    html.bnp-side-pinned.bnp-old #main { max-width: calc(100vw - var(--bnp-side-w, 280px) - 16px) !important; }
+    html.bnp-side-pinned.bnp-ncl-pinned.bnp-old #main { max-width: calc(100vw - var(--bnp-ncl-pagew, 400px) - var(--bnp-side-w, 280px) - 16px) !important; }
+    html.bnp-side-pinned #navprofiledropdown__2020.bnp-pinned { border-right: var(--bnp-side-edge, 3px solid rgb(77, 77, 77)) !important; box-shadow: 8px 0 24px rgba(0, 0, 0, .18); }   /* (its edge, like NeoChat's pinned and the windows') */
+    html.bnp-side-pinned .navsub-left__2020 { left: calc(var(--bnp-side-w, 280px) + 10px) !important; }
+    html.bnp-side-pinned.bnp-ncl-pinned.bnp-ncl-pinleft .navsub-left__2020 { left: calc(var(--bnp-ncl-pagew, 400px) + var(--bnp-side-w, 280px) + 10px) !important; }
+    html.bnp-side-pinned .togglePopup__2020 { left: calc(var(--bnp-side-w, 280px) + (100vw - var(--bnp-side-w, 280px)) / 2) !important; }
+    html.bnp-side-pinned.bnp-ncl-pinned:not(.bnp-ncl-pinleft) .togglePopup__2020 { left: calc(var(--bnp-side-w, 280px) + (100vw - var(--bnp-side-w, 280px) - var(--bnp-ncl-pagew, 400px)) / 2) !important; }
+    html.bnp-side-pinned.bnp-ncl-pinned.bnp-ncl-pinleft .togglePopup__2020 { left: calc(var(--bnp-ncl-pagew, 400px) + var(--bnp-side-w, 280px) + (100vw - var(--bnp-ncl-pagew, 400px) - var(--bnp-side-w, 280px)) / 2) !important; }
+    html.bnp-ncl-pinned.bnp-old #main { max-width: calc(100vw - var(--bnp-ncl-pagew, 400px) - 16px) !important; }
+    html.bnp-ncl-pinned:not(.bnp-ncl-pinleft) .navsub-right__2020 { right: calc(var(--bnp-ncl-pagew, 400px) + 5px) !important; }
+    html.bnp-side-pinned #navtop__2020, html.bnp-ncl-pinned #navtop__2020 { left: 0 !important; }   /* (the top bar across the whole window as ever: the page's room beside what's pinned had pushed it along, its far end out of the window) */
+    html.bnp-ncl-pinned #navtop__2020 { z-index: 2147482995 !important; }   /* (its menus open over NeoChat pinned beside the page, never under it) */
+    html.bnp-ncl-pinned:not(.bnp-ncl-pinleft) #navnewsdropdown__2020 { right: var(--bnp-ncl-pagew, 400px) !important; }
+    html.bnp-ncl-pinned.bnp-ncl-pinleft .navsub-left__2020 { left: calc(var(--bnp-ncl-pagew, 400px) + 10px) !important; }
+    html.bnp-ncl-pinned.bnp-ncl-pinleft #navprofiledropdown__2020 { left: var(--bnp-ncl-pagew, 400px) !important; }
+    html.bnp-ncl-pinned .togglePopup__2020 { left: calc((100vw - var(--bnp-ncl-pagew, 400px)) / 2) !important; }   /* (Neopets' pop-ups: in the middle of the page's room) */
+    html.bnp-ncl-pinned.bnp-ncl-pinleft .togglePopup__2020 { left: calc(var(--bnp-ncl-pagew, 400px) + (100vw - var(--bnp-ncl-pagew, 400px)) / 2) !important; }
+    .bnp-ncl-edge, .bnp-ncl-grip { display: none; }
+    .bnp-go.bnp-ncl.is-pinned:not(.is-max) .bnp-ncl-edge { display: block; position: absolute; top: 0; bottom: 0; left: 0; z-index: 4; width: 8px; cursor: ew-resize; touch-action: none; }   /* (its edge beside the page: dragged, wider or narrower) */
+    .bnp-go.bnp-ncl.is-pinned.is-left:not(.is-max) .bnp-ncl-edge { left: auto; right: 0; }
+    .bnp-ncl-edge:hover, .bnp-ncl-edge.is-on { background: color-mix(in srgb, var(--bnp-accent, #fed123) 60%, transparent); }
+    .bnp-go.bnp-ncl:not(.is-pinned):not(.is-max) .bnp-ncl-grip { display: block; position: absolute; right: 0; bottom: 0; z-index: 4; width: 18px; height: 18px; cursor: nwse-resize; touch-action: none; background: linear-gradient(135deg, transparent 0 52%, rgba(0, 0, 0, .3) 52% 60%, transparent 60% 70%, rgba(0, 0, 0, .3) 70% 78%, transparent 78%); }   /* (its corner: dragged, bigger or smaller) */
+    .bnp-veil.bnp-ncl-veil { z-index: 2147482980; }   /* (the page behind NeoChat's window, as you've chosen: just under the window) */
+    .bnp-veil.bnp-ncl-veil.is-clear { background: transparent; }
+    .bnp-ncl.is-narrow .bnp-ncl-main { grid-template-columns: minmax(0, 1fr); }   /* (narrow: the list, or one conversation, at a time) */
+    .bnp-ncl.is-narrow:not(.is-who) .bnp-ncl-chat, .bnp-ncl.is-narrow.is-who .bnp-ncl-side { display: none; }
+    .bnp-ncl.is-narrow .bnp-ncl-side { border-right: 0; }
+    .bnp-ncl.is-narrow .bnp-hub-head h3 { display: none; }   /* (its name gone, not just unseen: its room is the buttons') */
+    .bnp-ncl.is-narrow .bnp-hub-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px; }   /* (narrow: its two sets of buttons at either end; if both can't fit, the right-hand set whole on a second row) */
+    .bnp-ncl.is-narrow .bnp-hub-head .bnp-ncl-hbtns { gap: 4px; }
+    .bnp-ncl.is-narrow .bnp-hub-head .bnp-ncl-hbtns:not(.is-left) { margin-left: auto; }
+    .bnp-ncl.is-narrow .bnp-ncl-hb { width: 32px; height: 32px; }
+    .bnp-ncl-back { display: none; }
+    .bnp-ncl.is-narrow .bnp-ncl-back { display: grid; flex: none; place-items: center; width: 30px; height: 30px; margin: 0 -6px 0 -8px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--nct-cheadName, var(--nb-text)); cursor: pointer; }
+    .bnp-ncl.is-narrow .bnp-ncl-back:hover, .bnp-ncl.is-narrow .bnp-ncl-back:focus-visible { background: color-mix(in srgb, currentColor 12%, transparent); outline: none; }
+    .bnp-ncl-back svg { width: 20px; height: 20px; }
+    .bnp-ncl.is-narrow .bnp-ncl-chead { flex-wrap: wrap; row-gap: 6px; }
+    .bnp-ncl.is-narrow .bnp-ncl-chead > .bnp-ncl-acts { flex-basis: 100%; justify-content: flex-end; }
     .bnp-ncl.is-moving { opacity: .93; }
-    .bnp-ncl .bnp-hub-head { padding: 11px 190px; cursor: move; user-select: none; touch-action: none; }
+    .bnp-ncl .bnp-hub-head { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; column-gap: 10px; padding: 11px 8px 11px 10px; cursor: move; user-select: none; touch-action: none; }   /* (its buttons either side, its name in the middle, whichever buttons you've chosen) */
+    .bnp-ncl .bnp-hub-head h3 { grid-column: 2; }
     .bnp-ncl .bnp-hub-head h3 { display: inline-flex; align-items: center; gap: 8px; font-size: var(--nct-titleSize, 19pt); opacity: .95; }
     .bnp-ncl .bnp-ncl-hic { display: grid; flex: none; place-items: center; }   /* (the drawing on its round button, in the title's colour) */
     .bnp-ncl .bnp-ncl-hic svg { width: 30px; height: 30px; }   /* (a little taller than the other windows, its name bigger and a touch see-through: its buttons stay as they are) */
     .bnp-ncl.is-max .bnp-hub-head { cursor: default; }
-    .bnp-ncl .bnp-ncl-x { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
-    .bnp-ncl .bnp-hub-head .bnp-ncl-hbtns { position: absolute; right: 54px; top: 50%; display: flex; gap: 6px; transform: translateY(-50%); }
-    .bnp-ncl .bnp-hub-head .bnp-ncl-hbtns.is-left { left: 10px; right: auto; }
+    .bnp-ncl .bnp-hub-head .bnp-ncl-x { position: relative; inset: auto; flex: none; margin: 0 0 0 4px; transform: none; }
+    .bnp-ncl .bnp-hub-head .bnp-ncl-hbtns { position: relative; z-index: 1; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; grid-column: 3; justify-self: end; }   /* (more than fit its side: a second row, never over the other side's) */
+    .bnp-ncl .bnp-hub-head .bnp-ncl-hbtns.is-left { grid-column: 1; justify-self: start; justify-content: flex-start; }
+    .bnp-ncl .bnp-ncl-hb[hidden] { display: none; }
+    .bnp-ncl .bnp-ncl-hb > i { display: block; width: 24px; height: 24px; background: center / contain no-repeat; }   /* (the Themes button: your theme's own paint tray) */
     .bnp-ncl .bnp-ncl-hb { display: grid; place-items: center; width: 34px; height: 34px; margin: 0; padding: 0; border: 2px solid var(--nct-hbEdge, rgba(0, 0, 0, .28)); border-radius: 10px; background: var(--nct-hbBg, rgba(255, 255, 255, .92)); color: var(--nct-hbInk, #3b3b3b); box-shadow: 0 2px 0 var(--nct-hbEdge, rgba(0, 0, 0, .18)); cursor: pointer; }
     .bnp-ncl .bnp-ncl-hb:hover, .bnp-ncl .bnp-ncl-hb[aria-pressed="true"] { background: var(--nct-hbBg, #fff); color: var(--nct-hbInk, #000); filter: brightness(1.06); }
     .bnp-ncl .bnp-ncl-hb svg { width: 18px; height: 18px; }
@@ -22920,7 +24370,7 @@
     .bnp-ncl-bub svg { width: 28px; height: 28px; }
     .bnp-ncl-bub b { position: absolute; top: -5px; right: -5px; min-width: 23px; height: 23px; padding: 0 5px; border: 2px solid var(--nct-foldRing, #fff); border-radius: 999px; background: var(--nct-foldCount, #e8453c); color: #fff; font: 12px/19px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-ncl-bub b[hidden] { display: none; }
-    .bnp-ncl-ic { display: grid; flex: none; place-items: center; width: 50px; height: 50px; border: 3px solid #fff; border-radius: 50%; background: var(--bnp-accent, #fed123); color: var(--bnp-accent-text, #363636); box-shadow: 0 2px 8px rgba(0, 0, 0, .22); box-sizing: border-box; }   /* (the round button's picture: on its own page, and when no one's chosen) */
+    .bnp-ncl-ic { display: grid; flex: none; place-items: center; width: 50px; height: 50px; border: 3px solid var(--nct-foldRing, #fff); border-radius: 50%; background: var(--nct-foldBg, var(--bnp-accent, #fed123)); color: var(--nct-foldInk, var(--bnp-accent-text, #363636)); box-shadow: 0 2px 8px rgba(0, 0, 0, .22); box-sizing: border-box; }   /* (the round button's picture: on its own page, and when no one's chosen) */
     .bnp-ncl-ic svg { width: 26px; height: 26px; }
     .bnp-ncl .bnp-pillbtn, .bnp-ncl-phead .bnp-pillbtn, .bnp-ncl-toasts .bnp-pillbtn { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 4px 13px; border: 2px solid var(--nct-pillEdge, var(--nb-frame)); border-radius: 999px; background: var(--nct-pillBg, var(--nct-card, #fff)); box-shadow: 0 2px 0 var(--nct-pillEdge, var(--nb-frame)); color: var(--nct-pillInk, var(--nb-text)) !important; font: 12.5px var(--nb-ui); text-decoration: none !important; white-space: nowrap; cursor: pointer; }   /* (a pill, as on the boards) */
     .bnp-ncl .bnp-pillbtn:hover, .bnp-ncl-phead .bnp-pillbtn:hover, .bnp-ncl-toasts .bnp-pillbtn:hover { background: var(--nct-pillHover, var(--nb-tint2)); }
@@ -22953,6 +24403,9 @@
     .bnp-ncl-phead h2 { margin: 0; font: 24pt/1.1 "Cafeteria", "Arial Bold", sans-serif; }
     .bnp-ncl-phead .bnp-note { color: var(--nb-muted); font: 13px var(--nb-txt); }
     .bnp-ncl-phead .bnp-ncl-hbtns { display: flex; gap: 8px; margin-left: auto; }
+    html.bnp-ncl-hbhover .bnp-ncl:not(.bnp-nct-pv *) .bnp-hub-head .bnp-ncl-hbtns, html.bnp-ncl-hbhover .bnp-ncl-phead .bnp-ncl-hbtns { opacity: 0; transition: opacity .15s; }   /* (chosen: its header's buttons only while you point at the header, or use them by keyboard) */
+    html.bnp-ncl-hbhover .bnp-ncl:not(.bnp-nct-pv *) .bnp-hub-head:is(:hover, :focus-within) .bnp-ncl-hbtns, html.bnp-ncl-hbhover .bnp-ncl-phead:is(:hover, :focus-within) .bnp-ncl-hbtns { opacity: 1; }
+    @media (hover: none) { html.bnp-ncl-hbhover .bnp-ncl .bnp-hub-head .bnp-ncl-hbtns, html.bnp-ncl-hbhover .bnp-ncl-phead .bnp-ncl-hbtns { opacity: 1; } }
     html.bnp-ncl-full, html.bnp-ncl-full body { overflow: hidden !important; }   /* (full screen: the page under it stays put) */
     .bnp-ncl.is-page.is-max { position: fixed; z-index: 2147482990; inset: 0; display: flex; flex-direction: column; margin: 0; background: #fff; }
     .bnp-ncl.is-page.is-max .bnp-ncl-main { flex: 1; height: auto; min-height: 0; border: 0; border-radius: 0; box-shadow: none; }
@@ -22969,8 +24422,78 @@
     .bnp-hub .bnp-dtivers dt { color: #6f6a58; font: 13.25px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-hub .bnp-dtivers dd { margin: 0; }
     /* NeoChat Themes: the tiles (NeoChat in small), and the editor beside its preview */
+    .bnp-ncl .bnp-ncl-mut { display: inline-flex; width: 13px; height: 13px; margin-left: 4px; vertical-align: -1px; color: var(--nct-muted, #8a8473); }
+    .bnp-ncl .bnp-ncl-mut svg { width: 13px; height: 13px; }
+    .bnp-ncl .bnp-ncl-row.is-muted .bnp-ncl-n { opacity: .55; }
+    .bnp-ncl .bnp-ncl-listbar.is-warn { gap: 6px; border-color: #e5711c; background: #fff4e8; color: #7a3c06; }
+    .bnp-ncl .bnp-ncl-listbar.is-warn svg { flex: none; width: 16px; height: 16px; color: #e5711c; }
+    .bnp-ncl .bnp-ncl-row.is-hit small mark { padding: 0 1px; border-radius: 3px; background: #ffe58a; color: inherit; }
+    .bnp-ncl .bnp-ncl-row.is-hit b em { font-style: normal; font-weight: normal; opacity: .75; }
+    .bnp-ncl .bnp-ncl-b.is-found { box-shadow: 0 0 0 3px #ffd84d; transition: box-shadow .3s; }
+    .bnp-ncl .bnp-ncl-cards { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 2px; }
+    .bnp-ncl .bnp-ncl-card { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 5px 10px 5px 6px; border: 2px solid var(--nct-theirEdge, var(--nb-frame, #e3dfd2)); border-radius: 10px; background: var(--nct-card, #fff); color: inherit; text-decoration: none; }
+    .bnp-ncl .bnp-ncl-card:hover { border-color: var(--bnp-accent, #fed123); }
+    .bnp-ncl .bnp-ncl-card i { flex: none; width: 30px; height: 30px; background: 50% 50% / contain no-repeat; }
+    .bnp-ncl .bnp-ncl-card.is-av i, .bnp-ncl .bnp-ncl-card.is-pet i { border-radius: 6px; }
+    .bnp-ncl .bnp-ncl-card span { display: grid; min-width: 0; line-height: 1.2; }
+    .bnp-ncl .bnp-ncl-card b { overflow: hidden; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-ncl .bnp-ncl-card small { opacity: .75; font-size: 11.5px; }
+    .bnp-ncl .bnp-ncl-comp { position: relative; }
+    .bnp-ncl .bnp-ncl-snipbtn { flex: none; align-self: flex-end; display: grid; place-items: center; width: 34px; height: 34px; margin: 0; padding: 0; border: 2px solid var(--nb-frame, #e3dfd2); border-radius: 50%; background: #fff; color: #6f6a58; cursor: pointer; }
+    .bnp-ncl .bnp-ncl-snipbtn svg { width: 18px; height: 18px; }
+    .bnp-ncl .bnp-ncl-snipbtn[aria-expanded="true"], .bnp-ncl .bnp-ncl-snipbtn:hover { border-color: var(--bnp-accent, #fed123); color: #363636; }
+    .bnp-ncl .bnp-ncl-snips { position: absolute; z-index: 6; right: 8px; bottom: calc(100% - 4px); width: min(340px, calc(100% - 16px)); padding: 8px; border: 2px solid var(--nb-frame, #e3dfd2); border-radius: 12px; background: #fff; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
+    .bnp-ncl .bnp-ncl-snipl { display: grid; gap: 4px; max-height: 220px; overflow: auto; }
+    .bnp-ncl .bnp-ncl-snip { display: flex; gap: 4px; }
+    .bnp-ncl .bnp-ncl-snipt { flex: 1; min-width: 0; margin: 0; padding: 6px 9px; border: 1px solid #ece8dc; border-radius: 8px; background: #faf9f5; color: #363636; font: 12.5px/1.3 "MuseoSansRounded500", Arial, sans-serif; text-align: left; white-space: pre-wrap; cursor: pointer; }
+    .bnp-ncl .bnp-ncl-snipt:hover { border-color: var(--bnp-accent, #fed123); background: #fff; }
+    .bnp-ncl .bnp-ncl-snipx { flex: none; width: 26px; margin: 0; padding: 0; border: 0; border-radius: 6px; background: none; color: #8a8473; font: 17px/1 Arial, sans-serif; cursor: pointer; }
+    .bnp-ncl .bnp-ncl-snipx:hover { background: #f3efe4; color: #363636; }
+    .bnp-ncl .bnp-ncl-snipf { display: flex; justify-content: flex-end; margin-top: 8px; }
+    .bnp-hub .bnp-ncl-setsnips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .bnp-hub .bnp-np .bnp-np-ranges { margin: 2px 0 10px; }
+    .bnp-hub .bnp-np-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; margin: 0 0 10px; }
+    .bnp-hub .bnp-np-tile { display: grid; gap: 2px; padding: 7px 10px 8px; border: 1px solid #e3dfd2; border-radius: 10px; background: #fff; }
+    .bnp-hub .bnp-np-tile span { color: #6f6a58; font: 11.5px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-hub .bnp-np-tile b { color: #363636; font: 15px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-np-tile.is-up b, .bnp-hub .bnp-np-table .is-up { color: #23753a; }
+    .bnp-hub .bnp-np-tile.is-down b, .bnp-hub .bnp-np-table .is-down { color: #b3261e; }
+    .bnp-hub .bnp-np-chart { position: relative; margin: 0 0 8px; overflow: hidden; border: 1px solid #e3dfd2; border-radius: 10px; background: #fff; }
+    .bnp-hub .bnp-np-chart svg { display: block; touch-action: none; }
+    .bnp-hub .bnp-np-chart .g { stroke: #ebe7dc; stroke-width: 1; }
+    .bnp-hub .bnp-np-chart .t { fill: #77715e; font: 11px "MuseoSansRounded500", Arial, sans-serif; font-variant-numeric: tabular-nums; }
+    .bnp-hub .bnp-np-chart .v { fill: #363636; font: 12px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-np-chart .x { stroke: #b9b3a1; stroke-width: 1; }
+    .bnp-hub .bnp-np-chart .hit { cursor: crosshair; }
+    .bnp-hub .bnp-np-tip { position: absolute; z-index: 2; display: grid; gap: 1px; padding: 5px 9px 6px; border: 1px solid #d8d2c0; border-radius: 8px; background: #fff; box-shadow: 0 3px 10px rgba(0, 0, 0, .14); color: #363636; font: 12px "MuseoSansRounded500", Arial, sans-serif; white-space: nowrap; pointer-events: none; }
+    .bnp-hub .bnp-np-tip b { font-family: "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-np-tip small { color: #77715e; font-size: 11px; }
+    .bnp-hub .bnp-np-table summary { cursor: pointer; color: #4a4536; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-np-table table { width: 100%; margin: 6px 0 4px; border-collapse: collapse; font: 12.5px "MuseoSansRounded500", Arial, sans-serif; font-variant-numeric: tabular-nums; }
+    .bnp-hub .bnp-np-table th, .bnp-hub .bnp-np-table td { padding: 3px 8px; border-bottom: 1px solid #efebe0; text-align: right; }
+    .bnp-hub .bnp-np-table th:first-child, .bnp-hub .bnp-np-table td:first-child { text-align: left; }
     .bnp-hub .bnp-nct-tile { display: flex; flex-direction: column; align-items: stretch; width: 100%; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
     .bnp-hub span.bnp-nct-tile { cursor: default; }
+    .bnp-hub .bnp-nct-sites { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; margin: 8px 0 4px; }   /* (Neopets' themes for NeoChat: small tiles) */
+    .bnp-hub .bnp-nct-site { position: relative; display: grid; gap: 4px; margin: 0; padding: 0 0 6px; border: 2px solid #e3dfd2; border-radius: 10px; background: #fff; color: #363636; text-align: left; cursor: pointer; }
+    .bnp-hub .bnp-nct-site:hover, .bnp-hub .bnp-nct-site:focus-visible { border-color: #c9c1a8; outline: none; }
+    .bnp-hub .bnp-nct-site.is-now { border-color: color-mix(in srgb, var(--bnp-accent) 72%, #000 14%); box-shadow: 0 0 0 2px color-mix(in srgb, var(--bnp-accent) 40%, transparent); }
+    .bnp-hub .bnp-nct-site.is-busy { opacity: .6; cursor: progress; }
+    .bnp-hub .bnp-nct-site > b { position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; border-radius: 50%; background: #3cb043; color: #fff; font: 12px/20px Arial, sans-serif; text-align: center; box-shadow: 0 1px 2px rgba(0, 0, 0, .3); }
+    .bnp-hub .bnp-nct-sitepic { position: relative; display: grid; grid-template-rows: 17px 1fr; height: 78px; margin: 6px 6px 0; overflow: hidden; border-radius: 7px; background: #f4f1e8; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }   /* (a bit of the theme: its top bar, its icons, its page) */
+    .bnp-hub .bnp-nct-sitepic i { display: block; }
+    .bnp-hub .bnp-nct-sitepic .tb { position: relative; display: flex; align-items: center; gap: 3px; padding: 0 5px; background: var(--ti) 50% 50% / cover no-repeat, var(--tb); }
+    .bnp-hub .bnp-nct-sitepic .tp { position: absolute; inset: 0; background: var(--tp) 50% 50% / var(--tps) repeat; opacity: var(--tpo); pointer-events: none; }
+    .bnp-hub .bnp-nct-sitepic .ic { position: relative; width: 13px; height: 13px; background: 50% 50% / contain no-repeat; }
+    .bnp-hub .bnp-nct-sitepic .pg { position: relative; padding: 6px 6px 0 26%; background: var(--pi) 0 0 / var(--pis) repeat, var(--pb); }   /* (its page, and NeoChat on it at the right, as pinned) */
+    .bnp-hub .bnp-nct-sitepic.is-wait { display: block; background: repeating-linear-gradient(135deg, #f4f1e8 0 8px, #ece8dc 8px 16px); }
+    .bnp-hub .bnp-nct-site .bnp-nct-mini { height: 52px; margin: 0; border-radius: 6px 6px 0 0; border-bottom: 0; grid-template-rows: 10px 1fr; box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }
+    .bnp-hub .bnp-nct-sitepic .bnp-nct-mini .h { background: var(--hp) 50% 50% / auto repeat, var(--h); }
+    .bnp-hub .bnp-nct-site .bnp-nct-mini .sd, .bnp-hub .bnp-nct-site .bnp-nct-mini .cv { gap: 3px; padding: 4px; }
+    .bnp-hub .bnp-nct-site .bnp-nct-mini .tb { height: 5px; }
+    .bnp-hub .bnp-nct-site .bnp-nct-mini .r, .bnp-hub .bnp-nct-site .bnp-nct-mini .bb { height: 7px; border-width: 1px; }
+    .bnp-hub .bnp-nct-mini.is-wait { border-color: #e3dfd2; background: repeating-linear-gradient(135deg, #f4f1e8 0 8px, #ece8dc 8px 16px); }
+    .bnp-hub .bnp-nct-sitename { padding: 0 8px; font: 12.2px/1.25 "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-hub .bnp-nct-mini { position: relative; display: grid; grid-template-columns: 38% 1fr; grid-template-rows: 18px 1fr; height: 104px; margin: 8px 8px 0; overflow: hidden; border: 2px solid var(--f); border-radius: 9px; background: var(--st); }
     .bnp-hub .bnp-nct-mini i { display: block; }
     .bnp-hub .bnp-nct-mini .h { grid-column: 1 / -1; background: var(--h); }
@@ -23022,7 +24545,7 @@
     .bnp-nct-pv .bnp-nct-sign .bnp-ncl-toastic { width: 40px; height: 40px; }
     .bnp-nct-pv .bnp-nct-sign .bnp-ncl-toastic svg { width: 24px; height: 24px; }
     @media (max-width: 900px) { .bnp-hub .bnp-nct-ed { grid-template-columns: 1fr; } .bnp-hub .bnp-nct-pvcol { position: static; order: -1; } }
-    @media (max-width: 720px) { .bnp-ncl-main { grid-template-columns: minmax(150px, 40%) minmax(0, 1fr); } .bnp-ncl .bnp-hub-head { padding: 11px 170px 11px 176px; } .bnp-ncl-rr time { display: none; } }
+    @media (max-width: 720px) { .bnp-ncl-main { grid-template-columns: minmax(150px, 40%) minmax(0, 1fr); } .bnp-ncl-rr time { display: none; } }
     @media (max-width: 560px) { .bnp-nmw .bnp-hub-head { padding: 7px 96px 7px 14px; text-align: left; } .bnp-nmw .bnp-nmw-hint { display: none; } }
     /* Find a page, in Add a link */
     .bnp-hub .bnp-findf input { max-width: none !important; }
@@ -23349,6 +24872,7 @@
       .bnp-hub .bnp-hub-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
       .bnp-hub .bnp-rail { display: flex; flex-wrap: wrap; gap: 4px; border-right: 0; border-bottom: 1px solid #e6e2d6; }
       .bnp-hub .bnp-rail h5 { display: none; }
+      .bnp-hub .bnp-railgrp { display: contents; }
       .bnp-hub .bnp-rail button { width: auto; }
       .bnp-hub .bnp-cols { grid-template-columns: 1fr; }
       .bnp-hub .bnp-tag { display: none; }
@@ -23356,6 +24880,87 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['3.9', '2026-10-26', [
+      'Settings: much smoother in Firefox (the blur behind it made scrolling stutter), and quicker to move around in everywhere',
+      'Avatars: “Its picture in your menus” goes at the top or the bottom of the page, by a switch on the card',
+      'Top bar: the search box is on from the start (Settings › General › Search to switch it off)',
+      'Windows (Settings, Dailies, NeoChat…): their outline is your theme’s own; one with none takes its top bar’s line (Grey Day’s windows no longer blend into the page), and a theme you put on no longer keeps the last one’s',
+      'Shop Wizard during a faerie quest: only when Neopets really turns you away for one, saying so, with your quest and its setting a click away',
+      'Settings and Dailies: the page behind is blurred a little as well as darkened (Settings › General › Windows to switch it off); smooth in Firefox too',
+      'NeoChat: a pin in its header keeps it at the right of every page (or the left: Settings › NeoChat › Its window), under the top bar with the page beside it; drag its edge to size it',
+      'NeoChat: its window can be made bigger or smaller from its corner, and narrow it shows the list or one conversation at a time',
+      'NeoChat: choose its header’s buttons in Settings, from a picture of them; a Themes button (your theme’s paint tray) can go there too',
+      'NeoChat: the page behind its window can be darker, blurred or both, if you like (off at first, never while pinned)',
+      'NeoChat: Sending can be the Send button only, and its alert’s sound has How loud',
+      'NeoChat: its round pictures follow a theme you switch to, NeoChat theme or not',
+      'NeoChat Themes: every Neopets site theme as a small tile, for NeoChat to wear by itself whatever your site theme',
+      'NeoChat: load every Neofriend’s avatar from their lookups, at a person’s pace, with how far it’s got (Settings › NeoChat › Avatars)',
+      'QuickRef and other older pages: your theme’s own background (one from a theme you wore before could stay on them)',
+      'Neomail and other older pages: your own theme’s page box, its recoloured pattern included (it could come out a plain colour)',
+      'Neoboards: the box you write a reply in is as tall as your card beside it, NeoSignature or not',
+      'Trading Post: a lot’s other items show on anyone’s lot, not only your own',
+      'Trading Post: the Super Shop Wizard button is on item rows again, for Premium',
+      'Trading Post: lots you were making with Several lots at once go when you load the page again',
+      'User lookups: every lookup link on Neopets opens at place=9999, without the captcha, Random Friend’s too (Settings › Other pages; on at first, and fine alongside DTI Enhance’s own switch)',
+      'Reminders: the Snowager, a new day, the day’s end, Food Club and the rest say it once: Dismiss keeps it away on the next pages too',
+      'Reminders: choose their sound (each its own, or one for all) and how loud, apart from NeoChat’s',
+      'NeoChat: looks for new Neomail every 2 minutes to every 2 hours (every minute is gone; every hour and every 2 hours are new)',
+      'Neoboards: every board stays in its section’s box (an ad between boards left Trading / Auctions outside)',
+      'Shop Dock: softer edges on its tiles',
+      'Settings: a warning by a choice goes with a click anywhere else too',
+      'Themes: a theme’s looks, which one a page shows and who made it stay after the page reloads',
+      'Themes: a theme from a file or a code is checked as it comes in; anything that could reach beyond Neopets is left out, and it says so',
+      'Back up: Restore checks the whole file first and changes nothing if it can’t be read; Undo puts all of it back',
+      'Start over: menus and features go back to how they started; your themes, dailies, reminders, NeoTabs rules and games stay',
+      'Menus, dailies and reminders: a link of yours only ever opens a web page',
+      'NeoTabs: a rules file is checked before anything changes, and no rule can slow a page down',
+      'Neomail: its tabs, Jump to, the Neofriends’ letters and Search for a friend change the page without loading it all again (Back works too)',
+      'Neomail: a NeoChat tab at the end of its tabs, for NeoChat on its own page',
+      'Side menu pinned: the page sits beside it instead of under it (with NeoChat pinned too, between them), and it has an edge like NeoChat’s',
+      'NeoChat: Back to its first size (Settings › NeoChat › Its window), or double-click its corner',
+      'NeoChat Themes: each site theme’s tile shows a bit of the theme itself, its top bar and icons over its page’s own background',
+      'NeoChat: its Themes button drawn like the other buttons in its header',
+      'NeoChat on a side account: its Neofriends, drafts, the conversation left open and requests sent are that account’s own',
+      'Older pages (Neomail, QuickRef…): the top bar kept for them shows only for the account it came from, and Neopets’ links in your folders stay in it',
+      'Neomail’s little window: changing To keeps each person’s draft their own',
+      'Dailies: one opened in a new tab is never marked “not open to you yet”; Daily Ad Rewards counts its Watch button; browsing the Stock Market doesn’t tick it',
+      'Reminders: a daily ready in its closed hours reminds you when it opens; one shown late says the real time; its sound plays even from a tab you haven’t clicked in',
+      'Reminders: training reminders stay when you look at a school’s other pages',
+      'Themes: Undo right after picking a colour undoes it; another swatch clicked with the picker open gets its own picker beside it; Settings opened again on a theme shows it on the page again',
+      'Shop Dock: ✎ opens it on a narrow window; None in Choose shops can be put back',
+      'Side menu: its Neopets Enhance entry shows its name again',
+      'Tab pictures: after NeoChat full screen, the page’s own picture comes back',
+      'Items: a shop description that leaves its tags open never takes the shop’s items with it; itemdb busy says so, instead of asking for a visit',
+      'Guild: a page read while you’re logged out never forgets your guild',
+      'Avatars: a big release brings every new avatar in at once',
+      'Back up: a reminder to save one once a month (once a week until you’ve saved your first)',
+      'Go to: type an item’s name to look for it on the Shop Wizard, Trading Post, Auctions, your Safety Deposit Box, itemdb or JellyNeo, with its picture and price if it’s been priced before',
+      'Neopoints over time: kept as they change, for the last day, week, month or all of it, as a chart or a table (Settings › Shops and money); point at your Neopoints in the top bar for today’s and this week’s',
+      'NeoChat: its Find box finds words in your messages too; a hit opens that conversation at the message',
+      'NeoChat: mute someone with the bell by their name: their Neomail still comes, without an alert, a sound or a count',
+      'NeoChat: quick replies, from ⚡ beside Send: a click puts one in, and what you’ve written can be saved as one',
+      'NeoChat: a Neopets link in a message shows as a card (a Trading Post lot, a shop, a lookup, a pet, a gallery, an auction, a board topic, an item)',
+      'NeoChat: a warning when your Neomail Inbox is nearly full',
+      'NeoChat: the Sending choices fit on one line',
+      'Side accounts: each can share your settings or have its own, a copy to start with (Settings › Back up › Your accounts); each keeps its own dailies done',
+      'Settings: its menu’s groups are cards of their own, each with its name across the top',
+      'Settings: what’s chosen (its page in the menu, a pressed pill) is your theme’s window colour as you see it: right on Altadorian Constellations, Mystery Island, the Neopian Times, Neovian Festival of Neggs, Altador Cup and Meridell, and never the last theme’s after you switch (reminders and the Dailies bar too)',
+      'Reminders: one sound and one desktop notice however many Neopets tabs are open (two tabs could both say one, and ring twice)',
+      'Reminders: a pop-up shows on each of your Neopets tabs and stays on the next pages until you close it or it’s no longer true; closed on one tab, it goes from all of them at once',
+      'Reminders: a tab you haven’t clicked in passes its sound to one you have, so it isn’t lost',
+      'NeoChat: new Neomail is told once, its alert on each tab (× or Read on one puts it away on all); a second tab never reads your Inbox again straight after the first',
+      'NeoChat: only tabs on www.neopets.com read your Inbox (an NC Mall tab no longer tries), and it keeps looking while you’re about even when Neopets’ site storage is full',
+      'Update note and old-script warnings: closed on one tab, gone from the others',
+      'Side menu and NeoChat pinned: the top bar fits the window again (its clock and buttons ran off the edge), and its menus open over NeoChat',
+      'Pinning the side menu, NeoChat or both: a page that fits beside them stays just where it is without them; one that doesn’t moves only as far as it must',
+      'Pinned, any way: the icons and your Neopoints under the top bar sit at the edges of the room beside what’s pinned, or just inside the page’s box, never half over its edge (Neoboards and older pages too)',
+      'NeoChat: its header’s buttons can show only when you point at the header (Settings › NeoChat › Its window)',
+      'NeoChat: on a narrow window or pinned, its header’s buttons never sit over each other',
+      'Trading Post: Lot cards is one choice: as Neopets has them, as tall as they need, or every item',
+      'Trading Post: a long lot no longer stretches the lots beside it',
+      'Trading Post: item pictures at 40, 60 or 80 px',
+      'Trading Post: View Details can open a lot right on its card instead of Neopets’ window (Settings › Trading Post)',
+    ]],
     ['3.8', '2026-10-25', [
       'Dailies: heavily reworked, and still a work in progress: more is on the way',
       'Dailies: a calmer board, with Start (your first ready one) and Open all up top, its Options in one place, and full screen',
@@ -23506,9 +25111,11 @@
     n.setAttribute('data-bnp', 'notice');
     n.setAttribute('role', 'alert');
     n.innerHTML = `<b>${esc(APP)}</b><span>${esc(text)}</span><button type="button" aria-label="Close" title="Close">×</button>`;
-    n.querySelector('button').addEventListener('click', () => { n.remove(); if (once) set('notice:' + once, nstDay()); });
+    if (once) n.dataset.once = once;
+    n.querySelector('button').addEventListener('click', () => { n.remove(); if (once) { set('notice:' + once, nstDay()); tabsSay('notice-x', { once }); } });   // (closed here: on your other tabs too)
     document.body.append(n);
   }
+  tabsEar['notice-x'] = (m) => { for (const n of $$('[data-bnp="notice"]')) if (n.dataset.once && n.dataset.once === m.once) n.remove(); };
   function styles() {
     if (document.getElementById('bnp-plus-style')) return;
     const s = document.createElement('style');
@@ -23537,22 +25144,26 @@
     } catch (_) { /* */ }
     try { GM_registerMenuCommand('Settings', () => openHub(null)); } catch (_) { /* */ }
     try {   // (another tab changed something: the same here)
-      GM_addValueChangeListener(KEY + 'settings', (n, o, v, remote) => { if (!remote || !v) return; S = tidy(v); applyAll(); remSchedule(); tabsToggle(); if (hub && hub.win.classList.contains('open')) paintHub(); try { if (ncl) { if (!S.features.ncl) nclSettingsChanged('ncl'); else nclPaint(); } nmMiniPaint(); nctApply(); } catch (e) { report(e); } });
+      settingsWatch();
+      dlogWatch();
+      GM_addValueChangeListener(KEY + 'acctown', (n, o, v, remote) => { if (remote) acctCheck(); });   // (this account given its own settings, or not, in another tab)
+      GM_addValueChangeListener(KEY + 'nbpeople', (n, o, v, remote) => { if (remote) NBP = null; });   // (people followed, muted or tagged in another tab: read again here before this tab writes)
       GM_addValueChangeListener(KEY + 'ncl', (n, o, v, remote) => { if (!remote) return; clearTimeout(nclSyncT); nclSyncT = setTimeout(() => { try { if (ncl) nclPaint(); applyAll(); } catch (e) { report(e); } }, 400); });   // (NeoChat, kept up to date from another tab: new Neomail, what's been read, a conversation erased)
       GM_addValueChangeListener(KEY + 'open', (n, o, v, remote) => { if (!remote) return; const was = OPEN; OPEN = v || {}; for (const k of new Set([...Object.keys(was), ...Object.keys(OPEN)])) paintFold(k, !!OPEN[k]); });
       for (const k of ['pets', 'boards']) GM_addValueChangeListener(KEY + k, (n, o, v, remote) => { if (remote) applyAll(); });
-      GM_addValueChangeListener(KEY + 'dlog', (n, o, v, remote) => { if (!remote) return; DLOG = v && typeof v === 'object' ? v : {}; dailiesChanged(); });
       GM_addValueChangeListener(KEY + 'sdock', (n, o, v, remote) => { if (remote) { try { paintDock(); } catch (e) { report(e); } } });   // (the Shop Dock opened, closed or changed in another tab)
       GM_addValueChangeListener(KEY + 'relog', (n, o, v, remote) => {   // (one happened in another tab: the log here, if it's open, shows it)
         if (!remote || !hub || !hub.win.classList.contains('open') || hubPage !== 'randomevents') return;
         if (document.activeElement && document.activeElement.matches('[data-re="q"]')) rePaintList(); else reRepaint();
       });
       GM_addValueChangeListener(KEY + 'avown', (n, o, v, remote) => { if (remote) avAfter(); });   // (your avatars, read in another tab)
+      for (const k of ['remact', 'remgone']) GM_addValueChangeListener(KEY + k, (n, o, v, remote) => { if (remote) { try { remSync(); } catch (e) { report(e); } } });   // (a reminder said or put away on another tab)
+      GM_addValueChangeListener(KEY + 'upd', (n, o, v, remote) => { if (!remote) return; const u = v || {}, nt = $('[data-bnp="updnote"]'); if (nt && (u.skip === u.v || (u.later && Date.now() - u.later < 86400000) || !verNewer(u.v || '', myVersion()))) nt.remove(); });   // (the update note: Later, × or updated on another tab, gone here too)
       GM_addValueChangeListener(KEY + 'tpib', (n, o, v, remote) => { if (!remote) return; if (tpOn()) { try { tpPaint(); tpMultiPaint(); } catch (e) { report(e); } } if (hub && hub.win.classList.contains('open') && hubPage === 'tradingpost') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; } });   // (an Instant Buy looked up in another tab: shown here)
       for (const k of ['fquest', 'fqfold']) GM_addValueChangeListener(KEY + k, (n, o, v, remote) => { if (remote) paintFq(); });   // (your faerie quest, changed in another tab)
     } catch (_) { /* */ }
   }
-  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { remSoundOnce, mark: (id, how) => dailyMark(id, how || { full: true }), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, nclOpen, nclMin, nclTell, nclFold, soundDraw, nclGlance, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
+  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { remSoundOnce, mark: (id, how) => dailyMark(id, how || { full: true }), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, nclUnhold: () => new Promise((r) => { if (nclHoldEnd) { nclHoldEnd(); setTimeout(r, 80); } else r(); }), nclOpen, nclMin, nclTell, nclFold, soundDraw, nclGlance, captureChrome, acctCheck, dlog, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
   if (FRAME) { lookFrame(); return; }   // (the "Your look" window's page: Neoboard Settings alone, in the boards' look)
   // A page this makes over is never seen first as it was: the top bar is made over as soon as it's all there (Neopets puts it, the side
   // menu and their drop-downs before the page's own box, so that's before anything is drawn), and a page whose own layout changes much
@@ -23586,12 +25197,12 @@
       @keyframes bnp-wait-in { to { opacity: 1; } }`;
     document.documentElement.append(st);
   }
-  earlyOld();   // (the very start of the page: an old one gets its beta look before anything is drawn)
+  try { earlyOld(); } catch (e) { report(e); try { undoOld(); } catch (_) { /* */ } }   // (the very start of the page: an old one gets its beta look before anything is drawn)
   (function atRoot(fn) {   // (the very start of the page: these need its <html>, which may not be there yet)
     if (document.documentElement) { fn(); return; }
     const o = new MutationObserver(() => { if (document.documentElement) { o.disconnect(); fn(); } });
     o.observe(document, { childList: true });
-  })(() => { try { tpEarly(); myEarly(); tabsMark(); dockMark(); shopMin(); srEarly(); nbEarly(); stEarly(); nmEarly(); pageWait(); waitStyle(); navEarly(); } catch (e) { report(e); } });
+  })(() => { for (const f of [nclPinEarly, tpEarly, myEarly, tabsMark, dockMark, shopMin, srEarly, nbEarly, stEarly, nmEarly, pageWait, waitStyle, navEarly]) { try { f(); } catch (e) { report(e); } } });
   function srEarly() {   // (search results: Neopets' plain list stays out of sight from the start, so it never shows first and goes)
     if (!S.features.searchPage || location.pathname !== '/search.phtml' || /selected_type=object/.test(location.search)) return;
     const root = document.documentElement;
@@ -23607,19 +25218,20 @@
   // away it stops. Back on Neopets, it's back to your setting at once: you still hear of new Neomail while doing other things, without
   // looking busy all hours of the day
   const ACT_STOP = 4 * 3600e3;
-  function actNote() { try { const now = Date.now(), was = Number(localStorage.getItem('bnp-active')) || 0; if (now - was > 20000) { localStorage.setItem('bnp-active', String(now)); if (was && now - was > 5 * 60000) dispatchEvent(new Event('bnp-back')); } } catch (_) { /* */ } }   // (bnp-back: back after a while away)
-  const actIdle = () => { let at = 0; try { at = Number(localStorage.getItem('bnp-active')) || 0; } catch (_) { return 0; } return at ? Math.max(0, Date.now() - at) : 0; };
+  const actAt = () => { let at = 0; try { at = Number(localStorage.getItem('bnp-active')) || 0; } catch (_) { /* */ } return Math.max(at, Number(get('active', 0)) || 0); };   // (the site's storage, or the script's own when the site's is full)
+  function actNote() { const now = Date.now(), was = actAt(); if (now - was <= 20000) return; try { localStorage.setItem('bnp-active', String(now)); } catch (_) { set('active', now); } if (was && now - was > 5 * 60000) dispatchEvent(new Event('bnp-back')); }   // (bnp-back: back after a while away)
+  const actIdle = () => { const at = actAt(); return at ? Math.max(0, Date.now() - at) : 0; };
   const actGap = (ms) => Math.max(ms, actIdle() / 4);   // (a look's gap: yours while you're about; a quarter of how long you've been away, once that's longer)
   function actListen() {
-    actNote();
+    if (document.visibilityState === 'visible') actNote();   // (a tab loading by itself in the background isn't you)
     for (const ev of ['pointerdown', 'keydown', 'wheel']) addEventListener(ev, actNote, { capture: true, passive: true });
     document.addEventListener('visibilitychange', () => { if (!document.hidden) actNote(); });
   }
   function boot() {   // (the page is read: the rest)
     try { actListen(); } catch (e) { report(e); }
-    for (const fn of [finishOld, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, itemsPage, nbPage, stPage, tpPage, scPage, nmPage, nfNote, nfLook, smPage, fillAll, dailyFill, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
+    for (const fn of [finishOld, acctCheck, lookup9999, nplNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, itemsPage, nbPage, stPage, tpPage, scPage, nmPage, nfNote, nfLook, smPage, fillAll, dailyFill, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
     themeAfter(themeChanged);   // (an old page, its theme's sheets still coming: everything of ours dressed again once they're in)
-    whenLoaded(() => { try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } setTimeout(() => { updCheck(false).catch(report); try { updSeen(); } catch (e) { report(e); } }, 1500); try { const w = myWorn(), sw = w && themeData().sw[myLive(w).base]; if (w && (!sw || sw.v !== 6)) themeSwatches(); } catch (e) { report(e); } });   // (a theme of yours: its base's sheet read, if it hasn't been yet)   // (a random event Neopets adds a moment later; theme pictures for the tab)
+    whenLoaded(() => { try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } setTimeout(() => { updCheck(false).catch(report); try { updSeen(); } catch (e) { report(e); } }, 1500); try { const w = myWorn(), sw = w && themeData().sw[myLive(w).base]; if (w && (!sw || sw.v !== 7)) themeSwatches(); } catch (e) { report(e); } });   // (a theme of yours: its base's sheet read, if it hasn't been yet)   // (a random event Neopets adds a moment later; theme pictures for the tab)
     if (document.getElementById('navtop__2020') || document.getElementById('navbottom__2020')) startOnce();
     document.documentElement.classList.remove('bnp-pagewait');   // (made over: it shows)
   }
