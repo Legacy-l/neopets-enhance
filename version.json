@@ -1,11 +1,11 @@
 {
- "version": "3.9",
+ "version": "4.0",
  "date": "2026-10-26",
  "notes": [
-  "NeoChat: pin it beside any page, size it from its corner, pick its header’s buttons (or show them only when you point at the header), mute people, quick replies, link cards and Find in your messages",
-  "Reminders and alerts: one sound and one notice however many Neopets tabs are open; closed on one tab, gone from all of them",
-  "Settings: side accounts can share your settings or have their own; the menu in cards, its colours right on every theme",
-  "Trading Post: Lot cards as one choice, pictures at 40, 60 or 80 px, View Details right on the card, and long lots no longer stretch their neighbours",
-  "Go to finds items anywhere, Neopoints over time, lookups without the captcha, pinned pages that stay put; and much more"
+  "Customise made over: your whole closet in sight, sorted by zone, colour or cap value, with Outfits",
+  "Books, Booktastic and Gourmet Club: what each pet hasn’t had yet, cheapest first, with award goals",
+  "Stock Market made over; Food Club bets copied from popular bettors in one click; what your items are worth",
+  "NeoChat: Sent or Not sent, Neofriend requests counted; NeoChat Themes with any theme’s design and Neopets’ buttons",
+  "Quick Ref tidied, a Quick Ref link in the side menu, ads hidden without Premium, your till’s withdrawals totalled"
  ]
 }
