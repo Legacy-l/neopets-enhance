@@ -1,11 +1,11 @@
 {
- "version": "4.0",
- "date": "2026-10-26",
+ "version": "4.1",
+ "date": "2026-10-27",
  "notes": [
-  "Customise made over: your whole closet in sight, sorted by zone, colour or cap value, with Outfits",
-  "Books, Booktastic and Gourmet Club: what each pet hasn’t had yet, cheapest first, with award goals",
-  "Stock Market made over; Food Club bets copied from popular bettors in one click; what your items are worth",
-  "NeoChat: Sent or Not sent, Neofriend requests counted; NeoChat Themes with any theme’s design and Neopets’ buttons",
-  "Quick Ref tidied, a Quick Ref link in the side menu, ads hidden without Premium, your till’s withdrawals totalled"
+  "The Stamp Album made over: your whole album at a glance, missing stamps in their places with prices, avatars, marks wherever items show",
+  "Your Closet made over: all of it at once, found, sorted and filtered, its worth, what your pets wear, several moved at once",
+  "Quick Stock made over; a compact top bar with menus you can arrange; the side menu your way",
+  "Bigger page titles, Customise Outfits for any pet, your inventory updated without reloading",
+  "The Super Shop Wizard opens right on old pages, and many fixes"
  ]
 }
