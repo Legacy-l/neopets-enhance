@@ -1,11 +1,11 @@
 {
- "version": "4.1",
+ "version": "4.2",
  "date": "2026-10-27",
  "notes": [
-  "The Stamp Album made over: your whole album at a glance, missing stamps in their places with prices, avatars, marks wherever items show",
-  "Your Closet made over: all of it at once, found, sorted and filtered, its worth, what your pets wear, several moved at once",
-  "Quick Stock made over; a compact top bar with menus you can arrange; the side menu your way",
-  "Bigger page titles, Customise Outfits for any pet, your inventory updated without reloading",
-  "The Super Shop Wizard opens right on old pages, and many fixes"
+  "Inventory without reloading fixed: whatever you do with an item, it leaves the grid at once, pictures and all",
+  "What it’s worth: the SDB follows items in and out, paused counts carry on, the Gallery and Closet keep their last count",
+  "Instant Buy and auction sales in your sales list; the Post Office made over (Main Page, others’ albums, high scores)",
+  "Board colours: choose the title bands’ pattern; Quick Ref ages; galleries keep their owners’ looks",
+  "Fixes: Settings › Reminders, Create a Trade ×9, and more"
  ]
 }

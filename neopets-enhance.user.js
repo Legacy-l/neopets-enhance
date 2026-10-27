@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.1
+// @version      4.2
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -385,7 +385,7 @@
   const FEAT = {
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, noAds: true, tillLog: true, tpSales: true,
     scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
-    oldBeta: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
+    oldBeta: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldGalleries: false, oldShops: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
     updNote: true, updNew: true, dailyBtn: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, hidePinAd: true, nm2: true, nmPopup: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
@@ -1969,6 +1969,7 @@
         const left = remDayLeft;
         add({ key: `dayend:${midnight}`, at, kind: 'dayend', title: `The day ends in ${fmtLeft(R.dayendLead * 60000)}`, what: 'The day ends', when: midnight, whenNote: 'midnight', ifNote: 'if any are still to do then', icon: iconOf(FOLDERS.dailies.icon), board: true, sound: 'bell', check: () => left().length > 0, textNow: remDayendText });
       }
+      if (R.advent && nstOf(midnight + 3600000).mo === 12) add({ key: `advent:${midnight}`, at: midnight, kind: 'advent', title: 'A new Advent Calendar door', text: 'Today’s prize is waiting.', icon: iconOf(dailyById('advent').icon), href: '/winter/adventcalendar.phtml', sound: 'chime' });   // (December: a new door each midnight NST)
     }
     if (R.fc) {   // (Food Club: its bets close at 2 pm NST, when the round changes)
       const fcd = dailyById('foodclub');
@@ -2001,7 +2002,6 @@
       const at = base + Math.max(1, Math.ceil((now - 20 * 60000 - base) / step)) * step;
       add({ key: `backup:${at}`, at, kind: 'backup', title: last ? 'Time for a backup' : 'Save a backup of your settings', text: last ? `Your last one was ${Math.max(1, Math.round((at - last) / DAY_MS))} days ago. One small file keeps your menus, themes and settings safe.` : 'Your menus, themes and settings live only in this browser: one small file keeps them safe.', icon: iconOf(['side:/settings/', 'el:#navprofiledropdown__2020 .nav-settings-icon']), hub: 'backup', sound: 'chime' });
     }
-    if (R.advent && (nstOf(midnight + 3600000).mo === 12)) add({ key: `advent:${midnight}`, at: midnight, kind: 'advent', title: 'A new Advent Calendar door', text: 'Today’s prize is waiting.', icon: iconOf(dailyById('advent').icon), href: '/winter/adventcalendar.phtml', sound: 'chime' });
     for (const s of get('remsnooze', []) || []) if (s && s.key) add({ ...s, kind: s.kind === 'ready' ? 'later' : s.kind || 'later', ...(s.kind === 'snow' && s.until ? { check: snowCheck(s.start || 0, s.until) } : {}) });   // ("In 10 minutes": the Snowager's only while it's still asleep and you haven't been)
     for (const c of R.custom || []) {   // (your own)
       let at = 0;
@@ -2112,7 +2112,8 @@
     try { remSync(); } catch (e) { report(e); }   // (the notes said already: as they are now, a daily done meanwhile and all)
     if (!S.rem || !S.rem.on) return;
     const now = Date.now(), fired = remFired();
-    const evs = remEvents(now).filter((e) => !fired[e.key]);
+    let evs = [];
+    try { evs = remEvents(now).filter((e) => !fired[e.key]); } catch (e) { report(e); }   // (one kind going wrong: the timer still runs on)
     const due = evs.filter((e) => e.at <= now);
     if (due.length) remClaim(due.map((e) => e.key)).then((keys) => remFire(due.filter((e) => keys.includes(e.key))));
     const next = evs.find((e) => e.at > now);
@@ -2416,15 +2417,15 @@
       link: a ? a.getAttribute('href') : '', linkText: a ? reClean(a.textContent) : '',
     };
   }
-  function reOldBoxes() {   // (found by their words, "Something has happened!", standing alone as a heading: never words inside a post)
+  function reOldBoxes(doc = document) {   // (found by their words, "Something has happened!", standing alone as a heading: never words inside a post. doc: this page's, or one read unseen)
     const out = [];
     let snap = null;
-    try { snap = document.evaluate(".//text()[contains(translate(., 'SOMETHINGAPD', 'somethingapd'), 'something has happened')]", document.body, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null); } catch (_) { return out; }
+    try { snap = doc.evaluate(".//text()[contains(translate(., 'SOMETHINGAPD', 'somethingapd'), 'something has happened')]", doc.body, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null); } catch (_) { return out; }
     for (let i = 0; i < snap.snapshotLength && i < 8; i++) {
       const el = snap.snapshotItem(i).parentElement;
       if (!el || el.closest('script, style, textarea, noscript, [data-bnp], .randomEvent, .boardPostMessage') || !/^something has happened!*$/i.test(reClean(el.textContent))) continue;
       let box = el, found = false;
-      for (let up = 0; up < 6 && box.parentElement && box.parentElement !== document.body; up++) {
+      for (let up = 0; up < 6 && box.parentElement && box.parentElement !== doc.body; up++) {
         box = box.parentElement;
         const len = reClean(box.textContent).length;
         if (len > 700) break;
@@ -3118,6 +3119,7 @@
   function itSettings() {   // (yours; the first time, Item Helper's carried across)
     if (S.items && S.items.pages) {
       for (const [k, , , keys] of IT_PAGES) if (!S.items.pages[k]) S.items.pages[k] = { on: true, keys: keys.slice(), price: IT_PRICED.includes(k) };   // (a page added since you set yours: as it comes)
+      if (!S.items.filled) { const d = IT_DEFAULT(); for (const [k, v] of Object.entries(d)) if (!(k in S.items)) S.items[k] = v; S.items.filled = 1; }   // (a switch added since yours were saved — Inventory without reloading… —: as it comes, not off)
       return S.items;
     }
     const d = IT_DEFAULT();
@@ -3805,6 +3807,7 @@
     itHere = itPageKey();
     if (!itHere || itStepAside()) return;
     styles();
+    if (itHere === 'inventory') { try { invPicsWatch(); } catch (e) { report(e); } }   // (its pictures, whatever else is on)
     const page = itSettings().pages[itHere], helper = !!S.features.items && !!page && page.on;
     if (!helper && !marks) return;
     const marksLoad = () => Promise.all([colMarksOn() ? colMarksLoad() : null, saMarksOn() ? saMarksLoad() : null]).then(() => { colMarkAll(); saMarkAll(); });
@@ -3866,8 +3869,31 @@
     try { const n = natNow().get(keyOf(u.href)) || sideMap().get(keyOf(u.href)); if (n) add(n.el ? nativeIcon(n) : n.icon); } catch (_) { /* */ }
     return out;
   }
+  const MKT_JUMP = [   // (your shop's "Jump to": each its own picture of Neopets' — your theme's where it has one; no two the same)
+    [/market\.phtml\?type=list/, ['el:.nav-shop-icon__2020', `url:${NPI}themes/h5/basic/images/shop-icon.svg`]],
+    [/browseshop\.phtml/, [`url:${NPI}themes/h5/basic/images/neopiacentral-icon.png`]],
+    [/market\.phtml\?type=edit/, [`url:${NPI}themes/h5/basic/images/releasenotes-icon.png`]],
+    [/market\.phtml\?type=your/, [`url:${NPI}themes/h5/basic/images/myshop-icon.png`]],
+    [/market\.phtml\?type=till/, [`url:${NPI}premium/portal/images/nptotal-icon.png`]],
+    [/market\.phtml\?type=sales/, ['el:.nav-transferlog-icon', `url:${NPI}themes/h5/basic/images/transferlog-icon.svg`]],
+    [/quickstock\.phtml/, ['el:.nav-quickstock-icon']],
+    [/inventory/, ['el:.nav-inventory-icon']],
+    [/safetydeposit\.phtml/, ['el:.nav-sdb-icon']],
+    [/gallery\/index\.phtml/, ['el:.nav-gallery-icon']],
+  ];
   function mbPaint() {
     if (S.features.barIcons === false) return;
+    for (const a of $$('nav.mkt-subnav a.mkt-subnav__link[href]')) {   // (user asked 2026-10-27: Neopets' pictures beside your shop's links, "Jump to:" put away for the room)
+      if (a.dataset.bnpMb) continue;
+      a.dataset.bnpMb = '1';
+      const spec = (MKT_JUMP.find(([re]) => re.test(a.getAttribute('href') || '')) || [])[1], u = spec ? tabIconOf(spec) : '';
+      if (!u) continue;
+      a.classList.add('bnp-mb', 'bnp-mkt-j');
+      a.insertAdjacentHTML('afterbegin', `<i class="bnp-mbic" data-crisp="${esc(u)}" data-crisp-px="20" style="background-image:url('${esc(cssUrl(u))}')" aria-hidden="true"></i>`);
+      crispIn(a);
+      const lab = a.parentElement && a.parentElement.querySelector(':scope > .mkt-subnav__label');
+      if (lab) lab.style.display = 'none';
+    }
     for (const a of $$('#container__2020 ul[class$="-menulinks"] > li > a[href]')) {
       if (a.dataset.bnpMb) continue;
       a.dataset.bnpMb = '1';
@@ -4286,6 +4312,7 @@
   }
   let itPicWant = new Map(), itPicT = 0;
   function itNoReload() {   // (Inventory: after an item's used, sent or moved, no reload: the grid as Neopets has it now, asked for quietly, laid over the one on the page)
+    try { invPicsWatch(); } catch (e) { report(e); }
     const set = itSettings();
     if (!set.noReload || !$('#invDisplay')) return;   // (the old inventory page: Neopets' own reload)
     styles();
@@ -4315,29 +4342,64 @@
       if (!itSettings().noReload) return;
       if (t.closest('a.inv-refresh') || t.closest('#invResult .popup-exit') || t.closest('#invResult input[value="Close and Refresh"]')) { e.preventDefault(); e.stopImmediatePropagation(); close(); }
     }, true);
-    document.addEventListener('bnp-inv-acted', () => { if (itSettings().noReload) invSyncSoon(last, 400); });   // (an action answered, whichever: the grid as it is now, under the pop-up already)
+    document.addEventListener('bnp-inv-acted', () => { invStale = true; if (itSettings().noReload) invSyncSoon(last, 400); });   // (an action answered, whichever: the grid as it is now, under the pop-up already)
     const res = document.getElementById('invResult');
     if (!res) return;
-    let shown = false, autoT = 0;
+    let shown = false, autoT = 0, told = '';
     new MutationObserver(() => {   // (the result pop-up put away however it was (its X, Close, the shade, Esc, Back to options): the grid follows)
       const now = getComputedStyle(res).display !== 'none';
+      const h3 = now ? ((res.querySelector('h3') || {}).textContent || '').trim() : '';
+      if (now && h3 && !/^Loading/i.test(h3) && itSettings().noReload) {   // (a result shown — whatever sent it: the grid under it as it is now)
+        const said = `${h3}|${((res.querySelector('.popup-body__2020') || {}).textContent || '').length}`;
+        if (said !== told) { told = said; invStale = true; invSyncSoon(last, 500); }
+      } else if (!now || /^Loading/i.test(h3)) told = '';
       if (now && itSettings().autoClose) { const h = res.querySelector('h3'); clearTimeout(autoT); if (h && !/^\s*Loading/i.test(h.textContent)) autoT = setTimeout(close, 700); }
       if (now === shown) return;
       shown = now;
       if (!now && itSettings().noReload) invSyncSoon(last);
     }).observe(res, { attributes: true, attributeFilter: ['style', 'class'], childList: true, subtree: true });
   }
+  let invPicIo = null;
+  const invPicSet = (i) => { if (/url\(/.test(i.style.backgroundImage)) return; const src = i.getAttribute('data-src') || i.getAttribute('data-image'); if (src) { i.style.backgroundImage = `url("${cssUrl(fullUrl(src))}")`; i.removeAttribute('data-src'); } };
+  function invPics() {   // (a card's picture, as it comes into sight, when Neopets' own loader hasn't put it in: it can miss some after an action or a switch between NP and NC, and they'd stay blank)
+    const box = $('#invDisplay');
+    if (!box || typeof IntersectionObserver !== 'function') return;
+    if (!invPicIo) invPicIo = new IntersectionObserver((ents) => { for (const e of ents) if (e.isIntersecting) { invPicIo.unobserve(e.target); invPicSet(e.target); } }, { rootMargin: '300px 0px' });
+    for (const i of box.querySelectorAll('.item-img')) { if (i.__bnpPic) continue; i.__bnpPic = 1; invPicIo.observe(i); }
+  }
+  function invPicsWatch() {   // (the grid, however it's drawn — Neopets' own tabs, NP and NC, NE's quiet refresh — watched for cards)
+    const box = $('#invDisplay');
+    if (!box || box.dataset.bnpPics) return;
+    box.dataset.bnpPics = '1';
+    let t = 0;
+    invPics();
+    new MutationObserver(() => { clearTimeout(t); t = setTimeout(invPics, 120); }).observe(box, { childList: true, subtree: true });
+  }
   function INV_EAR() {   // (runs in the page itself: an item's action sent from its pop-ups (into your shop or SDB, donated, discarded, given, used, auctioned, a next step…), said in "bnp-inv-acted" once Neopets has answered)
     if (window.__bnpInvEar || !window.XMLHttpRequest) return;
     window.__bnpInvEar = 1;
     const X = window.XMLHttpRequest.prototype, open = X.open, send = X.send;
     const up = (id) => { const el = document.getElementById(id); return !!el && getComputedStyle(el).display !== 'none'; };
+    const F = window.fetch;   // (fetch() too: an action may come that way)
+    if (typeof F === 'function') window.fetch = function (input, init) {
+      const p = F.apply(this, arguments);
+      try {
+        const post = /^post$/i.test(String((init && init.method) || (input && input.method) || '')), u = String((input && input.url) || input || '');
+        if (post && !/\/ajax\/inventory\.php/.test(u) && (up('invDesc') || up('invResult'))) p.then((r) => document.dispatchEvent(new CustomEvent('bnp-inv-acted', { detail: JSON.stringify({ u, status: r && r.status }) })), () => {});
+      } catch (_) { /* */ }
+      return p;
+    };
     X.open = function (m) { try { this.__bnpPost = /^post$/i.test(String(m)) ? String(arguments[1] || '') : ''; } catch (_) { /* */ } return open.apply(this, arguments); };
-    X.send = function () {
+    let sdbN = 0;
+    X.send = function (body) {
       try {
         if (this.__bnpPost && !/\/ajax\/inventory\.php/.test(this.__bnpPost) && (up('invDesc') || up('invResult'))) {   // (sent from an item's pop-up: an action, not the grid itself)
-          const u = this.__bnpPost;
-          this.addEventListener('loadend', () => document.dispatchEvent(new CustomEvent('bnp-inv-acted', { detail: JSON.stringify({ u, status: this.status }) })));
+          const u = this.__bnpPost, q = typeof body === 'string' ? new URLSearchParams(body) : null, k = q && /deposit/i.test(q.get('action') || '') ? `i${++sdbN}` : '';   // (into your SDB: told as it goes, by the item's id alone)
+          if (k) document.dispatchEvent(new CustomEvent('bnp-sdb-send', { detail: JSON.stringify({ k, where: 'inv', obj: q.get('obj_id') || '', nc: /process_cash_object/.test(u) }) }));
+          this.addEventListener('loadend', () => {
+            document.dispatchEvent(new CustomEvent('bnp-inv-acted', { detail: JSON.stringify({ u, status: this.status }) }));
+            if (k) document.dispatchEvent(new CustomEvent('bnp-sdb-done', { detail: JSON.stringify({ k, ok: this.status === 200 }) }));
+          });
         }
       } catch (_) { /* */ }
       return send.apply(this, arguments);
@@ -4350,20 +4412,147 @@
     sc.textContent = `(${INV_EAR.toString()})();`;
     document.documentElement.append(sc);
   }
+  function SDB_EAR() {   // (runs in the page itself: what's sent that takes items out of your SDB, or puts them in from Quick Stock, told to NE as it goes ("bnp-sdb-send") and once Neopets has answered ("bnp-sdb-done"): item ids, names and how many — never a PIN or a page key)
+    if (window.__bnpSdbEar || typeof window.fetch !== 'function') return;
+    window.__bnpSdbEar = 1;
+    const F = window.fetch, say = (t, d) => document.dispatchEvent(new CustomEvent(t, { detail: JSON.stringify(d) }));
+    const OUT = /\/np-templates\/ajax\/safetydeposit\/(?:move-items|auction|give-neofriend|tradingpost-new-lot|pet-action|use-supplies|talisman)\.php/, QS = /\/np-templates\/ajax\/process_quickstock\.php/, QSL = /\/np-templates\/ajax\/quickstock\/get_items\.php/;
+    const seen = new Map();   // (Quick Stock's items as its list gave them, every page of it looked at: what each choice stands for)
+    let n = 0;
+    window.fetch = function (input, init) {
+      const u = String((input && input.url) || input || '');
+      let k = '';
+      try {
+        if (/^post$/i.test(String((init && init.method) || (input && input.method) || '')) && (OUT.test(u) || QS.test(u))) {
+          const b = JSON.parse(String((init && init.body) || '{}')) || {};
+          if (OUT.test(u)) {
+            const moves = Array.isArray(b.moves) ? b.moves.map((m) => ({ id: m.obj_info_id, q: Number(m.quantity) || 1 })) : b.obj_info_id != null ? [{ id: b.obj_info_id, q: Number(b.quantity) || 1 }] : [];
+            if (moves.length) { k = `s${++n}`; say('bnp-sdb-send', { k, where: 'sdb', moves }); }
+          } else {
+            const adds = [];
+            for (const [list, nc] of [[b.items, false], [b.cashItems, true]]) {
+              for (const x of Array.isArray(list) ? list : []) {
+                if (!x || x.action !== 'deposit') continue;
+                const it = x.oii != null ? seen.get(`oii_${nc ? 'nc' : 'np'}_${x.oii}`) : seen.get(nc ? `cash_${x.cashObjId}` : `np_${x.objId}`);
+                if (it) adds.push(x.oii != null ? it : { ...it, q: 1 });   // (a stack: all of it; one item: one)
+              }
+            }
+            if (adds.length) { k = `q${++n}`; say('bnp-sdb-send', { k, where: 'qs', adds }); }
+          }
+        }
+      } catch (_) { k = ''; }
+      const p = F.apply(this, arguments);
+      try {
+        if (k) p.then((r) => r.clone().json()).then((d) => say('bnp-sdb-done', { k, ok: !!(d && d.success === true) }), () => say('bnp-sdb-done', { k, ok: false }));
+        else if (QSL.test(u)) {
+          p.then((r) => r.clone().json()).then((d) => {
+            for (const it of d && Array.isArray(d.items) ? d.items : []) {
+              if (!it || !it.name) continue;
+              const nc = !!it.isCash, v = { n: String(it.name), q: Math.max(1, Number(it.count) || 1), nc };
+              if (it.oii != null) seen.set(`oii_${nc ? 'nc' : 'np'}_${it.oii}`, v);
+              if (nc && it.cashObjId != null) seen.set(`cash_${it.cashObjId}`, v);
+              if (!nc && it.objId != null) seen.set(`np_${it.objId}`, v);
+            }
+          }, () => {});
+        }
+      } catch (_) { /* */ }
+      return p;
+    };
+  }
+  function sdbEar() {   // (the very start of the SDB, Quick Stock and the Inventory: what goes into or out of your SDB heard, so its counted worth follows without counting again)
+    const p = location.pathname;
+    if (FRAME || S.features.worth === false || !['/safetydeposit.phtml', '/quickstock.phtml', '/inventory.phtml'].includes(p)) return;
+    if (p !== '/inventory.phtml' && !document.getElementById('bnp-sdb-ear')) {   // (the Inventory's own ear tells of what's put in from there)
+      const sc = document.createElement('script');
+      sc.id = 'bnp-sdb-ear';
+      sc.textContent = `(${SDB_EAR.toString()})();`;
+      document.documentElement.append(sc);
+    }
+    const sent = new Map(), read = (e) => { try { return JSON.parse(e.detail); } catch (_) { return null; } };
+    document.addEventListener('bnp-sdb-send', (e) => {
+      const d = read(e);
+      if (!d || !d.k) return;
+      if (d.where === 'sdb') sent.set(d.k, sdbMoving(d.moves || []));
+      else if (d.where === 'qs') sent.set(d.k, (d.adds || []).map((a) => ({ n: reClean(a.n), dq: Math.max(1, Number(a.q) || 1), nc: !!a.nc })));
+      else if (d.where === 'inv') { const x = invDepositing(d); if (x) sent.set(d.k, x); }
+    });
+    document.addEventListener('bnp-sdb-done', (e) => {
+      const d = read(e), x = d && sent.get(d.k);
+      if (!x) return;
+      sent.delete(d.k);
+      if (!d.ok) return;   // (Neopets said no, or asked for your PIN: nothing moved)
+      if (Array.isArray(x)) { wtSdbChange(x); return; }
+      invSdbPendSet([...invSdbPend(), { ...x, at: Date.now() }]);   // (from the Inventory: counted once its grid shows it gone)
+      setTimeout(() => invSdbCheck(null), 2500);
+    });
+  }
+  function sdbMoving(moves) {   // (what's leaving your SDB, by name, from its own list the moment it's sent: this page's items, or what's selected on its other pages)
+    const st = vueState((PAGE.document || document).getElementById('sdb-vue-app'), ['items', 'selectedItemsList']), pool = wtPool();
+    const find = (id) => {
+      for (const k of ['items', 'selectedItemsList']) { try { const it = [...((st && st[k]) || [])].find((x) => x && String(x.obj_info_id) === String(id)); if (it) return it; } catch (_) { /* */ } }
+      return null;
+    };
+    return moves.map((m) => {
+      const it = find(m.id);
+      return { id: m.id, dq: -Math.max(1, Number(m.q) || 1), n: it ? reClean(it.obj_name) : '', nc: it ? !!it.is_nc || pool === 'nc' : pool === 'nc', img: it && it.obj_filename ? `https://images.neopets.com/items/${it.obj_filename}.gif` : '' };
+    });
+  }
+  const INV_SDB = 'bnp-sdb-invpend';   // (put into your SDB from the Inventory, waiting to be seen gone from its grid: this tab's, through a reload)
+  const invSdbPend = () => { try { const v = JSON.parse(sessionStorage.getItem(INV_SDB) || '[]'); return Array.isArray(v) ? v : []; } catch (_) { return []; } };
+  const invSdbPendSet = (v) => { try { if (v.length) sessionStorage.setItem(INV_SDB, JSON.stringify(v)); else sessionStorage.removeItem(INV_SDB); } catch (_) { /* */ } };
+  const invTab = (d) => (d && document.getElementById(`invDisplay${(Number(d.dataset.action) || 0) + 1}`)) || d;   // (the grid showing: Neopets keeps a few)
+  const invQtyOf = (root, n) => [...root.querySelectorAll('.grid-item:not(.bnp-inv-gone) .item-img[data-itemname]')].filter((i) => reClean(i.getAttribute('data-itemname')) === n).reduce((a, i) => a + (Number(i.getAttribute('data-itemquantity')) || 1), 0);
+  function invDepositing(d) {   // (an item being put into your SDB from its pop-up: its name, and how many of it the grid shows now)
+    const box = $('#invDisplay'), tab = invTab(box), im = tab && d.obj ? tab.querySelector(`.item-img[data-objid="${CSS.escape(String(d.obj))}"]`) : null, n = im ? reClean(im.getAttribute('data-itemname')) : '';
+    return n ? { n, nc: !!d.nc || im.getAttribute('data-itemset') === 'nc' || box.dataset.type === 'nc', img: im.getAttribute('data-image') || '', before: invQtyOf(tab, n), ask: invAsk(box) } : null;
+  }
+  function invSdbCheck(html, ask) {   // (put into your SDB from here: how many left the grid, once the grid shows it — Neopets' answer read quietly, or the page come again — and the SDB's counted worth follows)
+    const list = invSdbPend(), box = $('#invDisplay');
+    if (!list.length || !box) return;
+    let root = null;
+    if (html != null) { const tpl = document.createElement('template'); tpl.innerHTML = html; root = tpl.content; } else if (!/inv-loading-static/.test(invTab(box).innerHTML)) root = invTab(box);
+    if (!root) return;
+    const now = ask || invAsk(box), keep = [];
+    for (const p of list) {
+      if (Date.now() - p.at > 180000) continue;   // (not seen to go in 3 minutes: let go — a count puts it right)
+      const left = p.ask === now ? invQtyOf(root, p.n) : p.before;   // (another tab or letter showing: not compared)
+      if (left < p.before) wtSdbChange([{ n: p.n, dq: p.before - left, nc: p.nc, img: p.img }]);
+      else keep.push(p);
+    }
+    if (keep.length !== list.length) invSdbPendSet(keep);
+  }
   let invT = 0, invBusy = false, invMore = null;
   function invSyncSoon(want, ms = 150) { clearTimeout(invT); invT = setTimeout(() => { invSync(want, 0).catch(report); }, ms); }
   const invAsk = (d) => new URLSearchParams({ itemType: d.dataset.type || 'np', alpha: d.dataset.filter || '', itemStack: d.dataset.stack || '1', action: Number(d.dataset.action) ? String(Number(d.dataset.action)) : '' }).toString();   // (what Neopets' own tabs ask for)
+  let invStale = false;   // (something was done to an item since the page was last loaded: Neopets' list is out of date till it is)
+  async function invFresh() {   // (the Inventory page, loaded unseen, as a refresh would: Neopets' list of your items is up to date after it. A random event on it: brought onto this page, and logged)
+    const r = await fetch('/inventory.phtml', { credentials: 'include' });
+    if (!r.ok) return;
+    const html = await r.text();
+    if (!/randomEvent|something has happened/i.test(html)) return;
+    const doc = new DOMParser().parseFromString(html, 'text/html'), boxes = [...doc.getElementsByClassName('randomEvent'), ...reOldBoxes(doc)];
+    if (!boxes.length) return;
+    const at = $('#navsub-buffer__2020'), box = $('#container__2020');
+    for (const b of boxes) {
+      const n = document.importNode(b, true);
+      for (const x of n.querySelectorAll('script')) x.remove();
+      if (at && at.parentElement) at.after(n); else if (box) box.prepend(n); else document.body.prepend(n);
+    }
+    reScan();
+  }
   async function invSync(want, n) {   // (the grid as Neopets has it now; only what changed changes)
     if (invBusy) { invMore = want || invMore || {}; return; }
     invBusy = true;
     try {
       const d = $('#invDisplay');
       if (!d) return;
+      if (invStale) { invStale = false; await invFresh().catch(report); }
       const ask = invAsk(d), r = await fetch(`/np-templates/ajax/inventory.php?${ask}`, { method: 'POST', credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
       const html = r.ok ? await r.text() : '', tab = document.getElementById(`invDisplay${(Number(d.dataset.action) || 0) + 1}`);
       if (!tab || invAsk(d) !== ask || !/grid-item|inv-total-count/.test(html) || /inv-loading-static/.test(tab.innerHTML)) return;   // (another tab or order chosen meanwhile, or Neopets drawing it itself: left to Neopets)
+      invSdbCheck(html, ask);
       const still = invApply(tab, html, want);
-      if (still && n < 4) setTimeout(() => { invSync(want, n + 1).catch(report); }, [1500, 3000, 6000, 10000][n]);   // (what was used still there as it was: Neopets may not have caught up yet)
+      if (still && n < 6) { invStale = true; setTimeout(() => { invSync(want, n + 1).catch(report); }, [1500, 3000, 5000, 8000, 12000, 20000][n] + Math.random() * 800); }   // (still there: the page again first, next time)   // (Neopets can take a while: about 50 seconds in all)   // (what was used still there as it was: Neopets may not have caught up yet)
     } finally {
       invBusy = false;
       if (invMore) { const w = invMore.id ? invMore : want; invMore = null; invSyncSoon(w); }
@@ -5323,7 +5512,7 @@
     try {
       for (const t of want) {
         if (document.hidden || nbAvLeft <= 0) break;
-        const wait = nbAvLast + 1200 + Math.random() * 1800 - Date.now();   // (a person's pause after the last one, this round's or the one before)
+        const wait = nbAvLast + 3000 + Math.random() * 2400 - Date.now();   // (a person's pause after the last one, this round's or the one before)
         if (wait > 0) await new Promise((ok) => setTimeout(ok, wait));
         if (document.hidden) break;
         nbAvLeft--;
@@ -6940,7 +7129,7 @@
     if (kept && !fresh && Date.now() - (kept.at || 0) < 5 * 60000) return Promise.resolve(kept);
     if (nbPenAsking.has(id)) return nbPenAsking.get(id);
     const run = nbPenLine.then(async () => {
-      const gap = nbPenAt + 700 + Math.random() * 900 - Date.now();
+      const gap = nbPenAt + 2500 + Math.random() * 1500 - Date.now();
       if (gap > 0) await new Promise((ok) => setTimeout(ok, gap));
       try { return await nbPenAsk(v, key, kept); } finally { nbPenAt = Date.now(); }
     });
@@ -7375,7 +7564,7 @@
 
   // ---- Board colours ----
   // Each part of the boards in a colour of your own over your theme's (S.nb.cols: part → '#rrggbb'; pat: 'off' takes the theme's
-  // pattern off the title bands). A part that's one of the boards' own colours sets it, so what's made from it follows (Thin lines
+  // pattern off the title bands, a picture puts that one on them instead, patSize: its width). A part that's one of the boards' own colours sets it, so what's made from it follows (Thin lines
   // from Frames…); the others colour their own places. One sheet after the boards' own, for the page and the window's preview alike
   const NBC_GROUPS = [['bars', 'Bars'], ['bands', 'Title bands'], ['frames', 'Frames and lines'], ['posts', 'Posts'], ['lists', 'Topic lists'], ['panels', 'Panels and typing'], ['marks', 'Markers']];
   const NBC_PARTS = [   // (v: the boards' own colour it sets; b: its colour otherwise; on: what it's read on, for Hard to read; sw: a switch of its own)
@@ -7384,7 +7573,7 @@
     { k: 'edge', g: 'bars', l: 'Bars’ edges', w: 'The darker rim under each bar, and round the topic starter’s side', v: '--nb-bar-edge' },
     { k: 'acc', g: 'bands', l: 'Title bands', w: 'Behind a board’s or topic’s title, and the top of the boards’ menus', v: '--nb-acc' },
     { k: 'ink', g: 'bands', l: 'Writing on title bands', v: '--nb-ink', on: 'acc' },
-    { k: 'pat', g: 'bands', l: 'Your theme’s pattern on them', w: 'Off: the bands are just their colour', tog: 1 },
+    { k: 'pat', g: 'bands', l: 'Pattern on them', pic: 1 },
     { k: 'frame', g: 'frames', l: 'Frames', w: 'Round posts, topic lists, boxes and buttons', v: '--nb-frame' },
     { k: 'line', g: 'frames', l: 'Thin lines', w: 'Between topics, and in posts above the pet and the buttons', v: '--nb-line' },
     { k: 'pop', g: 'frames', l: 'Picture frames', w: 'Round avatars, pets and board pictures', v: '--nb-pop' },
@@ -7457,6 +7646,7 @@
       if (NBC_PAGE[p.k]) page.push(NBC_PAGE[p.k](`var(${nbcVar(p)})`));
     }
     if (cols.pat === 'off') vars.push('--nb-pat: none !important');
+    else if (myPic(cols.pat)) vars.push(`--nb-pat: url("${cssUrl(myPic(cols.pat))}") !important`, `--nb-patsz: ${nbcPatSize(cols)}px auto !important`, '--nb-patpos: 50% 50% !important');   // (a pattern you chose: as wide as you've made it, from its middle)
     const me = 'html.bnp-nb #boardTopic ul li.bnp-nbpost.bnp-nb-me > .boardPost';   // (your own posts: your tint, or your theme's over your posts' colour; or as every other post)
     if (nbOpt().mineTint === false) { page.push(`${me} { background-color: var(--nbc-card, #fff) !important; }`); vars.push('--nbc-mine: var(--nbc-card, #fff)'); }
     else if (nbHex(cols.mine)) page.push(`${me} { background-color: var(--nbc-mine) !important; }`);
@@ -7534,7 +7724,9 @@
     win.setAttribute('role', 'dialog');
     win.setAttribute('aria-label', 'Board colours');
     win.tabIndex = -1;
-    const row = (p) => (p.tog
+    const row = (p) => (p.pic
+      ? `<div class="bnp-nbc-row is-pic" data-k="${p.k}"><button type="button" class="bnp-nbc-sw bnp-nbc-patsw" data-nbc-pat title="Choose a pattern" aria-label="${esc(p.l)}: choose a pattern" aria-haspopup="dialog" aria-expanded="false"><span></span></button><div class="bnp-nbc-t"><b>${esc(p.l)}</b><small data-nbc-patname></small></div><div class="bnp-nbc-end"><button type="button" class="bnp-nbc-lb" data-nbc-pat>Choose…</button><button type="button" class="bnp-nbc-lb" data-nbc-patuse="off" aria-pressed="false">None</button><button type="button" class="bnp-nbc-undo" data-nbc-patuse="" title="Back to your theme’s pattern">Theme’s</button></div></div>`
+      : p.tog
       ? `<label class="bnp-nbc-row is-tog" data-k="${p.k}"><span class="bnp-nbc-chk"><input type="checkbox" data-nbc-tog="${p.k}"></span><span class="bnp-nbc-t"><b>${esc(p.l)}</b><small>${esc(p.w)}</small></span></label>`
       : `<div class="bnp-nbc-row" data-k="${p.k}"><button type="button" class="bnp-nbc-sw" data-nbc-pick="${p.k}" title="Choose its colour" aria-label="${esc(p.l)}: choose its colour" aria-haspopup="dialog"></button><div class="bnp-nbc-t"><b>${esc(p.l)}</b>${p.w ? `<small>${esc(p.w)}</small>` : ''}<em class="bnp-nbc-warn" hidden></em></div><div class="bnp-nbc-end">${p.sw ? `<label class="bnp-nbc-on"><input type="checkbox" data-nbc-on="${p.sw}">On</label>` : ''}<input type="text" class="bnp-nbc-hex" data-nbc-hex="${p.k}" maxlength="7" spellcheck="false" autocomplete="off" aria-label="${esc(p.l)}: its colour code"><button type="button" class="bnp-nbc-undo" data-nbc-reset="${p.k}" title="Back to your theme’s colour">Theme’s</button></div></div>`);
     win.innerHTML = `<div class="popup-header__2020 bnp-hub-head" data-nbc-drag title="Drag it anywhere (a double-click puts it back)"><h3>Board colours</h3><button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-nbc-x" data-nbc="x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button><div class="popup-header-pattern__2020"></div></div>
@@ -7543,7 +7735,7 @@
         <div class="bnp-nbc-list"><div class="bnp-nbc-scope" data-nbc-scope></div>${NBC_GROUPS.map(([g, l]) => `<section class="bnp-nbc-g"><h4>${esc(l)}</h4>${NBC_PARTS.filter((p) => p.g === g).map(row).join('')}</section>`).join('')}</div>
       </div>
       <div class="bnp-nbc-foot"><button type="button" class="bnp-nbc-lb" data-nbc="theme">Your theme’s colours for all</button><button type="button" class="bnp-nbc-lb" data-nbc="back" disabled>Back to how they were</button><button type="button" class="button-default__2020 button-yellow__2020 bnp-nbc-done" data-nbc="x">Done</button></div>
-      <div class="bnp-nbc-prev bnp-nbc-probe" aria-hidden="true">${NBC_PARTS.filter((p) => !p.tog).map((p) => `<i data-k="${p.k}" style="color:${nbcExpr(p)}"></i>`).join('')}</div>`;
+      <div class="bnp-nbc-prev bnp-nbc-probe" aria-hidden="true">${NBC_PARTS.filter((p) => !p.tog && !p.pic).map((p) => `<i data-k="${p.k}" style="color:${nbcExpr(p)}"></i>`).join('')}</div>`;
     document.body.append(win);
     nbc = { win, head: win.querySelector('[data-nbc-drag]'), box: win.querySelector('[data-nbc-prevbox]'), probe: win.querySelector('.bnp-nbc-probe'), rows: [...win.querySelectorAll('.bnp-nbc-row')], back: win.querySelector('[data-nbc="back"]'), was: '' };
     const w = nbc, rowOf = (k) => w.rows.find((r) => r.dataset.k === k);
@@ -7553,10 +7745,12 @@
     win.querySelector('.bnp-nbc-list').addEventListener('pointerleave', () => lit(''));
     win.addEventListener('input', (e) => {
       const t = e.target;
+      if (t.dataset.nbcPatsize != null) { nbcSetCols({ ...nbcCols(), patSize: Number(t.value) || 150 }); nbcApply(); nbcPatPaint(); return; }   // (its size, live as you drag; kept when you let go)
       if (t.dataset.nbcHex) { const h = nbHex(t.value.trim().replace(/^(?!#)/, '#')); t.classList.toggle('is-bad', !!t.value.trim() && !h); if (h) nbcSet(t.dataset.nbcHex, h); }
     });
     win.addEventListener('change', (e) => {
       const t = e.target;
+      if (t.dataset.nbcPatsize != null) { nbcPaint(); save(); return; }
       if (t.dataset.nbcOn) { S.nb = { ...(S.nb || {}), [t.dataset.nbcOn]: t.checked }; nbcApply(); nbcPaint(); save(); return; }
       if (t.dataset.nbcTog) { const cols = { ...nbcCols() }; if (t.checked) delete cols[t.dataset.nbcTog]; else cols[t.dataset.nbcTog] = 'off'; nbcSetCols(cols); nbcApply(); nbcPaint(); save(); return; }
       if (t.dataset.nbcHex) { t.classList.remove('is-bad'); nbcPaint(true); }   // (one that isn't a colour: back to what it is)
@@ -7565,6 +7759,22 @@
     win.addEventListener('click', (e) => {
       const t = e.target instanceof Element ? e.target : null;
       if (!t) return;
+      const pt = t.closest('[data-nbc-pat], [data-nbc-patuse], [data-nbc-patclose], [data-nbc-patadd]');
+      if (pt) {   // (the bands' pattern: the picker open or shut, one chosen, an address used)
+        if (pt.dataset.nbcPat != null) { nbc.patOpen = !nbc.patOpen; if (nbc.patOpen) { nbcPickClose(); themeSwatches().then(() => nbcPatPaint(true)).catch(() => {}); } nbcPatPaint(true); const on = nbc.patOpen && nbc.win.querySelector('.bnp-nbc-pp .is-on'); if (on) on.focus({ preventScroll: false }); }   // (opened: the keyboard on the one in use)
+        else if (pt.dataset.nbcPatclose != null) nbcPatShut();
+        else if (pt.dataset.nbcPatadd != null) {
+          const i = nbc.win.querySelector('[data-nbc-paturl]'), u = ((i && i.value) || '').trim(), err = nbc.win.querySelector('[data-nbc-paterr]');
+          if (!PIC_URL.test(u) || !myPic(u)) { if (err) { err.hidden = false; err.textContent = PIC_URL_SAY; } return; }
+          myPicKeep(u);
+          nbcSet('pat', u);
+          if (i) i.value = '';
+          nbcPatPaint(true);
+          const nb = nbc.win.querySelector(`.bnp-nbc-pp [data-nbc-patuse="${CSS.escape(u)}"]`);
+          if (nb) nb.focus({ preventScroll: false });   // (the keyboard on it, in the list)
+        } else { nbcSet('pat', pt.dataset.nbcPatuse); nbcPatPaint(); }
+        return;
+      }
       const reset = t.closest('[data-nbc-reset]');
       if (reset) { nbcSet(reset.dataset.nbcReset, ''); return; }
       const sw = t.closest('.bnp-nbc-row [data-nbc-pick]');
@@ -7598,7 +7808,7 @@
       else if (b.dataset.nbc === 'pkeep') nbcPresetSave();
       else if (b.dataset.nbc === 'pno') { nbc.naming = false; nbcScopePaint(); }
     });
-    win.addEventListener('keydown', (e) => { if (e.target.dataset && 'nbcPname' in e.target.dataset && (e.key === 'Enter' || e.key === 'Escape')) { e.preventDefault(); e.stopPropagation(); if (e.key === 'Enter') nbcPresetSave(); else { nbc.naming = false; nbcScopePaint(); } return; } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (cp) { const a = cp.anchor; nbcPickClose(); a.focus(); } else nbcClose(); } else if (e.key === 'Enter' && e.target.dataset && e.target.dataset.nbcHex) e.target.blur(); });
+    win.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.dataset && 'nbcPaturl' in e.target.dataset) { e.preventDefault(); const b = nbc.win.querySelector('[data-nbc-patadd]'); if (b) b.click(); return; } if (e.key === 'Escape' && nbc.patOpen && !cp) { e.preventDefault(); e.stopPropagation(); nbcPatShut(); return; } if (e.target.dataset && 'nbcPname' in e.target.dataset && (e.key === 'Enter' || e.key === 'Escape')) { e.preventDefault(); e.stopPropagation(); if (e.key === 'Enter') nbcPresetSave(); else { nbc.naming = false; nbcScopePaint(); } return; } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (cp) { const a = cp.anchor; nbcPickClose(); a.focus(); } else nbcClose(); } else if (e.key === 'Enter' && e.target.dataset && e.target.dataset.nbcHex) e.target.blur(); });
     w.head.addEventListener('pointerdown', (e) => {   // (moved by its header; kept where you leave it)
       if (e.button !== 0 || (e.target instanceof Element && e.target.closest('a, button'))) return;
       e.preventDefault();
@@ -7630,7 +7840,48 @@
     nbc.win.focus({ preventScroll: true });
   }
   let nbcBack = null;   // (opened from a theme of yours: Settings back at it once the board colours close)
-  function nbcClose() { nbcPickClose(); if (nbc) nbc.win.classList.remove('open'); if (nbcBack) { const b = nbcBack; nbcBack = null; lookAt = b.look; myTab = b.tab; openHub('themes'); } }
+  const nbcPatSize = (cols) => Math.min(400, Math.max(40, Number(cols.patSize) || 150));
+  function nbcPatName(v) { const m = myPatList().find((x) => x[0] === v); return m ? m[1] : picName(v); }
+  function nbcPatShut() { if (!nbc || !nbc.patOpen) return; nbc.patOpen = false; nbcPatPaint(); const b = nbc.win.querySelector('.bnp-nbc-patsw'); if (b) b.focus({ preventScroll: true }); }
+  function nbcPatPaint(full) {   // (the picker: your theme's, none, every theme's patterns and your own pictures, each over the bands' colour; its size; an address)
+    if (!nbc) return;
+    let el = nbc.win.querySelector('.bnp-nbc-pp');
+    const sw = nbc.win.querySelector('.bnp-nbc-patsw');
+    if (sw) sw.setAttribute('aria-expanded', String(!!nbc.patOpen));
+    if (!nbc.patOpen) { if (el) el.remove(); return; }
+    const cols = nbcCols(), cur = cols.pat || '', size = nbcPatSize(cols), t = nbJson('bnp-nbtheme', null) || {}, acc = nbHex(cols.acc) || (/^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\))$/i.test(String(t.acc || '').trim()) ? String(t.acc).trim() : '#fed123');
+    if (el && !full) {   // (only what's chosen, and its size: the list stays where you've scrolled it)
+      for (const b of el.querySelectorAll('[data-nbc-patuse]')) { const on = b.dataset.nbcPatuse === cur; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on)); }
+      const sz = el.querySelector('.bnp-nbc-ppsize');
+      if (sz) { sz.hidden = !myPic(cur); sz.querySelector('output').textContent = `${size}px`; }
+      return;
+    }
+    const y = el ? el.querySelector('.bnp-nbc-ppbody').scrollTop : 0, ae = document.activeElement, typed = el ? ((el.querySelector('[data-nbc-paturl]') || {}).value || '') : '';
+    const fk = el && ae && el.contains(ae) ? (ae.dataset.nbcPatuse != null ? `[data-nbc-patuse="${CSS.escape(ae.dataset.nbcPatuse)}"]` : ae.matches('[data-nbc-paturl], [data-nbc-patsize], [data-nbc-patadd], [data-nbc-patclose]') ? `[${[...ae.attributes].find((a) => /^data-nbc-pat/.test(a.name)).name}]` : '') : '';
+    if (!el) { el = document.createElement('div'); el.className = 'bnp-nbc-pp'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'A pattern for the title bands'); nbc.win.append(el); }
+    const tile = (v, name, bg) => `<button type="button" class="bnp-nbc-ppone${cur === v ? ' is-on' : ''}" data-nbc-patuse="${esc(v)}" aria-pressed="${cur === v}" title="${esc(name)}"><span style="${esc(`background: ${bg}, ${acc}`)}"></span><b>${esc(name)}</b></button>`;
+    const pic = (u) => `url("${cssUrl(myPic(u))}") 50% 50% / 75px auto repeat`;
+    const own = t.pic && t.pic !== 'none' ? `${t.pic} ${t.patpos || '50% 50%'} / ${t.patsz || 'auto'} repeat` : 'none', theme = nbcTheme() ? nbcThemeName(nbcTheme()) : '';
+    const list = myPatList().filter(([u]) => myPic(u)), mine = myPics().filter((x) => myPic(x.u) && !list.some(([u]) => u === x.u));
+    el.innerHTML = `<div class="bnp-nbc-pptop"><b>A pattern for the title bands</b><small>Over their colour, behind a board’s or topic’s title: it shows on the boards and in the preview as you choose</small><button type="button" class="bnp-nbc-ppx" data-nbc-patclose title="Close (Esc)" aria-label="Close">×</button></div>
+      <div class="bnp-nbc-ppbody">
+        <div class="bnp-nbc-ppgrid">${tile('', `Your theme’s${theme ? ` (${theme})` : ''}`, own)}${tile('off', 'None: just the colour', 'none')}</div>
+        <h6 class="bnp-nbc-pph">Neopets’ themes</h6>
+        <div class="bnp-nbc-ppgrid">${list.map(([u, name]) => tile(u, name, pic(u))).join('')}</div>
+        ${list.length < 12 ? '<p class="bnp-nbc-tip">More come as each theme’s colours are read: open this again in a moment.</p>' : ''}
+        ${mine.length ? `<h6 class="bnp-nbc-pph">Your pictures</h6><div class="bnp-nbc-ppgrid">${mine.map((x) => tile(x.u, picName(x.u), pic(x.u))).join('')}</div>` : ''}
+      </div>
+      <div class="bnp-nbc-ppfoot">
+        <label class="bnp-nbc-ppsize"${myPic(cur) ? '' : ' hidden'}><span>Size</span><input type="range" min="40" max="400" step="2" value="${size}" data-nbc-patsize aria-label="How wide each repeat of the pattern is"><output>${size}px</output></label>
+        <span class="bnp-nbc-ppurl"><input type="url" data-nbc-paturl placeholder="Or a picture’s address: https://images.neopets.com/…" aria-label="A picture’s address" spellcheck="false"><button type="button" class="bnp-nbc-lb" data-nbc-patadd>Use it</button></span>
+        <em class="bnp-nbc-warn" data-nbc-paterr hidden></em>
+      </div>`;
+    if (y) el.querySelector('.bnp-nbc-ppbody').scrollTop = y;
+    if (typed) el.querySelector('[data-nbc-paturl]').value = typed;
+    const f = fk && el.querySelector(fk);
+    if (f) f.focus({ preventScroll: true });
+  }
+  function nbcClose() { nbcPickClose(); if (nbc) { nbc.patOpen = false; nbcPatPaint(); nbc.win.classList.remove('open'); } if (nbcBack) { const b = nbcBack; nbcBack = null; lookAt = b.look; myTab = b.tab; openHub('themes'); } }
   function nbcPlace() {   // (where you last left it, on the screen still; or high in the middle)
     const win = nbc.win, pos = nbJson(NBC_POS, null);
     if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y)) { win.classList.remove('is-placed'); win.style.left = ''; win.style.top = ''; return; }
@@ -7653,6 +7904,18 @@
     for (const i of nbc.probe.children) now[i.dataset.k] = nbcHexOf(getComputedStyle(i).color);
     for (const r of nbc.rows) {
       const p = NBC_BY[r.dataset.k];
+      if (p.pic) {   // (the bands' pattern: a little of it over their colour, and its name)
+        const v = cols.pat || '', t = nbJson('bnp-nbtheme', null) || {}, acc = nbHex(cols.acc) || (/^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\))$/i.test(String(t.acc || '').trim()) ? String(t.acc).trim() : '#fed123'), u = myPic(v);
+        const bg = v === 'off' ? 'none' : u ? `url("${cssUrl(u)}") 50% 50% / ${Math.round(nbcPatSize(cols) / 2)}px auto repeat` : t.pic && t.pic !== 'none' ? `${t.pic} ${t.patpos || '50% 50%'} / ${t.patsz || 'auto'} repeat` : 'none';
+        r.querySelector('.bnp-nbc-patsw > span').style.background = `${bg}, ${acc}`;
+        r.querySelector('[data-nbc-patname]').textContent = v === 'off' ? 'None: the bands are just their colour' : u ? nbcPatName(v) : `Your theme’s${nbcTheme() ? ` (${nbcThemeName(nbcTheme())})` : ''}`;
+        r.classList.toggle('is-yours', !!v);
+        const none = r.querySelector('[data-nbc-patuse="off"]'), undo = r.querySelector('.bnp-nbc-undo');
+        none.setAttribute('aria-pressed', String(v === 'off'));
+        undo.disabled = !v;
+        undo.textContent = v ? '↺ Theme’s' : 'Theme’s';
+        continue;
+      }
       if (p.tog) { r.querySelector('input').checked = cols[p.k] !== 'off'; continue; }
       const c = now[p.k] || '#ffffff', yours = !!nbHex(cols[p.k]), off = !!p.sw && o[p.sw] === false;
       r.classList.toggle('is-yours', yours);
@@ -7676,7 +7939,7 @@
     const box = nbc && nbc.win.querySelector('[data-nbc-scope]');
     if (!box) return;
     const k = nbcTheme(), name = k ? nbcThemeName(k) : '', own = nbcOwn(), by = nbcBy(), all = (S.nb && S.nb.cols) || {}, presets = nbcPresets();
-    const n = (c) => Object.keys(c || {}).filter((x) => (x === 'pat' ? c[x] === 'off' : !!nbHex(c[x]))).length;
+    const n = (c) => Object.keys(c || {}).filter((x) => (x === 'pat' ? !!c[x] : !!nbHex(c[x]))).length;
     const strip = (c) => (c && Object.values(c).some((v) => nbHex(v)) ? `<span class="bnp-nbc-strip">${Object.values(c).map((v) => nbHex(v)).filter(Boolean).slice(0, 5).map((v) => `<i style="background:${v}"></i>`).join('')}</span>` : '');
     const count = (c) => `<small>${n(c) ? `${n(c)} colour${n(c) === 1 ? '' : 's'}` : 'none yet'}</small>`;
     const chip = (key, label, c, here) => `<span class="bnp-nbc-set${here ? ' is-here' : ''}" title="${here ? 'In use here' : 'On for these'}">${strip(c)}<b>${esc(label)}</b>${count(c)}<button type="button" class="bnp-nbc-del" data-nbc-del="${esc(key)}" title="Take it off: ${key === '*' ? 'every theme wears its own colours again (a theme with a set of its own keeps it)' : `${esc(label)} wears the colours for every theme again`}" aria-label="Take off ${esc(label)}">×</button></span>`;
@@ -9558,6 +9821,7 @@
     if (!/\/neoboards\/avatars\//.test(av)) av = '';
     if (av) nfSee(who, av);
     at = at || Date.now();
+    if (/^theneopetsteam$/i.test(who)) tpAucMail(who, at, body.textContent);   // (an auction of yours that sold: into your sales)
     const pk = d.p[who.toLowerCase()], lm = pk && pk.m[pk.m.length - 1];
     if (lm && lm.me && lm.at >= at && lm.at - at < 60000) at = lm.at + 1;   // (Neopets' time is to the minute: a reply in the minute of your last message comes after it)
     const added = nclAdd(d, who, { i: String(id), me: 0, at, n: Date.now(), ...(rd ? { rd: 1 } : {}), s: s.slice(0, 60), t: nclClean(body).replace(/^(<br>)+|(<br>)+$/g, '') }, { av });   // (n: when it came here; rd: you'd read it on Neopets already)
@@ -9617,14 +9881,14 @@
         if (!pids.length || fresh2.length < pids.length) break;
         const nx = [...page.querySelectorAll('a[href*="lower="]')].find((x) => /next|»/i.test(x.textContent));
         if (!nx) break;
-        await new Promise((ok) => setTimeout(ok, 400 + Math.random() * 300));
+        await new Promise((ok) => setTimeout(ok, 2200 + Math.random() * 1400));
         const r2 = await fetch(new URL(nx.getAttribute('href'), `${location.origin}/neomessages.phtml`).href, { credentials: 'include' });
         page = r2.ok ? nmDoc(await r2.text()) : null;
       }
       const ids = [...new Set(all)].slice(0, 60).reverse();   // (oldest first, sixty at most a look)
       const got = new Set();
       for (const [k, id] of ids.entries()) {
-        if (k) { await new Promise((ok) => setTimeout(ok, 900 + Math.random() * 1300)); if (document.hidden && force !== true) break; }   // (a person's moment between two; you've left the tab: the rest on the next look)
+        if (k) { await new Promise((ok) => setTimeout(ok, 2800 + Math.random() * 1800)); if (document.hidden && force !== true) break; }   // (a person's moment between two; you've left the tab: the rest on the next look)
         try { const who = await nclRead(id, d, readOn.get(id)); if (who) fresh.add(who); got.add(String(id)); }
         catch (e) { const why = String((e && e.message) || ''); if (why === 'logged out') { nclErr = 'Log in to Neopets to read your Neomail.'; break; } if (!/^(Neopets answered|not a Neomail)/.test(why)) report(e); }   // (left for the next look)
       }
@@ -13757,7 +14021,7 @@
         }
         const total = Number(r.json.totalResults) || 0;
         if (r.json.content.length < 3000 || items.length >= total) break;
-        await new Promise((ok) => setTimeout(ok, 600 + Math.random() * 500));
+        await new Promise((ok) => setTimeout(ok, 1600 + Math.random() * 1200));
       }
       if (!items.length) return old || { err: 'down' };
       const cat = { t: Date.now(), items };
@@ -14068,7 +14332,7 @@
         if (d && !d.notYours) { await colPetSet(kind, pet, d); done++; }
       } catch (_) { /* */ }
       if (say) say(`Read ${done} of ${jobs.length}…`);
-      await new Promise((ok) => setTimeout(ok, 1500 + Math.random() * 2500));
+      await new Promise((ok) => setTimeout(ok, 3500 + Math.random() * 2500));
     }
     colNeed = null;
     if (say) say(`Read again: ${done} of ${jobs.length} lists.`);
@@ -14600,13 +14864,16 @@
     h.after(p);
   }
   // the pages
-  function saKind() {   // ('page': an album page; 'hub': your album's front page or its Overview; '': anything else, as Neopets has it)
-    if (location.pathname !== '/stamps.phtml' || S.features.stamps === false) return '';
-    const q = new URLSearchParams(location.search), type = q.get('type'), owner = (q.get('owner') || '').toLowerCase(), me = saAcct();
+  function saKind() {   // ('page': an album page; 'hub': your album's front page, its Overview or the Post Office's main page; 'theirs': someone else's front page; 'scores': the album's high score table; '': anything else, as Neopets has it)
+    if (S.features.stamps === false) return '';
+    const q = new URLSearchParams(location.search);
+    if (location.pathname === '/gamescores.phtml') return q.get('game_id') === '346' ? 'scores' : '';
+    if (location.pathname !== '/stamps.phtml') return '';
+    const type = q.get('type'), owner = (q.get('owner') || '').toLowerCase(), me = saAcct();
     if (type === 'progress') return 'hub';
-    if (type !== 'album') return '';
-    if (Number(q.get('page_id') || 0) > 0) return 'page';
-    return !owner || (me && owner === me) ? 'hub' : '';
+    if (type && type !== 'album') return '';
+    if (type === 'album' && Number(q.get('page_id') || 0) > 0) return 'page';
+    return !owner || (me && owner === me) ? 'hub' : 'theirs';   // (the main page is your front page, as Neopets draws it)
   }
   function saParse(doc) {   // (an album page as Neopets draws it: its 25 places, its own count, the album's pages by name)
     const box = doc.querySelector('td.content') || doc.querySelector('#content') || doc.body;
@@ -14808,17 +15075,18 @@
     const box = document.querySelector('td.content');
     const q = new URLSearchParams(location.search), owner = q.get('owner') || '', me = saAcct();
     const mine = !owner || (!!me && owner.toLowerCase() === me);
-    const d = kind === 'page' ? saParse(document) : null, pr = kind === 'hub' && q.get('type') === 'progress' ? saParseProgress(document) : null;
-    if (!box || (kind === 'page' && !d) || /log\s*in/i.test(document.title)) { document.documentElement.classList.remove('bnp-sa-page', 'bnp-sa-ready'); return; }   // (a page we don't know: Neopets' own, as it is)
+    const d = kind === 'page' ? saParse(document) : null, pr = kind === 'hub' && q.get('type') === 'progress' ? saParseProgress(document) : null, sc = kind === 'scores' ? saParseScores(document) : null;
+    if (!box || (kind === 'page' && !d) || (kind === 'scores' && !sc) || /log\s*in/i.test(document.title)) { document.documentElement.classList.remove('bnp-sa-page', 'bnp-sa-ready'); return; }   // (a page we don't know: Neopets' own, as it is)
     try { nbTheme(); } catch (e) { report(e); }
     const pid = kind === 'page' ? Number(q.get('page_id')) : 0;
     await saMineLoad();
-    if (d) { saKeepNames(d.names); saLearn(pid, d.slots); if (mine) saKeepPage(pid, d); }
+    if (d) { saKeepNames(d.names); saLearn(pid, d.slots); if (mine) saKeepPage(pid, d); else saKeepTheirs(owner, pid, d); }
+    if (kind === 'theirs') saKeepNames(saNamesFrom(box));
     if (pr) { saKeepNames(pr.names); saKeepCounts(pr); }
     const P = saP(), root = document.createElement('div');
     root.className = 'bnp-sa';
     root.setAttribute('data-bnp', 'sa');
-    sa = { kind, pid, mine, owner, d, root, sel: -1, sort: P.sort || 'cheap', priced: !!P.priced, q: '', tab: P.tab || 'pages', filter: P.filter || 'all', psort: P.psort || 'album', page: 0, prices: new Map(), reading: null, note: '', pick: false, budget: Number(P.budget) || 0 };
+    sa = { kind, pid, mine, owner, d, scores: sc, tf: P.tf || 'all', root, sel: -1, sort: P.sort || 'cheap', priced: !!P.priced, q: '', tab: P.tab || 'pages', filter: P.filter || 'all', psort: P.psort || 'album', page: 0, prices: new Map(), reading: null, note: '', pick: false, budget: Number(P.budget) || 0 };
     const hash = /#bnp-sa=(\d+)/.exec(location.hash);
     if (hash && kind === 'page') { sa.sel = Math.min(24, Math.max(0, Number(hash[1]) - 1)); sa.flash = true; }
     const neo = document.createElement('div');   // (Neopets' own page, all of it, out of sight under ours: one click shows it again)
@@ -14832,7 +15100,13 @@
     if (kind === 'hub' && mine && !pr && (!saMine.countsT || Date.now() - saMine.countsT > 10 * 60e3) && saMine.acct) {   // (the front page shows no counts: the Overview's, read once in a while)
       saCountsFetch().then(() => saPaint()).catch((e) => { sa.note = e.message; saPaint(); });
     }
-    if (kind === 'hub') saBoard().then(() => saPaint(true)).catch(() => {});
+    if (kind === 'hub' || kind === 'theirs') saBoard().then(() => saPaint(true)).catch(() => {});
+    if (kind === 'scores') {   // (the table as it is now: kept for the front pages, and what each trophy takes; your count, if it's old, read again)
+      saTopKeep(sc);
+      sa.board = saBoardOf(sc);
+      try { localStorage.setItem('bnp-sa-board', JSON.stringify(sa.board)); } catch (_) { /* */ }
+      if (saMine && saMine.acct && (!saMine.countsT || Date.now() - saMine.countsT > 6 * 3600e3)) saCountsFetch().then(() => saPaint(true)).catch(() => {});
+    }
     if (sa.flash) setTimeout(() => { const t = root.querySelector(`[data-sa-i="${sa.sel}"]`); if (t) { t.scrollIntoView({ block: 'center', behavior: 'smooth' }); t.classList.add('is-flash'); setTimeout(() => t.classList.remove('is-flash'), 2200); } }, 120);
   }
   function saPaint(soft) {   // (soft: prices came: drawn again keeping where you are, what's typed and what's open)
@@ -14840,7 +15114,8 @@
     const f = soft && document.activeElement && sa.root.contains(document.activeElement) ? document.activeElement : null;
     const fk = f && (f.dataset.saQ != null ? '[data-sa-q]' : f.dataset.saBudget != null ? '[data-sa-budget]' : f.dataset.saI != null ? `[data-sa-i="${f.dataset.saI}"]` : '');
     const at = fk && f.selectionStart != null ? f.selectionStart : null;
-    sa.root.innerHTML = sa.kind === 'page' ? saPageHtml() : saHubHtml();
+    sa.root.innerHTML = sa.kind === 'page' ? saPageHtml() : sa.kind === 'theirs' ? saTheirsHtml() : sa.kind === 'scores' ? saScoresHtml() : saHubHtml();
+    crispIn(sa.root);   // (Neopets' pictures in it, sharp at the size they're drawn)
     if (sa.kind === 'page') saPickRow(); else saRows();
     if (fk) { const g = sa.root.querySelector(fk); if (g) { g.focus({ preventScroll: true }); if (at != null) try { g.setSelectionRange(at, at); } catch (_) { /* */ } } }
   }
@@ -14851,8 +15126,9 @@
   }
   function saNavHtml() {
     const p = sa.pid, N = saPagesN(), url = (n) => `/stamps.phtml?type=album&page_id=${n}${sa.mine ? '' : `&owner=${encodeURIComponent(sa.owner)}`}`;
-    const prev = saStep(p, -1), next = saStep(p, 1);
+    const prev = saStep(p, -1), next = saStep(p, 1), ic = saIcon(), hub = `/stamps.phtml?type=album${sa.mine ? '' : `&owner=${encodeURIComponent(sa.owner)}`}`;
     return `<nav class="bnp-sa-nav" aria-label="The album’s pages">
+        <a class="bnp-sa-btn is-hub" href="${esc(hub)}" title="${sa.mine ? 'Your whole album: every page, what you still need, and the high scores' : 'Their whole album'}">${ic ? `<i class="bnp-sa-hubic" data-crisp="${esc(ic)}" data-crisp-px="22" style="background-image:url('${esc(cssUrl(ic))}')" aria-hidden="true"></i>` : SA_IC.grid}<span>${sa.mine ? 'Your album' : 'Their album'}</span></a>
         <a class="bnp-sa-btn is-step" href="${esc(url(prev))}" data-sa-go="prev" title="${esc(`Page ${prev}: ${saPageName(prev)} (←)`)}">${SA_IC.prev}<span>${esc(saPageName(prev))}</span></a>
         <span class="bnp-sa-pickwrap"><button type="button" class="bnp-sa-btn is-pick" data-sa-pick aria-expanded="${sa.pick}" aria-haspopup="true">${SA_IC.grid}<span>Page ${p} of ${N}</span>${SA_IC.down}</button>${sa.pick ? saPickerHtml(url) : ''}</span>
         <a class="bnp-sa-btn is-step is-next" href="${esc(url(next))}" data-sa-go="next" title="${esc(`Page ${next}: ${saPageName(next)} (→)`)}"><span>${esc(saPageName(next))}</span>${SA_IC.next}</a>
@@ -15031,7 +15307,7 @@
           </div>
         </div>
         <div class="bnp-sa-heroacts">${read}
-          <span class="bnp-sa-links"><a class="bnp-sa-btn is-small" href="/objects.phtml?type=shop&amp;obj_type=58">Post Office Kiosk</a><a class="bnp-sa-btn is-small" href="/gamescores.phtml?game_id=346">High scores</a><a class="bnp-sa-btn is-small" href="/stamps.phtml">The Post Office</a></span>
+          <span class="bnp-sa-links"><a class="bnp-sa-btn is-small" href="/objects.phtml?type=shop&amp;obj_type=58">Post Office Kiosk</a><a class="bnp-sa-btn is-small" href="/gamescores.phtml?game_id=346">High scores</a></span>
         </div>
       </div>
       ${saGoalsHtml(have, exists)}
@@ -15117,22 +15393,141 @@
   async function saBoard() {   // (the Stamp Album's high score table, read once a day: what 1st, each trophy's last place and the table's last place have)
     const kept = saJson('bnp-sa-board', null);
     if (kept && Date.now() - kept.t < DAY_MS) { if (sa) sa.board = kept; return kept; }
-    const doc = await saGetDoc('/gamescores.phtml?game_id=346');
-    if (!doc) return null;
-    const pts = [];
-    for (const tr of doc.querySelectorAll('tr')) { const tds = tr.querySelectorAll('td'); if (tds.length < 3 || !tr.querySelector('a[href*="user="]')) continue; const pos = Number(reClean(tds[0].textContent)), n = Number(reClean(tds[2].textContent).replace(/[^\d]/g, '')); if (pos > 0 && n > 0) pts[pos - 1] = n; }
-    if (pts.filter(Boolean).length < 17) return null;
-    const b = { t: Date.now(), first: pts[0], gold: pts[2], silver: pts[7], bronze: pts[16], last: pts[pts.length - 1], places: pts.length };
+    const doc = await saGetDoc('/gamescores.phtml?game_id=346'), sc = doc && saParseScores(doc);
+    if (!sc || sc.rows.length < 17) return null;
+    saTopKeep(sc);
+    const b = saBoardOf(sc);
     try { localStorage.setItem('bnp-sa-board', JSON.stringify(b)); } catch (_) { /* */ }
     if (sa) sa.board = b;
     return b;
+  }
+  function saParseScores(doc) {   // (the album's high score table as Neopets draws it: each place, who and how many; which rows each trophy takes; the least that gets on it)
+    const box = [...doc.querySelectorAll('td.content')].find((x) => x.querySelector('a[href*="user="]')) || doc.querySelector('td.content') || doc.querySelector('#content') || doc.body, rows = [];   // (the content cell with the table in it)
+    if (!box) return null;
+    let tier = 0, left = 0;
+    for (const tr of box.querySelectorAll('tr')) {
+      const a = tr.querySelector('a[href*="user="]'), tds = tr.querySelectorAll('td');
+      if (!a || tds.length < 3) continue;
+      const img = tr.querySelector('img[src*="/trophies/346_"]');
+      if (img) { tier = Number((/346_(\d)/.exec(img.getAttribute('src')) || [])[1]) || 0; left = Number(img.closest('td').getAttribute('rowspan')) || 1; }
+      const p = Number(reClean(tds[0].textContent)), n = Number(reClean(tds[2].textContent).replace(/[^\d]/g, '')), m = /[?&]user=([^&#]+)/.exec(a.getAttribute('href') || '');
+      let u = reClean(a.textContent);
+      try { if (m) u = decodeURIComponent(m[1]); } catch (_) { /* (as it shows) */ }
+      if (p > 0 && u) rows.push({ p, u, n, tr: left > 0 ? tier : 0 });
+      if (left > 0) left--;
+    }
+    if (rows.length < 3) return null;
+    const min = /minimum score\s*:\s*([\d,]+)/i.exec(reClean(box.textContent));
+    return { rows, min: min ? Number(min[1].replace(/,/g, '')) : rows[rows.length - 1].n };
+  }
+  function saBoardOf(sc) {   // (what 1st has, the last place each trophy goes to, and the table's last place)
+    const lastOf = (t, d) => { const r = sc.rows.filter((x) => x.tr === t); return r.length ? r[r.length - 1].n : d; };
+    const at = (i) => (sc.rows[Math.min(i, sc.rows.length - 1)] || {}).n || 0;
+    return { t: Date.now(), first: sc.rows[0].n, gold: lastOf(1, at(2)), silver: lastOf(2, at(7)), bronze: lastOf(3, at(16)), last: sc.rows[sc.rows.length - 1].n, places: sc.rows.length, min: sc.min };
+  }
+  function saTopKeep(sc) {   // (the table's people, as Neopets shows them: for someone's front page to say where they are on it)
+    try { localStorage.setItem('bnp-sa-top', JSON.stringify({ t: Date.now(), min: sc.min, rows: sc.rows.map(({ p, u, n, tr }) => ({ p, u, n, tr })) })); } catch (_) { /* */ }
+  }
+  function saTopRow(name) { const k = saJson('bnp-sa-top', null), w = String(name || '').toLowerCase(); return k && Array.isArray(k.rows) && Date.now() - (k.t || 0) < 7 * DAY_MS ? k.rows.find((r) => String(r.u).toLowerCase() === w) || null : null; }
+  const SA_TRO = ['', 'Gold', 'Silver', 'Bronze'];
+  const saTroImg = (t, px = 30) => (t ? `<img class="bnp-sa-tro" src="${NPI}trophies/346_${t}.gif" alt="" width="${px}" height="${px}" title="${SA_TRO[t]} trophy">` : '');
+  const saAllN = () => { let n = 0; for (let p = 1; p <= saPagesN(); p++) n += saState(p).exists; return n; };   // (every stamp there is)
+  function saHubBtn() {   // (back to your whole album: Neopets' own album picture in it)
+    const ic = saIcon();
+    return `<a class="bnp-sa-btn is-hub" href="/stamps.phtml?type=album" title="Your whole album: every page, what you still need, and the high scores">${ic ? `<i class="bnp-sa-hubic" data-crisp="${esc(ic)}" data-crisp-px="22" style="background-image:url('${esc(cssUrl(ic))}')" aria-hidden="true"></i>` : SA_IC.grid}<span>Your album</span></a>`;
+  }
+  // someone else's album: each page of theirs you've looked at, kept (the 20 albums looked at last), for their front page
+  const SA_OTHERS = 'bnp-sa-others';
+  function saKeepTheirs(owner, pid, d) {
+    const k = String(owner || '').toLowerCase();
+    if (!k || !d) return;
+    const all = saJson(SA_OTHERS, {}), o = all[k] && all[k].pages ? all[k] : { pages: {} };
+    o.name = owner;
+    o.at = Date.now();
+    o.pages[pid] = { n: d.n, h: d.slots.map((x) => (x ? 1 : 0)).join(''), t: Date.now() };
+    all[k] = o;
+    for (const x of Object.keys(all).sort((a, b) => (all[b].at || 0) - (all[a].at || 0)).slice(20)) delete all[x];
+    try { localStorage.setItem(SA_OTHERS, JSON.stringify(all)); } catch (_) { /* */ }
+  }
+  function saTheirsHtml() {
+    const name = sa.owner, k = name.toLowerCase(), o = saJson(SA_OTHERS, {})[k] || { pages: {} }, top = saTopRow(k), url = (p) => `/stamps.phtml?type=album&amp;page_id=${p}&amp;owner=${esc(encodeURIComponent(name))}`;
+    const pages = [];
+    let seen = 0, need = 0, extra = 0, live = 0;
+    for (let p = 1; p <= saPagesN(); p++) {
+      const st = saState(p), t = o.pages[p];
+      if (!st.exists && !(t && t.n)) continue;
+      live++;
+      const h = t && typeof t.h === 'string' ? [...t.h].map((c) => c === '1') : null;
+      let nd = 0, ex = 0;
+      if (h) { seen++; st.slots.forEach((x, i) => { if (!x) return; if (h[i] && st.have && !st.have.has(i)) nd++; if (!h[i] && st.have && st.have.has(i)) ex++; }); need += nd; extra += ex; }
+      pages.push({ p, st, t, h, nd, ex });
+    }
+    const by = { all: () => true, seen: (x) => !!x.h, need: (x) => x.nd > 0 };
+    const shown = pages.filter(by[sa.tf] || by.all);
+    const card = ({ p, st, t, h, nd }) => {
+      const n = t ? t.n : null, done = n != null && st.exists > 0 && n >= st.exists, art = saArt(p);
+      const cells = st.slots.map((x, i) => `<i class="${!x ? 'is-n' : !h ? 'is-u' : !h[i] ? 'is-m' : st.have && !st.have.has(i) ? 'is-t' : 'is-h'}"></i>`).join('');
+      const line = !t ? 'Not looked at yet' : nd ? `${nd} you don’t have` : st.have ? 'None you don’t have' : 'Open your own page to compare';
+      return `<div class="bnp-sa-pg${done ? ' is-done' : ''}${!t ? ' is-unread' : ''}${art ? ' has-art' : ''}${nd ? ' is-need' : ''}">
+          <a class="bnp-sa-pglink" href="${url(p)}">
+            <span class="bnp-sa-pgmap" aria-hidden="true">${cells}</span>
+            <span class="bnp-sa-pgtxt"><small>Page ${p}</small><b>${esc(saPageName(p))}</b><span class="bnp-sa-pgn">${n != null ? n : '?'}<small> / ${st.exists}</small>${st.n != null ? `<small class="bnp-sa-pgyou"> · yours ${st.n}</small>` : ''}</span><small class="bnp-sa-pgline">${esc(line)}</small></span>
+          </a>
+          ${art ? `<span class="bnp-sa-artbox"><span class="bnp-sa-art" style="${esc(saArtStyle(art))}" aria-hidden="true"></span></span>` : ''}
+          ${done ? `<i class="bnp-sa-pgstar" title="Complete">${SA_IC.star}</i>` : ''}
+          <span class="bnp-sa-pgbar"><i style="width:${n != null && st.exists ? Math.min(100, Math.round((n / st.exists) * 100)) : 0}%"></i></span>
+        </div>`;
+    };
+    const chip = (cls, ic, html) => `<span class="${cls}">${ic || ''}<span>${html}</span></span>`;
+    const yours = saMine && saMine.acct && Object.keys(saMine.pages).length;
+    return `<div class="bnp-sa-head">${saTitleHtml(`${name}’s Stamp Album`, 'Neopian Post Office')}<nav class="bnp-sa-nav" aria-label="The Post Office">${saHubBtn()}<a class="bnp-sa-btn" href="/gamescores.phtml?game_id=346">${saTroImg(1, 20)}<span>High scores</span></a><a class="bnp-sa-btn" href="/objects.phtml?type=shop&amp;obj_type=58"><span>Post Office Kiosk</span></a></nav></div>
+      <div class="bnp-sa-chips">
+        ${top ? chip(top.tr ? 'is-gold' : '', saTroImg(top.tr, 20), `#${top.p} on the high score table · <b>${top.n.toLocaleString()}</b> stamps`) : ''}
+        ${chip(seen ? '' : 'is-quiet', '', `${seen} of ${live} pages looked at`)}
+        ${seen && yours ? chip(need ? 'is-hot' : '', '', `<b>${need.toLocaleString()}</b> of theirs you don’t have`) : ''}
+        ${seen && yours ? chip('is-quiet', '', `${extra.toLocaleString()} of yours they don’t`) : ''}
+      </div>
+      <p class="bnp-sa-fine">${seen ? 'Each page of theirs you’ve opened is remembered here, beside yours. Open another to add it: the stamps they have that you don’t are marked.' : 'Open any of their pages to see their stamps beside yours: the ones you don’t have are marked, and the page is remembered here.'}${yours ? '' : ' Read your own album too (Your album) to see which of theirs you don’t have.'}</p>
+      <div class="bnp-sa-tools">
+        <span class="bnp-sa-seg" role="group" aria-label="Which pages">${[['all', 'All', pages.length], ['seen', 'Looked at', seen], ['need', 'Has ones you need', pages.filter(by.need).length]].map(([v, l, n]) => `<button type="button" data-sa-tf="${v}" aria-pressed="${sa.tf === v}">${l}<b>${n}</b></button>`).join('')}</span>
+        <span class="bnp-sa-legend" aria-label="What the little squares mean"><span><i class="is-t"></i>They have it, you don’t</span><span><i class="is-h"></i>You both have it</span><span><i class="is-m"></i>They don’t</span><span><i class="is-u"></i>Not looked at</span></span>
+      </div>
+      <div class="bnp-sa-pgs">${shown.map(card).join('') || '<p class="bnp-sa-empty">No pages like that yet.</p>'}</div>
+      <p class="bnp-sa-foot">Which stamp goes where: SunnyNeo’s list and the high score leaders’ albums, and every album page you look at since.
+        <button type="button" class="bnp-sa-btn is-small" data-sa-neo aria-expanded="${document.documentElement.classList.contains('bnp-sa-showneo')}">${document.documentElement.classList.contains('bnp-sa-showneo') ? 'Hide Neopets’ own page' : 'Neopets’ own page'}</button></p>`;
+  }
+  function saScoresHtml() {   // (the album's high score table: where you stand, what each trophy takes, and each leader's count, what's left, and their album)
+    const sc = sa.scores, lim = Number(new URLSearchParams(location.search).get('limit')) || 30, all = saAllN(), M = saMine || saBlank(), me = String(saAcct() || '').toLowerCase();
+    const known = !!(M.countsT || Object.keys(M.counts).length), have = M.total || Object.values(M.counts).reduce((a, b) => a + (Number(b) || 0), 0), meRow = sc.rows.find((r) => String(r.u).toLowerCase() === me);
+    const would = known && !meRow && have >= sc.rows[sc.rows.length - 1].n ? sc.rows.filter((r) => r.n > have).length + 1 : 0;
+    const said = meRow ? `You’re <b>#${meRow.p}</b> on the table` : !known ? (M.acct ? 'Reading your album’s Overview…' : 'Log in to see where you stand.') : would ? `You’d be about <b>#${would}</b>: the table updates on its own` : have >= sc.min ? `Enough for the table: it starts at ${sc.min.toLocaleString()}` : `<b>${(sc.min - have).toLocaleString()}</b> more to get on the table: it starts at ${sc.min.toLocaleString()}`;
+    const row = (r) => {
+      const mine = String(r.u).toLowerCase() === me, from = Math.min(sc.min, all - 1), pct = all ? Math.max(2, Math.min(100, Math.round(((r.n - from) / Math.max(1, all - from)) * 1000) / 10)) : 0, left = all ? Math.max(0, all - r.n) : 0;   // (from where the table starts to every stamp: the leaders' bars tell apart)
+      return `<li class="bnp-sa-scrow${mine ? ' is-me' : ''}${r.tr ? ` is-t${r.tr}` : ''}">
+          <span class="bnp-sa-scpos" title="${esc(`Place ${r.p}`)}">${r.p}</span>
+          <span class="bnp-sa-sctro">${saTroImg(r.tr)}</span>
+          <span class="bnp-sa-scwho"><a href="/userlookup.phtml?user=${esc(encodeURIComponent(r.u))}" title="${esc(`${r.u}’s lookup`)}">${esc(r.u)}</a>${mine ? '<small class="bnp-sa-scyou">You</small>' : ''}</span>
+          <span class="bnp-sa-bar is-thin" title="${esc(left ? `${left.toLocaleString()} short of every stamp (${all.toLocaleString()}); the bar runs from where the table starts (${sc.min.toLocaleString()})` : 'Every stamp there is')}"><i style="width:${pct}%"></i></span>
+          <span class="bnp-sa-scn"><b>${r.n.toLocaleString()}</b><small>${left ? `${left.toLocaleString()} to go` : 'Every stamp'}</small></span>
+          <a class="bnp-sa-btn is-small" href="/stamps.phtml?owner=${esc(encodeURIComponent(r.u))}" title="${esc(`${r.u}’s album, beside yours`)}">Album</a>
+        </li>`;
+    };
+    return `<div class="bnp-sa-head">${saTitleHtml('High scores', 'Stamp Album · Neopian Post Office')}<nav class="bnp-sa-nav" aria-label="The table">${saHubBtn()}<span class="bnp-sa-seg" role="group" aria-label="How many places">${[30, 50, 100].map((n) => `<a href="/gamescores.phtml?game_id=346&amp;limit=${n}"${lim === n ? ' aria-current="page"' : ''}>Top ${n}</a>`).join('')}</span></nav></div>
+      <section class="bnp-sa-card bnp-sa-scme">
+        <div class="bnp-sa-count">${known ? `<b>${have.toLocaleString()}</b><span>stamps in your album, of the ${all.toLocaleString()} there are</span>` : '<span>Your album</span>'}${meRow ? `<em>#${meRow.p}</em>` : ''}</div>
+        <p class="bnp-sa-scsaid">${said}</p>
+      </section>
+      ${known ? saGoalsHtml(have, all) : ''}
+      <ol class="bnp-sa-sclist" aria-label="The table">${sc.rows.map(row).join('')}</ol>
+      <p class="bnp-sa-foot">Neopets’ own table, top ${sc.rows.length}: who’s on it changes as albums do.
+        <button type="button" class="bnp-sa-btn is-small" data-sa-neo aria-expanded="${document.documentElement.classList.contains('bnp-sa-showneo')}">${document.documentElement.classList.contains('bnp-sa-showneo') ? 'Hide Neopets’ own page' : 'Neopets’ own page'}</button></p>`;
   }
   function saGoalsHtml(have, exists) {   // (what each place on the high score table needs: one more than its last place has, or every one there is)
     const b = sa.board || saJson('bnp-sa-board', null);
     if (!b || !have) return '';
     const need = (n) => Math.min(n + 1, exists || n + 1);
     const goal = (img, label, n) => { const want = need(n), got = have >= want; return `<span class="bnp-sa-goal${got ? ' is-got' : ''}" title="${esc(`${label}: ${want.toLocaleString()} stamps`)}">${img ? `<img src="${NPI}trophies/346_${img}.gif" alt="" width="30" height="30">` : `<i class="bnp-sa-goalno">${SA_IC.star}</i>`}<span><b>${label}</b><small>${got ? 'You’re there' : `${(want - have).toLocaleString()} to go`}</small></span></span>`; };
-    return `<div class="bnp-sa-goals"><span class="bnp-sa-goalhead">The high score table<small>Its top ${b.places} today · 1st has ${b.first.toLocaleString()}</small></span>${goal('', 'On the table', b.last)}${goal(3, 'Bronze', b.bronze)}${goal(2, 'Silver', b.silver)}${goal(1, 'Gold', b.gold)}</div>`;
+    return `<div class="bnp-sa-goals"><span class="bnp-sa-goalhead">The high score table<small>Its top ${b.places} today · 1st has ${b.first.toLocaleString()}</small></span>${goal('', 'On the table', b.min ? b.min - 1 : b.last)}${goal(3, 'Bronze', b.bronze)}${goal(2, 'Silver', b.silver)}${goal(1, 'Gold', b.gold)}</div>`;
   }
   async function saReadAll() {   // (your pages not read yet, or changed since: one at a time as you'd turn them, only while this tab's in front)
     if (!sa || sa.reading || !saMine || !saMine.acct) return;
@@ -15156,7 +15551,7 @@
         saKeepPage(p, d);
         me.done++;
         saPaint(true);
-        if (me.done < me.of) await saSleep(2200 + Math.random() * 2600);
+        if (me.done < me.of) for (const end = Date.now() + 4000 + Math.random() * 3000; Date.now() < end && !me.stop;) await saSleep(250);   // (a person's pause between pages; Stop ends it)
       }
     } catch (e) { me.err = (e && e.message) || 'Something went wrong: try again in a moment.'; }
     sa.note = me.err || (me.stop ? `Stopped: ${me.done} of ${me.of} read.` : me.of ? `Read ${me.done === 1 ? 'one page' : `${me.done} pages`}: every stamp you still need is below.` : 'Every page is known already.');
@@ -15185,6 +15580,7 @@
       if (d.saArt) { e.preventDefault(); saArtPick(Number(d.saArt)); return; }
       if (d.saTab) { sa.tab = d.saTab; saPSet('tab', sa.tab); saPaint(); return; }
       if (d.saFilter) { sa.filter = d.saFilter; saPSet('filter', sa.filter); saPaint(); return; }
+      if (d.saTf) { sa.tf = d.saTf; saPSet('tf', sa.tf); saPaint(); return; }
       if ('saReadall' in d) { saReadAll(); return; }
       if ('saStop' in d) { if (sa.reading) sa.reading.stop = true; b.disabled = true; return; }
       if ('saPriced' in d) { sa.priced = !sa.priced; saPSet('priced', sa.priced); saPaint(); }
@@ -15264,6 +15660,8 @@
     html.bnp-sa-page .bnp-sa-btn svg { flex: none; }
     html.bnp-sa-page .bnp-sa-btn.is-small { height: 30px; padding: 0 11px; box-shadow: none; font-size: 12.5px; }
     html.bnp-sa-page .bnp-sa-btn.is-step span { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+    html.bnp-sa-page .bnp-sa-btn.is-hub { margin-right: 6px; }   /* (back to the whole album: a little apart from turning the pages) */
+    html.bnp-sa-page .bnp-sa-hubic { flex: none; width: 22px; height: 22px; margin-left: -3px; background: center / contain no-repeat; }
     html.bnp-sa-page .bnp-sa-btn.is-go { border-color: var(--nb-bar-edge); background: var(--nb-bar); color: var(--nb-bar-ink) !important; box-shadow: 0 2px 0 var(--nb-bar-edge); }
     html.bnp-sa-page .bnp-sa-btn.is-pick[aria-expanded="true"] { border-color: var(--nb-bar-edge); background: var(--nb-alt); }
     html.bnp-sa-page .bnp-sa-btn:disabled { opacity: .55; cursor: default; }
@@ -15476,6 +15874,40 @@
     html.bnp-sa-page .bnp-sa-pgmap .is-m { background: #fff; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--nb-frame) 55%, #fff); }
     html.bnp-sa-page .bnp-sa-pgmap .is-u { background: repeating-linear-gradient(45deg, #e6e2d8 0 2px, #f6f4ee 2px 4px); }
     html.bnp-sa-page .bnp-sa-pgmap .is-n { background: transparent; box-shadow: inset 0 0 0 1px #e0ddd6; }
+    html.bnp-sa-page .bnp-sa-pgmap .is-t, html.bnp-sa-page .bnp-sa-legend .is-t { background: #e8731c; box-shadow: inset 0 0 0 1px #b4520c; }   /* (someone else's page: they have it, you don't) */
+    html.bnp-sa-page .bnp-sa-pg.is-need { border-color: color-mix(in srgb, #e8731c 55%, var(--nb-frame)); }
+    html.bnp-sa-page .bnp-sa-pg.is-need .bnp-sa-pgline { color: #a1460a; font-family: var(--nb-ui); }
+    html.bnp-sa-page .bnp-sa-pgyou { color: var(--nb-muted); font: 12px var(--nb-ui); }
+    html.bnp-sa-page .bnp-sa-legend { display: inline-flex; flex-wrap: wrap; gap: 4px 14px; margin-left: auto; color: var(--nb-muted); font: 12px var(--nb-ui); }
+    html.bnp-sa-page .bnp-sa-legend > span { display: inline-flex; align-items: center; gap: 5px; }
+    html.bnp-sa-page .bnp-sa-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+    html.bnp-sa-page .bnp-sa-legend .is-h { background: var(--nb-bar); }
+    html.bnp-sa-page .bnp-sa-legend .is-m { background: #fff; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--nb-frame) 55%, #fff); }
+    html.bnp-sa-page .bnp-sa-legend .is-u { background: repeating-linear-gradient(45deg, #e6e2d8 0 2px, #f6f4ee 2px 4px); }
+    html.bnp-sa-page .bnp-sa-chips > span.is-hot { border-color: #f0b27a; background: #fff1e4; color: #8a3d06; }
+    html.bnp-sa-page .bnp-sa-chips .bnp-sa-tro { width: 20px; height: 20px; margin: -3px 0; }
+    html.bnp-sa-page .bnp-sa-btn .bnp-sa-tro { width: 20px; height: 20px; margin-left: -3px; }
+    html.bnp-sa-page .bnp-sa-seg a { display: inline-flex; align-items: center; height: 30px; padding: 0 11px; border-radius: 8px; color: #444 !important; font: 13px var(--nb-ui); text-decoration: none !important; white-space: nowrap; }
+    html.bnp-sa-page .bnp-sa-seg a:hover { background: rgba(255, 255, 255, .7); }
+    html.bnp-sa-page .bnp-sa-seg a[aria-current="page"] { background: var(--nb-bar); color: var(--nb-bar-ink) !important; box-shadow: 0 1px 0 var(--nb-bar-edge); }
+    html.bnp-sa-page .bnp-sa-scme { display: grid; gap: 4px; }
+    html.bnp-sa-page .bnp-sa-scme .bnp-sa-count > em { margin-left: auto; padding: 2px 12px; border-radius: 10px; background: var(--nb-tint); font-size: 24px; }
+    html.bnp-sa-page .bnp-sa-scsaid { margin: 0; color: var(--nb-text); font: 13.5px/1.4 var(--nb-ui); }
+    html.bnp-sa-page .bnp-sa-sclist { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    html.bnp-sa-page .bnp-sa-scrow { display: grid; grid-template-columns: 42px 32px minmax(120px, 1fr) minmax(90px, 1.4fr) 96px auto; align-items: center; gap: 10px; padding: 7px 12px; border: 2px solid var(--nb-frame); border-radius: 13px; background: #fff; box-shadow: 0 2px 0 var(--nb-frame); }
+    html.bnp-sa-page .bnp-sa-scrow .bnp-sa-bar { margin: 0; }
+    html.bnp-sa-page .bnp-sa-scrow.is-me { border-color: var(--nb-bar-edge); background: var(--nb-tint); box-shadow: 0 2px 0 var(--nb-bar-edge); }
+    html.bnp-sa-page .bnp-sa-scpos { color: var(--nb-text); font: 22px/1 "Cafeteria", "Arial Bold", sans-serif; text-align: center; letter-spacing: .3pt; }
+    html.bnp-sa-page .bnp-sa-scrow.is-t1 .bnp-sa-scpos { color: #a47200; }
+    html.bnp-sa-page .bnp-sa-sctro { display: grid; place-items: center; width: 32px; height: 32px; }
+    html.bnp-sa-page .bnp-sa-sctro img { width: 30px; height: 30px; }
+    html.bnp-sa-page .bnp-sa-scwho { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    html.bnp-sa-page .bnp-sa-scwho a { overflow: hidden; color: var(--nb-blink, #1a5c9e) !important; font: 14px var(--nb-ui); text-overflow: ellipsis; white-space: nowrap; }
+    html.bnp-sa-page .bnp-sa-scyou { flex: none; padding: 1px 8px; border-radius: 99px; background: var(--nb-bar); color: var(--nb-bar-ink); font: 11px/1.5 var(--nb-ui); }
+    html.bnp-sa-page .bnp-sa-scn { display: grid; justify-items: end; line-height: 1.15; }
+    html.bnp-sa-page .bnp-sa-scn b { font: 16px var(--nb-ui); }
+    html.bnp-sa-page .bnp-sa-scn small { color: var(--nb-muted); font: 11.5px var(--nb-txt); }
+    @media (max-width: 760px) { html.bnp-sa-page .bnp-sa-scrow { grid-template-columns: 36px 30px minmax(0, 1fr) auto; } html.bnp-sa-page .bnp-sa-scrow > .bnp-sa-bar { grid-column: 3 / -1; grid-row: 2; } html.bnp-sa-page .bnp-sa-scrow > .bnp-sa-btn { grid-column: 4; grid-row: 1; } html.bnp-sa-page .bnp-sa-scn { grid-column: 3; justify-items: start; } html.bnp-sa-page .bnp-sa-legend { margin-left: 0; } }
     html.bnp-sa-page .bnp-sa-pgtxt { display: grid; min-width: 0; line-height: 1.2; }
     html.bnp-sa-page .bnp-sa-pgtxt > small:first-child { color: var(--nb-muted); font: 11px var(--nb-ui); }
     html.bnp-sa-page .bnp-sa-pgtxt b { overflow: hidden; padding-right: 26px; font: 17px/1.18 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-overflow: ellipsis; white-space: nowrap; }
@@ -15605,21 +16037,22 @@
       pages = Math.max(1, Number(d.total_pages) || 1);
       total = Number(d.total) || items.length;
       qty = Number(d.total_qty) || items.reduce((s, x) => s + (Number(x.qty) || 1), 0);
-      if (p < pages) await saSleep(900 + Math.random() * 900);
+      if (p < pages) await saSleep(2800 + Math.random() * 1600);
     }
     const before = await idbGet(key).catch(() => null);
     const had = before && Array.isArray(before.items) ? new Set(before.items.map((x) => Number(x.obj_info_id))) : null;
     const nw = had ? items.map((x) => Number(x.obj_info_id)).filter((id) => !had.has(id)) : (before && before.nw) || [];
-    const kept = { at: Date.now(), total, qty, items, nw: nw.length > 60 ? [] : nw };   // (a first read, or a closet much changed, marks nothing)
+    const kept = { at: Date.now(), total, qty, items, nw: nw.length > 60 ? [] : nw, prices: (before && before.prices) || {}, pricedAt: (before && before.pricedAt) || 0 };   // (a first read, or a closet much changed, marks nothing; its prices kept)
     idbSet(key, kept).catch(() => {});
     return kept;
   }
-  async function cloLoad(force) {
+  async function cloLoad(force, reprice) {   // (reprice: Read again — its prices asked for again too)
     if (!clo || clo.loading) return;
     clo.loading = true;
     clo.err = '';
+    let rec = null;
     try {
-      const d = await cloRead(force);
+      const d = rec = await cloRead(force);
       clo.items = d.items.map((x) => ({ raw: x, id: Number(x.obj_info_id), n: reClean(x.obj_name), d: reClean(x.obj_desc || ''), img: String(x.image_url || `${NPI}items/${x.obj_filename}.gif`), r: Number(x.obj_rarity) || 0, rt: reClean(x.rarity_text || x.rarity_label || ''), rc: String(x.rarity_color || ''), cat: reClean(x.category_name || ''), q: Math.max(1, Number(x.qty) || 1), pb: !!x.is_paintbrush, nc: !!x.is_nc }));
       clo.byId = new Map(clo.items.map((x) => [x.id, x]));
       clo.nw = new Set((d.nw || []).filter((id) => clo.byId.has(id)));
@@ -15632,6 +16065,34 @@
     clo.reading = { p: 0, of: 0 };
     document.documentElement.classList.add('bnp-clo-ready');
     cloPaint();
+    if (rec && !clo.err) cloPriceAll(rec, reprice).catch(report);
+  }
+  async function cloPriceAll(rec, reprice) {   // (its Neopoints items at itemdb's prices, asked for together and kept with it: only what isn't kept yet — or, read again, all of it)
+    if (!clo || !clo.worth || clo.pricing) return;
+    const key = `clo-items-${cloAcct()}`, kept = reprice ? {} : { ...(rec.prices || {}) };
+    const names = [...new Set(clo.items.filter((x) => !x.nc && !x.pb).map((x) => x.n))];
+    for (const n of names) if (kept[n]) clo.prices.set(n, kept[n]);
+    const need = names.filter((n) => !kept[n]);
+    clo.priceErr = '';
+    if (!need.length) { cloSoon(); return; }
+    clo.pricing = { done: 0, of: need.length };
+    cloSoon();
+    let got = {};
+    try { got = await wtPrices(need, true, (done) => { if (clo && clo.pricing) { clo.pricing.done = done; cloSoon(); } }); } catch (e) { report(e); }
+    if (!clo) return;
+    for (const n of need) {
+      const r = got[n];
+      if (!r) continue;
+      if (r.visit || r.busy) { clo.priceErr = r.visit ? 'visit' : 'busy'; continue; }   // (itemdb said no for now: these wait for the next time)
+      if (r.err) continue;
+      const v = { p: r.p || 0, slug: r.slug || '', inf: !!r.inf };
+      kept[n] = v;
+      clo.prices.set(n, v);
+    }
+    clo.pricing = null;
+    const now = await idbGet(key).catch(() => null);
+    if (now && Array.isArray(now.items)) idbSet(key, { ...now, prices: kept, pricedAt: Date.now() }).catch(() => {});
+    cloSoon();
   }
   let cloWas = { succ: false, n: -1, q: -1 };
   function cloWatch() {   // (Neopets' own window moved or deleted something: read again, so what's shown is right)
@@ -15656,7 +16117,7 @@
       return clo.nc.get(it.n);
     }
     if (it.pb) return {};
-    if (!clo.prices.has(it.n)) { clo.prices.set(it.n, null); try { itPriceAsk(it.n, (res) => { if (!clo) return; clo.prices.set(it.n, res || {}); cloSoon(); }); } catch (_) { clo.prices.set(it.n, {}); } }
+    if (!clo.prices.has(it.n)) return clo.pricing ? null : {};   // (priced together with the rest — cloPriceAll — never one by one as it's drawn)
     return clo.prices.get(it.n);
   }
   const cloSoon = () => { clearTimeout(cloSoon.t); cloSoon.t = setTimeout(() => cloPaint(true), 160); };
@@ -15715,7 +16176,7 @@
     const band = `<div class="bnp-clo-band">
         <div class="bnp-clo-count${full ? ' is-full' : ''}" title="${esc(`Neopets’ limit: a closet holds ${cap.toLocaleString()} items, each copy counted, and the ones your pets are wearing too`)}"><b>${qtyAll.toLocaleString()}</b><span>of ${cap.toLocaleString()} spaces used<small>${kindsN.toLocaleString()} different item${kindsN === 1 ? '' : 's'}${full ? ` · <b>${Math.max(0, cap - qtyAll).toLocaleString()} space${cap - qtyAll === 1 ? '' : 's'} left</b>` : ''}${wornN ? ' · worn ones count too' : ''}</small></span>
           <span class="bnp-clo-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${cap}" aria-valuenow="${qtyAll}"><i style="width:${pct}%"></i></span></div>
-        <div class="bnp-clo-sums">${clo.worth && (npN || capsN) ? `${npN ? `<span title="${esc(`${npN} kinds with an itemdb price, each times how many you have`)}">≈ <b>${colNp(npSum)} NP</b></span>` : ''}${capsN ? `<span title="${esc(`${capsN} of your NC items have a cap value in the guides (a note like Value check or Buyable isn’t counted), each times how many you have`)}">≈ <b>${wtCapsText(caps)}</b></span>` : ''}` : ''}
+        <div class="bnp-clo-sums">${clo.worth && (npN || capsN || clo.pricing) ? `${capsN ? `<span title="${esc(`${capsN} of your NC items have a cap value in the guides (a note like Value check or Buyable isn’t counted), each times how many you have`)}">≈ <b>${wtCapsText(caps)}</b></span>` : ''}${clo.pricing ? `<span class="is-wait" title="Your Neopoints items at itemdb’s prices, a hundred at a time">Pricing ${clo.pricing.done.toLocaleString()} of ${clo.pricing.of.toLocaleString()}…</span>` : npN ? `<span title="${esc(`${npN} kinds with an itemdb price, each times how many you have: ${Math.round(npSum).toLocaleString()} NP`)}">≈ <b>${colNp(npSum)} NP</b></span>` : ''}` : ''}${clo.priceErr && !clo.pricing ? `<span class="is-wait" title="${esc(clo.priceErr === 'visit' ? 'itemdb gives its prices once you’ve opened itemdb.com.br today: open it, then Read again' : `itemdb asked for a pause partway: wait about 10 minutes, then Read again — what’s priced so far is kept`)}">${clo.priceErr === 'visit' ? 'Open itemdb for the rest' : 'Some prices wait: itemdb paused'}</span>` : ''}
           <button type="button" class="bnp-clo-btn is-small" data-clo-copy title="What’s shown, a line each (with how many you have): for a trade list, or DTI">Copy the list</button>
           <button type="button" class="bnp-clo-btn is-small" data-clo-again title="Read your whole closet again from Neopets"${clo.loading ? ' disabled' : ''}>${CLO_IC.again}${clo.loading ? 'Reading…' : 'Read again'}</button>
           <button type="button" class="bnp-clo-btn is-small" data-clo-neo aria-expanded="${document.documentElement.classList.contains('bnp-clo-showneo')}">${document.documentElement.classList.contains('bnp-clo-showneo') ? 'Hide Neopets’ own' : 'Neopets’ own closet'}</button></div>
@@ -15823,7 +16284,7 @@
         if ('cloExtras' in d) { clo.each = 'extra'; cloPSet('each', 'extra'); for (const x of cloList()) if (!x.pb && x.q > 1) clo.sel.set(x.id, true); cloPaint(true); return; }
         if ('cloClear' in d) { clo.sel.clear(); cloPaint(true); return; }
         if ('cloMove' in d) { cloMove(); return; }
-        if ('cloAgain' in d) { cloLoad(true); return; }
+        if ('cloAgain' in d) { cloLoad(true, true); return; }   // (Read again: its prices asked for again too)
         if ('cloMoved' in d) { clo.moved = null; cloPaint(true); return; }
         if ('cloCopy' in d) {   // (what's shown, as plain lines)
           const lines = clo.show === 'worn' && clo.wear ? clo.wear.worn.map((x) => `${x.n} (on ${x.a})`) : cloList().map((x) => `${x.n}${x.q > 1 ? ` x${x.q}` : ''}`);
@@ -16166,8 +16627,8 @@
   }
   function tpHookApp(app) {   // (each lot card is Neopets' own, drawn by its own code: told to draw all of a lot's items when you want them)
     const V = PAGE.Vue;
+    if (app && typeof app.component === 'function') tpAppRef = app;   // (what's chosen on Create a Trade is read through it once it's mounted — Vue in reach or not)
     if (!app || typeof app.component !== 'function' || !app.config || !V || typeof V.reactive !== 'function' || tpVue) return;
-    tpAppRef = app;
     tpVue = V.reactive({ all: tpLots() === 'all', open: {} });   // (open: the lots shown whole, one by one)
     app.config.globalProperties.$bnpTp = tpVue;
     const reg = app.component;
@@ -16326,7 +16787,7 @@
       await tpLotItems(next);
       tpMoreWait.delete(next);
       try { tpPaint(); } catch (e) { report(e); }
-      if (tpMoreWait.size) await new Promise((ok) => setTimeout(ok, 700 + Math.random() * 800));   // (a person's moment between two, never the same)
+      if (tpMoreWait.size) await new Promise((ok) => setTimeout(ok, 2500 + Math.random() * 1500));   // (a person's moment between two, never the same)
     }
     tpMoreBusy = false;
   }
@@ -16486,7 +16947,7 @@
           tpPicked.delete(id);
           if (j.remaining_np != null) np = j.remaining_np;
         } catch (_) { err = 'Neopets didn’t answer'; break; }
-        if (done < n) await new Promise((ok) => setTimeout(ok, 700));   // (one after another, like clicks: never all at once)
+        if (done < n) await new Promise((ok) => setTimeout(ok, 2500 + Math.random() * 1500));   // (one after another, like clicks: never all at once, never on the beat)
       }
       const anchor = document.getElementById('npanchor');
       if (anchor && np != null) anchor.textContent = tpFmt(np);
@@ -16501,7 +16962,7 @@
   // ── Create a Trade: the lowest Instant Buy seen for what you've chosen, with a fill just under it ──
   const tpIbSec = (app) => [...app.querySelectorAll('#tp-create-form .tp-section:not([data-bnp])')].find((s) => /^\s*Instant Buy/.test((s.querySelector('.tp-section-title') || {}).textContent || ''));   // (Neopets' own Instant Buy part, not ours above it)
   const tpIbBox = (sec) => sec ? [...sec.querySelectorAll('input')].find((i) => i.type === 'text') || null : null;   // (its amount box: no type written on it)
-  const tpVueState = (keys) => vueState(tpAppRef && tpAppRef._container, keys);
+  const tpVueState = (keys) => vueState((tpAppRef && tpAppRef._container) || (PAGE.document || document).getElementById('tp_app__2025'), keys);   // (the app as caught — else where it's mounted)
   function vueState(root, keys) {   // (the part of a Neopets Vue app whose state has these: found by walking what it drew, from where it's mounted)
     const seen = new Set();
     const walk = (v, d) => {
@@ -16527,7 +16988,16 @@
         if (names.length === sel.length) return names;
       } catch (_) { /* */ }
     }
-    return [...app.querySelectorAll('#tp-create-form .tp-grid-item.bg-item-selection .tp-grid-item-name')].map((p) => p.textContent.trim()).filter(Boolean);
+    // (its state out of reach: the tiles on show — each inventory tab draws them all again, out of sight. Copies sharing one number
+    // light up all together and go once — a name lit whole is one item; lit in part, each lit one is its own)
+    const drawn = [...app.querySelectorAll('#tp-create-form .tp-grid-item')], shown = drawn.filter((t) => t.getClientRects().length);
+    const tiles = (shown.length ? shown : drawn).map((t) => ({ n: ((t.querySelector('.tp-grid-item-name') || {}).textContent || '').trim(), on: t.classList.contains('bg-item-selection') })).filter((t) => t.n);
+    const out = [];
+    for (const n of new Set(tiles.filter((t) => t.on).map((t) => t.n))) {
+      const all = tiles.filter((t) => t.n === n), lit = all.filter((t) => t.on).length;
+      for (let i = 0; i < (lit === all.length ? 1 : lit); i++) out.push(n);
+    }
+    return out;
   }
   function tpIbHint(app) {
     const sec = tpIbSec(app), inp = tpIbBox(sec), row = inp && inp.closest('.flex.justify-center');
@@ -16620,7 +17090,7 @@
       try { await tpLookUp(n); } catch (e) { report(e); tpLookErr = 'The Trading Post didn’t answer just now: try again in a moment.'; break; }
       tpLooking.n++;
       tpMultiPaint();
-      if (tpLooking.n < names.length) await new Promise((ok) => setTimeout(ok, 700 + Math.random() * 700));
+      if (tpLooking.n < names.length) await new Promise((ok) => setTimeout(ok, 2500 + Math.random() * 1500));
     }
     tpLooking = null;
     tpMultiPaint();
@@ -16945,7 +17415,7 @@
       const init = arguments[1], p = of.apply(this, arguments);
       try {
         const u = String((input && input.url) || input || '');
-        if (/\/tradingpost\/(get-lot-offers|process-tradingpost)\.php/.test(u)) {
+        if (/\/tradingpost\/(get-lot-offers|process-tradingpost|get-lots)\.php/.test(u)) {
           const body = init && typeof init.body === 'string' ? init.body : '', np = (document.getElementById('npanchor') || {}).textContent || '';
           p.then((r) => r.clone().json()).then((d) => document.dispatchEvent(new CustomEvent('bnp-tp-heard', { detail: JSON.stringify({ u, body, np, d }) }))).catch(() => {});   // (heard before the app reads it: a copy)
         }
@@ -16967,6 +17437,7 @@
   }
   function tpSaleHeard({ u, body, np, d }) {
     if (!d || !d.success) return;
+    if (/get-lots\.php/.test(u)) { tpLotsKeep(d.lots); return; }
     if (/get-lot-offers/.test(u)) { if (d.lot_id) tpSaleLots.set(String(d.lot_id), { items: (d.lot_items || []).map(tpSaleIt), offers: Array.isArray(d.offers) ? d.offers : [] }); return; }
     let b = {};
     try { b = JSON.parse(body || '{}'); } catch (_) { return; }
@@ -16980,14 +17451,90 @@
     v.push({ at: Date.now(), lot, who: o ? reClean(o.bidder) : '', gave: items.filter((x) => x.n), np: npGot, got });
     tpSalesPut(v);
   }
+  const tpLotsKept = () => { try { const v = JSON.parse(localStorage.getItem(acctKey('bnp-tplots')) || 'null'); return v && typeof v === 'object' ? v : {}; } catch (_) { return {}; } };
+  function tpLotsKeep(lots) {   // (your lots as Your Trades lists them: what's in each, for a sale told of later by its number alone)
+    if (!Array.isArray(lots)) return;
+    const k = tpLotsKept(), now = Date.now();
+    for (const l of lots) if (l && l.lot_id && l.is_your_lot !== false) k[String(l.lot_id)] = { at: now, items: (l.items || []).map((x) => ({ n: reClean(x && x.name), c: Math.max(1, Number(x && x.amount) || 1) })).filter((x) => x.n) };
+    for (const x of Object.keys(k).sort((a, b) => k[b].at - k[a].at).slice(60)) delete k[x];
+    try { localStorage.setItem(acctKey('bnp-tplots'), JSON.stringify(k)); } catch (_) { /* */ }
+  }
+  function tpSaleAdd(r) {   // (a sale, once: by its kind and its lot)
+    const v = tpSalesGet();
+    if (v.some((x) => (x.kind || 'trade') === r.kind && String(x.lot) === String(r.lot))) return false;
+    v.push(r);
+    v.sort((a, b) => a.at - b.at);
+    tpSalesPut(v);
+    return true;
+  }
+  function nstWhen(mo, d, h, mi, ap, now = Date.now()) {   // ("10/27 4:34 am", Neopian time, as a moment: this year's, or last year's if that's still to come)
+    const n = nstOf(now), y = Number(n.day.slice(0, 4)), mins = ((h % 12) + (/p/i.test(ap) ? 12 : 0)) * 60 + mi;
+    const at = (yy) => nstAtDay(Math.round((Date.UTC(yy, mo - 1, d) - Date.UTC(y, n.mo - 1, n.d)) / DAY_MS), mins, now);
+    const t = at(y);
+    return t > now + 3600e3 ? at(y - 1) : t;
+  }
+  const TP_IB_RE = /([A-Za-z0-9_]+)\s+has purchased lot\s+#?(\d+)\s+for\s+([\d,]+)\s*NP/i, TP_AT_RE = /(\d{1,2})\/(\d{1,2})(?:\/\d{2,4})?\s+(\d{1,2}):(\d{2})\s*([ap]m)/i;
+  const tpWords = (el) => { const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), out = []; while (w.nextNode()) out.push(w.currentNode.nodeValue); return out.join(' '); };   // (each part's words apart: an alert's title and its text don't run together)
+  function tpSaleAlerts() {   // (Neopets' alerts — the list on every page, or View All — a lot bought with its Instant Buy: noted once, with when Neopets says)
+    const all = location.pathname === '/allevents.phtml' ? $$('td.content tr').filter((tr) => !tr.querySelector('tr')) : [];
+    for (const el of [...$$('#alerts li, .alerts-tab-content__2020 li'), ...$$('td.eventIcon'), ...all]) {
+      const t = reClean(tpWords(el)), m = TP_IB_RE.exec(t);
+      if (!m) continue;
+      const w = TP_AT_RE.exec(t), kept = tpLotsKept()[m[2]];
+      tpSaleAdd({ at: w ? nstWhen(+w[1], +w[2], +w[3], +w[4], w[5]) : Date.now(), kind: 'ib', lot: m[2], who: m[1], gave: kept ? kept.items : [], np: smNum(m[3]), got: [] });
+    }
+  }
+  function tpSaleAlertsWatch() {   // (the alerts list, as Neopets fills it in: looked at again)
+    if (FRAME || S.features.tpSales === false) return;
+    tpSaleAlerts();
+    const box = $('#alerts') || $('.alerts-tab-content__2020');
+    if (!box || box.dataset.bnpTps) return;
+    box.dataset.bnpTps = '1';
+    let t = 0;
+    new MutationObserver(() => { clearTimeout(t); t = setTimeout(() => { try { tpSaleAlerts(); } catch (e) { report(e); } }, 400); }).observe(box, { childList: true, subtree: true });
+  }
+  const TP_AUC_RE = /auction\s+Lot No\.?\s*(\d+)\s*\((.+?)\)\s*has been successful,?\s*and that\s*([\d,]+)\s*NeoPoints? have been credited/i;
+  function tpAucMail(who, at, text) {   // (The Neopets Team's Neomail about an auction of yours that sold: noted once — the item, what it went for, who won it)
+    if (S.features.tpSales === false || !/^theneopetsteam$/i.test(who || '')) return false;
+    const t = reClean(text), m = TP_AUC_RE.exec(t);
+    if (!m) return false;
+    const np = smNum(m[3]), bids = [...t.matchAll(/Bid\s*:\s*([\d,]+)\s*NeoPoints?,?\s*placed by\s*([A-Za-z0-9_]+)/gi)], top = bids.find((b) => smNum(b[1]) === np) || bids[0];
+    return tpSaleAdd({ at: at || Date.now(), kind: 'auction', lot: m[1], who: top ? top[2] : '', gave: [{ n: reClean(m[2]), c: 1 }], np, got: [] });
+  }
+  function tpAucScan() {   // (what NeoChat has kept from The Neopets Team: auctions that sold before this was here)
+    if (S.features.tpSales === false || !S.features.ncl) return;
+    try {
+      const p = nclData().p.theneopetsteam;
+      for (const m of (p && p.m) || []) if (!m.me && /has been successful/i.test(m.t || '')) tpAucMail('theneopetsteam', m.at, new DOMParser().parseFromString(String(m.t).replace(/<br\s*\/?>/gi, ' '), 'text/html').body.textContent);
+    } catch (e) { report(e); }
+  }
+  function tpAucPage() {   // (one read on Neopets' own Neomail page)
+    if (S.features.tpSales === false || location.pathname !== '/neomessages.phtml' || new URLSearchParams(location.search).get('type') !== 'read_message') return;
+    const t = $$('td.content table').find((x) => [...x.rows].some((row) => row.cells.length > 1 && /^\s*from:?\s*$/i.test(row.cells[0].textContent)));
+    if (!t) return;
+    let who = '', at = 0, text = '';
+    for (const row of t.rows) {
+      if (row.cells.length < 2) continue;
+      const label = reClean(row.cells[0].textContent).toLowerCase(), c = row.cells[1];
+      if (/^from/.test(label)) { const a = c.querySelector('a[href*="userlookup.phtml"][href*="user="]'), m = a && /[?&]user=([^&#]+)/.exec(a.getAttribute('href')); who = m ? decodeURIComponent(m[1]) : ''; }
+      else if (/^(sent|date)/.test(label)) at = nclNst(c.textContent);
+      else if (!/^(folder|to|subject|you wrote)\b/.test(label)) text += ` ${c.textContent}`;
+    }
+    tpAucMail(who, at, text);
+  }
   function tpSalesHtml() {   // (Settings: this month, this year and all of it; the latest 25)
+    tpAucScan();
     const v = tpSalesGet(), now = nstOf(Date.now()), sum = { month: 0, year: 0, all: 0 };
     for (const r of v) { const o = nstOf(r.at); sum.all += r.np || 0; if (o.month === now.month) sum.month += r.np || 0; if (o.month.slice(0, 4) === now.month.slice(0, 4)) sum.year += r.np || 0; }
     const cell = (label, x) => `<span class="bnp-till-s"><small>${esc(label)}</small><b>${x.toLocaleString()} NP</b></span>`;
     const names = (l) => (l.length ? `${l.slice(0, 3).map((x) => `${x.n}${x.c > 1 ? ` ×${x.c}` : ''}`).join(', ')}${l.length > 3 ? ` and ${l.length - 3} more` : ''}` : '');
-    const row = (r) => { const gave = names(r.gave || []), came = [r.np ? `${r.np.toLocaleString()} NP` : '', names(r.got || [])].filter(Boolean).join(' and '); return `<li class="bnp-tps-row"><span class="bnp-tps-when" title="${esc(new Date(r.at).toLocaleString())}">${esc(new Date(r.at).toLocaleDateString([], { month: 'short', day: 'numeric' }))}</span><span class="bnp-tps-what"><b>${esc(gave || (r.lot ? `Lot ${r.lot}` : 'A lot'))}</b><small>${r.lot && gave ? `Lot ${esc(r.lot)} · ` : ''}for ${esc(came || 'nothing')}${r.who ? ` · from ${esc(r.who)}` : ''}</small></span><span class="bnp-tps-np">${r.np ? `+${npShort(r.np)} NP` : ''}</span></li>`; };
-    return `<div class="bnp-tps"><div class="bnp-till-sums">${cell('This month', sum.month)}${cell('This year', sum.year)}${cell(`All of it (${v.length.toLocaleString()} trade${v.length === 1 ? '' : 's'})`, sum.all)}</div>
-      ${v.length ? `<ol class="bnp-tps-list">${v.slice(-25).reverse().map(row).join('')}</ol>${v.length > 25 ? `<p class="bnp-note">And ${(v.length - 25).toLocaleString()} before them, in the totals.</p>` : ''}<div class="bnp-tools"><button type="button" class="bnp-pillbtn is-danger" data-tpsforget>Forget them</button></div>` : '<p class="bnp-note">None yet: the next offer you accept on Your Trades is the first.</p>'}</div>`;
+    const row = (r) => {
+      const gave = names(r.gave || []), came = [r.np ? `${r.np.toLocaleString()} NP` : '', names(r.got || [])].filter(Boolean).join(' and ');
+      const how = r.kind === 'ib' ? `Lot ${esc(r.lot)} · its Instant Buy, ${esc(came)}${r.who ? ` · bought by ${esc(r.who)}` : ''}` : r.kind === 'auction' ? `Auction, lot ${esc(r.lot)} · ${esc(came)}${r.who ? ` · won by ${esc(r.who)}` : ''}` : `${r.lot && gave ? `Lot ${esc(r.lot)} · ` : ''}for ${esc(came || 'nothing')}${r.who ? ` · from ${esc(r.who)}` : ''}`;
+      return `<li class="bnp-tps-row"><span class="bnp-tps-when" title="${esc(new Date(r.at).toLocaleString())}">${esc(new Date(r.at).toLocaleDateString([], { month: 'short', day: 'numeric' }))}</span><span class="bnp-tps-what"><b>${esc(gave || (r.lot ? `Lot ${r.lot}` : 'A lot'))}</b><small>${how}</small></span><span class="bnp-tps-np">${r.np ? `+${npShort(r.np)} NP` : ''}</span></li>`;
+    };
+    return `<div class="bnp-tps"><div class="bnp-till-sums">${cell('This month', sum.month)}${cell('This year', sum.year)}${cell(`All of it (${v.length.toLocaleString()} sale${v.length === 1 ? '' : 's'})`, sum.all)}</div>
+      ${v.length ? `<ol class="bnp-tps-list">${v.slice(-25).reverse().map(row).join('')}</ol>${v.length > 25 ? `<p class="bnp-note">And ${(v.length - 25).toLocaleString()} before them, in the totals.</p>` : ''}<div class="bnp-tools"><button type="button" class="bnp-pillbtn is-danger" data-tpsforget>Forget them</button></div>` : '<p class="bnp-note">None yet: the next lot or auction of yours that sells is the first.</p>'}</div>`;
   }
   document.addEventListener('click', (e) => {   // (Settings: Forget them, asked twice)
     const b = e.target instanceof Element ? e.target.closest('[data-tpsforget]') : null;
@@ -17387,7 +17934,7 @@
     for (const n of all) if (cache[n]) out[n] = cache[n].r;
     const need = all.filter((n) => !out[n]);
     for (let i = 0; i < need.length; i += 100) {
-      if (i && paced) await wtSleep(800 + Math.random() * 700);
+      if (i && paced) await wtSleep(2000 + Math.random() * 1500);
       const part = need.slice(i, i + 100), got = await wtAsk(part);
       Object.assign(out, got);
       if (step) step(Math.min(i + 100, need.length), need.length);
@@ -17429,9 +17976,13 @@
       if (!(r && (r.visit || r.busy))) s.none.push(it.n);
     }
     s.list.sort((a, b) => b.t - a.t);
-    s.ncList.sort((a, b) => b.capsN - a.capsN);
+    s.ncList.sort(wtNcOrder);
     return s;
   }
+  const wtNcOrder = (a, b) => {   // (NC items: the most each is worth first — its top value, then its bottom one — then how many there are)
+    const x = (a.caps && wtRange(a.caps)) || { lo: 0, hi: 0 }, y = (b.caps && wtRange(b.caps)) || { lo: 0, hi: 0 };
+    return (y.hi - x.hi) || (y.lo - x.lo) || ((b.capsN || 0) - (a.capsN || 0)) || String(a.n).localeCompare(String(b.n));
+  };
   const wtShape = (s, extra = {}) => {   // (what's kept of a sum: its totals, the 50 most valuable, the 30 most valuable NC items, and the names without a price or a value)
     const ncv = s.ncList.filter((x) => x.caps), ncn = s.ncList.filter((x) => !x.caps);
     return { at: Date.now(), np: s.np, items: s.items, qty: s.qty, priced: s.priced, none: s.none.length, noneNames: s.none.slice(0, 40), pb: s.pb, nc: s.nc,
@@ -17459,7 +18010,18 @@
     try { return localStorage.getItem('sdb_view_filter') === 'nc' ? 'nc' : 'np'; } catch (_) { return 'np'; }
   };
   const wtInvNc = () => { const b = $('#invDisplay'); return !!(b && b.dataset.type === 'nc'); };   // (the Inventory showing its NC items)
-  const wtSlot = () => (wt.key === 'inventory' && wtInvNc() ? 'inventory:nc' : wt.key);   // (where this view is kept: the Inventory's NP and NC items apart, as it shows them one at a time)
+  const wtLive = (key) => key === 'inventory';   // (priced as you look: the Inventory only — the Gallery, SDB and Closet are counted when you ask, the last count shown till then: itemdb asked no more than needed)
+  const wtGu = () => (new URLSearchParams(location.search).get('gu') || '').toLowerCase();
+  const wtSlot = () => (wt.key === 'inventory' && wtInvNc() ? 'inventory:nc' : wt.key === 'gallery' && !wt.own ? `gallery@${wtGu()}` : wt.key);   // (where this view is kept: the Inventory's NP and NC items apart, as it shows them one at a time; someone else's gallery under its own name)
+  const wtPartKey = () => `wt-part-${wt.key}:${nclMe() || '-'}`;   // (a count itemdb paused: what was read, to carry on from)
+  const wtPauseEnd = () => { try { const raw = localStorage.getItem(IT_401) || '', t = parseInt(raw, 10) || 0; return /\|429/.test(raw) && Date.now() - t < 10 * 60000 ? t + 10 * 60000 : 0; } catch (_) { return 0; } };   // (itemdb's pause: when it's over)
+  const wtFig = (d) => `${d.np > 0 || !d.nc.valued ? `≈ ${npShort(d.np)} NP` : ''}${d.np > 0 && d.nc.valued ? ' · ' : ''}${d.nc.valued ? `${d.np > 0 ? '' : '≈ '}${wtCapsText(d.nc)}` : ''}`;   // (Neopoints and caps, as much as there is of each)
+  function wtKeepGallery(slot, v) {   // (someone else's gallery: kept under its name, the 8 looked at last)
+    wtKeepSet(slot, v);
+    const k = wtKeep(), others = Object.keys(k).filter((x) => x.startsWith('gallery@')).sort((a, b) => (k[b].at || 0) - (k[a].at || 0));
+    if (others.length > 8) { for (const x of others.slice(8)) delete k[x]; try { localStorage.setItem(acctKey('bnp-worth'), JSON.stringify(k)); } catch (_) { /* */ } }
+  }
+  const wtErrHtml = (e) => { const end = wtPauseEnd(); return `<p class="bnp-wt-say is-err">${esc(e === 'visit' ? 'itemdb gives its prices once you’ve opened itemdb.com.br today: open it, then count again.' : e === 'busy' ? `itemdb asked for a pause: it gives only so many prices at a time. Wait about 10 minutes${end ? ` (till ${new Date(end).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })})` : ''}, then carry on: what’s counted so far is kept.` : e === 'fail' ? 'itemdb didn’t answer just now: count again in a moment.' : e)}</p>`; };
   function wtPlace(kept, p) {   // (a place as last seen whole, the Inventory's NP and NC items put together)
     const w = (k) => (kept[k] && kept[k].whole ? kept[k] : null), a = w(p), b = p === 'inventory' ? w('inventory:nc') : null;
     if (!a || !b) return a || b;
@@ -17471,6 +18033,7 @@
     return i ? { items: wtNum(i[1]), qty: q ? wtNum(q[1]) : null, pool: wt.key === 'safetydeposit' ? wtPool() : 'all' } : null;
   }
   function wtStale(k) {
+    if (wt && k && !WT_PAGED.has(wt.key)) { const sn = k.seen, n = wt.items.length, q = wt.items.reduce((a, x) => a + x.q, 0); return !!(sn && n && (sn.n !== n || sn.q !== q)); }   // (the Gallery: as many items, as many of each?)
     const now = wt && wtSeen(), was = k && k.pools && now && k.pools[now.pool];
     return !!(was && (was.items !== now.items || (was.qty != null && now.qty != null && was.qty !== now.qty)));
   }
@@ -17484,7 +18047,9 @@
     let t = 0;
     const run = () => { clearTimeout(t); t = setTimeout(() => { wtRefresh().catch(report); }, 250); };
     run();
-    new MutationObserver(run).observe($('#container__2020') || $('td.content') || document.body, { childList: true, subtree: true });   // (a page turned, a tab changed, items moved: read again; it only reprices when the items differ)
+    if (WT_PAGED.has(key)) idbGet(wtPartKey()).then((p) => { if (wt && wt.key === key && p && Array.isArray(p.items)) { wt.part = p; wtPillPaint(); wtWinPaint(); } }).catch(() => {});   // (a count itemdb paused: carried on from)
+    const items = (n) => n.nodeType === 1 && !n.closest('[data-bnp]') && (n.matches('img.itemimg, table, tbody, tr, td') || !!n.querySelector('img.itemimg'));   // (a gallery: its items, not its own moving decorations, nor NE's buttons)
+    new MutationObserver((recs) => { if (key === 'gallery' && !recs.some((r) => [...r.addedNodes, ...r.removedNodes].some(items))) return; run(); }).observe($('#container__2020') || $('td.content') || document.body, { childList: true, subtree: true });   // (a page turned, a tab changed, items moved: read again; it only reprices when the items differ)
     whenLoaded(run);
   }
   async function wtRefresh() {
@@ -17493,18 +18058,24 @@
     const pool = wt.key === 'safetydeposit' ? wtPool() : '';
     if (pool !== wt.pool) { wt.pool = pool; wtPillPaint(); }   // (its NP/NC switch: the pill in Neopoints or in caps)
     const items = wtRead(wt.key), sig = items.map((it) => `${it.n}|${it.q}|${it.nc ? 1 : 0}${it.pb ? 1 : 0}`).join('\n'), slot = wtSlot();
-    if (sig === wt.sig) return;
+    if (wt.key === 'inventory' && items.length) invSdbCheck(null);   // (something put into your SDB from here, the page come again since)
+    if (sig === wt.sig && !wt.force) return;
     wt.sig = sig;
     wt.items = items;
     if (!items.length) { wt.sum = null; wt.pricing = false; wtPillPaint(); wtWinPaint(); return; }
+    if (!wtLive(wt.key) && !wt.force) { wt.sum = null; wt.pricing = false; wtPillPaint(); wtWinPaint(); return; }   // (counted when you ask: its last count shown meanwhile, nothing asked of itemdb)
     wt.pricing = true;
     wtPillPaint();
-    const prices = await wtPrices(items.filter((it) => !it.nc && !it.pb).map((it) => it.n), false);
+    wtWinPaint();
+    const prices = await wtPrices(items.filter((it) => !it.nc && !it.pb).map((it) => it.n), !!wt.force);
     const caps = await wtCaps(items.filter((it) => !it.pb && (it.nc || !(prices[it.n] && prices[it.n].p > 0))).map((it) => it.n));
     if (!wt || wt.sig !== sig) return;   // (the page changed meanwhile: its newer items are on their way)
     wt.pricing = false;
     wt.sum = wtSum(items, prices, caps);
-    if (!WT_PAGED.has(wt.key) && wt.own && !wt.sum.visit && !wt.sum.busy && !(wt.sum.fail && !wt.sum.priced)) wtKeepSet(slot, wtShape(wt.sum, { whole: true }));   // (Inventory and Gallery: the page is all of it)
+    const whole = !wt.sum.visit && !wt.sum.busy && !(wt.sum.fail && !wt.sum.priced);
+    if (wt.force) wt.err = wt.sum.visit ? 'visit' : wt.sum.busy ? 'busy' : wt.sum.fail && !wt.sum.priced ? 'fail' : '';
+    if (whole && wt.key === 'inventory') wtKeepSet(slot, wtShape(wt.sum, { whole: true }));   // (the Inventory: the page is all of it)
+    else if (whole && wt.force && wt.key === 'gallery') { const v = wtShape(wt.sum, { whole: true, seen: { n: items.length, q: items.reduce((a, x) => a + x.q, 0) } }); if (wt.own) wtKeepSet(slot, v); else wtKeepGallery(slot, v); }   // (the Gallery: kept as counted, till you count again)
     wtPillPaint();
     wtWinPaint();
   }
@@ -17532,14 +18103,21 @@
   }
   function wtPillPaint() {
     if (!wt || !wt.pill) return;
-    const s = wt.sum, c = wt.count, paged = WT_PAGED.has(wt.key), k = paged ? wtKeep()[wt.key] : null;
+    const s = wt.sum, c = wt.count, paged = WT_PAGED.has(wt.key), live = wtLive(wt.key), k = live ? null : wtKeep()[wtSlot()], part = paged && !c ? wt.part : null;
     let html = '', title = '';
-    if (c) { html = `Worth: <b>counting ${c.read}${c.pages ? ` of ${c.pages}` : ''}…</b>`; title = 'Counting it all, a page at a time: click to see how far'; }
+    if (c) { html = `Worth: <b>${c.phase === 'price' ? `pricing ${c.priced.toLocaleString()} of ${c.toPrice.toLocaleString()}` : `counting ${c.read}${c.pages ? ` of ${c.pages}` : ''}`}…</b>`; title = 'Counting it all, a page at a time: click to see how far'; }
+    else if (!live && wt.pricing) { html = 'Worth: <b>counting…</b>'; title = 'Asking itemdb for its prices'; }
+    else if (part) { html = `Worth <b>≈ ${npShort((part.shape || {}).np || 0)} NP</b> so far · <b>paused</b>`; title = 'itemdb asked for a pause partway: click to see what’s counted so far, and to carry on'; }
+    else if (!paged && !live && k && k.whole) {   // (the Gallery: its last count)
+      const stale = wtStale(k);
+      html = `Worth <b>${esc(wtFig(k))}</b>${stale ? '<i class="bnp-wt-stale" aria-hidden="true">•</i>' : ''}`;
+      title = `${wt.own ? 'Your Gallery' : 'This gallery'} at itemdb’s prices, counted ${colAgo(k.at)}${stale ? ': it has changed since (click to count again)' : ''}. Click for the most valuable.`;
+    } else if (!paged && !live) { html = 'Worth: <b>count it</b>'; title = `What ${wt.own ? 'your' : 'this'} gallery is worth at itemdb’s prices: click to count it (kept till you count again)`; }
     else if (paged && k && k.whole) {
       const stale = wtStale(k), ncv = wt.key === 'safetydeposit' && wtPool() === 'nc', kn = k.nc || {};   // (the SDB showing its NC items: what they come to in caps)
       html = `${ncv ? (kn.valued ? `Worth <b>≈ ${esc(wtCapsText(kn))}</b>` : `Worth: <b>${kn.n ? 'no NC values yet' : 'no NC items'}</b>`) : `Worth <b>≈ ${npShort(k.np)} NP</b>`}${stale ? '<i class="bnp-wt-stale" aria-hidden="true">•</i>' : ''}`;
-      title = `${ncv ? 'Your SDB’s NC items at the value guides’ caps' : `Your ${WT_NAME[wt.key]} at itemdb’s prices`}, counted ${colAgo(k.at)}${stale ? ': it has changed since (click to count again)' : ''}. Click for the most valuable.`;
-    } else if (paged) { html = 'Worth: <b>count it</b>'; title = `What your whole ${WT_NAME[wt.key]} is worth at itemdb’s prices: click for this page’s, and to count it all`; }
+      title = `${ncv ? 'Your SDB’s NC items at the value guides’ caps' : `Your ${WT_NAME[wt.key]} at itemdb’s prices`}, counted ${colAgo(k.at)}${stale ? ': it has changed since (click to count again)' : k.upd ? ' and kept up to date as items went in and out' : ''}. Click for the most valuable.`;
+    } else if (paged) { html = 'Worth: <b>count it</b>'; title = `What your whole ${WT_NAME[wt.key]} is worth at itemdb’s prices: click to count it all (kept till you count again)`; }
     else if (!s) html = wt.pricing ? 'Worth <b>…</b>' : '';
     else if (s.visit) { html = 'Worth: <b>open itemdb</b>'; title = 'itemdb gives its prices once you’ve opened itemdb.com.br today: click for more'; }
     else if (s.busy) { html = 'Worth: <b>itemdb is busy</b>'; title = 'itemdb asked for a pause: its prices come again in a few minutes'; }
@@ -17599,7 +18177,8 @@
   const wtCan = () => !!(wt && wt.key === 'safetydeposit' && wt.own);   // (the SDB: what's listed can be selected in its own list, to take out)
   function wtSrc(tab, kept) {   // (a tab's figures: the whole SDB or Closet once counted (this page till then); the Inventory's other view as last seen)
     const key = wt.key, here = wt.sum ? wtShape(wt.sum) : null;
-    if (WT_PAGED.has(key)) { const k = kept[key] && kept[key].whole ? kept[key] : null; return { d: k || here, whole: k, here }; }
+    if (WT_PAGED.has(key)) { const k = kept[key] && kept[key].whole ? kept[key] : null, p = !wt.count && wt.part && wt.part.shape; return { d: p || k || here, whole: k, here, part: p || null }; }   // (a paused count: what it came to so far)
+    if (key === 'gallery') { const k = kept[wtSlot()] && kept[wtSlot()].whole ? kept[wtSlot()] : null; return { d: here || k, whole: k, here }; }   // (as last counted, or just now)
     if (key === 'inventory' && (wtInvNc() ? 'nc' : 'np') !== tab) { const k = kept[tab === 'nc' ? 'inventory:nc' : 'inventory']; return { d: k && k.whole ? k : null, whole: null, here: null, other: true }; }
     return { d: here, whole: null, here };
   }
@@ -17607,7 +18186,7 @@
   function wtWinPaint() {
     if (!wt || !wt.win || !wt.win.classList.contains('open')) return;
     const key = wt.key, paged = WT_PAGED.has(key), kept = wtKeep(), s = wt.sum, c = wt.count, tab = wt.tab === 'nc' ? 'nc' : 'np', nc = tab === 'nc';
-    const { d: src, whole, here, other } = wtSrc(tab, kept), place = wt.own ? `Your ${WT_NAME[key]}` : 'This gallery';
+    const { d: src, whole, here, other, part } = wtSrc(tab, kept), place = wt.own ? `Your ${WT_NAME[key]}` : 'This gallery';
     const npN = (d) => Math.max(0, (d.items || 0) - ((d.nc && d.nc.n) || 0));
     const sub = (d) => (nc
       ? [`${d.nc.n.toLocaleString()} NC item${d.nc.n === 1 ? '' : 's'}`, d.nc.valued ? `${d.nc.valued.toLocaleString()} with a value` : '', d.nc.n > d.nc.valued ? `${(d.nc.n - d.nc.valued).toLocaleString()} without one yet` : '']
@@ -17622,14 +18201,26 @@
         <div class="bnp-wt-prog"><div class="bnp-wt-track"><i style="width:${Math.max(4, Math.min(100, pct))}%"></i></div>
         <span class="bnp-wt-sub">${c.phase === 'price' ? `Asking itemdb for prices: ${c.priced.toLocaleString()} of ${c.toPrice.toLocaleString()}…` : `${c.paused ? 'Waiting for you to come back to this tab: ' : 'Reading '}page ${c.read + (c.paused ? 0 : 1)}${c.pages ? ` of ${c.pages}` : ''}${key === 'safetydeposit' && c.pool === 'np' ? ' (your NC items after)' : key === 'safetydeposit' && c.pool === 'nc' ? ' (NC items)' : ''}…`}</span></div>
         <div class="bnp-wt-meta"><span>One page at a time, as you’d turn them; nothing is moved.</span><button type="button" class="bnp-wt-pb" data-wt="stop">Stop</button></div></div>`;
+    } else if (paged && part) {   // (itemdb paused it partway: what's counted so far, and Carry on)
+      const p = wt.part, end = wtPauseEnd();
+      top = `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${allLbl}, counted so far</span><b class="bnp-wt-big">${wtCoin(tab)}${esc(big(part))}</b><span class="bnp-wt-sub">${esc(`${(p.priced || 0).toLocaleString()} of ${(p.toPrice || 0).toLocaleString()} priced · ${(p.pages || 0).toLocaleString()} page${p.pages === 1 ? '' : 's'} read ${colAgo(p.at)}`)}</span>
+          <div class="bnp-wt-meta"><span>${end ? `itemdb’s pause is over at ${esc(new Date(end).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}` : 'itemdb’s pause should be over'}</span><button type="button" class="bnp-wt-pb is-go" data-wt="resume">Carry on</button><button type="button" class="bnp-wt-pb" data-wt="count">Start again</button></div></div>`;
+      top += wtErrHtml('busy');
+    } else if (key === 'gallery') {   // (the Gallery: its last count, kept till you count again)
+      const stale = whole && wtStale(whole), shown = here || whole;
+      top = shown ? `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${lbl}</span><b class="bnp-wt-big">${wtCoin(tab)}${esc(big(shown))}</b><span class="bnp-wt-sub">${esc(sub(shown))}</span>
+          <div class="bnp-wt-meta"><span>${here && wt.err ? 'Counted so far' : `Counted ${esc(colAgo(shown.at))}`}${stale && !here ? ' · <b class="bnp-wt-warn">it has changed since</b>' : ''}</span><button type="button" class="bnp-wt-pb${stale ? ' is-go' : ''}" data-wt="count"${wt.pricing ? ' disabled' : ''}>${wt.pricing ? 'Counting…' : wt.err === 'busy' ? 'Carry on' : 'Count again'}</button></div></div>`
+        : `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${lbl}</span><p class="bnp-wt-ask">${wt.items.length ? `${wt.items.length.toLocaleString()} item${wt.items.length === 1 ? '' : 's'}. ` : ''}Count them at itemdb’s prices whenever you like: the count is kept and shown each time you come, till you count again.</p>
+          <div class="bnp-wt-meta"><button type="button" class="button-default__2020 button-yellow__2020" data-wt="count"${wt.pricing ? ' disabled' : ''}>${wt.pricing ? 'Counting…' : 'Count it'}</button></div></div>`;
+      if (wt.err) top += wtErrHtml(wt.err);
     } else if (paged) {
-      const stale = whole && wtStale(whole), seen = wtSeen(), secs = seen ? Math.ceil(seen.items / 90) * 2 + Math.ceil(seen.items / 100) * 1.2 : 0;
+      const stale = whole && wtStale(whole), seen = wtSeen(), secs = seen ? Math.ceil(seen.items / 90) * 4.3 + Math.ceil(seen.items / 100) * 3 : 0;
       const what = seen ? `${seen.items.toLocaleString()} ${key === 'safetydeposit' && seen.pool === 'nc' ? 'NC items' : 'items'} over every page${key === 'safetydeposit' ? `, and your ${seen.pool === 'nc' ? 'NP' : 'NC'} items` : ''}.` : 'Every page of it.';
       top = whole ? `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${allLbl}</span><b class="bnp-wt-big">${wtCoin(tab)}${esc(big(whole))}</b><span class="bnp-wt-sub">${esc(sub(whole))}</span>
-          <div class="bnp-wt-meta"><span>Counted ${esc(colAgo(whole.at))}${stale ? ' · <b class="bnp-wt-warn">it has changed since</b>' : ''}</span><button type="button" class="bnp-wt-pb${stale ? ' is-go' : ''}" data-wt="count">Count again</button></div></div>`
+          <div class="bnp-wt-meta"><span>Counted ${esc(colAgo(whole.at))}${stale ? ' · <b class="bnp-wt-warn">it has changed since</b>' : whole.upd ? ' · kept up to date since' : ''}</span><button type="button" class="bnp-wt-pb${stale ? ' is-go' : ''}" data-wt="count">Count again</button></div></div>`
         : `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${allLbl}</span><p class="bnp-wt-ask">${what} Count them all: each page read as you’d turn it, a moment between, then priced at itemdb.</p>
           <div class="bnp-wt-meta"><button type="button" class="button-default__2020 button-yellow__2020" data-wt="count">Count it all</button>${seen ? `<span>About ${secs < 60 ? `${Math.max(5, Math.round(secs / 5) * 5)} seconds` : `${Math.round(secs / 60)} minute${Math.round(secs / 60) === 1 ? '' : 's'}`}</span>` : ''}</div></div>`;
-      if (wt.err) top += `<p class="bnp-wt-say is-err">${esc(wt.err === 'visit' ? 'itemdb gives its prices once you’ve opened itemdb.com.br today: open it, then count again.' : wt.err === 'busy' ? 'itemdb asked for a pause: count again in a few minutes.' : wt.err === 'fail' ? 'itemdb didn’t answer just now: count again in a moment.' : wt.err)}</p>`;
+      if (wt.err) top += wtErrHtml(wt.err);
       if (has(here)) top += `<div class="bnp-wt-here"><span class="bnp-wt-lbl">This page</span><b>${esc(big(here))}</b><span class="bnp-wt-sub">${esc(sub(here))}</span></div>`;
     } else if (src) top = `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${lbl}${other ? `, as last seen ${esc(colAgo(src.at))}` : ''}</span><b class="bnp-wt-big">${wtCoin(tab)}${esc(big(src))}</b><span class="bnp-wt-sub">${esc(sub(src))}</span></div>`;
     else if (other) top = `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${lbl}</span><p class="bnp-wt-ask">Not seen yet: show your inventory’s ${nc ? 'NC' : 'NP'} items (the ${nc ? 'NC' : 'NP'} button above them) and they’re counted.</p></div>`;
@@ -17649,7 +18240,7 @@
       if (list.length > 10 && !wt.full) lists += `<div class="bnp-wt-morerow"><button type="button" class="bnp-wt-pb" data-wt="more">${wt.more ? 'Fewer' : `Show more (${Math.min(list.length, 50)})`}</button></div>`;
       if (src && src.none) lists += `<details class="bnp-wt-noneb"><summary>${src.none.toLocaleString()} without an itemdb price</summary><p>${esc((src.noneNames || []).join(', '))}${src.none > (src.noneNames || []).length ? '…' : ''}</p></details>`;
     } else {
-      const list = src ? (src.ncTop || []).filter((x) => x.caps) : [], shown = list.slice(0, wt.more || wt.full ? 30 : 8);
+      const list = src ? (src.ncTop || []).filter((x) => x.caps).sort(wtNcOrder) : [], shown = list.slice(0, wt.more || wt.full ? 30 : 8);   // (a sum kept from before: in this order too)
       const rows = shown.map((it) => li(it, `${pic(it.img)}<span class="bnp-wt-n"><span>${esc(it.n)}</span><small>${[it.q > 1 ? `${it.q.toLocaleString()} of them` : '', it.np ? 'with your NP items' : ''].filter(Boolean).join(' · ') || 'NC'}</small></span><span class="bnp-it-nc" data-tier="${ncTier(it.caps)}" title="${esc(`${it.caps}${ncCaps(it.caps) && !/caps?\s*$/i.test(it.caps) ? ' caps' : ''}${it.q > 1 ? ' each' : ''}`)}">${esc(ncShort(it.caps))}</span>`)).join('');
       if (rows) lists += `<section>${head(`Most valuable${pg}`, shown)}<ol class="bnp-wt-top is-nc${can ? ' is-pick' : ''}">${rows}</ol></section>`;
       if (list.length > 8 && !wt.full) lists += `<div class="bnp-wt-morerow"><button type="button" class="bnp-wt-pb" data-wt="more">${wt.more ? 'Fewer' : `Show more (${Math.min(list.length, 30)})`}</button></div>`;
@@ -17766,7 +18357,8 @@
     if (!t) return;
     const a = t.dataset.wt;
     if (a === 'x') wtClose();
-    else if (a === 'count') wtCount();
+    else if (a === 'count') { if (WT_PAGED.has(wt.key)) wtCount(); else wtCountHere().catch(report); }
+    else if (a === 'resume') wtCount(true);
     else if (a === 'stop') { if (wt.count) wt.count.stop = true; }
     else if (a === 'more') { wt.more = !wt.more; wtWinPaint(); }
     else if (a === 'full') { wt.full = !wt.full; try { localStorage.setItem('bnp-wt-full', wt.full ? '1' : '0'); } catch (_) { /* */ } wt.toTop = true; wtWinPaint(); const f = wt.win.querySelector('[data-wt="full"]'); if (f) f.focus({ preventScroll: true }); }   // (full screen, or a window again: remembered)
@@ -17791,19 +18383,28 @@
     const d = await r.json().catch(() => null);
     if (!d || !d.success || !d.data) throw new Error('Neopets didn’t give your SDB’s items just now: try again in a moment.');
     const pg = d.data.pagination || {};
-    return { items: (d.data.items || []).map((i) => ({ n: reClean(i.obj_name), q: Math.max(1, Number(i.amount) || 1), nc: !!i.is_nc || pool === 'nc', pb: false, img: i.obj_filename ? `https://images.neopets.com/items/${i.obj_filename}.gif` : '' })), pages: Number(pg.total_pages) || 1, total: Number(pg.total_items) || 0, qty: pg.total_qty != null ? Number(pg.total_qty) : null };
+    return { items: (d.data.items || []).map((i) => ({ n: reClean(i.obj_name), q: Math.max(1, Number(i.amount) || 1), nc: !!i.is_nc || pool === 'nc', pb: false, img: i.obj_filename ? `https://images.neopets.com/items/${i.obj_filename}.gif` : '', id: i.obj_info_id })), pages: Number(pg.total_pages) || 1, total: Number(pg.total_items) || 0, qty: pg.total_qty != null ? Number(pg.total_qty) : null };
   }
-  async function wtCount() {   // (the whole SDB or Closet: every page read as you'd turn them, one at a time with a pause between, only while this tab's in front; then priced)
+  async function wtCountHere() {   // (the Gallery: all of it on its page — priced when you ask, a hundred at a time a moment apart; kept till you ask again)
+    if (!wt || wt.pricing) return;
+    wt.force = true;
+    wt.sig = null;
+    wt.err = '';
+    try { await wtRefresh(); } finally { if (wt) { wt.force = false; wtPillPaint(); wtWinPaint(); } }
+  }
+  async function wtCount(resume) {   // (the whole SDB or Closet: every page read as you'd turn them, one at a time with a pause between, only while this tab's in front; then priced)
     if (!wt || wt.count || wt.picking || !WT_PAGED.has(wt.key)) return;
     const key = wt.key, me = { key, read: 0, pages: 0, pool: '', phase: 'read', stop: false, paused: false, priced: 0, toPrice: 0 };
+    const was = resume && wt.part, seen = wtSeen(), fits = !!(was && (!was.seen || !seen || (was.seen.items === seen.items && was.seen.qty === seen.qty)));   // (its pages read before and still as they were: not read again)
     wt.count = me;
     wt.err = '';
     wtPillPaint();
     wtWinPaint();
-    const items = [], pools = {};
+    const items = fits ? [...was.items] : [], pools = fits ? { ...(was.pools || {}) } : {};
+    if (fits) { me.read = me.pages = was.pages || 0; }
     let err = '';
     try {
-      for (const pool of key === 'safetydeposit' ? ['np', 'nc'] : ['']) {
+      if (!fits) for (const pool of key === 'safetydeposit' ? ['np', 'nc'] : ['']) {
         me.pool = pool;
         for (let p = 1; ; p++) {
           while (document.hidden && !me.stop) { if (!me.paused) { me.paused = true; wtWinPaint(); } await wtSleep(800); }
@@ -17816,9 +18417,9 @@
           wtPillPaint();
           wtWinPaint();
           if (p >= r.pages || !r.items.length) break;
-          await wtSleep(1100 + Math.random() * 1700);
+          await wtSleep(3000 + Math.random() * 2000);
         }
-        if (pool === 'np') await wtSleep(1100 + Math.random() * 1700);   // (and between the NP items and the NC ones)
+        if (pool === 'np') await wtSleep(3000 + Math.random() * 2000);   // (and between the NP items and the NC ones)
       }
       me.phase = 'price';
       const np = items.filter((it) => !it.nc && !it.pb).map((it) => it.n);
@@ -17827,16 +18428,66 @@
       const prices = await wtPrices(np, true, (done) => { me.priced = done; wtWinPaint(); });
       const caps = await wtCaps(items.filter((it) => !it.pb && (it.nc || !(prices[it.n] && prices[it.n].p > 0))).map((it) => it.n));
       const s = wtSum(items, prices, caps);
-      if (s.visit) err = 'visit';
-      else if (s.busy) err = 'busy';
-      else if (s.fail && !s.priced) err = 'fail';
-      else wtKeepSet(key, wtShape(s, { whole: true, pools }));
+      if (s.visit || s.busy) {   // (itemdb paused it: what's read and priced so far kept, to carry on from)
+        err = s.visit ? 'visit' : 'busy';
+        const p = { at: Date.now(), items, pools, pages: me.pages, seen, priced: s.priced, toPrice: me.toPrice, shape: wtShape(s) };
+        idbSet(wtPartKey(), p).catch(() => {});
+        if (wt) wt.part = p;
+      } else if (s.fail && !s.priced) err = 'fail';
+      else {
+        const shape = wtShape(s, { whole: true, pools });
+        wtKeepSet(key, shape);
+        idbSet(wtPartKey(), null).catch(() => {});
+        if (wt) wt.part = null;
+        if (key === 'safetydeposit') idbSet(wtLedKey(), { at: shape.at, items, prices: wtLedPrices(prices), caps, pools }).catch(() => {});   // (item by item: to follow what goes in and out)
+      }
     } catch (e) { err = e && e.message === 'stopped' ? '' : String((e && e.message) || 'Couldn’t count it just now: try again in a moment.'); }
     if (!wt || wt.count !== me) return;
     wt.count = null;
     wt.err = err;
     wtPillPaint();
     wtWinPaint();
+  }
+  const wtLedKey = () => `wt-led-safetydeposit:${nclMe() || '-'}`;   // (your whole SDB as last counted, item by item with the prices it was counted at: followed as items go in and out)
+  const wtLedPrices = (pr) => { const o = {}; for (const [n, r] of Object.entries(pr || {})) if (r && r.p > 0) o[n] = { p: r.p, slug: r.slug || '', img: r.img || '' }; return o; };
+  let wtLedQ = Promise.resolve();
+  function wtSdbChange(list) {   // (items out of your SDB (dq below 0) or put in: its counted worth follows, no count needed — itemdb asked only for a price it hasn't given today)
+    const run = async () => {
+      const kept = wtKeep().safetydeposit, led = kept && kept.whole ? await idbGet(wtLedKey()).catch(() => null) : null;
+      if (!led || led.at !== kept.at || !Array.isArray(led.items)) return;   // (never counted whole, or counted before NE kept it item by item: a count starts it)
+      const items = led.items, pools = JSON.parse(JSON.stringify(led.pools || {})), prices = { ...(led.prices || {}) }, caps = { ...(led.caps || {}) }, fresh = [];
+      let did = 0;
+      for (const c of list || []) {
+        const dq = Math.round(Number(c.dq) || 0), nc = !!c.nc, n = reClean(c.n || '');
+        if (!dq || (!n && c.id == null)) continue;
+        let i = c.id != null ? items.findIndex((x) => x.id != null && String(x.id) === String(c.id)) : -1;
+        if (i < 0 && n) i = items.findIndex((x) => x.n === n && !!x.nc === nc);
+        if (i < 0 && n && dq < 0) i = items.findIndex((x) => x.n === n);
+        const it = i >= 0 ? items[i] : null, pl = pools[(it ? it.nc : nc) ? 'nc' : 'np'];
+        if (dq < 0) {
+          if (!it) continue;   // (not in it as counted: nothing to take off)
+          const take = Math.min(it.q, -dq);
+          it.q -= take;
+          if (pl) { if (pl.qty != null) pl.qty = Math.max(0, pl.qty - take); if (it.q <= 0) pl.items = Math.max(0, (pl.items || 0) - 1); }
+          if (it.q <= 0) items.splice(i, 1);
+        } else {
+          if (it) it.q += dq; else { items.push({ n, q: dq, nc, pb: false, img: c.img || '' }); fresh.push(n); }
+          if (pl) { if (pl.qty != null) pl.qty += dq; if (!it) pl.items = (pl.items || 0) + 1; }
+        }
+        did++;
+      }
+      if (!did) return;
+      const np = fresh.filter((x) => !prices[x] && items.some((it) => it.n === x && !it.nc));
+      if (np.length) Object.assign(prices, wtLedPrices(await wtPrices(np, false)));   // (mostly kept already: what you put in was priced in your Inventory)
+      const ask = fresh.filter((x) => !caps[x] && items.some((it) => it.n === x && (it.nc || !prices[x])));
+      if (ask.length) Object.assign(caps, await wtCaps(ask));
+      const now = Date.now();
+      wtKeepSet('safetydeposit', wtShape(wtSum(items, prices, caps), { whole: true, pools, at: kept.at, upd: now }));
+      await idbSet(wtLedKey(), { ...led, items, pools, prices, caps, upd: now });
+      if (wt && wt.key === 'safetydeposit') { wtPillPaint(); wtWinPaint(); }
+    };
+    wtLedQ = wtLedQ.then(run).catch(report);
+    return wtLedQ;
   }
   // What's selected in What it's worth, selected in your SDB's own list as you'd do it there (its search, its tick box, its quantity),
   // with "Move to Inventory" chosen in its drawer. NE never moves anything itself: Neopets' own Confirm (and your PIN) does
@@ -17856,7 +18507,7 @@
       const it = [...(st.items || [])].find((x) => x && reClean(x.obj_name).toLowerCase() === want);
       if (it) return { it };
       if (p >= pages) return {};
-      await wtSleep(500 + Math.random() * 600);
+      await wtSleep(2400 + Math.random() * 1400);
       st.onPageChange(p + 1);
       if (!(await sdbIdle(st))) return { err: true };
     }
@@ -17895,7 +18546,7 @@
         set.delete(name);
         me.i++;
         wtPickPaint();
-        if (me.i < names.length && !me.stop) await wtSleep(700 + Math.random() * 900);
+        if (me.i < names.length && !me.stop) await wtSleep(2600 + Math.random() * 1600);
       }
     } catch (e) {
       const slow = !!(e && e.message === 'slow');
@@ -21228,7 +21879,7 @@
         name, active: td.classList.contains('active_pet'),
         thumb: fullUrl(bgUrl(img) || ''), pic: fullUrl((picEl && bgUrl(picEl)) || (bgUrl(img) || '').replace(/\/(\d+)\/\d+\.png$/, '/$1/4.png')),   // (Neopets fills in the other pets' big pictures only when they're clicked)
         species: (st.species || {}).text || '', colour: (st.colour || {}).text || '', gender: (st.gender || {}).text || '',
-        age: parseInt((st.age || {}).text, 10) || 0, level: parseInt((st.level || {}).text, 10) || 0, hp: hp || 0, hpMax: hpMax || 0,
+        ...(() => { const t = (st.age || {}).text || '', n = Number(t.replace(/[^\d]/g, '')) || 0; return /hour/i.test(t) ? { age: Math.floor(n / 24), ageH: n } : { age: n, ageH: null }; })(),   // ("8,853 days": every digit — parseInt stopped at the comma; a young pet's "317 hours": in days, the hours kept) level: parseInt((st.level || {}).text, 10) || 0, hp: hp || 0, hpMax: hpMax || 0,
         mood: (st.mood || {}).text || '', hunger: (st.hunger || {}).text || '',
         strength: (st.strength || {}).text || '', defence: (st.defence || {}).text || '', move: (st.move || {}).text || '',
         intelligence: (st.intelligence || {}).text || '', books: (st.intelligence || {}).href || `/books_read.phtml?pet_name=${encodeURIComponent(name)}`,
@@ -21367,7 +22018,7 @@
     const s = qr.prefs.sort;
     if (s === 'name') list.sort(byName);
     else if (s === 'level') list.sort((a, b) => b.level - a.level || byName(a, b));
-    else if (s === 'age') list.sort((a, b) => b.age - a.age || byName(a, b));
+    else if (s === 'age') { const old = (x) => (x.ageH != null ? x.ageH / 24 : x.age); list.sort((a, b) => old(b) - old(a) || byName(a, b)); }
     else if (s === 'hunger') list.sort((a, b) => hungerAt(a.hunger) - hungerAt(b.hunger) || byName(a, b));
     else if (s === 'custom') { const o = qr.prefs.order || []; const at = (p) => { const i = o.indexOf(p.name); return i < 0 ? 999 : i; }; list.sort((a, b) => at(a) - at(b) || byName(a, b)); }
     else list.sort((a, b) => (b.active - a.active) || byName(a, b));
@@ -21565,7 +22216,10 @@
   };
   const qrIc = (k, cls) => `<svg class="bqr-ic${cls ? ` ${cls}` : ''}" viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${QR_IC[k]}</svg>`;
   const qrMoodTone = (m) => (/delight|ecstatic|joy|cheer|happy|great|wonderful|excited/i.test(m) && !/unhappy/i.test(m) ? 'is-good' : /content|fine|ok\b|alright|indifferent|so-so|moody|bored/i.test(m) ? 'is-calm' : 'is-low');
-  const qrAge = (d) => (d >= 365 ? `${Math.floor(d / 365)}y ${(d % 365).toLocaleString()}d` : `${d.toLocaleString()} day${d === 1 ? '' : 's'}`);
+  const qrBorn = (p) => Date.now() - (p.ageH != null ? p.ageH * 3600e3 : p.age * DAY_MS);   // (when it was made)
+  const qrYear = (p) => Number(nstOf(qrBorn(p)).day.slice(0, 4)) - 1998;   // (the Neopian year it was made in: Y1 is 1999)
+  const qrAge = (p) => (p.ageH != null && p.age < 1 ? `${p.ageH} hour${p.ageH === 1 ? '' : 's'}` : `${p.age.toLocaleString()} day${p.age === 1 ? '' : 's'}`) + ` (Y${qrYear(p)})`;
+  const qrAgeTitle = (p) => `${p.ageH != null ? `${p.ageH.toLocaleString()} hours` : `${p.age.toLocaleString()} days`} old: made in Y${qrYear(p)}, ${new Date(qrBorn(p)).toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' })}`;
   function qrStat(label, short, raw, href, title, ic) {   // (a battle stat: its number large where Neopets gives one, its word under it; its own little icon)
     const s = String(raw || '').trim(), m = /^(.*?)\s*\(([\d,]+)\)\s*$/.exec(s), word = (m ? m[1] : s).trim().toLowerCase(), num = m ? m[2] : '';
     const inner = `<span class="bqr-st-l">${ic ? qrIc(ic, `is-${ic}`) : ''}${esc(short)}</span><b>${esc(num || capFirst(word) || '?')}</b>${num ? `<small>${esc(word)}</small>` : ''}`;
@@ -21593,7 +22247,7 @@
         <div class="bqr-card-body">
           <div class="bqr-picwrap"><a class="bqr-pic" href="/customise/?view=${N}" title="Customise ${esc(p.name)}"><img src="${esc(qrPicSrc(p))}" alt="${esc(p.name)}" loading="lazy"></a>${pp ? `<a class="bqr-petpet" href="${esc(pp.href || '#')}" title="${esc(pp.text || 'Its petpet')}"><img src="${esc(pp.src)}" alt="" loading="lazy"></a>` : ''}</div>
           <div class="bqr-panel">
-            <div class="bqr-chips2"><span class="bqr-c2" title="Level">${qrIc('lv', 'is-lv')}<small>Lv</small>${p.level}</span><span class="bqr-c2" title="${esc(`${p.age.toLocaleString()} days old`)}">${qrIc('age')}${qrAge(p.age)}</span>${p.mood ? `<span class="bqr-c2 bqr-mood ${qrMoodTone(p.mood)}" title="Mood">${qrIc(qrMoodTone(p.mood).slice(3))}${esc(p.mood)}</span>` : ''}</div>
+            <div class="bqr-chips2"><span class="bqr-c2" title="Level">${qrIc('lv', 'is-lv')}<small>Lv</small>${p.level}</span><span class="bqr-c2" title="${esc(qrAgeTitle(p))}">${qrIc('age')}${qrAge(p)}</span>${p.mood ? `<span class="bqr-c2 bqr-mood ${qrMoodTone(p.mood)}" title="Mood">${qrIc(qrMoodTone(p.mood).slice(3))}${esc(p.mood)}</span>` : ''}</div>
             <div class="bqr-meter"><span class="bqr-ml">${qrIc('hp', 'is-hp')}Health</span>${m.health}</div>
             <div class="bqr-meter"><span class="bqr-ml">${qrIc('food', 'is-food')}Hunger</span>${m.hunger}</div>
             <div class="bqr-stats4">${qrStat('Strength', 'Str', p.strength, '', '', 'str')}${qrStat('Defence', 'Def', p.defence, '', '', 'def')}${qrStat('Move', 'Move', p.move, '', '', 'mov')}${qrStat('Intelligence', 'Int', p.intelligence, p.books, `Intelligence: ${p.intelligence}. Books ${p.name} has read`, 'int')}</div>
@@ -21610,7 +22264,7 @@
       const flags = [isSick(p) ? `<span class="bqr-flag is-sick" title="${esc(sickTitle(p))}">Sick</span>` : '', inLodge(p) ? `<span class="bqr-flag is-lodge">${esc(lodgeLeft((p.notices.find((x) => x.kind === 'lodge') || {}).text || '') || 'Neolodge')}</span>` : ''].join('');
       return `<tr data-pet="${esc(p.name)}"${p.active ? ' class="is-active"' : ''}>
           <td><div class="bqr-who"><img src="${esc(p.thumb)}" alt=""><span><a href="/petlookup.phtml?pet=${N}"><b>${esc(p.name)}</b></a>${p.active ? ` <span class="bqr-badge is-small">${GLYPH.star} Active</span>` : ' <button type="button" class="bnp-linkbtn" data-qa="active">Make active</button>'}<small>${esc([p.colour, p.species].filter(Boolean).join(' '))} ${genderMark(p.gender)}</small>${flags}</span></div></td>
-          <td>${p.level}</td><td class="bqr-nowrap">${m.health}</td><td class="bqr-nowrap">${m.hunger}</td><td>${esc(p.mood)}</td><td class="bqr-nowrap">${p.age.toLocaleString()} days</td>
+          <td>${p.level}</td><td class="bqr-nowrap">${m.health}</td><td class="bqr-nowrap">${m.hunger}</td><td>${esc(p.mood)}</td><td class="bqr-nowrap" title="${esc(qrAgeTitle(p))}">${qrIc('age')}${qrAge(p)}</td>
           <td><div class="bqr-rowacts">${qrActions(p, true)}</div></td></tr>`;
     }).join('')}</tbody></table>`;
   }
@@ -25868,12 +26522,12 @@
   function oldPagesPage() {
     const snap = get('chrome', null);
     const ago = snap && snap.at ? Math.max(1, Math.round((Date.now() - snap.at) / 60000)) : 0;
-    const tries = [['Quick Ref', '/quickref.phtml'], ['Neomail', '/neomessages.phtml'], ['Neofriends', '/neofriends.phtml'], ['Guilds', '/guilds/index.phtml'], ['Stock Market', '/stockmarket.phtml'], ['Gallery', '/gallery/index.phtml'], ['Training', '/island/training.phtml?type=status'], ['Calendar', '/calendar.phtml'], ['Stamp Album', '/stamps.phtml?type=album'], ['Transfer Log', '/items/transfer_list.phtml']];
+    const tries = [['Quick Ref', '/quickref.phtml'], ['Neomail', '/neomessages.phtml'], ['Neofriends', '/neofriends.phtml'], ['Guilds', '/guilds/index.phtml'], ['Stock Market', '/stockmarket.phtml'], ['Training', '/island/training.phtml?type=status'], ['Calendar', '/calendar.phtml'], ['Stamp Album', '/stamps.phtml?type=album'], ['Transfer Log', '/items/transfer_list.phtml']];
     return `<div class="bnp-mhead"><h2>Old pages</h2><span class="bnp-note">Some Neopets pages are still in the old layout. They can wear the beta look instead: the top bar and side menu, your theme’s background, the page box and the footer, with the page’s own content in the middle.</span></div>
       <div class="bnp-card">
         <label class="bnp-switch"><input type="checkbox" data-feat="oldBeta"${S.features.oldBeta ? ' checked' : ''}><span>Show old pages in the beta look<small>Each one is kept out of sight as it opens, until its beta look is in.</small></span></label>
-        ${[['oldUserLookups', 'User lookups too', 'Off: user lookups keep the look their owners made for them.'], ['oldPetLookups', 'Pet lookups too', 'Off: pet lookups keep the look their owners made for them.'], ['oldGuilds', 'Guild pages too', 'A guild’s own pages. Off: they keep the look the guild made for them.']].map(([k, t, small]) => `<label class="bnp-switch"><input type="checkbox" data-feat="${k}"${S.features[k] ? ' checked' : ''}${S.features.oldBeta ? '' : ' disabled'}><span>${t}<small>${small}</small></span></label>`).join('')}
-        ${S.features.oldBeta && (S.features.oldUserLookups || S.features.oldPetLookups || S.features.oldGuilds) ? (() => { const full = S.features.oldOwnerLook === 'full'; return `<div class="bnp-f"><span>On those pages</span><span class="bnp-seg" role="group" aria-label="On those pages">${[['own', 'Their own layout, under the beta bar'], ['full', 'The whole beta look']].map(([v, l]) => `<button type="button" data-featv="oldOwnerLook:${v}" aria-pressed="${(full ? 'full' : 'own') === v}">${l}</button>`).join('')}</span></div>
+        ${[['oldUserLookups', 'User lookups too', 'Off: user lookups keep the look their owners made for them.'], ['oldPetLookups', 'Pet lookups too', 'Off: pet lookups keep the look their owners made for them.'], ['oldGuilds', 'Guild pages too', 'A guild’s own pages. Off: they keep the look the guild made for them.'], ['oldGalleries', 'Galleries too', 'Off: galleries keep the look their owners made for them (many code their own, for the old layout).'], ['oldShops', 'Shop fronts too', 'Off: shops keep the look their owners made for them.']].map(([k, t, small]) => `<label class="bnp-switch"><input type="checkbox" data-feat="${k}"${S.features[k] ? ' checked' : ''}${S.features.oldBeta ? '' : ' disabled'}><span>${t}<small>${small}</small></span></label>`).join('')}
+        ${S.features.oldBeta && (S.features.oldUserLookups || S.features.oldPetLookups || S.features.oldGuilds || S.features.oldGalleries || S.features.oldShops) ? (() => { const full = S.features.oldOwnerLook === 'full'; return `<div class="bnp-f"><span>On those pages</span><span class="bnp-seg" role="group" aria-label="On those pages">${[['own', 'Their own layout, under the beta bar'], ['full', 'The whole beta look']].map(([v, l]) => `<button type="button" data-featv="oldOwnerLook:${v}" aria-pressed="${(full ? 'full' : 'own') === v}">${l}</button>`).join('')}</span></div>
         <p class="bnp-note">${full ? 'Each one goes into the beta page box on your theme’s background, as other old pages do: a layout its owner coded for the old pages may come out wrong.' : 'Only Neopets’ old top bar becomes the beta one, and the page moves down under it. The owner’s background, page box, sidebar and footer stay as they coded them, and none of the beta look’s colours or fonts reach their page (nor your own theme’s).'}</p>`; })() : ''}
         ${S.features.oldBeta ? startCardHtml('old') : ''}
         <p class="bnp-note">${snap ? `The beta look is taken from the beta pages you visit (last from one ${ago} minute${ago === 1 ? '' : 's'} ago; it keeps itself up to date, and follows your theme).` : 'Visit any beta page once (Inventory, the Shop Wizard…) and old pages can take its look.'}</p>
@@ -25892,7 +26546,8 @@
     const sw = (k, title, small, more = '') => `<label class="bnp-switch"><input type="checkbox" data-rem="${k}"${R[k] ? ' checked' : ''}><span>${title}<small>${small}</small>${more}</span></label>`;
     const sel = (k, opts) => `<select data-rem="${k}" class="bnp-inline">${opts.map(([v, l]) => `<option value="${v}"${R[k] === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
     const hours = [...Array(24).keys()].map((h) => [h, `${h % 12 || 12} ${h < 12 ? 'am' : 'pm'}`]);
-    const coming = remEvents(now, now + 48 * 3600000).filter((e) => e.at > now && !remFired()[e.key]).slice(0, 10);
+    let coming = [];
+    try { coming = remEvents(now, now + 48 * 3600000).filter((e) => e.at > now && !remFired()[e.key]).slice(0, 10); } catch (e) { report(e); }   // (the settings drawn whatever happens there)
     const lodge = Object.keys(get('lodge', {}) || {}).length, train = Object.keys(get('train', {}) || {}).length;
     const custom = (R.custom || []).map((c) => `<div class="bnp-rc"><span class="bnp-ico" style="background-image:url('${esc(cssUrl(c.icon || iconOf(FOLDERS.dailies.icon)))}')"></span><span class="bnp-dname">${esc(c.label)}<small>${c.kind === 'once' ? `Once, ${new Date(c.at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}` : c.kind === 'every' ? `Every ${esc(String(c.hours))} hours` : `Every day at ${fmtNst(nstAtDay(0, c.mins || 0, now))} NST`}${c.href ? ` · ${esc(c.href)}` : ''}</small></span><button type="button" class="bnp-chip-x" data-rcdel="${esc(c.id)}" title="Delete it" aria-label="Delete ${esc(c.label)}">×</button></div>`).join('');
     return `<div class="bnp-mhead"><h2>Reminders</h2><span class="bnp-note">A note when something on Neopets is due: one sound and one desktop notice, however many Neopets tabs you have open.</span></div>
@@ -28421,8 +29076,8 @@
         ${sw('tillLog', 'Count what you take from your till', 'Each withdrawal Neopets says it made, added up by when: today, the past 7 days, this month, this year and all of it, and the last twelve months side by side, on your Shop Till page and here. Only the totals: no list of each one. Kept in this browser, for each of your accounts.')}
         ${S.features.tillLog !== false ? `${tillHtml()}${tillGet().log.length ? '<div class="bnp-tools"><button type="button" class="bnp-pillbtn is-danger" data-tillforget>Forget them</button></div>' : ''}` : ''}
       </div>`],
-      ['shops', () => `<div class="bnp-card"><h4>Trading Post sales</h4>
-        ${sw('tpSales', 'Keep a list of what you trade away', 'Each offer you accept on Your Trades: what went, what came for it (Neopoints and items) and who from, noted as Neopets completes the trade. Kept in this browser, for each of your accounts. Instant Buys complete without you pressing anything, so they aren’t in it.')}
+      ['shops', () => `<div class="bnp-card"><h4>Trading Post and auction sales</h4>
+        ${sw('tpSales', 'Keep a list of what you sell and trade away', 'Each offer you accept on Your Trades (what went, what came for it and who from, as Neopets completes the trade); each lot bought with its Instant Buy, from Neopets’ alert about it; and each auction of yours that sells, from The Neopets Team’s Neomail about it, read in NeoChat or your Inbox. Kept in this browser, for each of your accounts.')}
         ${S.features.tpSales !== false ? tpSalesHtml() : ''}
       </div>`],
       ['shops', npCardHtml],   // (made only when its page shows)
@@ -28953,8 +29608,10 @@
   const CHROME_V = 5;   // (3: whose bar it is; 4: its box as your theme draws it, never a page's own colour; 5: Neopets' links moved into a folder or the Profile menu kept in their own menus)
   const isLookup = () => /^\/(userlookup|petlookup)\.phtml$/i.test(location.pathname);
   const isGuildPage = () => /^\/guilds\/guild(_[a-z_]+)?\.phtml$/i.test(location.pathname);   // (a guild's own pages, which its makers lay out)
-  const ownerPage = () => isLookup() || isGuildPage();   // (pages their owners coded for the old layout)
-  const ownerBeta = () => (/^\/userlookup\.phtml$/i.test(location.pathname) ? !!S.features.oldUserLookups : /^\/petlookup\.phtml$/i.test(location.pathname) ? !!S.features.oldPetLookups : isGuildPage() ? !!S.features.oldGuilds : false);
+  const isGalleryPage = () => /^\/gallery\/(index\.phtml)?$/i.test(location.pathname);   // (a gallery: its owner's description, often coded for the old layout, its own CSS and all)
+  const isShopFront = () => location.pathname === '/browseshop.phtml';   // (a shop's front: its owner's description, the same)
+  const ownerPage = () => isLookup() || isGuildPage() || isGalleryPage() || isShopFront();   // (pages their owners coded for the old layout)
+  const ownerBeta = () => (/^\/userlookup\.phtml$/i.test(location.pathname) ? !!S.features.oldUserLookups : /^\/petlookup\.phtml$/i.test(location.pathname) ? !!S.features.oldPetLookups : isGuildPage() ? !!S.features.oldGuilds : isGalleryPage() ? !!S.features.oldGalleries : isShopFront() ? !!S.features.oldShops : false);
   const oldLite = () => ownerPage() && S.features.oldOwnerLook !== 'full';   // (such a page in the beta look: only the bar is new, unless you've chosen the whole look)
   function wantOld() {
     if (location.hostname !== 'www.neopets.com' || /^\/~/.test(location.pathname)) return false;   // (a petpage is its owner's; other Neopets addresses have no old pages)
@@ -31305,7 +31962,10 @@
     `)}
     html.bnp-qs .quickstock-table tr.bnp-qs-allrow > td { border-bottom: 2px solid #ecd9a2 !important; background: #fff6da !important; font-family: "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }   /* (Check All at the top too) */
     #container__2020 ul[class$="-menulinks"] > li > a.bnp-mb { white-space: nowrap; }   /* (the item pages' links bar: each with its picture, the bar no taller than Neopets' own) */
+    #container__2020 ul[class$="-menulinks"] > li > a:is(:hover, :focus-visible) { color: rgb(253, 230, 138); }   /* (lit as you point at it on every one, the colour Quick Stock's and the Closet's own have) */
     #container__2020 .bnp-mbic { display: inline-block; vertical-align: middle; width: 22px; height: 22px; margin: -4px 6px -4px 0; background: center / contain no-repeat; }
+    nav.mkt-subnav a.bnp-mkt-j { display: inline-flex; align-items: center; gap: 0; }
+    :is(#container__2020, body) nav.mkt-subnav a.bnp-mkt-j .bnp-mbic { width: 20px; height: 20px; margin: -2px 6px -2px -3px; }   /* (:is(): over the bar's 22px wherever it sits) */
     #container__2020 .inv-title-container h1.bnp-ib { font-size: var(--ib-fs) !important; line-height: var(--ib-lh) !important; padding-left: var(--ib-pl) !important; border-image-outset: var(--ib-out) !important; top: var(--ib-y) !important; white-space: nowrap; }   /* (the Inventory's banner, bigger: see invBanner) */
     #container__2020 #invDisplay.inv-items { border-radius: 0 0 15px 15px; }   /* (the Inventory's white box: rounded at its foot, as the tabs over it are at their top) */
     #container__2020 h1.bnp-pt { display: inline-flex; align-items: center; justify-content: center; gap: 12px; max-width: none !important; font-size: 46px !important; line-height: var(--pt-lh) !important; white-space: nowrap; }   /* (an item page's title, bigger, with its picture: no taller than Neopets' own; moved to the middle of its room by ptFit) */
@@ -31755,6 +32415,34 @@
     .bnp-nbc-undo { min-width: 78px; height: 30px; margin: 0; padding: 0 10px; border: 2px solid #d8d3c2; border-radius: 8px; background: #fff; color: #5c5845; font: 12px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
     .bnp-nbc-undo:hover:not(:disabled) { border-color: #a39e8a; color: #000; }
     .bnp-nbc-undo:disabled { border-color: transparent; background: none; color: #b5b0a0; cursor: default; }
+    .bnp-nbc-patsw { position: relative; overflow: hidden; background: #fff; }
+    .bnp-nbc-patsw > span { position: absolute; inset: 2px; border-radius: 5px; }
+    .bnp-nbc-row.is-pic .bnp-nbc-end { flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+    .bnp-nbc-lb[aria-pressed="true"] { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #000 15%); background: color-mix(in srgb, var(--bnp-accent) 35%, #fff); color: #2a2a2a; box-shadow: none; }
+    .bnp-nbc-pp { position: absolute; z-index: 6; top: 48px; right: 8px; bottom: 8px; width: min(548px, calc(100% - 16px)); display: flex; flex-direction: column; overflow: hidden; border: 2px solid #d8d3c2; border-radius: 14px; background: #fff; box-shadow: 0 12px 32px rgba(0, 0, 0, .28); }
+    .bnp-nbc-pptop { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 10px; padding: 9px 10px 9px 14px; border-bottom: 1px solid #efeadb; background: #faf9f5; }
+    .bnp-nbc-pptop b { color: #2a2a2a; font: 14px/1.25 "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-nbc-pptop small { grid-column: 1; color: #8a8571; font-size: 12px; line-height: 1.35; }
+    .bnp-nbc-ppx { grid-row: 1 / span 2; grid-column: 2; width: 30px; height: 30px; margin: 0; padding: 0; border: 2px solid #d8d3c2; border-radius: 8px; background: #fff; color: #5c5845; font: 18px/1 Arial, sans-serif; cursor: pointer; }
+    .bnp-nbc-ppx:hover { border-color: #a39e8a; color: #000; }
+    .bnp-nbc-ppbody { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px 12px; }
+    .bnp-nbc-pph { margin: 14px 2px 6px; color: #8a8571; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
+    .bnp-nbc-ppgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+    .bnp-nbc-ppone { position: relative; display: flex; flex-direction: column; gap: 5px; min-width: 0; margin: 0; padding: 5px; border: 2px solid #e3ddca; border-radius: 10px; background: #fff; text-align: left; cursor: pointer; }
+    .bnp-nbc-ppone > span { display: block; height: 46px; border-radius: 7px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08); }
+    .bnp-nbc-ppone > b { overflow: hidden; color: #363636; font: 12px/1.25 "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-nbc-ppone:hover { border-color: #a39e8a; }
+    .bnp-nbc-ppone:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--bnp-accent) 60%, transparent); }
+    .bnp-nbc-ppone.is-on { border-color: #2f8f2a; box-shadow: 0 0 0 3px rgba(47, 143, 42, .28); }
+    .bnp-nbc-ppone.is-on::after { content: ""; position: absolute; top: -7px; right: -7px; width: 22px; height: 22px; border: 2px solid #fff; border-radius: 50%; background: #2f8f2a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m5 10.5 3.4 3.4L15 7' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 16px no-repeat; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); }   /* (the one in use: ticked, as Settings marks what's on) */
+    .bnp-nbc-ppfoot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 9px 12px; border-top: 1px solid #efeadb; background: #faf9f5; }
+    .bnp-nbc-ppsize { display: flex; align-items: center; gap: 8px; margin: 0; color: #5c5845; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-nbc-ppsize[hidden] { display: none; }
+    .bnp-nbc-ppsize input { width: 130px; margin: 0; accent-color: color-mix(in srgb, var(--bnp-accent) 70%, #000 18%); }
+    .bnp-nbc-ppsize output { min-width: 44px; color: #8a8571; font: 12px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-nbc-ppurl { display: flex; flex: 1; min-width: 240px; gap: 8px; }
+    .bnp-nbc-ppurl input { flex: 1; min-width: 0; height: 30px; margin: 0; padding: 0 10px; border: 2px solid #d8d3c2; border-radius: 8px; background: #fff; color: #333; font: 12.5px "MuseoSansRounded500", Arial, sans-serif; outline: none; }
+    .bnp-nbc-ppurl input:focus { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #000 12%); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bnp-accent) 45%, transparent); }
     .bnp-nbc-row.is-tog { cursor: pointer; }
     .bnp-nbc-chk { display: grid; place-items: center; }
     .bnp-nbc-chk input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
@@ -32639,6 +33327,17 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.2', '2026-10-27', [
+      'Inventory without reloading, fixed for good: whatever you do with an item (feed, SDB, shop, gallery, donate, discard, give…) takes it off the grid at once, and every card keeps its picture',
+      'What it’s worth: your SDB’s worth follows what goes in and out (the SDB page, Quick Stock, the Inventory) without counting again; a count itemdb pauses carries on where it stopped',
+      'What it’s worth: your Gallery and Closet keep their last count, so itemdb is asked only when you count again; the Closet adds its NP value; Neocash sorted by caps',
+      'Trading Post and auction sales: lots bought with their Instant Buy (from Neopets’ alert) and auctions that sold (from The Neopets Team’s Neomail) join your sales list',
+      'The Post Office made over: its Main Page, someone else’s album (their pages beside yours) and the high score table; Your album a click away on every page',
+      'Board colours: choose the pattern behind board and topic titles (any theme’s, a picture of your own, or none) at the size you like',
+      'Quick Ref: each pet’s age with the year it was made in; Your Shop’s Jump to links with Neopets’ own pictures',
+      'Galleries and shop fronts keep the look their owners made: the beta look only if you choose it, in Settings › Old pages',
+      'Fixes: Settings › Reminders, Create a Trade’s ×9, the links bar lit on hover everywhere, a little slower and less regular paging through the SDB and Trading Post',
+    ]],
     ['4.1', '2026-10-27', [
       'The Stamp Album made over: your whole album as page cards (a little map of each page, its land’s picture, its avatar, what it still needs and about what that costs), every stamp still to get cheapest first, and the album’s avatars',
       'Stamp Album pages: each missing stamp faded in its own place with its price, the Shop Wizards and Trading Post a click away; stamps your album still needs marked wherever items show',
@@ -32992,7 +33691,7 @@
     if (document.documentElement) { fn(); return; }
     const o = new MutationObserver(() => { if (document.documentElement) { o.disconnect(); fn(); } });
     o.observe(document, { childList: true });
-  })(() => { for (const f of [barLook, boxEarly, nclPinEarly, tpEarly, tpSalesEar, invEar, qsAllEar, myEarly, tabsMark, dockMark, shopMin, srEarly, adsApply, nbEarly, stEarly, nmEarly, smEarly, cuEarly, colEarly, saEarly, cloEarly, pinAdEarly, pageWait, waitStyle, navEarly]) { try { f(); } catch (e) { report(e); } } });
+  })(() => { for (const f of [barLook, boxEarly, nclPinEarly, tpEarly, tpSalesEar, invEar, sdbEar, qsAllEar, myEarly, tabsMark, dockMark, shopMin, srEarly, adsApply, nbEarly, stEarly, nmEarly, smEarly, cuEarly, colEarly, saEarly, cloEarly, pinAdEarly, pageWait, waitStyle, navEarly]) { try { f(); } catch (e) { report(e); } } });
   // ═══════════════════════════════════════════════════════════════════════════
   // Ads gone (accounts without Premium): Neopets' own ad places out of sight from the very start, as Premium has the page — the banner
   // over it, the ones beside it and under it, its phone-size one, Playwire's and Google's slots, and old pages' banner and boxes. Only
@@ -33127,7 +33826,7 @@
   function boot() {   // (the page is read: the rest)
     try { actListen(); } catch (e) { report(e); }
     try { startKeep(); } catch (e) { report(e); }
-    for (const fn of [sdbNav, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
+    for (const fn of [sdbNav, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
     themeAfter(themeChanged);   // (an old page, its theme's sheets still coming: everything of ours dressed again once they're in)
     whenLoaded(() => { setTimeout(() => { try { boxFootNote(); } catch (e) { report(e); } }, 900); try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } setTimeout(() => { updCheck(false).catch(report); try { updSeen(); } catch (e) { report(e); } }, 1500); try { const w = myWorn(), sw = w && themeData().sw[myLive(w).base]; if (w && (!sw || sw.v !== 7)) themeSwatches(); } catch (e) { report(e); } });   // (a theme of yours: its base's sheet read, if it hasn't been yet)   // (a random event Neopets adds a moment later; theme pictures for the tab)
     if (document.getElementById('navtop__2020') || document.getElementById('navbottom__2020')) startOnce();
