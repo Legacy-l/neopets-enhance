@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.2
+// @version      4.2.1
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -383,10 +383,10 @@
   // Settings (and 2.1's, carried over the first time)
   // ═══════════════════════════════════════════════════════════════════════════
   const FEAT = {
-    profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, noAds: true, tillLog: true, tpSales: true,
+    profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, noAds: true, tillLog: true, tpSales: true, auSales: true,
     scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldGalleries: false, oldShops: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
-    updNote: true, updNew: true, dailyBtn: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, hidePinAd: true, nm2: true, nmPopup: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
+    updNote: true, updNew: true, dailyBtn: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, hidePinAd: true, nm2: true, nmPopup: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, tone: '', vol: 100, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,   // (tone: '' each its own, or one of the sounds for all; vol: how loud, 5 to 100)
@@ -4756,6 +4756,10 @@
     html.bnp-nb .bnp-nbtile:hover i { top: -3px; box-shadow: 0 6px 0 var(--nb-pop); }
     html.bnp-nb .bnp-nbtile.is-hot i::after { content: ""; position: absolute; top: -5px; right: -5px; width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; background: #3bc92e; box-shadow: 0 0 0 2px rgba(59, 201, 46, .25); }
     html.bnp-nb .bnp-nbtile small { color: var(--nb-muted); font: 10.5px var(--nb-txt); }
+    html.bnp-nb .bnp-nbtiles .bnp-nbtile { cursor: grab; user-select: none; -webkit-user-drag: none; touch-action: pan-y; }
+    html.bnp-nb .bnp-nbtile.is-dragging { opacity: .35; }
+    html.bnp-nb .bnp-nbtile.is-dragging i { border-style: dashed; box-shadow: none; }
+    html.bnp-nb .bnp-nbtile-ghost { position: fixed; z-index: 2147483000; margin: 0; pointer-events: none; cursor: grabbing; transform: scale(1.06) rotate(-2deg); filter: drop-shadow(0 8px 14px rgba(0, 0, 0, .25)); }   /* (the one being moved, in your hand) */
     html.bnp-nb .bnp-nblive-row { display: flex; align-items: center; gap: 10px; padding: 6px 4px; border-top: 2px solid var(--nb-line); color: var(--nb-text) !important; font: 13px var(--nb-ui); text-decoration: none !important; }
     html.bnp-nb .bnp-nblive-row:first-child { border-top: 0; }
     html.bnp-nb .bnp-nblive-row:hover { color: var(--nb-link) !important; }
@@ -5721,10 +5725,86 @@
     nbAvFill([...pm.rows, ...ph.rows]);
     const ago = (b) => (b.mins < 1 ? 'just now' : b.mins < 60 ? `${b.mins} min ago` : b.mins < 1440 ? `${Math.round(b.mins / 60)} h ago` : `${Math.round(b.mins / 1440)} d ago`);
     const head = (t, n, ic = '') => `<h3 class="bnp-nbbox-h">${ic}<span>${t}</span>${n ? `<em>${n}</em>` : ''}</h3>`;
-    box.innerHTML = `<section class="bnp-nbbox">${head('Favorites', mine.length, '<i class="bnp-nbbox-star" aria-hidden="true">★</i>')}<div class="bnp-nbbox-b">${mine.length ? `<div class="bnp-nbtiles">${mine.map((b) => `<a class="bnp-nbtile${b.mins <= 10 ? ' is-hot' : ''}" href="/neoboards/boardlist.phtml?board=${b.id}" title="${esc(b.name)}${b.when ? `: last post ${esc(b.when)}` : ''}"><i style="--pic:url('${esc(cssUrl(b.icon))}')"></i><span>${esc(b.name)}</span>${b.when ? `<small>${esc(ago(b))}</small>` : ''}</a>`).join('')}</div>` : '<p class="bnp-nbhint">☆ a board to make it a favorite: here, in the bar on every board page, and in the Community menu’s My Boards.</p>'}</div></section>
+    if (nbFavDragging) return;   // (a favorite being moved: the panel stays as it is till it's put down)
+    box.innerHTML = `<section class="bnp-nbbox">${head('Favorites', mine.length, '<i class="bnp-nbbox-star" aria-hidden="true">★</i>')}<div class="bnp-nbbox-b">${mine.length ? `<div class="bnp-nbtiles">${mine.map((b) => `<a class="bnp-nbtile${b.mins <= 10 ? ' is-hot' : ''}" href="/neoboards/boardlist.phtml?board=${b.id}" data-nbfav="${esc(String(b.id))}" draggable="false" title="${esc(b.name)}${b.when ? `: last post ${esc(b.when)}` : ''} (drag to move it; Alt+← or → too)"><i style="--pic:url('${esc(cssUrl(b.icon))}')"></i><span>${esc(b.name)}</span>${b.when ? `<small>${esc(ago(b))}</small>` : ''}</a>`).join('')}</div>` : '<p class="bnp-nbhint">☆ a board to make it a favorite: here, in the bar on every board page, and in the Community menu’s My Boards.</p>'}</div></section>
       <section class="bnp-nbbox">${head('Bookmarks', marks.length, nbRib(true))}${marks.length ? `${pm.rows.map((m) => nbTrow(m, `mark:${m.id}`)).join('')}${pm.pages > 1 ? `<div class="bnp-nbbox-foot">${nbPager('marks', pm)}</div>` : ''}` : '<div class="bnp-nbbox-b"><p class="bnp-nbhint">Bookmark a topic (at its top, or the ribbon beside it on its board) and it’s kept here, with how many new posts it has.</p></div>'}</section>
       <section class="bnp-nbbox">${head('Read lately', 0, `<i class="bnp-nbbox-svg" aria-hidden="true">${NB_SVG.clock}</i>`)}${hist.length ? `${ph.rows.map((h) => nbTrow(h, `hist:${h.id}`)).join('')}<div class="bnp-nbbox-foot">${nbPager('hist', ph)}<button type="button" data-nbx="histall">Clear it</button></div>` : '<div class="bnp-nbbox-b"><p class="bnp-nbhint">The topics you read come here, and open where you left off.</p></div>'}</section>
       <section class="bnp-nbbox">${head('Lively now', 0, nbBoxIc(['el:.nav-community-icon__2020', 'nat:community-neoboards-icon']))}<div class="bnp-nbbox-b">${lively.length ? lively.map((b) => `<a class="bnp-nblive-row" href="/neoboards/boardlist.phtml?board=${b.id}"><i style="background-image:url('${esc(cssUrl(b.icon))}')"></i><b>${esc(b.name)}</b><small>${esc(ago(b))}</small></a>`).join('') : '<p class="bnp-nbhint">Quiet right now: nothing new in the last half hour.</p>'}</div></section>`;
+    nbFavDrag();
+  }
+  let nbFavDragging = false;
+  function nbFavSave(grid) {   // (the favorites' order as they now stand: your My Boards in it, boards not shown here keeping their places)
+    const order = [...grid.querySelectorAll('.bnp-nbtile[data-nbfav]')].map((a) => a.dataset.nbfav), shown = new Set(order), real = new Map(S.boards.map((id) => [String(id), id]));
+    let i = 0;
+    S.boards = S.boards.map((id) => (shown.has(String(id)) ? real.get(order[i++]) : id));
+    saveNow();
+  }
+  function nbFavDrag() {   // (favorites in the order you like: dragged, the others making room as it goes, or Alt+← / → from the keyboard)
+    const grid = $('[data-bnp="nbside"] .bnp-nbtiles');
+    if (!grid || grid.dataset.bnpDrag) return;
+    grid.dataset.bnpDrag = '1';
+    let skip = false;
+    grid.addEventListener('click', (e) => { if (skip) { e.preventDefault(); e.stopPropagation(); skip = false; } }, true);   // (a tile let go after a move: not opened)
+    grid.addEventListener('dragstart', (e) => e.preventDefault());
+    grid.addEventListener('keydown', (e) => {
+      const tile = e.target instanceof Element && e.target.closest('.bnp-nbtile');
+      if (!tile || !e.altKey || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+      e.preventDefault();
+      const to = e.key === 'ArrowLeft' ? tile.previousElementSibling : tile.nextElementSibling;
+      if (!to) return;
+      invFlip(grid, () => grid.insertBefore(tile, e.key === 'ArrowLeft' ? to : to.nextElementSibling));
+      nbFavSave(grid);
+      tile.focus();
+    });
+    grid.addEventListener('pointerdown', (e) => {
+      const tile = e.target instanceof Element && e.target.closest('.bnp-nbtile');
+      if (!tile || e.button !== 0) return;
+      const sx = e.clientX, sy = e.clientY, t0 = Date.now(), touch = e.pointerType === 'touch';
+      let ghost = null, dx = 0, dy = 0;
+      const begin = () => {
+        const r = tile.getBoundingClientRect();
+        dx = sx - r.left;
+        dy = sy - r.top;
+        ghost = tile.cloneNode(true);
+        ghost.classList.add('bnp-nbtile-ghost');
+        ghost.removeAttribute('href');
+        Object.assign(ghost.style, { width: `${r.width}px`, left: `${r.left}px`, top: `${r.top}px` });
+        document.body.append(ghost);
+        tile.classList.add('is-dragging');
+        nbFavDragging = true;
+      };
+      const move = (ev) => {
+        if (!ghost) {
+          const far = Math.hypot(ev.clientX - sx, ev.clientY - sy);
+          if (touch && Date.now() - t0 < 280) { if (far > 8) stop(); return; }   // (a finger: held a moment first, so the page still scrolls)
+          if (far < 6) return;
+          begin();
+        }
+        ev.preventDefault();
+        ghost.style.left = `${ev.clientX - dx}px`;
+        ghost.style.top = `${ev.clientY - dy}px`;
+        const over = document.elementFromPoint(ev.clientX, ev.clientY), to = over && over.closest('.bnp-nbtile');
+        if (!to || to === tile || to.parentElement !== grid) return;
+        const r = to.getBoundingClientRect(), ref = ev.clientX > r.left + r.width / 2 ? to.nextElementSibling : to;
+        if (ref === tile || ref === tile.nextElementSibling) return;
+        invFlip(grid, () => grid.insertBefore(tile, ref));
+      };
+      const stop = () => {
+        removeEventListener('pointermove', move);
+        removeEventListener('pointerup', stop);
+        removeEventListener('pointercancel', stop);
+        if (!ghost) return;
+        ghost.remove();
+        tile.classList.remove('is-dragging');
+        nbFavDragging = false;
+        skip = true;
+        setTimeout(() => { skip = false; }, 350);
+        nbFavSave(grid);
+      };
+      addEventListener('pointermove', move, { passive: false });
+      addEventListener('pointerup', stop);
+      addEventListener('pointercancel', stop);
+    });
   }
   function nbStar(id) {   // (a board in your My Boards, or out: the bar and the menus' folder follow)
     const had = S.boards.includes(id);
@@ -10531,7 +10611,7 @@
     } else if (ncl.stick) list.scrollTop = list.scrollHeight;
     const sj = box.querySelector('[data-ncl-subj]');
     if (sj && sj.dataset.auto && sj.value !== nclSubj(p)) sj.value = nclSubj(p);   // (new messages, a new subject: kept up with, unless you've written your own)
-    if (built) nclFit(box.querySelector('[data-ncl-ta]'));
+    if (built) { const ta = box.querySelector('[data-ncl-ta]'); if (ta) { nclTaMake(ta); ta.value = nclDrafts()[k] || ''; } nclFit(ta); }
   }
   function nclHeadHtml(k, p) {
     const nf = nfData();
@@ -10688,7 +10768,7 @@
     if (NCL_NOREPLY.has(k)) return `<div class="bnp-ncl-comp is-noreply">${NCL_SVG.info}<span>Neopets sends these by itself, so there’s no one to answer them.</span></div>`;
     const subj = nclSubj(p);
     const how = S.features.nclEnter === 'button' ? 'Send sends it, Enter: a new line' : S.features.nclEnter === 'ctrl' ? 'Ctrl+Enter sends' : 'Enter sends, Shift+Enter: a new line';
-    return `<div class="bnp-ncl-comp"><p class="bnp-ncl-err" data-ncl-err role="alert" hidden></p><label class="bnp-ncl-subjf"><span>Subject</span><input type="text" data-ncl-subj data-auto="1" value="${esc(subj)}" maxlength="30" spellcheck="false"></label><div class="bnp-ncl-row2"><textarea data-ncl-ta rows="3" placeholder="Write to ${esc(p.n)}… (${how})" aria-label="Your message to ${esc(p.n)}">${esc(nclDrafts()[k] || '')}</textarea><div class="bnp-ncl-sendcol"><button type="button" class="bnp-ncl-snipbtn" data-ncl="snips" title="Quick replies: your own words, one click away" aria-label="Quick replies" aria-expanded="false">${NCL_SVG.bolt}</button>${nclSendBtn()}</div></div><div class="bnp-ncl-snips" data-ncl-snips hidden></div></div>`;
+    return `<div class="bnp-ncl-comp"><p class="bnp-ncl-err" data-ncl-err role="alert" hidden></p><label class="bnp-ncl-subjf"><span>Subject</span><input type="text" data-ncl-subj data-auto="1" value="${esc(subj)}" maxlength="30" spellcheck="false"></label><div class="bnp-ncl-row2"><div data-ncl-ta contenteditable="true" role="textbox" aria-multiline="true" spellcheck="true" data-placeholder="Write to ${esc(p.n)}… (${how})" aria-label="Your message to ${esc(p.n)}"></div><div class="bnp-ncl-sendcol"><div class="bnp-ncl-tools"><button type="button" class="bnp-ncl-snipbtn bnp-ncl-smbtn" data-ncl="smilies" title="Smilies: shown as they look while you write, sent as their codes" aria-label="Smilies" aria-expanded="false"><img src="${esc(nbSmPic('smiley'))}" alt=""></button><button type="button" class="bnp-ncl-snipbtn" data-ncl="snips" title="Quick replies: your own words, one click away" aria-label="Quick replies" aria-expanded="false">${NCL_SVG.bolt}</button></div>${nclSendBtn()}</div></div><div class="bnp-ncl-snips" data-ncl-snips hidden></div><div class="bnp-ncl-smpop" data-ncl-sm hidden></div></div>`;
   }
   function nclSnipsPaint(open) {   // (your quick replies, over where you write: one click puts it in; × takes one away; what's written can become one)
     const box = ncl && ncl.el.querySelector('[data-ncl-snips]'), btn = ncl && ncl.el.querySelector('[data-ncl="snips"]'), ta = ncl && ncl.el.querySelector('[data-ncl-ta]');
@@ -10699,6 +10779,18 @@
     const list = nclSnips(), has = !!(ta && ta.value.trim());
     box.innerHTML = `<div class="bnp-ncl-snipl">${list.length ? list.map((s, i) => `<div class="bnp-ncl-snip"><button type="button" class="bnp-ncl-snipt" data-ncl="snipuse" data-i="${i}" title="Put it in">${esc(s.length > 140 ? `${s.slice(0, 140)}…` : s)}</button><button type="button" class="bnp-ncl-snipx" data-ncl="snipdel" data-i="${i}" title="Take this one away" aria-label="Take this quick reply away">×</button></div>`).join('') : '<p class="bnp-ncl-none">None yet. Write them in Manage them, or save something you’ve written here.</p>'}</div><div class="bnp-ncl-snipf"><button type="button" class="bnp-pillbtn" data-ncl="snipset" title="Settings › NeoChat: write them, change them, put them in order">Manage them</button><button type="button" class="bnp-pillbtn" data-ncl="snipadd"${has ? '' : ' disabled'}>Save what’s written as one</button></div>`;
   }
+  let nclOutDown = false;   // (the press began on the page around NeoChat's window: the click it makes folds it)
+  function nclOutside(e) {   // (a press or click on the page around NeoChat's open window (Settings › NeoChat › Its window): not on it, its round button or what opens it, NE's settings or a backdrop. Never pinned, full screen or on its own page)
+    if (!S.features.nclOutFold || e.button !== 0 || !ncl || ncl.page || !nclIsOpen() || S.features.nclPin || ncl.el.classList.contains('is-max')) return false;
+    const t = e.target;
+    if (!(t instanceof Element) || !t.isConnected) return false;
+    if (t === document.documentElement && e.clientX >= t.clientWidth) return false;   // (the page's own scrollbar)
+    return !t.closest('[data-bnp="ncl"], [data-bnp="nclbub"], .bnp-veil, .bnp-hub');
+  }
+  document.addEventListener('pointerdown', (e) => { nclOutDown = nclOutside(e); }, true);
+  document.addEventListener('pointercancel', () => { nclOutDown = false; }, true);   // (a finger scrolling the page: no click, nothing folded)
+  document.addEventListener('click', (e) => { const fold = nclOutDown && e.isTrusted && nclOutside(e); nclOutDown = false; if (fold) nclMin(); }, true);
+  document.addEventListener('pointerdown', (e) => { const sb = ncl && ncl.el && ncl.el.querySelector('[data-ncl-sm]:not([hidden])'); if (sb && !(e.target instanceof Element && e.target.closest('[data-ncl-sm], [data-ncl="smilies"]'))) nclSmPaint(false); }, true);   // (the smilies picker put away by a click anywhere else)
   document.addEventListener('pointerdown', (e) => { const box = ncl && ncl.el && ncl.el.querySelector('[data-ncl-snips]:not([hidden])'); if (box && !(e.target instanceof Element && e.target.closest('[data-ncl-snips], [data-ncl="snips"]'))) nclSnipsPaint(false); }, true);
   function nclSendBtn() {   // (Send — or, for a moment after, how it went: Neopets' green with a tick, or its red)
     const s = ncl && ncl.said && Date.now() < ncl.said.until ? ncl.said : null;
@@ -10711,6 +10803,104 @@
     const b = ncl.el.querySelector('[data-ncl="send"]'); if (b) b.outerHTML = nclSendBtn();
     clearTimeout(ncl.saidT);
     ncl.saidT = setTimeout(() => { if (!ncl) return; ncl.said = null; const x = ncl.el.querySelector('[data-ncl="send"]'); if (x) x.outerHTML = nclSendBtn(); }, ms);
+  }
+  // NeoChat's writing box: your words, each smilie (:) *sun* …) as its picture as you write, as the old NeoChat had it; read, it gives the
+  // codes back — its .value, selectionStart/End and setSelectionRange work as a textarea's, so everything that wrote in the textarea still does
+  function nclTaText(el) {
+    let out = '';
+    const walk = (n) => { for (const c of n.childNodes) { if (c.nodeType === 3) out += c.nodeValue; else if (c.nodeName === 'IMG') out += c.getAttribute('data-code') || ''; else if (c.nodeName === 'BR') { if (c !== el.lastChild || c.previousSibling) out += '\n'; } else if (c.nodeType === 1) { if (/^(DIV|P)$/.test(c.nodeName) && out && !out.endsWith('\n')) out += '\n'; walk(c); } } };
+    walk(el);
+    return out.replace(/\u00a0/g, ' ').replace(/\n$/, (m) => (el.lastChild && el.lastChild.nodeName === 'BR' ? '' : m));
+  }
+  function nclTaFill(el, text) {   // (the words again, each smilie's code as its picture)
+    nbSmilies();
+    const frag = document.createDocumentFragment(), add = (t) => t.split('\n').forEach((p, i) => { if (i) frag.append(document.createElement('br')); if (p) frag.append(document.createTextNode(p)); });
+    let last = 0;
+    NB_SMRE.lastIndex = 0;
+    for (let m = NB_SMRE.exec(text); m; m = NB_SMRE.exec(text)) {
+      add(text.slice(last, m.index));
+      const img = document.createElement('img');
+      img.src = nbSmPic(NB_SMMAP.get(m[0]));
+      img.alt = m[0];
+      img.className = 'bnp-ncl-sm';
+      img.setAttribute('data-code', m[0]);
+      img.draggable = false;
+      frag.append(img);
+      last = m.index + m[0].length;
+    }
+    add(text.slice(last));
+    if (text.endsWith('\n')) frag.append(document.createElement('br'));   // (a new line at the end: shown, with somewhere to write)
+    el.replaceChildren(frag);
+  }
+  function nclTaCaret(el, end) {   // (where the caret is, counted in the words with their codes)
+    const sel = getSelection();
+    if (!sel || !sel.rangeCount || !el.contains(sel.anchorNode)) return el.__bnpSel ? el.__bnpSel[end ? 1 : 0] : nclTaText(el).length;
+    const r = sel.getRangeAt(0), node = end ? r.endContainer : r.startContainer, off = end ? r.endOffset : r.startOffset;
+    const pre = document.createRange();
+    pre.selectNodeContents(el);
+    pre.setEnd(node, off);
+    const box = document.createElement('div');
+    box.append(pre.cloneContents());
+    return nclTaText(box).length;
+  }
+  function nclTaCaretSet(el, at) {   // (the caret put back at that many characters in)
+    const sel = getSelection();
+    if (!sel) return;
+    let left = Math.max(0, at);
+    const r = document.createRange();
+    for (const n of el.childNodes) {
+      const len = n.nodeType === 3 ? n.nodeValue.length : n.nodeName === 'IMG' ? (n.getAttribute('data-code') || '').length : n.nodeName === 'BR' ? 1 : (n.textContent || '').length;
+      if (left <= len) { if (n.nodeType === 3) r.setStart(n, left); else if (left === 0) r.setStartBefore(n); else r.setStartAfter(n); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); return; }
+      left -= len;
+    }
+    r.selectNodeContents(el);
+    r.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
+  function nclTaMake(el) {
+    if (!el || el.__bnpTa) return;
+    el.__bnpTa = 1;
+    Object.defineProperty(el, 'value', { configurable: true, get: () => nclTaText(el), set: (v) => nclTaFill(el, String(v ?? '')) });
+    Object.defineProperty(el, 'selectionStart', { configurable: true, get: () => nclTaCaret(el) });
+    Object.defineProperty(el, 'selectionEnd', { configurable: true, get: () => nclTaCaret(el, true) });
+    el.setSelectionRange = (a) => { el.__bnpSel = null; nclTaCaretSet(el, a); };
+    el.addEventListener('blur', () => { el.__bnpSel = [nclTaCaret(el), nclTaCaret(el, true)]; });   // (kept: a smilie or quick reply goes where you left off)
+    el.addEventListener('focus', () => { el.__bnpSel = null; });
+    el.addEventListener('input', (e) => {   // (a code just finished — :) *sun* — becomes its picture where you are)
+      if (e.isComposing) return;
+      nbSmilies();
+      const txt = [...el.childNodes].some((n) => n.nodeType === 3 && (NB_SMRE.lastIndex = 0, NB_SMRE.test(n.nodeValue)));
+      if (!txt) return;
+      const at = nclTaCaret(el);
+      nclTaFill(el, nclTaText(el));
+      nclTaCaretSet(el, at);
+    });
+    el.addEventListener('paste', (e) => { e.preventDefault(); const t = (e.clipboardData || {}).getData ? e.clipboardData.getData('text/plain') : ''; if (t) document.execCommand('insertText', false, t); });   // (words only)
+    el.addEventListener('drop', (e) => e.preventDefault());
+    el.addEventListener('keydown', (e) => {   // (Enter that doesn't send: a new line, as in a textarea)
+      if (e.key !== 'Enter' || e.isComposing) return;
+      const sends = S.features.nclEnter === 'button' ? false : S.features.nclEnter === 'ctrl' ? e.ctrlKey || e.metaKey : !e.shiftKey;
+      if (sends) return;
+      e.preventDefault();
+      document.execCommand('insertLineBreak');
+    });
+  }
+  function nclSmPaint(open) {   // (the smilies picker, over where you write: the boards' own, a click puts one in. Its smilies scroll under its tabs, clear of its round corners)
+    const box = ncl && ncl.el.querySelector('[data-ncl-sm]'), btn = ncl && ncl.el.querySelector('[data-ncl="smilies"]');
+    if (!box) return;
+    if (open !== undefined) box.hidden = !open;
+    if (btn) btn.setAttribute('aria-expanded', String(!box.hidden));
+    if (box.hidden) return;
+    box.innerHTML = nbSmHtml();
+    const tabs = box.querySelector('.bnp-nbsm-tabs'), list = document.createElement('div');
+    list.className = 'bnp-ncl-smlist';
+    while (tabs && tabs.nextSibling) list.append(tabs.nextSibling);
+    box.append(list);
+    const g = list.querySelector('.bnp-nbsm-grid'), nm = list.querySelector('.bnp-nbsm-name');
+    if (g && nm) list.style.height = `${nm.offsetHeight + 10 + Math.ceil(Math.max(...nbSmCats().map(([, , l]) => l.length)) / getComputedStyle(g).gridTemplateColumns.split(' ').length) * 36}px`;   // (each group as tall as the biggest: none has a scrollbar, and the tabs stay put as you go from one to another)
+    const msgs = ncl.el.querySelector('[data-ncl-msgs]'), comp = box.parentElement;   // (a small window: no taller than the conversation it covers)
+    box.style.maxHeight = msgs && comp ? `${Math.max(150, Math.round(comp.getBoundingClientRect().top - msgs.getBoundingClientRect().top) - 2)}px` : '';
   }
   function nclFit(ta) { if (!ta) return; ta.style.height = 'auto'; ta.style.height = `${Math.min(ta.scrollHeight + 4, 180)}px`; }   // (two lines to start with, growing as you write)
   function nclLookNow() {   // (Look now, pressed: a look at once, then 10 seconds before it can be pressed again)
@@ -10790,9 +10980,24 @@
     if (tab) { nclTabSet(tab.dataset.nclTab); return; }
     const who = t.closest('[data-ncl-who]');
     if (who) { ncl.jump = who.dataset.nclMid || ''; nclWho(who.dataset.nclWho, !!ncl.jump); return; }   // (a message found: its conversation, at it)
+    const sm = t.closest('[data-nbsm], [data-nbsmcat]');
+    if (sm && ncl.el.contains(sm)) {   // (the smilies picker: a group, or one put in where you were writing)
+      if (sm.dataset.nbsmcat != null) { nbSmCat = Number(sm.dataset.nbsmcat); nbJsonSet('bnp-nbsmall', nbSmCat === -1 ? 1 : 0); nclSmPaint(); return; }
+      const ta = ncl.el.querySelector('[data-ncl-ta]'), code = sm.dataset.nbsm;
+      if (!ta || !code) return;
+      const a = ta.selectionStart ?? ta.value.length, z = ta.selectionEnd ?? a, v = ta.value;
+      ta.value = v.slice(0, a) + code + v.slice(z);
+      ta.focus();
+      ta.setSelectionRange(a + code.length, a + code.length);
+      nclDraftPut(ncl.who, ta.value);
+      nclFit(ta);
+      nbSmUsed(code);
+      return;
+    }
     const b = t.closest('[data-ncl]');
     if (!b) return;
     const k = b.dataset.ncl;
+    if (k === 'smilies') { const box = ncl.el.querySelector('[data-ncl-sm]'); nclSnipsPaint(false); nclSmPaint(!!(box && box.hidden)); return; }
     if (k === 'check') nclLookNow();
     else if (k === 'home') nclHome();
     else if (k === 'back') nclBack();
@@ -10816,7 +11021,7 @@
     else if (k === 'nfyes') nclNfAdd();
     else if (k === 'nfno') { const a = b.closest('[data-ncl-ask]'); if (a) a.remove(); }
     else if (k === 'page') nclState('');   // (its own page instead: the window not brought back there)
-    else if (k === 'snips') { const box = ncl.el.querySelector('[data-ncl-snips]'); nclSnipsPaint(!!(box && box.hidden)); }
+    else if (k === 'snips') { const box = ncl.el.querySelector('[data-ncl-snips]'); nclSmPaint(false); nclSnipsPaint(!!(box && box.hidden)); }
     else if (k === 'snipuse') {
       const s = nclSnips()[Number(b.dataset.i)], ta = ncl.el.querySelector('[data-ncl-ta]');
       if (s == null || !ta) return;
@@ -10988,6 +11193,7 @@
         ${nclHbPick()}
         ${sw('nclHbHover', 'Its buttons only when you point at its header', 'A clean header: they show as you point at the header itself (not the conversation under it), and while you use them with the keyboard. On a touch screen they always show.')}
         ${sw('nclXFold', 'Close folds it', 'Its × folds NeoChat into its round button in the corner, as Esc does, instead of putting it away in that tab. It keeps looking for new Neomail.')}
+        ${sw('nclOutFold', 'A click outside it folds it', 'A click on the page around its window folds NeoChat into its round button in the corner, so the page is yours again. It keeps looking for new Neomail. Never while it’s pinned or full screen.')}
         ${seg('nclPinSide', 'Pinned, it sits', [['right', 'On the right'], ['left', 'On the left']], f.nclPinSide === 'left' ? 'left' : 'right')}
         <p class="bnp-note">The pin in its header keeps NeoChat at that side of every page, under the top bar, with the page beside it (folded or closed in a tab, it stays that way there). Drag its edge to make it wider or narrower; drag the window’s corner to size it when it isn’t pinned.</p>
         <div class="bnp-tools"><button type="button" class="bnp-pillbtn" data-nclset="size"${nclSized() ? '' : ' disabled'}>Back to its first size</button><span class="bnp-note">${nclSized() ? 'Its size, its place and its pinned width, as it started.' : 'It’s the size it started at.'} A double-click on its corner (or, pinned, its edge) does the same.</span></div>
@@ -11140,7 +11346,7 @@
     if (v.fontTitle) rules.push(`${W} .bnp-hub-head h3, ${prev ? '.bnp-nct-pv' : ''} .bnp-ncl-phead h2 { font-family: ${nctQuote(v.fontTitle)}, ${NCT_FONTS.fontTitle[1]} !important; }`);
     if (v.winEdge) rules.push(`${prev ? W : '.bnp-go.bnp-ncl:not(.bnp-nct-pv *)'} { border-color: ${v.winEdge} !important; }`);
     if (v.sendBg || v.sendInk || v.sendEdge) rules.push(`${W} .bnp-ncl-send:not(.is-sent):not(.is-failed) { ${v.sendBg ? `background: ${v.sendBg} !important; ` : ''}${v.sendInk ? `color: ${v.sendInk} !important; ` : ''}${v.sendEdge ? `border-color: ${v.sendEdge} !important; box-shadow: 0 3px 0 ${v.sendEdge} !important; ` : ''}text-shadow: none !important; }`);
-    if (v.taHint) rules.push(`${W} .bnp-ncl-row2 textarea::placeholder { color: ${v.taHint}; opacity: 1; }`);
+    if (v.taHint) rules.push(`${W} .bnp-ncl-row2 textarea::placeholder, ${W} .bnp-ncl-row2 [data-ncl-ta]:empty::before { color: ${v.taHint}; opacity: 1; }`);
     if (v.foldPic) rules.push(`${B} { background: url("${cssUrl(nctTinted(v.foldPic, v.foldTint, prev))}") center / ${v.foldFill ? 'cover' : '62% auto'} no-repeat, var(--nct-foldBg, var(--bnp-accent, #fed123)) !important; } ${B} > svg { display: none; }`);
     const HB = `${W} .bnp-ncl-hb`, bare = `${HB}:not(.button-default__2020)`;   // (its buttons: just their drawings, or outlined; a picture on any of them)
     if (v.hbStyle === 'plain' || v.hbStyle === 'ring') rules.push(`${bare} { background: transparent !important; border-color: ${v.hbStyle === 'ring' ? 'var(--nct-hbEdge, currentColor)' : 'transparent'} !important; box-shadow: none !important; } ${bare}:is(:hover, [aria-pressed="true"]) { background: color-mix(in srgb, var(--nct-hbInk, #3b3b3b) 16%, transparent) !important; filter: none !important; }`);
@@ -11539,7 +11745,7 @@
               <div class="bnp-ncl-run">${av(them)}<div class="bnp-ncl-rb"><div class="bnp-ncl-by"><b data-nctk="byName fontHead nameSize">a_friend</b><time data-nctk="byTime">2:12 pm</time><span class="bnp-ncl-sj" data-nctk="sjBg sjInk">${NCL_SVG.mail}Coffee Cave</span></div><div class="bnp-ncl-b" data-nctk="theirBg theirEdge theirInk fontTxt msgSize bRad bBorder bShadow noPoint">Did you see the new plot? <a data-nctk="theirLink">Have a look</a></div><div class="bnp-ncl-b" data-nctk="theirBg theirEdge theirInk">Meet you at the Coffee Cave?</div></div></div>
               <div class="bnp-ncl-run is-me">${av(mine)}<div class="bnp-ncl-rb"><div class="bnp-ncl-by"><b data-nctk="byName">You</b><time data-nctk="byTime">2:15 pm</time></div><div class="bnp-ncl-b" data-nctk="mineBg mineEdge mineInk">I did! See you <a data-nctk="mineLink">there</a></div></div></div>
             </div>
-            <div class="bnp-ncl-comp" data-nctk="compBg compLine"><label class="bnp-ncl-subjf"><span data-nctk="subjLabel">Subject</span><input type="text" tabindex="-1" readonly value="Re: Coffee Cave" data-nctk="subjBg subjEdge subjInk"></label><div class="bnp-ncl-row2"><textarea tabindex="-1" readonly rows="3" placeholder="Write to a_friend… (Enter sends)" data-nctk="taBg taEdge taInk taHint taFocus"></textarea><span class="bnp-ncl-sendcol"><span class="bnp-ncl-snipbtn" aria-hidden="true">${NCL_SVG.bolt}</span><span class="button-default__2020 button-yellow__2020 bnp-ncl-send" data-nctk="sendBg sendInk sendEdge">${NCL_SVG.send}<span>Send</span></span></span></div></div>
+            <div class="bnp-ncl-comp" data-nctk="compBg compLine"><label class="bnp-ncl-subjf"><span data-nctk="subjLabel">Subject</span><input type="text" tabindex="-1" readonly value="Re: Coffee Cave" data-nctk="subjBg subjEdge subjInk"></label><div class="bnp-ncl-row2"><textarea tabindex="-1" readonly rows="3" placeholder="Write to a_friend… (Enter sends)" data-nctk="taBg taEdge taInk taHint taFocus"></textarea><span class="bnp-ncl-sendcol"><span class="bnp-ncl-tools" aria-hidden="true"><span class="bnp-ncl-snipbtn bnp-ncl-smbtn"><img src="${esc(nbSmPic('smiley'))}" alt=""></span><span class="bnp-ncl-snipbtn">${NCL_SVG.bolt}</span></span><span class="button-default__2020 button-yellow__2020 bnp-ncl-send" data-nctk="sendBg sendInk sendEdge">${NCL_SVG.send}<span>Send</span></span></span></div></div>
           </section>
           <div class="bnp-ncl-toasts is-in"><div class="bnp-ncl-toast is-info" data-nctk="toastBg toastEdge">${newPic ? `<i class="bnp-ncl-toastic is-pic" data-nctk="newPic" ${ic(newPic)}></i>` : av(them, 'newPic')}<div class="bnp-ncl-toastt"><b data-nctk="toastTitle">New Neomail from a_friend</b><span data-nctk="toastInk">Meet you at the Coffee Cave?</span>${pill('Read')}</div><span class="bnp-ncl-toastx">×</span></div></div>
         </div>
@@ -17495,21 +17701,21 @@
   }
   const TP_AUC_RE = /auction\s+Lot No\.?\s*(\d+)\s*\((.+?)\)\s*has been successful,?\s*and that\s*([\d,]+)\s*NeoPoints? have been credited/i;
   function tpAucMail(who, at, text) {   // (The Neopets Team's Neomail about an auction of yours that sold: noted once — the item, what it went for, who won it)
-    if (S.features.tpSales === false || !/^theneopetsteam$/i.test(who || '')) return false;
+    if (S.features.auSales === false || !/^theneopetsteam$/i.test(who || '')) return false;
     const t = reClean(text), m = TP_AUC_RE.exec(t);
     if (!m) return false;
     const np = smNum(m[3]), bids = [...t.matchAll(/Bid\s*:\s*([\d,]+)\s*NeoPoints?,?\s*placed by\s*([A-Za-z0-9_]+)/gi)], top = bids.find((b) => smNum(b[1]) === np) || bids[0];
     return tpSaleAdd({ at: at || Date.now(), kind: 'auction', lot: m[1], who: top ? top[2] : '', gave: [{ n: reClean(m[2]), c: 1 }], np, got: [] });
   }
   function tpAucScan() {   // (what NeoChat has kept from The Neopets Team: auctions that sold before this was here)
-    if (S.features.tpSales === false || !S.features.ncl) return;
+    if (S.features.auSales === false || !S.features.ncl) return;
     try {
       const p = nclData().p.theneopetsteam;
       for (const m of (p && p.m) || []) if (!m.me && /has been successful/i.test(m.t || '')) tpAucMail('theneopetsteam', m.at, new DOMParser().parseFromString(String(m.t).replace(/<br\s*\/?>/gi, ' '), 'text/html').body.textContent);
     } catch (e) { report(e); }
   }
   function tpAucPage() {   // (one read on Neopets' own Neomail page)
-    if (S.features.tpSales === false || location.pathname !== '/neomessages.phtml' || new URLSearchParams(location.search).get('type') !== 'read_message') return;
+    if (S.features.auSales === false || location.pathname !== '/neomessages.phtml' || new URLSearchParams(location.search).get('type') !== 'read_message') return;
     const t = $$('td.content table').find((x) => [...x.rows].some((row) => row.cells.length > 1 && /^\s*from:?\s*$/i.test(row.cells[0].textContent)));
     if (!t) return;
     let who = '', at = 0, text = '';
@@ -17522,9 +17728,19 @@
     }
     tpAucMail(who, at, text);
   }
-  function tpSalesHtml() {   // (Settings: this month, this year and all of it; the latest 25)
+  const tpSaleAu = (r) => r.kind === 'auction';
+  function salesAllHtml() {   // (all your sales together: what you took from your shop's till, the Trading Post's and the auctions', this month, this year and all of it)
     tpAucScan();
-    const v = tpSalesGet(), now = nstOf(Date.now()), sum = { month: 0, year: 0, all: 0 };
+    const now = nstOf(Date.now()), rows = [['Shop till (taken out)', (tillGet().log || []).map(([t, n]) => [t, n]), S.features.tillLog !== false], ['Trading Post', tpSalesGet().filter((r) => !tpSaleAu(r)).map((r) => [r.at, r.np || 0]), S.features.tpSales !== false], ['Auctions', tpSalesGet().filter(tpSaleAu).map((r) => [r.at, r.np || 0]), S.features.auSales !== false]].filter((r) => r[2]);
+    if (rows.length < 2) return '';
+    const sum = (list) => { const o = { m: 0, y: 0, a: 0 }; for (const [t, n] of list) { const d = nstOf(t); o.a += n; if (d.month === now.month) o.m += n; if (d.month.slice(0, 4) === now.month.slice(0, 4)) o.y += n; } return o; };
+    const all = { m: 0, y: 0, a: 0 }, line = (l, o, cls = '') => `<tr${cls}><th scope="row">${esc(l)}</th><td>${o.m.toLocaleString()} NP</td><td>${o.y.toLocaleString()} NP</td><td>${o.a.toLocaleString()} NP</td></tr>`;
+    const body = rows.map(([l, list]) => { const o = sum(list); all.m += o.m; all.y += o.y; all.a += o.a; return line(l, o); }).join('');
+    return `<div class="bnp-card"><h4>All your sales</h4><p class="bnp-note">Your shop till, the Trading Post and auctions together, each as counted on its own.</p><table class="bnp-salesall"><thead><tr><td></td><th scope="col">This month</th><th scope="col">This year</th><th scope="col">All of it</th></tr></thead><tbody>${body}${line('Together', all, ' class="is-total"')}</tbody></table></div>`;
+  }
+  function tpSalesHtml(kind = 'tp') {   // (Settings: the Trading Post's, or the auctions': this month, this year and all of it; the latest 25)
+    tpAucScan();
+    const v = tpSalesGet().filter((r) => tpSaleAu(r) === (kind === 'au')), now = nstOf(Date.now()), sum = { month: 0, year: 0, all: 0 };
     for (const r of v) { const o = nstOf(r.at); sum.all += r.np || 0; if (o.month === now.month) sum.month += r.np || 0; if (o.month.slice(0, 4) === now.month.slice(0, 4)) sum.year += r.np || 0; }
     const cell = (label, x) => `<span class="bnp-till-s"><small>${esc(label)}</small><b>${x.toLocaleString()} NP</b></span>`;
     const names = (l) => (l.length ? `${l.slice(0, 3).map((x) => `${x.n}${x.c > 1 ? ` ×${x.c}` : ''}`).join(', ')}${l.length > 3 ? ` and ${l.length - 3} more` : ''}` : '');
@@ -17533,16 +17749,16 @@
       const how = r.kind === 'ib' ? `Lot ${esc(r.lot)} · its Instant Buy, ${esc(came)}${r.who ? ` · bought by ${esc(r.who)}` : ''}` : r.kind === 'auction' ? `Auction, lot ${esc(r.lot)} · ${esc(came)}${r.who ? ` · won by ${esc(r.who)}` : ''}` : `${r.lot && gave ? `Lot ${esc(r.lot)} · ` : ''}for ${esc(came || 'nothing')}${r.who ? ` · from ${esc(r.who)}` : ''}`;
       return `<li class="bnp-tps-row"><span class="bnp-tps-when" title="${esc(new Date(r.at).toLocaleString())}">${esc(new Date(r.at).toLocaleDateString([], { month: 'short', day: 'numeric' }))}</span><span class="bnp-tps-what"><b>${esc(gave || (r.lot ? `Lot ${r.lot}` : 'A lot'))}</b><small>${how}</small></span><span class="bnp-tps-np">${r.np ? `+${npShort(r.np)} NP` : ''}</span></li>`;
     };
-    return `<div class="bnp-tps"><div class="bnp-till-sums">${cell('This month', sum.month)}${cell('This year', sum.year)}${cell(`All of it (${v.length.toLocaleString()} sale${v.length === 1 ? '' : 's'})`, sum.all)}</div>
-      ${v.length ? `<ol class="bnp-tps-list">${v.slice(-25).reverse().map(row).join('')}</ol>${v.length > 25 ? `<p class="bnp-note">And ${(v.length - 25).toLocaleString()} before them, in the totals.</p>` : ''}<div class="bnp-tools"><button type="button" class="bnp-pillbtn is-danger" data-tpsforget>Forget them</button></div>` : '<p class="bnp-note">None yet: the next lot or auction of yours that sells is the first.</p>'}</div>`;
+    return `<div class="bnp-tps"><div class="bnp-till-sums">${cell('This month', sum.month)}${cell('This year', sum.year)}${cell(`All of it (${v.length.toLocaleString()} ${kind === 'au' ? 'auction' : 'sale'}${v.length === 1 ? '' : 's'})`, sum.all)}</div>
+      ${v.length ? `<ol class="bnp-tps-list">${v.slice(-25).reverse().map(row).join('')}</ol>${v.length > 25 ? `<p class="bnp-note">And ${(v.length - 25).toLocaleString()} before them, in the totals.</p>` : ''}<div class="bnp-tools"><button type="button" class="bnp-pillbtn is-danger" data-tpsforget="${kind}">Forget them</button></div>` : `<p class="bnp-note">${kind === 'au' ? 'None yet: the next auction of yours that sells is the first.' : 'None yet: the next offer you accept, or lot bought with its Instant Buy, is the first.'}</p>`}</div>`;
   }
   document.addEventListener('click', (e) => {   // (Settings: Forget them, asked twice)
     const b = e.target instanceof Element ? e.target.closest('[data-tpsforget]') : null;
     if (!b || !hub || !hub.win.contains(b)) return;
     if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Sure? Forget them for good'; return; }
-    tpSalesPut([]);
+    tpSalesPut(b.dataset.tpsforget === 'au' ? tpSalesGet().filter((r) => !tpSaleAu(r)) : tpSalesGet().filter(tpSaleAu));   // (only that list's)
     paintHub();
-    toast('Your Trading Post sales are forgotten');
+    toast(b.dataset.tpsforget === 'au' ? 'Your auction sales are forgotten' : 'Your Trading Post sales are forgotten');
   });
   // The Quest Log: each daily quest's task with a Go to where it's done (a wheel, your inventory to feed, read to or groom a pet, the
   // Battledome, the customiser, the NC Mall, the game it names or the Games Room, a shop). Neopets doesn't link them
@@ -29076,10 +29292,15 @@
         ${sw('tillLog', 'Count what you take from your till', 'Each withdrawal Neopets says it made, added up by when: today, the past 7 days, this month, this year and all of it, and the last twelve months side by side, on your Shop Till page and here. Only the totals: no list of each one. Kept in this browser, for each of your accounts.')}
         ${S.features.tillLog !== false ? `${tillHtml()}${tillGet().log.length ? '<div class="bnp-tools"><button type="button" class="bnp-pillbtn is-danger" data-tillforget>Forget them</button></div>' : ''}` : ''}
       </div>`],
-      ['shops', () => `<div class="bnp-card"><h4>Trading Post and auction sales</h4>
-        ${sw('tpSales', 'Keep a list of what you sell and trade away', 'Each offer you accept on Your Trades (what went, what came for it and who from, as Neopets completes the trade); each lot bought with its Instant Buy, from Neopets’ alert about it; and each auction of yours that sells, from The Neopets Team’s Neomail about it, read in NeoChat or your Inbox. Kept in this browser, for each of your accounts.')}
-        ${S.features.tpSales !== false ? tpSalesHtml() : ''}
+      ['shops', () => `<div class="bnp-card"><h4>Trading Post sales</h4>
+        ${sw('tpSales', 'Keep a list of what you trade away', 'Each offer you accept on Your Trades (what went, what came for it and who from, as Neopets completes the trade), and each lot bought with its Instant Buy, from Neopets’ alert about it. Kept in this browser, for each of your accounts.')}
+        ${S.features.tpSales !== false ? tpSalesHtml('tp') : ''}
       </div>`],
+      ['shops', () => `<div class="bnp-card"><h4>Auction sales</h4>
+        ${sw('auSales', 'Keep a list of your auctions that sell', 'Each auction of yours that sells: the item, what it went for and who won it, from The Neopets Team’s Neomail about it, read in NeoChat or your Inbox. Kept in this browser, for each of your accounts.')}
+        ${S.features.auSales !== false ? tpSalesHtml('au') : ''}
+      </div>`],
+      ['shops', salesAllHtml],
       ['shops', npCardHtml],   // (made only when its page shows)
       ['shops', () => { const r = smRule(), nNotes = Object.keys((smJson(SM_NOTES, null) || { t: {} }).t || {}).length; return `<div class="bnp-card"><h4>Stock Market</h4>
         ${sw('stocks', 'The Stock Market, made over', 'Every stock page in your theme: an Overview (the best buys now, your shares, today’s biggest moves), every company to sort and find with its price over the last two weeks (noted as you visit) and Buy by each, your portfolio worked out from its lots (Neopets’ own Paid can be wrong) with each lot marked when it’s ready to sell and every ready one filled in at once, and Buy with what it costs. Neopets’ own forms still do the buying and selling.')}
@@ -32748,10 +32969,36 @@
     .bnp-ncl-subjf input:focus { border-color: var(--nb-frame); box-shadow: 0 0 0 3px var(--nb-tint2); }
     .bnp-ncl-row2 { display: flex; align-items: flex-end; gap: 10px; }
     .bnp-ncl-row2 textarea { flex: 1; min-width: 0; min-height: 88px; max-height: 200px; margin: 0; padding: 10px 13px; border: 2px solid var(--nct-taEdge, var(--nb-frame)); border-radius: 13px; background: var(--nct-taBg, var(--nct-card, #fff)); color: var(--nct-taInk, #222); box-shadow: 0 2px 0 var(--nct-taEdge, var(--nb-frame)); font: var(--nct-msgSize, 14px)/1.4 var(--nb-txt); resize: none; outline: none; box-sizing: border-box; }
+    .bnp-ncl-row2 [data-ncl-ta] { flex: 1; min-width: 0; min-height: 88px; max-height: 200px; margin: 0; padding: 10px 13px; overflow-y: auto; border: 2px solid var(--nct-taEdge, var(--nb-frame)); border-radius: 13px; background: var(--nct-taBg, var(--nct-card, #fff)); color: var(--nct-taInk, #222); box-shadow: 0 2px 0 var(--nct-taEdge, var(--nb-frame)); font: 14px/1.5 var(--nb-txt, Arial, sans-serif); white-space: pre-wrap; overflow-wrap: anywhere; outline: none; cursor: text; box-sizing: border-box; }   /* (the writing box: as the textarea was, smilies as their pictures) */
+    .bnp-ncl-row2 [data-ncl-ta]:focus { box-shadow: 0 2px 0 var(--nct-taEdge, var(--nb-frame)), 0 0 0 4px var(--nct-taFocus, var(--nb-tint2)); }
+    .bnp-ncl-row2 [data-ncl-ta]:empty::before { content: attr(data-placeholder); color: var(--nct-taHint, #9a9584); pointer-events: none; }
+    .bnp-ncl-row2 [data-ncl-ta] img.bnp-ncl-sm { vertical-align: -3px; }
+    .bnp-ncl .bnp-ncl-tools { display: flex; align-self: stretch; justify-content: space-between; gap: 8px; }   /* (the smilie and ⚡ over Send, at its two edges) */
+    .bnp-ncl .bnp-ncl-tools .bnp-ncl-snipbtn { align-self: auto; }
+    .bnp-ncl .bnp-ncl-smbtn img { display: block; }   /* (its smilie at its own size: never blurred) */
+    .bnp-ncl .bnp-ncl-smpop { position: absolute; z-index: 6; right: 8px; bottom: calc(100% - 4px); display: flex; flex-direction: column; width: min(392px, calc(100% - 16px)); overflow: hidden; border: 2px solid var(--nb-frame, #e3dfd2); border-radius: 12px; background: #fff; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
+    .bnp-ncl .bnp-ncl-smpop[hidden] { display: none; }
+    .bnp-ncl .bnp-ncl-smpop .bnp-nbsm-tabs { flex: none; display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 8px; border-bottom: 2px solid var(--nb-line, #ece6d4); background: #faf9f5; }
+    .bnp-ncl .bnp-ncl-smlist { flex: 0 1 auto; min-height: 0; margin: 0 2px 6px 0; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--nb-frame, #d8d2bf) transparent; }   /* (a group whole, with no scrollbar; All scrolls here, under the tabs, its scrollbar clear of the round corners) */
+    .bnp-ncl .bnp-ncl-smpop .bnp-nbsm-tabs button { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 32px; margin: 0; padding: 0; border: 2px solid transparent; border-radius: 9px; background: none; cursor: pointer; }
+    .bnp-ncl .bnp-ncl-smpop .bnp-nbsm-tabs button[aria-pressed="true"], .bnp-ncl .bnp-ncl-smpop .bnp-nbsm-tabs button:hover { border-color: var(--nb-frame, #e3dfd2); background: #fff; }
+    .bnp-ncl .bnp-ncl-smpop .bnp-nbsm-tabs img { max-width: 22px; max-height: 22px; }
+    .bnp-ncl .bnp-ncl-smpop .bnp-nbsm-all { width: auto; min-width: 36px; padding: 0 9px; color: #333; font: 12.5px var(--nb-ui, Arial, sans-serif); }
+    .bnp-ncl .bnp-ncl-smpop .bnp-nbsm-name { margin: 7px 10px 3px; color: #8a8571; font: 11.5px var(--nb-ui, Arial, sans-serif); }
+    .bnp-ncl .bnp-ncl-smpop .bnp-nbsm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); justify-items: center; gap: 2px; width: auto; padding: 0 6px 8px 8px; box-sizing: border-box; }   /* (as wide as the picker, its columns spread evenly: the boards' own fixed width never reaches it) */
+    .bnp-ncl .bnp-ncl-smlist > .bnp-nbsm-grid:last-child { padding-bottom: 2px; }
+    .bnp-ncl .bnp-ncl-smpop .bnp-nbsm-grid button { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 34px; margin: 0; padding: 0; border: 0; border-radius: 9px; background: none; cursor: pointer; }
+    .bnp-ncl .bnp-ncl-smpop .bnp-nbsm-grid button:hover { background: var(--nb-tint2, #fff3c4); }
+    .bnp-ncl .bnp-ncl-smpop .bnp-nbsm-grid img { max-width: 30px; max-height: 30px; }
     .bnp-ncl-row2 textarea:focus { box-shadow: 0 2px 0 var(--nct-taEdge, var(--nb-frame)), 0 0 0 4px var(--nct-taFocus, var(--nb-tint2)); }
     .bnp-ncl .bnp-ncl-send { display: inline-flex; flex: none; align-items: center; gap: 6px; width: auto; margin: 0 0 2px; padding: 4px 16px 7px; font-size: 12pt; }
     .bnp-ncl .bnp-ncl-send svg { width: 16px; height: 16px; }
     .bnp-ncl.is-busy .bnp-ncl-send { opacity: .7; cursor: progress; }
+    .bnp-salesall { width: 100%; border-collapse: separate; border-spacing: 0; font: 13px var(--nb-ui, Arial, sans-serif); }
+    .bnp-salesall th, .bnp-salesall td { padding: 7px 10px; border-bottom: 1px solid #ece6d4; text-align: right; white-space: nowrap; }
+    .bnp-salesall thead th { color: #8a8571; font-size: 11.5px; font-weight: normal; }
+    .bnp-salesall tbody th { color: #3a3a3a; font-weight: normal; text-align: left; }
+    .bnp-salesall tr.is-total th, .bnp-salesall tr.is-total td { border-bottom: 0; color: #2a2a2a; font-family: "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-ncl-sendcol { display: flex; flex: none; flex-direction: column; align-items: flex-end; gap: 7px; }   /* (quick replies over Send: the writing box has the width) */
     .bnp-ncl .bnp-ncl-send.is-sent, .bnp-ncl .bnp-ncl-send.is-failed { animation: bnp-ncl-said .25s ease-out; }
     @keyframes bnp-ncl-said { from { transform: scale(.94); } }
@@ -33327,6 +33574,12 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.2.1', '2026-10-27', [
+      'NeoChat: smilies beside your quick replies, shown as pictures while you write and sent as their codes',
+      'NeoChat: a click on the page around its window folds it into its round button (Settings › NeoChat › Its window, on to start with)',
+      'Neoboards: drag your Favorites into the order you like (or Alt+← and Alt+→)',
+      'Sales: Trading Post and auction sales kept apart, and All your sales adds up your till, the Trading Post and auctions',
+    ]],
     ['4.2', '2026-10-27', [
       'Inventory without reloading, fixed for good: whatever you do with an item (feed, SDB, shop, gallery, donate, discard, give…) takes it off the grid at once, and every card keeps its picture',
       'What it’s worth: your SDB’s worth follows what goes in and out (the SDB page, Quick Stock, the Inventory) without counting again; a count itemdb pauses carries on where it stopped',

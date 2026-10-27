@@ -1,11 +1,10 @@
 {
- "version": "4.2",
+ "version": "4.2.1",
  "date": "2026-10-27",
  "notes": [
-  "Inventory without reloading fixed: whatever you do with an item, it leaves the grid at once, pictures and all",
-  "What it’s worth: the SDB follows items in and out, paused counts carry on, the Gallery and Closet keep their last count",
-  "Instant Buy and auction sales in your sales list; the Post Office made over (Main Page, others’ albums, high scores)",
-  "Board colours: choose the title bands’ pattern; Quick Ref ages; galleries keep their owners’ looks",
-  "Fixes: Settings › Reminders, Create a Trade ×9, and more"
+  "NeoChat: smilies beside quick replies, pictures while you write, sent as their codes",
+  "NeoChat: a click outside its window folds it (Settings › NeoChat › Its window)",
+  "Neoboards: drag your Favorites into any order",
+  "Trading Post and auction sales kept apart, plus All your sales"
  ]
 }
