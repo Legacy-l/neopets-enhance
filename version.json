@@ -1,10 +1,11 @@
 {
- "version": "4.2.1",
- "date": "2026-10-27",
+ "version": "4.3",
+ "date": "2026-10-29",
  "notes": [
-  "NeoChat: smilies beside quick replies, pictures while you write, sent as their codes",
-  "NeoChat: a click outside its window folds it (Settings › NeoChat › Its window)",
-  "Neoboards: drag your Favorites into any order",
-  "Trading Post and auction sales kept apart, plus All your sales"
+  "NC Mall 2: Styling Studio, Dyeworks and Fortune Cookies aisles, item tags, a compact view",
+  "Dailies counted only when Neopets’ own answer proves it",
+  "Your shop, Inventory, Food Club, Lottery and Neoboards upgrades",
+  "Newest items in Settings, and new stamps with Check now",
+  "NE works on the NC Mall’s own address"
  ]
 }
