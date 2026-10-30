@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.3
+// @version      4.3.1
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -1713,6 +1713,7 @@
     nt: { label: 'Neopian Times', href: '/ntimes/index.phtml', icon: ['url:https://images.neopets.com/themes/h5/altadorcup/images/news-icon.png'] },
     guild: { label: 'My Guild', href: '/guilds/', icon: ['nat:community-guilds-icon', 'url:' + BI('guilds.png')], special: 'guild', fold: { id: 'guild', preset: 'guild' } },
     fc: { label: 'Food Club', href: '/pirates/foodclub.phtml?tab=bet', icon: ['url:https://images.neopets.com/neoboards/avatars/ava_food_club_smmmmm.gif'] },
+    lotto: { label: 'Lottery', href: '/games/lottery.phtml', icon: ['url:https://images.neopets.com/neoboards/avatars/lottery.gif'] },
     inv: { label: 'Inventory', href: '/inventory.phtml', icon: ['side:/inventory.phtml', 'url:https://images.neopets.com/themes/h5/common/inventory/images/inventory-chest.png'] },
     qs: { label: 'Quick Stock', href: '/quickstock.phtml', icon: ['side:/quickstock.phtml', 'url:https://images.neopets.com/themes/h5/altadorcup/images/quickstock-icon.png'] },
     sdb: { label: 'Safety Deposit Box', href: '/safetydeposit.phtml', icon: ['side:/safetydeposit.phtml', 'url:https://images.neopets.com/themes/h5/grey/images/safetydeposit-icon.png'] },
@@ -1774,6 +1775,16 @@
     if (!s.once.oldBeta) { s.once.oldBeta = 1; s.features.oldBeta = true; }   // (old pages in the beta look: on for everyone once, now it's the default; off again in Settings › Old pages)
     if (!s.once.oldOwners) { s.once.oldOwners = 1; if (s.features.oldLookups) { s.features.oldUserLookups = true; s.features.oldPetLookups = true; } }   // (User and pet lookups too, once one switch: now one each)
     s.menus = s.menus && typeof s.menus === 'object' ? s.menus : {};
+    if (!s.once.menuLotto) {   // (the Lottery, new in the Games menu: put once into a Games menu you'd laid out, under Food Club — taken out, it stays out)
+      s.once.menuLotto = 1;
+      const g = s.menus.games;
+      if (Array.isArray(g) && g.length) {
+        let has = false;
+        walk(g, (e) => { if ((e.t === 'l' && e.id === 'lotto') || (e.t === 'n' && /lottery\.phtml/.test(String(e.k || '')))) has = true; });
+        if (!has) { let i = g.findIndex((e) => e.t === 'l' && e.id === 'fc'); if (i < 0) i = g.findIndex((e) => e.t === 'n' && /hiscores/.test(String(e.k || ''))); g.splice(i < 0 ? g.length : i + 1, 0, L('lotto')); }
+      }
+    }
+    if (!s.once.petXxl) { s.once.petXxl = 1; if (s.nb && s.nb.pet === 'xl') s.nb.pet = 'xxl'; }   // (the boards' largest pets, 300 px, are XXL now: a saved choice of them kept)
     for (const list of Object.values(s.menus)) if (Array.isArray(list)) walk(list, (e) => { if (e.t === 'l' && 'href' in e && !safeHref(e.href)) e.href = ''; });   // (a link of yours: only ever to a page)
     if (!Array.isArray(s.boards)) s.boards = [];
     s.games = Array.isArray(s.games) ? s.games.filter((g) => g && /^\d+$/.test(String(g.i))).map((g) => ({ i: String(g.i), n: String(g.n || '').slice(0, 60), u: /^https:\/\//.test(g.u || '') ? g.u : '' })) : [];   // (My Games: { i: its number, n: its name, u: its picture })
@@ -7878,11 +7889,16 @@
     html.bnp-nb.bnp-nb-pet80 #boardTopic li.bnp-nbpost .postAuthorPetIcon { border-radius: 14px; }
     html.bnp-nb.bnp-nb-pet150 #boardTopic li.bnp-nbpost .postAuthorPetIcon img { width: 150px; height: 150px; border-radius: 13px; }
     html.bnp-nb.bnp-nb-pet150 #boardTopic li.bnp-nbpost .postAuthorPetIcon { padding: 5px; border-radius: 18px; }
-    html.bnp-nb.bnp-nb-pet300 { --nb-bycol: 334px; }   /* (Extra large: the posts' left column as wide as it needs) */
+    html.bnp-nb.bnp-nb-pet300 { --nb-bycol: 334px; }   /* (XXL: the posts' left column as wide as it needs) */
+    html.bnp-nb.bnp-nb-pet225 { --nb-bycol: 259px; }   /* (XL: the same, for 225 px) */
+    html.bnp-nb.bnp-nb-pet225 #boardTopic li.bnp-nbpost .postPet { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 8px; text-align: center; }
+    html.bnp-nb.bnp-nb-pet225 #boardTopic li.bnp-nbpost .postAuthorPetIcon img { width: 225px; height: 225px; border-radius: 14px; }
+    html.bnp-nb.bnp-nb-pet225 #boardTopic li.bnp-nbpost .postAuthorPetIcon { padding: 6px; border-radius: 18px; }
+    html.bnp-nb.bnp-nb-mepet.bnp-nb-pet225 .bnp-nbme-petpic img { width: 225px; height: 225px; border-radius: 14px; }
     html.bnp-nb.bnp-nb-pet300 #boardTopic li.bnp-nbpost .postPet { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 8px; text-align: center; }
     html.bnp-nb.bnp-nb-pet300 #boardTopic li.bnp-nbpost .postAuthorPetIcon img { width: 300px; height: 300px; border-radius: 16px; }
     html.bnp-nb.bnp-nb-pet300 #boardTopic li.bnp-nbpost .postAuthorPetIcon { padding: 6px; border-radius: 20px; }
-    html.bnp-nb.bnp-nb-mepet:is(.bnp-nb-pet80, .bnp-nb-pet150, .bnp-nb-pet300) .bnp-nbme-pet { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 8px; text-align: center; }   /* (your own post's preview: as your post will be) */
+    html.bnp-nb.bnp-nb-mepet:is(.bnp-nb-pet80, .bnp-nb-pet150, .bnp-nb-pet225, .bnp-nb-pet300) .bnp-nbme-pet { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 8px; text-align: center; }   /* (your own post's preview: as your post will be) */
     html.bnp-nb.bnp-nb-mepet.bnp-nb-pet80 .bnp-nbme-petpic img { width: 80px; height: 80px; border-radius: 10px; }
     html.bnp-nb.bnp-nb-mepet.bnp-nb-pet150 .bnp-nbme-petpic img { width: 150px; height: 150px; border-radius: 13px; }
     html.bnp-nb.bnp-nb-mepet.bnp-nb-pet300 .bnp-nbme-petpic img { width: 300px; height: 300px; border-radius: 16px; }
@@ -7960,11 +7976,11 @@
       html.bnp-nb #boardTopic ul li.bnp-nbpost { grid-template-columns: minmax(0, 1fr); gap: 14px; }
       html.bnp-nb #boardTopic li.bnp-nbpost > .boardPostByline { display: flex !important; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
       html.bnp-nb #boardTopic li.bnp-nbpost .postPet { margin: 0; padding: 0; border: 0; }
-      html.bnp-nb:is(.bnp-nb-pet80, .bnp-nb-pet150, .bnp-nb-pet300) #boardTopic li.bnp-nbpost .postPet { grid-template-columns: 62px minmax(0, 1fr); justify-items: start; text-align: left; }
-      html.bnp-nb:is(.bnp-nb-pet80, .bnp-nb-pet150, .bnp-nb-pet300) #boardTopic li.bnp-nbpost .postAuthorPetIcon img { width: 50px; height: 50px; }
-      html.bnp-nb:is(.bnp-nb-pet80, .bnp-nb-pet150, .bnp-nb-pet300) #boardTopic li.bnp-nbpost .postAuthorPetIcon { padding: 4px; border-radius: 12px; }
-      html.bnp-nb.bnp-nb-mepet:is(.bnp-nb-pet80, .bnp-nb-pet150, .bnp-nb-pet300) .bnp-nbme-pet { grid-template-columns: 62px minmax(0, 1fr); justify-items: start; text-align: left; }
-      html.bnp-nb.bnp-nb-mepet:is(.bnp-nb-pet80, .bnp-nb-pet150, .bnp-nb-pet300) .bnp-nbme-petpic img { width: 50px; height: 50px; }
+      html.bnp-nb:is(.bnp-nb-pet80, .bnp-nb-pet150, .bnp-nb-pet225, .bnp-nb-pet300) #boardTopic li.bnp-nbpost .postPet { grid-template-columns: 62px minmax(0, 1fr); justify-items: start; text-align: left; }
+      html.bnp-nb:is(.bnp-nb-pet80, .bnp-nb-pet150, .bnp-nb-pet225, .bnp-nb-pet300) #boardTopic li.bnp-nbpost .postAuthorPetIcon img { width: 50px; height: 50px; }
+      html.bnp-nb:is(.bnp-nb-pet80, .bnp-nb-pet150, .bnp-nb-pet225, .bnp-nb-pet300) #boardTopic li.bnp-nbpost .postAuthorPetIcon { padding: 4px; border-radius: 12px; }
+      html.bnp-nb.bnp-nb-mepet:is(.bnp-nb-pet80, .bnp-nb-pet150, .bnp-nb-pet225, .bnp-nb-pet300) .bnp-nbme-pet { grid-template-columns: 62px minmax(0, 1fr); justify-items: start; text-align: left; }
+      html.bnp-nb.bnp-nb-mepet:is(.bnp-nb-pet80, .bnp-nb-pet150, .bnp-nb-pet225, .bnp-nb-pet300) .bnp-nbme-petpic img { width: 50px; height: 50px; }
       html.bnp-nb #boardTopic li.bnp-nbpost > .boardPost::before { top: -9px; left: 30px; transform: rotate(135deg); }
       html.bnp-nb #boardTopic ul .topicNavTop { grid-template-columns: 1fr; grid-template-areas: "crumbs" "title" "stats" "acts" "pages"; }
       html.bnp-nb .bnp-nbth-acts { justify-content: flex-start; padding-top: 0; }
@@ -8171,7 +8187,7 @@
       root.classList.add('bnp-nb-cloak');
       setTimeout(() => root.classList.remove('bnp-nb-cloak'), 4000);
     }
-    if (o.pet === 'm' || o.pet === 'l' || o.pet === 'xl') root.classList.add(o.pet === 'm' ? 'bnp-nb-pet80' : o.pet === 'l' ? 'bnp-nb-pet150' : 'bnp-nb-pet300');
+    { const c = { m: 'bnp-nb-pet80', l: 'bnp-nb-pet150', xl: 'bnp-nb-pet225', xxl: 'bnp-nb-pet300' }[o.pet]; if (c) root.classList.add(c); }
     root.classList.toggle('bnp-nb-mepet', o.mePet !== false);   // (your own post's preview: its pet at that size too)
     try { nbPaintVars(JSON.parse(localStorage.getItem('bnp-nbtheme') || 'null')); } catch (_) { /* */ }
     if (!document.getElementById('bnp-nb-style')) { const st = document.createElement('style'); st.id = 'bnp-nb-style'; st.textContent = NB_CSS; root.append(st); }
@@ -9589,7 +9605,7 @@
     mb.innerHTML = `<span>A post by <b>${esc(name)}</b>, who you’ve muted.</span><button type="button" class="bnp-linkbtn" data-nbshow>Show it</button>`;
     li.prepend(mb);
     li.classList.add('bnp-nbpost');
-    const pet = by && by.querySelector('.postAuthorPetIcon img'), size = { m: [3, 80], l: [2, 150], xl: [4, 300] }[nbOpt().pet];
+    const pet = by && by.querySelector('.postAuthorPetIcon img'), size = { m: [3, 80], l: [2, 150], xl: [4, 225], xxl: [4, 300] }[nbOpt().pet];
     if (pet && size && /\/\d+\/1\.png$/.test(pet.getAttribute('src') || '')) {   // (the pet bigger: Neopets' own picture at that size, never a stretched small one)
       pet.src = pet.getAttribute('src').replace(/\/(\d+)\/1\.png$/, `/$1/${size[0]}.png`);
       pet.width = pet.height = size[1];
@@ -10010,7 +10026,7 @@
     const me = nbMe(), mine = $$('#boardTopic li[data-k]').find((li) => li.dataset.author === me);
     const name = w.name || (mine && mine.dataset.name) || me || 'You', av = d.av || nbMyAv(), title = d.who ? d.who.title : d.title || '';
     const pet = activePet(), petName = (pet && pet.name) || (w.pet && w.pet.name) || '', petImg0 = (pet && pet.image ? headOf(pet.image) : '') || (w.pet && w.pet.img) || (petName ? `https://pets.neopets.com/cpn/${encodeURIComponent(petName)}/1/1.png` : '');
-    const mePx = nbOpt().mePet !== false ? { m: [3, 80], l: [2, 150], xl: [4, 300] }[nbOpt().pet] : null, petImg = mePx && /\/\d+\/\d+\.png$/.test(petImg0) ? petImg0.replace(/\/(\d+)\/\d+\.png$/, `/$1/${mePx[0]}.png`) : petImg0;   // (your own post's preview: its pet as your post will show it)
+    const mePx = nbOpt().mePet !== false ? { m: [3, 80], l: [2, 150], xl: [4, 225], xxl: [4, 300] }[nbOpt().pet] : null, petImg = mePx && /\/\d+\/\d+\.png$/.test(petImg0) ? petImg0.replace(/\/(\d+)\/\d+\.png$/, `/$1/${mePx[0]}.png`) : petImg0;   // (your own post's preview: its pet as your post will show it)
     const lines = (w.lines || []).map((l) => `<p${l.c ? ` style="color:${esc(l.c)}"` : ''}>${esc(l.t)}</p>`).join('');
     const html = `<div class="bnp-nbme-au"><i class="bnp-nbme-av" style="background-image:url('${esc(cssUrl(av))}')"></i><div class="bnp-nbme-info"><h3>${esc(name)}</h3>${title ? `<p class="is-title"><i>${esc(title)}</i></p>` : ''}${lines}</div></div>`
       + (petName ? `<div class="bnp-nbme-pet"><span class="bnp-nbme-petpic"><img src="${esc(petImg)}" alt=""></span><div class="bnp-nbme-petinfo"><h4><span>${esc(petName)}</span>${S.features.pets ? `<button type="button" class="bnp-nbme-sw" data-pets-open title="Switch your active pet" aria-label="Switch your active pet">${NB_SVG.swap}</button>` : ''}</h4><p>Active Neopet</p></div></div>` : '')
@@ -10568,8 +10584,8 @@
         <div class="bnp-f"><span>Muted people’s posts</span>${seg('mutes', [['fold', 'Folded away'], ['hide', 'Gone']])}</div>
         <div class="bnp-f"><span>Avatars</span>${seg('avatars', [['normal', 'As they are'], ['mid', '1½ times as big'], ['big', 'Twice as big']])}</div>
         <p class="bnp-note">Neoboard avatars are little 50 px pictures. The bigger sizes keep every pixel sharp (a bit blocky, never blurry), with the avatar over the name.</p>
-        <div class="bnp-f"><span>Active pets</span>${seg('pet', [['s', 'Small'], ['m', 'Medium'], ['l', 'Large'], ['xl', 'Extra large']])}</div>
-        <p class="bnp-note">Each poster’s active pet under their name, at 50, 80, 150 or 300 px: Neopets’ own picture at that size, always sharp. Extra large widens the posts’ left column to fit it.</p>
+        <div class="bnp-f"><span>Active pets</span>${seg('pet', [['s', 'Small'], ['m', 'Medium'], ['l', 'Large'], ['xl', 'XL'], ['xxl', 'XXL']])}</div>
+        <p class="bnp-note">Each poster’s active pet under their name, at 50, 80, 150, 225 or 300 px: Neopets’ own picture, always sharp. XL and XXL widen the posts’ left column to fit them.</p>
         ${sw('mePet', 'Your own post’s preview at that size too', 'Where you write, the preview of how your post will show you has your active pet at the size you’ve chosen, as your post will. Off: always small.')}
       </div>
       <h5${hide}>Writing</h5>
@@ -10601,10 +10617,11 @@
       if (k === 'avatars' && document.documentElement.classList.contains('bnp-nb')) { document.documentElement.classList.toggle('bnp-nb-bigav', v === 'big'); document.documentElement.classList.toggle('bnp-nb-midav', v === 'mid'); }   // (this page changes at once)
       if (k === 'who' && document.documentElement.classList.contains('bnp-nb')) for (const m of ['all', 'hover', 'click']) document.documentElement.classList.toggle(`bnp-nb-who-${m}`, m === v);
       if (k === 'pet' && document.documentElement.classList.contains('bnp-nb')) {   // (this page's pets change at once, to Neopets' picture at that size)
-        const r = document.documentElement, code = { s: 1, m: 3, l: 2, xl: 4 }[v], px = { s: 50, m: 80, l: 150, xl: 300 }[v];
+        const r = document.documentElement, code = { s: 1, m: 3, l: 2, xl: 4, xxl: 4 }[v], px = { s: 50, m: 80, l: 150, xl: 225, xxl: 300 }[v];
         r.classList.toggle('bnp-nb-pet80', v === 'm');
         r.classList.toggle('bnp-nb-pet150', v === 'l');
-        r.classList.toggle('bnp-nb-pet300', v === 'xl');
+        r.classList.toggle('bnp-nb-pet225', v === 'xl');
+        r.classList.toggle('bnp-nb-pet300', v === 'xxl');
         try { nbMePaint(); } catch (_) { /* */ }   // (your own post's preview too)
         for (const img of $$('#boardTopic .postAuthorPetIcon img')) { const src = img.getAttribute('src') || ''; if (/\/\d+\/\d+\.png$/.test(src)) { img.src = src.replace(/\/(\d+)\/\d+\.png$/, `/$1/${code}.png`); img.width = img.height = px; } }
       }
@@ -11398,6 +11415,8 @@
     html.bnp-st .bnp-stbuild-for small { color: var(--nb-muted); font: 11.5px var(--nb-txt); }
     html.bnp-st .bnp-stbuild-row.is-av small { color: var(--nb-muted); font: 11px var(--nb-txt); }
     html.bnp-st textarea#neohtml_id, html.bnp-st textarea#neosignature_id { min-height: 4.6em; resize: vertical; }
+    .bnp-stsave-row { display: flex; justify-content: flex-end; max-width: 760px; margin: 6px 0 2px; }   /* (Save under the NeoHTML and NeoSignature boxes) */
+    .bnp-stsave-row .bnp-stsave { margin: 0; }
     html.bnp-sttwins #neohtml_id:not(textarea), html.bnp-sttwins #neosignature_id:not(textarea) { display: none !important; }   /* (Neopets' one-line boxes: the taller ones in front stand for them) */
     html.bnp-st textarea.bnp-sttwin { display: block; box-sizing: border-box; width: 100% !important; max-width: 760px !important; min-height: 3.9em; resize: none; overflow: hidden; line-height: 1.45; white-space: pre-wrap; word-break: normal; overflow-wrap: anywhere; }
     html.bnp-st .bnp-sthelp-was { display: none !important; }
@@ -11600,6 +11619,10 @@
       tw.spellcheck = false;
       tw.setAttribute('aria-label', inp.id === 'neosignature_id' ? 'Your NeoSignature' : 'Your NeoHTML');
       inp.after(tw);
+      const row = document.createElement('div');   // (a Save under it: Neopets' own save, its own message after)
+      row.className = 'bnp-stsave-row';
+      row.innerHTML = '<button type="button" class="settings-button bnp-stsave">Save</button>';
+      tw.after(row);
       const real = () => document.getElementById(tw.dataset.for);
       const save = () => { const i = real(); if (i && tw.value !== tw.dataset.was) { i.dispatchEvent(new Event('change', { bubbles: true })); tw.dataset.was = tw.value; } };   // (as Neopets' box saves: on its change)
       tw.addEventListener('focus', () => { tw.dataset.was = tw.value; });
@@ -11610,6 +11633,14 @@
         stTwinFit(tw);
       });
       tw.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+      row.querySelector('button').addEventListener('mousedown', (e) => e.preventDefault());   // (the box keeps its focus: leaving it would save too, and one press is one save)
+      row.querySelector('button').addEventListener('click', () => {   // (pressed: saved as it is, changed or not)
+        const i = real(), v = tw.value.replace(/\r?\n/g, ' ');
+        if (!i) return;
+        if (i.value !== v) { i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); }
+        i.dispatchEvent(new Event('change', { bubbles: true }));
+        tw.dataset.was = tw.value;
+      });
       tw.addEventListener('blur', save);
     }
     if (inp.maxLength > 0) tw.maxLength = inp.maxLength;
@@ -21196,26 +21227,17 @@
     } catch (e) { mallToast(e.message, 'warn'); }
     if (btn && btn.isConnected) { btn.disabled = false; btn.classList.remove('is-busy'); }
   }
-  function mallBagPeek(id) {   // (your cart out for a moment, the item just added lit up in it; back away after 6 s unless pointed at or used)
+  function mallBagPeek(id) {   // (your cart out, the item just added lit up in it; it stays out till you close it — never back away by itself)
     const p = mall && mall.panels.bag;
     if (!p || mall.view.k === 'bag') return;
     mall.bagFlash = { id, until: Date.now() + 1400 };
-    if (p.hidden) { mallPanelOpen('bag', true, true); mall.bagPeek = true; }
+    if (p.hidden) mallPanelOpen('bag', true, true);   // (opened as a peek: your saved choice of it out or away stays yours)
     setTimeout(() => {
       const l = p.querySelector(`[data-mall-line="${id}"]`);
       if (!l) return;
       l.classList.remove('is-flash'); void l.offsetWidth; l.classList.add('is-flash');
       if (l.scrollIntoViewIfNeeded) l.scrollIntoViewIfNeeded(false);
     }, 120);
-    clearTimeout(mall.bagPeekT);
-    if (!mall.bagPeek) return;
-    const away = () => {
-      if (!mall || !mall.bagPeek || p.hidden) return;
-      if (p.matches(':hover') || p.contains(document.activeElement)) { mall.bagPeekT = setTimeout(away, 1500); return; }
-      mall.bagPeek = false;
-      mallPanelOpen('bag', false, true);
-    };
-    mall.bagPeekT = setTimeout(away, 6000);
   }
   function mallFly(img, from) {   // (the item's picture, flying into your cart: a moment of fun, never in the way)
     const to = [mall.root.querySelector('.bnp-mall-bagbtn'), mall.root.querySelector('.bnp-mall-sidetab.is-bag')].find((x) => { if (!x) return false; const r = x.getBoundingClientRect(); return r.width && r.bottom > 0 && r.top < innerHeight; });
@@ -27912,7 +27934,7 @@
       after('/guilds/', L('guild'));
     } else if (m === 'games') {
       const gr = list.find((e) => e.t === 'n' && e.k === '/games/'); if (gr) gr.fold = { id: 'mygames', preset: 'games' };
-      after('hiscores', L('fc'));
+      after('hiscores', L('fc'), L('lotto'));   // (Food Club, then the Lottery under it)
     } else if (m === 'explore') {
       const ex = find('/explore.phtml'); if (ex) ex.fold = { id: 'lands', preset: 'lands' };
     } else if (m === 'shopNP') {
@@ -40856,6 +40878,7 @@
     .bnp-avbar-sp { flex: 1; }
     .bnp-avbar label { display: inline-flex; align-items: center; gap: 6px; margin: 0; }
     .bnp-avbar select { height: 28px; margin: 0; padding: 0 8px; border: 2px solid var(--nb-line, #e2dccb); border-radius: 8px; background: #fff; color: #363636; font: 12px "MuseoSansRounded700", Arial, sans-serif; }
+    #SelectStickerPopup.togglePopup__2020:not(.bnp-popfull) { width: min(680px, calc(100vw - 24px)) !important; max-width: none !important; }   /* (five stickers to a row, All and By pack (user, 2026-10-30); Neopets centres the window by its width as it opens) */
     #SelectStickerPopup .bnp-stkpack { flex: 0 0 100%; margin: 2px 0 12px; }   /* (the Insert Sticker window by pack: each pack under its name, its stickers as Neopets lays them) */
     #SelectStickerPopup .bnp-stkpackh { display: flex; align-items: center; gap: 10px; margin: 0 14px 8px; padding-bottom: 6px; border-bottom: 2px solid var(--nb-line, #ece6d3); }
     #SelectStickerPopup .bnp-stkpackh b { color: #363636; font: 18px "Cafeteria", "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .3pt; }
@@ -42483,6 +42506,12 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.3.1', '2026-10-29', [
+      'NC Mall 2: your cart stays open after you add something, till you close it',
+      'Games menu: the Lottery, under Food Club',
+      'Neoboards: active pets in XL (225 px) too; the 300 px size is XXL now',
+      'Neoboard Settings: a Save button under NeoHTML and NeoSignature, and the stickers window five to a row',
+    ]],
     ['4.3', '2026-10-29', [
       'NC Mall 2 (a work in progress): new releases up top, aisles by shopkeeper, windows that try items on your pet, your cart and checkout',
       'NC Mall 2: Styling Studio, Dyeworks and Fortune Cookies aisles, a tag on every item, re-releases marked, and a compact view',
