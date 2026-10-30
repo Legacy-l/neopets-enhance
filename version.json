@@ -1,8 +1,7 @@
 {
- "version": "4.3.2",
+ "version": "4.3.3",
  "date": "2026-10-30",
  "notes": [
-  "Styling Studio: an Available tab with every style, species A–Z, Prismatics too",
-  "Home page: your pets all stand on the same line"
+  "NeoChat: its title’s outline now changes with your site theme, and goes evenly all round"
  ]
 }

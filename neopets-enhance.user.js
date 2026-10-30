@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.3.2
+// @version      4.3.3
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -14560,7 +14560,8 @@
     const to = L > 0.4 ? '#000000' : '#ffffff', k = L > 0.4 ? 0.55 : 0.85;
     return `#${[1, 3, 5].map((j) => Math.round(parseInt(b.slice(j, j + 2), 16) * (1 - k) + parseInt(to.slice(j, j + 2), 16) * k).toString(16).padStart(2, '0')).join('')}`;
   }
-  const nctEdgeCss = (W, e) => `${W} .bnp-hub-head h3 { -webkit-text-stroke: 4px ${e} !important; paint-order: stroke fill !important; text-shadow: none !important; } ${W} .bnp-hub-head h3 .bnp-ncl-hic svg { filter: drop-shadow(1.5px 0 0 ${e}) drop-shadow(-1.5px 0 0 ${e}) drop-shadow(0 1.5px 0 ${e}) drop-shadow(0 -1.5px 0 ${e}); }`;   // (the word and its bubble, outlined as one)
+  const nctRing = (e, r = 2) => Array.from({ length: 16 }, (_, k) => { const a = k * Math.PI / 8, f = (v) => (Math.abs(v) < 0.005 ? '0' : `${+v.toFixed(2)}px`); return `${f(r * Math.cos(a))} ${f(r * Math.sin(a))} 0 ${e}`; }).join(', ');   // (an outline as the letters' own shadow all round: it never drifts off them as a drawn stroke can)
+  const nctEdgeCss = (W, e) => `${W} .bnp-hub-head h3 { -webkit-text-stroke: 0 !important; text-shadow: ${nctRing(e)} !important; } ${W} .bnp-hub-head h3 .bnp-ncl-hic svg { filter: drop-shadow(1.5px 0 0 ${e}) drop-shadow(-1.5px 0 0 ${e}) drop-shadow(0 1.5px 0 ${e}) drop-shadow(0 -1.5px 0 ${e}); }`;   // (the word and its bubble, outlined as one)
   const nctQuote = (f) => `"${String(f).replace(/["\\]/g, '')}"`;
   function nctCss(t, prev) {   // (a theme's look: its colours under NeoChat's own names, and the few parts Neopets dresses itself. prev: Settings' preview of it)
     const v = nctClean(t && t.v), vars = [], rules = [];
@@ -29583,6 +29584,7 @@
     if ($('.bnp-ncl, .bnp-ncl-phead') && !/\bbnp-(st|nm|nb)\b/.test(document.documentElement.className)) { try { nbTheme(); } catch (e) { report(e); } }   // (NeoChat on any other page: the boards' colours read again for this theme — only the boards, Neomail and Settings did, so it wore the last theme's: user, 2026-10-26)
     for (const el of $$('.bnp-ncl, .bnp-ncl-phead')) { try { nclLook(el); } catch (_) { /* */ } }   // (NeoChat: the boards' colours for this theme, and its round button's)
     nclBubLook();
+    try { nctApply.n = 0; nctApply(); } catch (e) { report(e); }   // (NeoChat's title: its outline made again from the new theme's header, as its sheets come in)
     if (ncl) { try { nclHeadPaint(); nclPaint(); } catch (e) { report(e); } }   // (and its buttons' pictures, which are the theme's own too)
     try { tabsApply(true); tabRemember(); captureChrome(); } catch (e) { report(e); }
     try { oldRetheme(); } catch (e) { report(e); }
@@ -42872,6 +42874,9 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.3.3', '2026-10-30', [
+      'NeoChat: its title’s outline now changes with your site theme, and goes evenly all round',
+    ]],
     ['4.3.2', '2026-10-30', [
       'Styling Studio: an Available tab with every style the Studio has now, species A–Z, Prismatics too; pick one to open it',
       'Home page: your pets all stand on the same line',
