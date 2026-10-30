@@ -1,7 +1,10 @@
 {
- "version": "4.3.3",
+ "version": "4.4",
  "date": "2026-10-30",
  "notes": [
-  "NeoChat: its title’s outline now changes with your site theme, and goes evenly all round"
+  "Settings made over: tabs, theme-coloured page bands, Find always in reach",
+  "NC Mall: the Dyeworks aisle has what’s in the Dyeworks now; Dyeworks gets Current only",
+  "Shop Wizard: you press Search; Closet: moves show at once",
+  "Neoboard Settings laid out right again"
  ]
 }
