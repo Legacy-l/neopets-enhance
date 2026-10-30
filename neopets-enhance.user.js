@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.3.1
+// @version      4.3.2
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -1743,7 +1743,7 @@
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, noAds: true, tillLog: true, tpSales: true, auSales: true,
     scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: true, oldBtns: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldGalleries: false, oldShops: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
-    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, ncMall: true, ncMallSlim: false, ncMallTags: true, hidePinAd: true, nm2: true, nmPopup: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
+    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, ncMall: true, ncMallSlim: false, ncMallTags: true, hidePinAd: true, nm2: true, nmPopup: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, tone: '', vol: 100, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,   // (tone: '' each its own, or one of the sounds for all; vol: how loud, 5 to 100)
@@ -26828,6 +26828,362 @@
   const scIsOpen = () => document.documentElement.classList.contains(SC_OPEN);
   const scOther = () => !!document.querySelector('.scg-btn, .scg-shade');   // (the old Token Gallery script, still switched on)
   let scHeld = null, scObs = null, scRaf = 0;   // (the bigger view: { panel, spot, shade, pad })
+  // ── The Styling Studio: a fourth tab, Available — every style the Studio has right now, species A–Z, as its own window lists each species'
+  //    (new ones first; Prismatics by the style they recolour). Read three species at a time, the ones in sight first, only
+  //    while you're on it; kept 12 hours. A style's card opens the Studio's own window for its species, where you pick the pet and the token.
+  //    Neopets' own tabs keep their job: theirs shows again the moment one is clicked
+  const SS_AJAX = '/np-templates/ajax/stylingstudio/studio.php';
+  const SS_KEEP = 'bnp-ssav', SS_FRESH = 12 * 3600000;
+  const SS_CROP = { 1: [1, -0.3, 1.33], 2: [-4.3, 2, 1.12], 3: [4.3, -2.7, 1.27], 4: [3.7, 2.3, 1.2], 5: [1.7, -5.7, 1.38], 6: [1.3, 0.3, 1.24], 7: [-3.7, -2.3, 1.4], 8: [-0.3, 1, 1.15], 9: [-1, 0.3, 1.24], 10: [1.7, 2, 1.16], 11: [-1.7, -0.3, 1.16], 12: [4, -0.3, 1.14], 13: [5, -0.3, 1.18], 14: [-1, 1.7, 1.11], 15: [1, 0.7, 1.32], 16: [6.3, -2, 1.25], 17: [1, 2.3, 1.38], 18: [-0.7, -3.7, 1.33], 19: [0.3, 0, 1.15], 20: [4.7, 1, 1.2], 21: [-4.7, -11, 1.5], 22: [3, 1.3, 1.3], 23: [3, -1.7, 1.28], 24: [-0.7, 3.7, 1.42], 25: [2, -4, 1.36], 26: [1.3, 0, 1.25], 27: [1, -0.7, 1.23], 28: [0, -1, 1.24], 29: [1, -0.7, 1.21], 30: [-3, 1.3, 1.14], 31: [5.7, 1.7, 1.13], 32: [2, -3, 1.14], 33: [6.7, -4.7, 1.25], 34: [-0.7, 1.3, 1.21], 35: [-0.3, -7, 1.5], 36: [0.3, -3.3, 1.28], 37: [-4.7, 0.7, 1.17], 38: [5.7, 2, 1.24], 39: [-1, -2.7, 1.43], 40: [4.3, -1.7, 1.26], 41: [-1.7, -3.3, 1.33], 42: [-1.7, 1, 1.16], 43: [2, -0.7, 1.23], 44: [3.7, -1.7, 1.26], 45: [2, 1.7, 1.16], 46: [-5.7, -3.7, 1.3], 47: [5.3, -3, 1.26], 48: [0.7, 1.3, 1.21], 49: [4, 0, 1.27], 50: [3.3, -3.3, 1.32], 51: [2, -2, 1.36], 52: [-0.7, -1, 1.32], 53: [-1.3, -3.3, 1.39], 54: [1.3, -2, 1.23], 55: [2.7, -3.3, 1.23], 56: [4, 3, 1.09] };   // (each species' picture past Neopets' empty edges: [move x %, move y %, zoom], from its own pet measured, a margin kept for styles that reach further)
+  const ssZoom = (id) => { const c = SS_CROP[id]; return c ? `transform: scale(${c[2]}) translate(${c[0]}%, ${c[1]}%)` : ''; };
+  const SS_CSS = `
+    .stylestudio-container .stylestudio-tabs .ss-tab.bnp-ss-av:not(.active) { background: #a46cf0; border-color: #6236b5; color: #321471; }   /* (its own colour while it's shut, as each of Neopets' has: violet, after the Studio's sign; yellow when it's open, as theirs are) */
+    html.bnp-ssav-on .stylestudio-container .stylestudio-tabs .ss-tab.active:not(.bnp-ss-av) { cursor: pointer; }
+    html.bnp-ssav-on .stylestudio-container .stylestudio-tabs .ss-tab.active:not(.bnp-ss-av)::after { display: none; }
+    html.bnp-ssav-on .stylestudio-container .stylestudio-tabs .ss-tab.ss-styles.active { background: #ff60fd; border-color: #b32bb5; color: #831f85; }   /* (the tab Neopets has open underneath: its own shut colour while Available is open) */
+    html.bnp-ssav-on .stylestudio-container .stylestudio-tabs .ss-tab.ss-prismatics.active { background: #36ccdd; border-color: #117b81; color: #0d5e63; }
+    html.bnp-ssav-on .stylestudio-container .stylestudio-section:not(.bnp-ssav) { display: none !important; }
+    html:not(.bnp-ssav-on) .stylestudio-container .bnp-ssav { display: none; }
+    .stylestudio-container .stylestudio-section.bnp-ssav { display: flex; flex-direction: column; height: 800px; }   /* (one class more than Neopets' own section rule, which its sheet in the page's body sets after ours) */
+    .bnp-ssav .ss-title { flex: none; }
+    .bnp-ssav .bnp-ssav-note { flex: none; max-width: 75%; margin: 0 auto 12px; font: 11pt/1.45 "MuseoSansRounded500", Arial, sans-serif; text-align: center; }
+    .bnp-ssav .bnp-ssav-bar { flex: none; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 12px; margin: 0 0 8px; }
+    .bnp-ssav .bnp-ssav-seg { display: inline-flex; gap: 2px; padding: 3px; border: 2px solid #ab8e19; border-radius: 999px; background: #fee57a; }
+    .bnp-ssav .bnp-ssav-seg button, .bnp-ssav .bnp-ssav-own, .bnp-ssav .bnp-ssav-again { margin: 0; padding: 5px 13px; border: 0; border-radius: 999px; background: none; color: #61510f; font: 10.5pt/1.2 "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; cursor: pointer; }
+    .bnp-ssav .bnp-ssav-seg button:hover, .bnp-ssav .bnp-ssav-own:hover { background: #fff3b8; }
+    .bnp-ssav .bnp-ssav-seg button[aria-pressed="true"], .bnp-ssav .bnp-ssav-own[aria-pressed="true"] { background: #61510f; color: #fff; }
+    .bnp-ssav .bnp-ssav-own, .bnp-ssav .bnp-ssav-again { padding: 6px 14px; border: 2px solid #ab8e19; background: #fee57a; }
+    .bnp-ssav .bnp-ssav-own[aria-pressed="true"] { border-color: #61510f; }
+    .bnp-ssav .bnp-ssav-again { padding: 3px 12px; background: #fff; }
+    .bnp-ssav .bnp-ssav-again:hover { background: #fee57a; }
+    .bnp-ssav .bnp-ssav-find { width: 210px; margin: 0; padding: 7px 13px; border: 2px solid #ab8e19; border-radius: 999px; background: #fff; color: #3a300a; font: 10.5pt "MuseoSansRounded500", Arial, sans-serif; box-sizing: border-box; }
+    .bnp-ssav .bnp-ssav-find:focus { border-color: #61510f; outline: none; }
+    .bnp-ssav .bnp-ssav-az { flex: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 1px; margin: 0 0 4px; }
+    .bnp-ssav .bnp-ssav-az button { min-width: 25px; margin: 0; padding: 1px 4px; border: 0; border-radius: 6px; background: none; color: #61510f; font: 14pt/1.2 "Cafeteria", "Arial Bold", sans-serif; cursor: pointer; }
+    .bnp-ssav .bnp-ssav-az button:hover:not(:disabled) { background: #fee57a; }
+    .bnp-ssav .bnp-ssav-az button:disabled { opacity: .3; cursor: default; }
+    .bnp-ssav .bnp-ssav-state { flex: none; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 10px; min-height: 30px; margin: 0 0 8px; color: #61510f; font: 10.5pt/1.3 "MuseoSansRounded500", Arial, sans-serif; text-align: center; }
+    .bnp-ssav .bnp-ssav-list { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; overflow: auto; padding: 3px 6px 3px 3px; scrollbar-width: thin; overscroll-behavior: contain; }
+    .bnp-ssav .bnp-ssav-sp { display: grid; grid-template-columns: 120px minmax(0, 1fr); align-items: center; gap: 14px; padding: 10px 14px 10px 10px; border: 2px solid #ab8e19; border-radius: 12px; background: #fff; }
+    .bnp-ssav .bnp-ssav-sp[hidden] { display: none; }
+    .bnp-ssav .bnp-ssav-sp.is-wait { padding-top: 6px; padding-bottom: 6px; }   /* (not read yet: one short line, its name) */
+    .bnp-ssav .bnp-ssav-sp.is-wait .pic, .bnp-ssav .bnp-ssav-sp.is-wait .c { display: none; }
+    .bnp-ssav .bnp-ssav-sp.is-wait .bnp-ssav-cards { min-height: 0; }
+    .bnp-ssav .bnp-ssav-who { display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; }
+    .bnp-ssav .bnp-ssav-who .pic { position: relative; width: 80px; height: 80px; }
+    .bnp-ssav .bnp-ssav-who .pic { display: flex; align-items: flex-end; justify-content: center; }
+    .bnp-ssav .bnp-ssav-who .pic img { display: block; width: auto; height: auto; max-width: 80px; max-height: 80px; }   /* (its own shape: Neopets' species pictures aren't square) */
+    .bnp-ssav .bnp-ssav-who .pic.mine::before { content: "✓"; position: absolute; z-index: 1; top: 0; left: -4px; width: 18px; height: 18px; border-radius: 50%; background: #61510f; color: #fff; font: bold 12px/18px Arial, sans-serif; text-align: center; }   /* (a pet of yours is this species: Neopets' own tick) */
+    .bnp-ssav .bnp-ssav-who .n { color: #61510f; font: 15pt/1.1 "Cafeteria", "Arial Bold", sans-serif; }
+    .bnp-ssav .bnp-ssav-who .c { color: #7d6c26; font: 9pt/1.3 "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-ssav .bnp-ssav-cards { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 8px; min-height: 40px; }
+    .bnp-ssav .bnp-ssav-grp { flex: 0 0 100%; margin: 4px 0 -2px 4px; color: #61510f; font: 12pt/1.2 "Cafeteria", "Arial Bold", sans-serif; }
+    .bnp-ssav .bnp-ssav-grp:first-child { margin-top: 0; }
+    .bnp-ssav .bnp-ssav-wait { align-self: center; color: #8a7a3a; font: 10pt "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-ssav .bnp-ssav-card { width: 144px; display: flex; flex-direction: column; align-items: center; gap: 5px; margin: 0; padding: 6px 4px 7px; border: 2px solid transparent; border-radius: 10px; background: none; color: #3a300a; font: 9.5pt/1.25 "MuseoSansRounded500", Arial, sans-serif; text-align: center; cursor: pointer; }
+    .bnp-ssav .bnp-ssav-card:hover, .bnp-ssav .bnp-ssav-card:focus-visible { border-color: #fdd124; background: #fffbe6; outline: none; }
+    .bnp-ssav .bnp-ssav-card[hidden] { display: none; }
+    .bnp-ssav .bnp-ssav-card .pic { display: block; width: 128px; height: 128px; overflow: hidden; border: 1px solid #000; background: #fff; }
+    .bnp-ssav .bnp-ssav-card .pic img { display: block; width: 128px; height: 128px; }
+    .bnp-ssav .bnp-ssav-card .tags { display: flex; justify-content: center; gap: 4px; }
+    .bnp-ssav .bnp-ssav-tag { padding: 1px 6px 2px; border-radius: 4px; font: 8pt/1.2 "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .05em; text-transform: uppercase; }
+    .bnp-ssav .bnp-ssav-tag.new { background: #ff60fd; color: #4e0f50; }   /* (New in the Studio's pink, Limited in Restyle's black and blue) */
+    .bnp-ssav .bnp-ssav-tag.lim { background: #262627; color: #36ccdd; }
+    .bnp-ssav .bnp-ssav-none { margin: 30px auto; color: #61510f; font: 11pt "MuseoSansRounded500", Arial, sans-serif; text-align: center; }
+    .ss-style-preview.bnp-ssav-big { overflow: hidden; pointer-events: none; }
+    @media screen and (max-width: 620px) {
+      .bnp-ssav .bnp-ssav-sp { grid-template-columns: minmax(0, 1fr); }
+      .bnp-ssav .bnp-ssav-who { flex-direction: row; justify-content: center; gap: 10px; }
+      .bnp-ssav .bnp-ssav-note { max-width: 100%; }
+    }
+  `;
+  let ss = null;   // ({ kept, list, kind, filter, own, q, busy, redo, inView, io, obs, raf, panel, fail, err, bigT })
+  function ssVm() {   // (the Studio's own Vue part: its species, the ones you have, its tabs)
+    const app = document.getElementById('app');
+    try { return (app && app._vnode && app._vnode.component && app._vnode.component.proxy) || null; } catch (_) { return null; }
+  }
+  const ssOn = () => document.documentElement.classList.contains('bnp-ssav-on');
+  const ssCp = (u, n) => fullUrl(String(u || '')).replace(/(\/\/pets\.neopets\.com\/cp\/[^/]+\/\d+\/)\d+(\.png)$/, `$1${n}$2`);   // (a style's picture at another of the sizes Neopets keeps: 4 is 300px, 5 is 500px)
+  const ssKind = (n) => (n === 2 ? 'Prismatics' : 'Pet Styles');
+  function hpLevel() { document.documentElement.classList.toggle('bnp-hplevel', !!S.features.hpLevel); }   // (the home page's pets on one line)
+  function ssPage() {
+    if (!S.features.ssAvail || !/^\/mall\/stylingstudio\/?$/.test(location.pathname) || ss) return;
+    if (!document.getElementById('bnp-ss-style')) { const st = document.createElement('style'); st.id = 'bnp-ss-style'; st.textContent = SS_CSS; (document.head || document.documentElement).append(st); }
+    const ui = nbJson('bnp-ssav-ui', {});
+    const kept = nbJson(SS_KEEP, null);
+    ss = { kept: kept && kept.v === 1 ? kept : { v: 1, t1: {}, t2: {} }, list: [], from: '', kind: ui.kind === 2 ? 2 : 1, filter: ['new', 'lim'].includes(ui.filter) ? ui.filter : 'all', own: !!ui.own, q: '', busy: false, redo: new Set(), inView: new Set(), fail: 0, err: '' };
+    ss.obs = new MutationObserver(ssSoon);
+    ss.obs.observe(document.getElementById('app') || document.body, { childList: true, subtree: true });
+    ssSoon();
+  }
+  function ssSoon() { if (ss && !ss.raf) ss.raf = requestAnimationFrame(() => { if (!ss) return; ss.raf = 0; try { ssInject(); } catch (e) { report(e); } }); }
+  function ssInject() {   // (our tab after Neopets' three, put back if their part is drawn again)
+    const row = document.querySelector('.stylestudio-container .stylestudio-tabs');
+    if (!row) return;
+    if (!row.querySelector('.bnp-ss-av')) {
+      const t = document.createElement('div');
+      t.className = `ss-tab bnp-ss-av${ssOn() ? ' active' : ''}`;
+      t.tabIndex = 0;
+      t.textContent = 'Available';
+      t.title = 'Every style the Studio has right now, species A–Z';
+      t.addEventListener('click', () => ssOpen(true));
+      t.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ssOpen(true); } });
+      row.append(t);
+    }
+    if (!row.dataset.bnpSsav) {   // (one of Neopets' tabs clicked: theirs again; their own click does the rest)
+      row.dataset.bnpSsav = '1';
+      const theirs = (e) => { const x = e.target instanceof Element && e.target.closest('.ss-tab'); if (x && !x.classList.contains('bnp-ss-av') && ssOn()) ssOpen(false); };
+      row.addEventListener('click', theirs, true);
+      row.addEventListener('keydown', (e) => { if (e.key === 'Enter') theirs(e); }, true);
+    }
+    if (ss.from !== 'studio' && ssVmSpecies().length) { ss.list = []; if (ss.panel) ssPaint(); }   // (the Studio's species came in after we drew NE's names: drawn again with its pictures)
+    if (!ss.opened) { ss.opened = true; let was = '0'; try { was = localStorage.getItem('bnp-ssav-open') || '0'; } catch (_) { /* */ } if (was === '1') ssOpen(true); }   // (open last time you were here, as Neopets' own tabs open on the last one)
+    else if (ssOn()) ssPlace();
+  }
+  function ssVmSpecies() {
+    const vm = ssVm();
+    try { const sd = vm && vm.speciesData; return sd ? Object.values(sd).filter((x) => x && x.species_id && x.species_name) : []; } catch (_) { return []; }
+  }
+  function ssSpecies() {   // ([{ id, name, img, mine }] A–Z: the Studio's own list where its part has it, else NE's names)
+    const vm = ssVm(), sd = ssVmSpecies();
+    let own = {};
+    try { own = (vm && vm.ownedSpecies) || {}; } catch (_) { own = {}; }
+    const mine = new Set(Object.keys(own).map(String));   // (only which species: never the pets)
+    ss.from = sd.length ? 'studio' : 'ne';
+    const list = sd.length ? sd.map((x) => ({ id: String(x.species_id), name: String(x.species_name), img: x.imgOwned ? fullUrl(String(x.imgOwned)) : '' }))
+      : SC_SPECIES.map((n, i) => ({ id: String(i + 1), name: n, img: '' }));
+    return list.map((x) => ({ ...x, mine: mine.has(x.id) })).sort((a, b) => a.name.localeCompare(b.name));
+  }
+  function ssOpen(on) {
+    if (!ss) return;
+    document.documentElement.classList.toggle('bnp-ssav-on', on);
+    const t = document.querySelector('.bnp-ss-av');
+    if (t) t.classList.toggle('active', on);
+    try { localStorage.setItem('bnp-ssav-open', on ? '1' : '0'); } catch (_) { /* */ }
+    ssBig(null);
+    if (!on) return;
+    ssPlace();
+    ssRun();
+  }
+  function ssPlace() {   // (our panel just after the Studio's own part: Neopets never draws over it)
+    const app = document.getElementById('app'), sec = document.querySelector('.stylestudio-container .stylestudio-section:not(.bnp-ssav)');
+    const after = app && app.closest('.stylestudio-container') ? app : sec;
+    if (!after) return;
+    if (!ss.panel) {
+      const p = ss.panel = document.createElement('div');
+      p.className = 'stylestudio-section bnp-ssav';
+      p.innerHTML = `<div class="ss-title" data-ss="title"></div>
+        <p class="bnp-ssav-note" data-ss="note"></p>
+        <div class="bnp-ssav-bar">
+          <div class="bnp-ssav-seg" role="group" aria-label="Which">${[1, 2].map((k) => `<button type="button" data-kind="${k}">${ssKind(k)}</button>`).join('')}</div>
+          <div class="bnp-ssav-seg" role="group" aria-label="Show">${[['all', 'All'], ['new', 'New'], ['lim', 'Limited']].map(([k, n]) => `<button type="button" data-filter="${k}">${n}</button>`).join('')}</div>
+          <button type="button" class="bnp-ssav-own" data-ss="own">Only species I have</button>
+          <input type="search" class="bnp-ssav-find" data-ss="find" placeholder="Find a species or style…" aria-label="Find a species or style" spellcheck="false" autocomplete="off">
+        </div>
+        <nav class="bnp-ssav-az" data-ss="az" aria-label="Species A to Z"></nav>
+        <div class="bnp-ssav-state" data-ss="state" aria-live="polite"></div>
+        <div class="bnp-ssav-list" data-ss="list"></div>`;
+      p.addEventListener('click', ssClick);
+      p.querySelector('[data-ss="find"]').addEventListener('input', (e) => { ss.q = e.target.value.trim().toLowerCase(); ssFilter(); });
+      p.addEventListener('pointerover', (e) => { const c = e.target instanceof Element && e.target.closest('.bnp-ssav-card'); if (c && e.pointerType === 'mouse') { clearTimeout(ss.bigT); ss.bigT = setTimeout(() => ssBig(c), 380); } });
+      p.addEventListener('pointerout', (e) => { const c = e.target instanceof Element && e.target.closest('.bnp-ssav-card'); if (c && !c.contains(e.relatedTarget)) { clearTimeout(ss.bigT); ssBig(null); } });
+      p.querySelector('[data-ss="list"]').addEventListener('scroll', () => ssBig(null), { passive: true });
+      ssPaint();
+    }
+    if (ss.panel.previousElementSibling !== after) after.after(ss.panel);
+    if (!ss.list.length) ssPaint();
+  }
+  function ssSaveUi() { nbJsonSet('bnp-ssav-ui', { kind: ss.kind, filter: ss.filter, own: ss.own }); }
+  function ssClick(e) {
+    const b = e.target instanceof Element && e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.kind) { const k = Number(b.dataset.kind); if (k !== ss.kind) { ss.kind = k; ss.redo.clear(); ssSaveUi(); ssPaint(); ss.panel.querySelector('[data-ss="list"]').scrollTop = 0; ssRun(); } return; }
+    if (b.dataset.filter) { ss.filter = b.dataset.filter; ssSaveUi(); ssFilter(); return; }
+    if (b.dataset.ss === 'own') { ss.own = !ss.own; ssSaveUi(); ssFilter(); return; }
+    if (b.dataset.az) {   // (to that letter's first species: in the list, or the page if the list doesn't scroll)
+      const list = ss.panel.querySelector('[data-ss="list"]'), r = [...list.querySelectorAll('.bnp-ssav-sp:not([hidden])')].find((x) => x.dataset.az === b.dataset.az);
+      if (!r) return;
+      if (list.scrollHeight > list.clientHeight + 4) list.scrollTo({ top: list.scrollTop + r.getBoundingClientRect().top - list.getBoundingClientRect().top - 3, behavior: 'smooth' });
+      else r.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (b.dataset.ss === 'again') { ss.redo = new Set(ss.list.map((x) => x.id)); ss.fail = 0; ss.err = ''; ssRun(); ssState(); return; }
+    if (b.dataset.go) ssGo(b.dataset.go);
+  }
+  function ssPaint() {   // (the panel for the kind chosen: every species' row, its cards from what's kept)
+    const p = ss.panel;
+    if (!p) return;
+    ss.list = ssSpecies();
+    p.querySelector('[data-ss="title"]').textContent = ss.kind === 2 ? 'Available Prismatics' : 'Available Styles';
+    p.querySelector('[data-ss="note"]').textContent = `Everything the Studio has right now, species A–Z${ss.kind === 2 ? ', each by the style it recolours' : ', the newest first'}. Pick one to see it in ${ssKind(ss.kind)}.`;
+    p.querySelectorAll('[data-kind]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.kind) === ss.kind)));
+    const list = p.querySelector('[data-ss="list"]');
+    list.innerHTML = ss.list.map((sp) => `<section class="bnp-ssav-sp" data-sp="${sp.id}" data-az="${esc(sp.name.charAt(0).toUpperCase())}" data-name="${esc(sp.name.toLowerCase())}">
+        <div class="bnp-ssav-who"><span class="pic${sp.mine ? ' mine' : ''}"${sp.mine ? ` title="You have a ${esc(sp.name)}"` : ''}>${sp.img ? `<img src="${esc(sp.img)}" alt="" loading="lazy">` : ''}</span><span class="n">${esc(sp.name)}</span><span class="c" data-c></span></div>
+        <div class="bnp-ssav-cards" data-cards></div>
+      </section>`).join('') + '<p class="bnp-ssav-none" data-ss="none" hidden>Nothing here matches that.</p><p class="bnp-ssav-none" data-ss="empty" hidden></p>';
+    if (ss.io) ss.io.disconnect();
+    ss.inView.clear();
+    ss.io = new IntersectionObserver((ens) => { for (const en of ens) { const id = en.target.dataset.sp; if (en.isIntersecting) ss.inView.add(id); else ss.inView.delete(id); } }, { root: list, rootMargin: '200px 0px' });
+    list.querySelectorAll('.bnp-ssav-sp').forEach((r) => { ss.io.observe(r); ssRow(r.dataset.sp); });
+    const az = new Set(ss.list.map((x) => x.name.charAt(0).toUpperCase()));
+    p.querySelector('[data-ss="az"]').innerHTML = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c) => `<button type="button" data-az="${c}"${az.has(c) ? '' : ' disabled'}>${c}</button>`).join('');
+    ssFilter();
+  }
+  const ssEntry = (id, kind = ss.kind) => ss.kept[`t${kind}`][id] || null;
+  const ssFresh = (id, kind = ss.kind) => { const e = ssEntry(id, kind); return !!e && Date.now() - e.at < SS_FRESH && !(kind === ss.kind && ss.redo.has(id)); };
+  function ssRow(id) {   // (one species' cards: as the Studio's window orders them)
+    const r = ss.panel && ss.panel.querySelector(`.bnp-ssav-sp[data-sp="${id}"]`);
+    if (!r) return;
+    const box = r.querySelector('[data-cards]'), e = ssEntry(id), c = r.querySelector('[data-c]');
+    r.classList.toggle('is-wait', !e);
+    if (!e) { box.innerHTML = `<span class="bnp-ssav-wait">${ss.inflight && ss.inflight.has(id) ? 'Reading…' : 'Not read yet'}</span>`; c.textContent = ''; return; }
+    const card = (x) => `<button type="button" class="bnp-ssav-card" data-go="${id}" data-new="${x.w}" data-lim="${x.l}" data-find="${esc(x.n.toLowerCase())}" data-big="${esc(ssCp(x.p, 5))}" data-z="${ssZoom(id)}" title="${esc(x.n)}: see it in ${ssKind(ss.kind)}">
+        <span class="pic"><img src="${esc(ssCp(x.p, 4))}" alt="" width="128" height="128" loading="lazy" style="${ssZoom(id)}"></span><span class="nm">${esc(x.n)}</span>${x.w || x.l ? `<span class="tags">${x.w ? '<i class="bnp-ssav-tag new">New</i>' : ''}${x.l ? '<i class="bnp-ssav-tag lim">Limited</i>' : ''}</span>` : ''}
+      </button>`;
+    if (!e.s.length) box.innerHTML = `<span class="bnp-ssav-wait">${ss.kind === 2 ? 'No Prismatics for these yet' : 'No styles for these yet'}</span>`;
+    else if (ss.kind === 2) {   // (Prismatics: under the style each recolours, as the Studio's window has them)
+      const groups = new Map();
+      for (const x of e.s) { const g = x.g || x.n; if (!groups.has(g)) groups.set(g, { name: x.gn || '', all: [] }); groups.get(g).all.push(x); }
+      box.innerHTML = [...groups.values()].map((g) => `${g.name ? `<p class="bnp-ssav-grp">${esc(g.name)}</p>` : ''}${g.all.map(card).join('')}`).join('');
+    } else box.innerHTML = [...e.s.filter((x) => x.w), ...e.s.filter((x) => !x.w)].map(card).join('');
+    const nNew = e.s.filter((x) => x.w).length;
+    c.textContent = e.s.length ? `${e.s.length} ${ss.kind === 2 ? (e.s.length === 1 ? 'Prismatic' : 'Prismatics') : e.s.length === 1 ? 'style' : 'styles'}${nNew ? ` · ${nNew} new` : ''}` : '';
+  }
+  function ssFilter() {   // (New, Limited, your species, a word: rows and cards shown or not, nothing drawn again)
+    const p = ss.panel;
+    if (!p) return;
+    p.querySelectorAll('[data-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === ss.filter)));
+    p.querySelector('[data-ss="own"]').setAttribute('aria-pressed', String(ss.own));
+    const mine = new Set(ss.list.filter((x) => x.mine).map((x) => x.id));
+    let shown = 0;
+    for (const r of p.querySelectorAll('.bnp-ssav-sp')) {
+      const id = r.dataset.sp, e = ssEntry(id), spHit = !ss.q || r.dataset.name.includes(ss.q);
+      let any = false;
+      for (const c of r.querySelectorAll('.bnp-ssav-card')) {
+        const ok = (ss.filter === 'all' || (ss.filter === 'new' ? c.dataset.new === '1' : c.dataset.lim === '1')) && (spHit || c.dataset.find.includes(ss.q));
+        c.hidden = !ok;
+        if (ok) any = true;
+      }
+      for (const g of r.querySelectorAll('.bnp-ssav-grp')) { let n = g.nextElementSibling, vis = false; while (n && n.classList.contains('bnp-ssav-card')) { if (!n.hidden) vis = true; n = n.nextElementSibling; } g.hidden = !vis; }
+      const hide = (ss.own && !mine.has(id)) || (e ? !any : !spHit);   // (read and nothing to show, for this choice or at all: out of the list)
+      r.hidden = hide;
+      if (!hide) shown++;
+    }
+    p.querySelector('[data-ss="none"]').hidden = shown > 0;
+    const none = ss.list.filter((x) => { const e = ssEntry(x.id); return e && !e.s.length; }).map((x) => x.name), em = p.querySelector('[data-ss="empty"]');
+    em.textContent = none.length ? `No ${ss.kind === 2 ? 'Prismatics' : 'styles'} yet for ${none.length > 1 ? `${none.slice(0, -1).join(', ')} or ${none[none.length - 1]}` : none[0]}.` : '';
+    em.hidden = !none.length || !!ss.q || ss.own || ss.filter !== 'all';
+    ssState();
+  }
+  function ssState() {   // (how far it's read, and what there is)
+    const p = ss.panel;
+    if (!p) return;
+    const el = p.querySelector('[data-ss="state"]'), all = ss.list.length, k = ss.kept[`t${ss.kind}`];
+    const read = ss.list.filter((x) => k[x.id]).length, waiting = ss.list.filter((x) => !ssFresh(x.id)).length;
+    const again = '<button type="button" class="bnp-ssav-again" data-ss="again">Check again</button>';
+    if (ss.err) { el.innerHTML = `${esc(ss.err)} ${again.replace('Check again', 'Try again')}`; return; }
+    if (ss.busy && waiting) {
+      el.textContent = ss.paused ? `Paused while you’re away · ${read} of ${all} species read` : `Reading… ${read} of ${all} species read`;
+      return;
+    }
+    const styles = ss.list.reduce((n, x) => n + (k[x.id] ? k[x.id].s.length : 0), 0), nNew = ss.list.reduce((n, x) => n + (k[x.id] ? k[x.id].s.filter((s) => s.w).length : 0), 0), nLim = ss.list.reduce((n, x) => n + (k[x.id] ? k[x.id].s.filter((s) => s.l).length : 0), 0);
+    const oldest = Math.min(...ss.list.map((x) => (k[x.id] ? k[x.id].at : Date.now())));
+    const ago = (ms) => { const m = Math.round(ms / 60000); return m < 1 ? 'just now' : m < 60 ? `${m} minute${m === 1 ? '' : 's'} ago` : `${Math.round(m / 60)} hour${Math.round(m / 60) === 1 ? '' : 's'} ago`; };
+    el.innerHTML = read < all ? `${read} of ${all} species read ${again}` : `${styles} ${ss.kind === 2 ? 'Prismatics' : 'styles'} · ${nNew} new · ${nLim} limited · read ${ago(Date.now() - oldest)} ${again}`;
+  }
+  const ssNap = (ms) => new Promise((ok) => setTimeout(ok, ms));
+  function ssNext() {   // (the next species to read: one in sight first, else A–Z)
+    const need = ss.list.filter((x) => !ssFresh(x.id) && !(ss.inflight && ss.inflight.has(x.id)));
+    return (need.find((x) => ss.inView.has(x.id)) || need[0] || {}).id || '';
+  }
+  async function ssFetch(kind, id) {
+    const fd = new FormData();
+    fd.append('tab', String(kind));
+    fd.append('mode', 'getAvailable');
+    fd.append('species', String(id));
+    const r = await fetch(SS_AJAX, { method: 'POST', credentials: 'include', headers: { 'x-requested-with': 'XMLHttpRequest' }, body: fd });
+    if (!r.ok) throw new Error(`Styling Studio: ${r.status}`);
+    const j = await r.json();
+    if (!j || !j.success) throw new Error('Styling Studio: no list');
+    return Array.isArray(j.styles) ? j.styles : Object.values(j.styles || {});
+  }
+  const ssSlim = (x) => ({ o: String(x.oii || ''), n: String(x.name || ''), p: String(x.preview || ''), w: x.new === true || x.new === 'true' ? 1 : 0, l: x.limited === true || x.limited === 'true' ? 1 : 0, ...(x.style != null ? { g: String(x.style), gn: String(x.styleName || '') } : {}) });
+  function ssKeep(kind, id, styles) {
+    ss.kept[`t${kind}`][id] = { at: Date.now(), s: styles.map(ssSlim) };
+    if (kind === ss.kind) ss.redo.delete(id);
+    clearTimeout(ss.saveT);
+    ss.saveT = setTimeout(() => nbJsonSet(SS_KEEP, ss.kept), 1200);
+  }
+  async function ssRun() {   // (three species at a time, the ones in sight first, only while Available is open and you're here)
+    if (!ss || ss.busy || !ssOn() || ss.err) return;
+    ss.busy = true;
+    ss.inflight = new Set();
+    const worker = async () => {
+      while (ss && ssOn() && !ss.err) {
+        const kind = ss.kind, id = ssNext();
+        if (!id) return;
+        const vm = ssVm();
+        let have = null;
+        try { if (vm && vm.tabActive === kind && Array.isArray(vm.stylesData[id])) have = vm.stylesData[id]; } catch (_) { have = null; }
+        if (have) { ssKeep(kind, id, have); ssRow(id); ssFilter(); continue; }   // (the Studio read it already, for its own window)
+        while (ss && ssOn() && (document.hidden || actIdle() > 5 * 60000)) { ss.paused = true; ssState(); await ssNap(3000); }   // (the tab in the background, or you away: it waits)
+        if (!ss || !ssOn() || kind !== ss.kind || ss.inflight.has(id)) continue;
+        ss.paused = false;
+        ss.inflight.add(id); ssRow(id); ssState();
+        let styles = null;
+        try { styles = await ssFetch(kind, id); } catch (_) { styles = null; }
+        if (!ss) return;   // (switched off meanwhile)
+        ss.inflight.delete(id);
+        if (styles) { ss.fail = 0; ssKeep(kind, id, styles); }
+        else if (++ss.fail >= 3) ss.err = 'Neopets didn’t answer just now.';
+        else await ssNap(3000);
+        if (!ss) return;
+        if (kind === ss.kind) { ssRow(id); ssFilter(); }
+      }
+    };
+    try { await Promise.all([worker(), worker(), worker()]); }
+    finally { if (ss) { ss.busy = false; ss.inflight.clear(); ssState(); } }
+  }
+  function ssBig(card) {   // (a style's picture large beside its card, as the Studio's own window shows one)
+    let big = document.querySelector('.bnp-ssav-big');
+    if (!card) { if (big) big.hidden = true; return; }
+    if (!big) { big = document.createElement('div'); big.className = 'ss-style-preview bnp-ssav-big'; big.innerHTML = '<img alt="">'; document.body.append(big); }
+    const img = big.querySelector('img'), r = card.querySelector('.pic').getBoundingClientRect();
+    if (img.getAttribute('src') !== card.dataset.big) img.src = card.dataset.big;
+    img.style.cssText = card.dataset.z || '';
+    const left = r.right + 12 + 300 <= window.innerWidth ? r.right + 12 : Math.max(8, r.left - 12 - 300);
+    big.style.left = `${Math.round(left)}px`;
+    big.style.top = `${Math.round(Math.min(Math.max(8, r.top + r.height / 2 - 150), window.innerHeight - 308))}px`;
+    big.hidden = false;
+  }
+  function ssGo(id) {   // (a style picked: the Studio's own window for its species, on Pet Styles or Prismatics, to choose the pet and the token)
+    const vm = ssVm(), G = (PAGE && PAGE.StylingStudio) || {}, want = ss.kind === 2 ? Number(G.prismaTab) || 2 : Number(G.stylesTab) || 1;
+    const sp = () => { try { return ssVmSpecies().find((x) => String(x.species_id) === String(id)) || null; } catch (_) { return null; } };
+    if (!vm || !sp()) return;
+    ssOpen(false);
+    const tabs = document.querySelector('.stylestudio-container .stylestudio-tabs');
+    if (tabs) tabs.scrollIntoView({ block: 'start' });   // (the Studio's own part in sight: its window opens by it)
+    const show = () => { const t0 = Date.now(), look = () => { const w = document.querySelector('.stylestudio-popup'); if (w && w.getBoundingClientRect().height > 0) w.scrollIntoView({ block: 'center' }); else if (Date.now() - t0 < 6000) setTimeout(look, 150); }; setTimeout(look, 150); };   // (and its window, once it's open)
+    const pick = () => { const s = sp(); if (s) { try { vm.selectSpecies(s); show(); } catch (e) { report(e); } } };
+    if (vm.tabActive === want) { pick(); return; }
+    try { vm.selectTab(want); } catch (e) { report(e); return; }
+    const t0 = Date.now(), tick = () => { if (vm.tabActive === want && !vm.isLoading) pick(); else if (Date.now() - t0 < 10000) setTimeout(tick, 150); };
+    setTimeout(tick, 150);
+  }
+  function ssOff() {   // (switched off in Settings: our tab and panel gone, Neopets' as it was)
+    if (!ss) return;
+    if (ss.obs) ss.obs.disconnect();
+    if (ss.io) ss.io.disconnect();
+    if (ss.raf) cancelAnimationFrame(ss.raf);
+    clearTimeout(ss.saveT); clearTimeout(ss.bigT);
+    nbJsonSet(SS_KEEP, ss.kept);
+    document.documentElement.classList.remove('bnp-ssav-on');
+    for (const x of document.querySelectorAll('.bnp-ss-av, .bnp-ssav, .bnp-ssav-big, #bnp-ss-style')) x.remove();
+    const row = document.querySelector('.stylestudio-tabs[data-bnp-ssav]');
+    if (row) delete row.dataset.bnpSsav;
+    ss = null;
+  }
   function scPage() {
     if (!S.features.scView || !/^\/stylingchamber\//.test(location.pathname) || scObs) return;
     if (!document.getElementById('bnp-scg-style')) { const st = document.createElement('style'); st.id = 'bnp-scg-style'; st.textContent = SC_CSS; (document.head || document.documentElement).append(st); }
@@ -37727,6 +38083,12 @@
         ${sw('ncMallSlim', 'NC Mall 2, narrower', 'About 1080px wide instead of 1240: its big banner a little smaller beside the search, and the menu’s words a size down. Items, shopkeepers and windows stay their own size.')}
         ${sw('ncMallTags', 'NC Mall 2, item tags', 'A small tag over each item’s name saying what it is: Capsule, Capsule bundle, Stickers, Grave Danger, Snowager, Event, Styling Studio, Fortune cookie, Dyeworks, Super Deluxe, Collectors… and for things to wear, BG, FG, Trinket, Wig, Clothes and the like. The switch in the lilac bar, under the width switch, turns them on and off too.')}
       </div>`],
+      ['otherpages', `<div class="bnp-card"><h4>Home page</h4>
+        ${sw('hpLevel', 'Your pets on one line', 'Every pet on the home page stands on the same line, its name under it level with the others’. Neopets puts a pet that’s taller than it is wide lower than the rest; NE draws it a little smaller instead, never lower.')}
+      </div>`],
+      ['otherpages', `<div class="bnp-card"><h4>Styling Studio</h4>
+        ${sw('ssAvail', 'An Available tab: every style, species A–Z', 'A fourth tab beside Restyle with everything the Studio has right now: each species with its styles’ pictures and names, the newest first, New and Limited marked, and Prismatics too. Find a species or style, show only New or Limited, or only species you have. Pick one and the Studio’s own window opens for its species, to choose the pet and the token. NE reads three species at a time, the ones in sight first, only while you’re on the tab, and keeps the lists for 12 hours.')}
+      </div>`],
       ['otherpages', `<div class="bnp-card"><h4>Styling Chamber</h4>
         ${sw('scView', 'A bigger Poses view, a Species sort, and all your pets at once', 'A button beside Show All in the Poses box opens the same box much bigger, every button of Neopets’ still working (Esc, its red X or a click outside brings it back); it opens on the sort you chose last. Its sort menu gets Species too: the poses in A–Z groups, with how many each species has. All pets, beside the Neopets part’s sort menu, shows every pet at once instead of a few at a time behind its arrows: click one to style it.')}
       </div>`],
@@ -37756,6 +38118,8 @@
       if (k === 'shopMin') { shopMin(); paintDock(); }
       if (k === 'fquest') paintFq();
       if (k === 'scView') { if (S.features.scView) scPage(); else scOff(); }
+      if (k === 'ssAvail') { if (S.features.ssAvail) ssPage(); else ssOff(); }
+      if (k === 'hpLevel') hpLevel();
       if (k === 'hubPal') hubPal();
       if (k === 'lookup9999') lookup9999();
       if (k === 'boardPal') boardPal();
@@ -41039,6 +41403,8 @@
     .bnp-folded > :not(.bnp-foldnote) { display: none !important; }
     .bnp-folded > .bnp-foldnote { margin: 0; font-size: 12px; line-height: 1.5; }
     html.bnp-noqdot #NavQuestsNotif { display: none !important; }
+    html.bnp-hplevel .hp-carousel-pet { padding-bottom: 100% !important; background-size: contain !important; background-position: 50% 100% !important; }   /* (the home page's pets, every one on the same line: a box the same for each, its picture standing at the foot — a pet taller than wide a little smaller, never lower) */
+    html.bnp-hplevel .hp-carousel-pet-offset { padding-bottom: 0 !important; }
     .bnp-qpgo { display: inline-block; margin: 4px 0 0; }
     .bnp-sc-btn { width: auto !important; display: inline-block !important; margin: 6px 4px !important; padding: 6px 22px !important; font-size: 15px !important; }
     .bnp-sc-next { margin: 4px 0 12px; text-align: center; font: 700 14px "MuseoSansRounded700", Arial, sans-serif; color: #6b4c00; }
@@ -42506,6 +42872,10 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.3.2', '2026-10-30', [
+      'Styling Studio: an Available tab with every style the Studio has now, species A–Z, Prismatics too; pick one to open it',
+      'Home page: your pets all stand on the same line',
+    ]],
     ['4.3.1', '2026-10-29', [
       'NC Mall 2: your cart stays open after you add something, till you close it',
       'Games menu: the Lottery, under Food Club',
@@ -43034,7 +43404,7 @@
     setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 4000 + Math.random() * 12000);   // (the Turmaculus' due hours, if they're needed: a moment after the page, not at once)
     document.addEventListener('visibilitychange', () => { if (document.hidden) return; clearTimeout(turmacRead.t); turmacRead.t = setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 3000 + Math.random() * 6000); });
     try { startKeep(); } catch (e) { report(e); }
-    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, labPage, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
+    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, labPage, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
     themeAfter(themeChanged);   // (an old page, its theme's sheets still coming: everything of ours dressed again once they're in)
     whenLoaded(() => { setTimeout(() => { try { boxFootNote(); } catch (e) { report(e); } }, 900); try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } setTimeout(() => { updCheck(false).catch(report); try { updSeen(); } catch (e) { report(e); } }, 1500); try { const w = myWorn(), sw = w && themeData().sw[myLive(w).base]; if (w && (!sw || sw.v !== 7)) themeSwatches(); } catch (e) { report(e); } });   // (a theme of yours: its base's sheet read, if it hasn't been yet)   // (a random event Neopets adds a moment later; theme pictures for the tab)
     if (document.getElementById('navtop__2020') || document.getElementById('navbottom__2020')) startOnce();

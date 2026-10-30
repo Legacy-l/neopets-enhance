@@ -1,10 +1,8 @@
 {
- "version": "4.3.1",
- "date": "2026-10-29",
+ "version": "4.3.2",
+ "date": "2026-10-30",
  "notes": [
-  "NC Mall 2: your cart stays open after you add something",
-  "Games menu: the Lottery, under Food Club",
-  "Neoboards: XL (225 px) and XXL (300 px) active pets",
-  "Neoboard Settings: Save under NeoHTML and NeoSignature; stickers five to a row"
+  "Styling Studio: an Available tab with every style, species A–Z, Prismatics too",
+  "Home page: your pets all stand on the same line"
  ]
 }
