@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.4
+// @version      4.4.1
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -38,7 +38,7 @@
   try { POPUP_WIN = !FRAME && (/^\/pound\/transfer_popup\.phtml$/.test(location.pathname) || (!!window.opener && window.opener !== window && ((!!window.toolbar && window.toolbar.visible === false) || (!!window.locationbar && window.locationbar.visible === false)))); } catch (_) { POPUP_WIN = false; }
   if (FRAME && location.hostname === 'www.neopets.com' && location.pathname === '/trudydaily/game.phtml') { trudyKeep(); return; }   // (Trudy's game: only its keeper, nothing else)
   if (FRAME && location.hostname === 'www.neopets.com' && location.pathname === '/games/play_flash.phtml') { frameEar(); return; }   // (a game's frame (the slots spin there): only its ear, telling the game's page)
-  if (FRAME && location.hostname === 'www.neopets.com' && location.pathname === '/robots.txt' && location.hash === '#bnp-relay') { wwwRelay(); return; }   // (the NC Mall's frame of www: only the relay)
+  if (FRAME && location.hostname === 'www.neopets.com' && location.hash === '#bnp-relay' && (location.pathname === '/robots.txt' || fromPageOk(location.pathname))) { wwwRelay(); return; }   // (the NC Mall's frame of www, or one of Neopets' pages NE asks something from: only the relay)
   if (FRAME && window.name !== 'bnp-look') return;
   const NE_START = (() => { try { const p = performance.getEntriesByName('first-contentful-paint')[0]; return { at: performance.now(), drawn: p ? p.startTime : 0, body: !!document.body }; } catch (_) { return { at: 0, drawn: 0, body: false }; } })();   // (when Neopets Enhance began on this page, and whether the page was drawn by then: Tampermonkey can start it late)
   if (/(^|\.)itemdb\.com\.br$/i.test(location.hostname)) {   // (itemdb: only to notice that it has let this browser have its prices, by its own flag cookie, set a few seconds after a page opens; a Neopets page waiting on a visit then asks at once. Nothing else runs here)
@@ -115,19 +115,21 @@
     if (x.hostname === 'www.neopets.com') return true;
     return x.hostname === location.hostname && !/^\/mall\/(?!(?:dyeworks|stylingstudio|wheel)\b)/.test(x.pathname);   // (the Mall's own pages (/mall/…, but for Dyeworks, the Styling Studio and the wheel, which are www's) stay its)
   }
-  let wwwPort = null, wwwDown = 0, wwwSeq = 0;
-  const wwwWait = new Map();
-  function wwwOpen() {   // (the frame and its channel, made once, at the first request that needs it)
-    if (wwwPort) return wwwPort;
-    if (Date.now() - wwwDown < 10 * 60000) return Promise.reject(new TypeError('Failed to fetch (Neopets’ own pages, from the NC Mall)'));   // (it couldn't be made a moment ago: not tried again for 10 minutes)
-    return (wwwPort = new Promise((done, fail) => {
+  let wwwSeq = 0;
+  const wwwWait = new Map(), wwwFrames = new Map();   // (each frame NE asks from, by its page: { port, f, ch, down, n, bye })
+  function wwwOpen(path = '/robots.txt') {   // (the frame and its channel, made once, at the first request that needs it)
+    const page = path !== '/robots.txt', k = wwwFrames.get(path) || { port: null, f: null, ch: null, down: 0, n: 0, bye: 0 };
+    wwwFrames.set(path, k);
+    if (k.port) return k.port;
+    if (Date.now() - k.down < (page ? 20000 : 10 * 60000)) return Promise.reject(new TypeError(page ? 'Failed to fetch (Neopets’ page didn’t open)' : 'Failed to fetch (Neopets’ own pages, from the NC Mall)'));   // (it couldn't be made a moment ago: not tried again for 10 minutes; a page of Neopets', 20 seconds)
+    return (k.port = new Promise((done, fail) => {
       let tok = '';
       try { const o = GM_getValue('bnp3:relaytok'); if (o && o.t && Date.now() - o.at < 12 * 3600000) tok = o.t; } catch (_) { /* */ }
       if (!tok) { tok = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join(''); try { GM_setValue('bnp3:relaytok', { t: tok, at: Date.now() }); } catch (_) { /* */ } }
       const f = document.createElement('iframe'), ch = new MessageChannel();
       let ready = false;
-      const no = () => { if (ready) return; wwwPort = null; wwwDown = Date.now(); removeEventListener('message', up); f.remove(); fail(new TypeError('Failed to fetch (Neopets’ own pages, from the NC Mall)')); };
-      const tm = setTimeout(no, 15000);
+      const no = () => { if (ready) return; k.port = null; k.f = null; k.ch = null; k.down = Date.now(); removeEventListener('message', up); f.remove(); fail(new TypeError(page ? 'Failed to fetch (Neopets’ page didn’t open)' : 'Failed to fetch (Neopets’ own pages, from the NC Mall)')); };
+      const tm = setTimeout(no, page ? 30000 : 15000);   // (a whole page takes longer to come than robots.txt)
       const up = (e) => {   // (NE in the frame says it's there: the secret and the channel go to it, and only to it)
         if (e.source !== f.contentWindow || e.origin !== 'https://www.neopets.com' || !e.data || e.data.bnpRelay !== 'up') return;
         removeEventListener('message', up);
@@ -147,7 +149,9 @@
         Object.defineProperty(r, 'redirected', { value: !!d.redirected });
         w.done(r);
       };
-      f.src = 'https://www.neopets.com/robots.txt#bnp-relay';
+      k.f = f;
+      k.ch = ch;
+      f.src = `https://www.neopets.com${path}#bnp-relay`;
       f.title = '';
       f.tabIndex = -1;
       f.setAttribute('aria-hidden', 'true');
@@ -155,7 +159,7 @@
       (document.body || document.documentElement).append(f);
     }));
   }
-  async function wwwFetch(u, o = {}) {   // (a request for one of Neopets' own pages, from the Mall's address: asked by NE in www's frame; the answer as a Response)
+  async function wwwFetch(u, o = {}, path = '/robots.txt') {   // (a request for one of Neopets' own pages, asked by NE in a frame of www: robots.txt's from the Mall's address, or that page's own (fromPage). The answer as a Response)
     const x = new URL(typeof u === 'string' ? u : u.url, location.href), method = String(o.method || 'GET').toUpperCase(), b = o.body;
     let body = null;
     if (b == null) body = null;
@@ -163,18 +167,36 @@
     else if (b instanceof URLSearchParams) body = { k: 'url', v: [...b] };
     else if (b instanceof FormData) body = { k: 'form', v: [...b].filter(([, v]) => typeof v === 'string') };
     else throw new TypeError('Failed to fetch (a body NE can’t pass on)');
-    const port = await wwwOpen();
+    const port = await wwwOpen(path), k = wwwFrames.get(path);
+    k.n++;
+    clearTimeout(k.bye);
     return new Promise((done, fail) => {
       const id = ++wwwSeq, tm = setTimeout(() => { wwwWait.delete(id); fail(new TypeError('Failed to fetch (no answer)')); }, 30000);
       wwwWait.set(id, { done, fail, tm });
-      port.postMessage({ id, url: x.pathname + x.search, method, headers: Object.fromEntries(new Headers(o.headers || {})), body, cache: o.cache || 'default' });
-    });
+      port.postMessage(o.page ? { id, page: 1 } : { id, url: x.pathname + x.search, method, headers: Object.fromEntries(new Headers(o.headers || {})), body, cache: o.cache || 'default' });
+    }).finally(() => { if (--k.n === 0 && path !== '/robots.txt') k.bye = setTimeout(() => wwwShut(path), 120000); });   // (a page's frame kept two minutes after its last request, then put away)
   }
-  function wwwRelay() {   // (www's frame on the Mall's page: NE here only asks for what NE on the Mall's page sends, once it has shown the secret)
-    const MALL = 'https://ncmall.neopets.com';
+  // Requests Neopets takes only from one of its own pages (a theme saved in General Settings, a Neomail sent, a Neofriend request; it says
+  // "directed to this page from the wrong place" otherwise): made from that page itself, opened unseen in a frame of NE's own with NE only
+  // relaying there, so they carry that page as their referrer because they truly come from it. Already on that page: from here
+  function fromPageOk(p) { return /^\/(?:settings\/general\/|neomessages\.phtml|neofriend_requests\.phtml)$/.test(p); }
+  const fromHere = (page) => !ON_MALL && !FRAME && location.pathname + location.search === page;
+  const fromPage = (page, u, o) => (fromHere(page) ? fetch(u, o) : wwwFetch(u, o, page));
+  const fromPageHtml = (page) => (fromHere(page) ? Promise.resolve(document.documentElement.outerHTML) : wwwFetch(page, { page: 1 }, page).then((r) => r.text()));   // (the page as it is there: nothing asked for again)
+  function wwwShut(path) {   // (a page's frame put away: the next request opens it afresh)
+    const k = wwwFrames.get(path);
+    if (!k || k.n) return;
+    clearTimeout(k.bye);
+    if (k.ch) k.ch.port1.close();
+    if (k.f) k.f.remove();
+    k.port = null; k.f = null; k.ch = null;
+  }
+  function wwwRelay() {   // (a frame of www NE asks from: robots.txt on the Mall's page, or one of Neopets' own pages anywhere. NE here only asks for what NE in the page around it sends, once it has shown the secret)
+    const MALL = 'https://ncmall.neopets.com', WWW = 'https://www.neopets.com', page = location.pathname !== '/robots.txt';   // (page: its requests carry it as their referrer, as the page's own do; robots.txt's, only Neopets' address)
+    const shown = page ? new Promise((ok) => { const go = () => setTimeout(ok, 500 + Math.random() * 700); if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go, { once: true }); else go(); }) : Promise.resolve();   // (a page: asked from once it's there, and a moment after, as a person would)
     let port = null;
     const hello = (e, tries = 0) => {
-      if (port || e.origin !== MALL || e.source !== window.parent || !e.data || e.data.bnpRelay !== 'hello' || !e.ports || !e.ports[0]) return;
+      if (port || (e.origin !== MALL && e.origin !== WWW) || e.source !== window.parent || !e.data || e.data.bnpRelay !== 'hello' || !e.ports || !e.ports[0]) return;
       let tok = '';
       try { tok = (GM_getValue('bnp3:relaytok') || {}).t || ''; } catch (_) { tok = ''; }
       if (!tok || e.data.tok !== tok) { if (tries < 15) setTimeout(() => hello(e, tries + 1), 200); return; }   // (NE's storage may take a moment to show the Mall page's new secret here)
@@ -182,19 +204,20 @@
       port.onmessage = async (m) => {
         const q = m.data || {}, back = (o) => { try { port.postMessage({ id: q.id, ...o }); } catch (_) { /* */ } };
         try {
+          if (q.page) { back(page ? { ok: true, status: 200, url: location.href.split('#')[0], redirected: false, type: 'text/html', text: document.documentElement.outerHTML } : { err: 'not a page' }); return; }   // (the page itself, as it is here: nothing asked for again)
           if (typeof q.url !== 'string' || !/^\/(?!\/)/.test(q.url) || !/^(GET|POST)$/.test(q.method || 'GET')) { back({ err: 'not one of Neopets’ pages' }); return; }
           let body;
           if (q.body && q.body.k === 'text') body = q.body.v;
           else if (q.body && q.body.k === 'url') body = new URLSearchParams(q.body.v);
           else if (q.body && q.body.k === 'form') { body = new FormData(); for (const [k, v] of q.body.v) body.append(k, v); }
-          const r = await window.fetch(q.url, { method: q.method || 'GET', headers: q.headers || {}, body, credentials: 'include', referrerPolicy: 'strict-origin', cache: q.cache || 'default' });
+          const r = await window.fetch(q.url, { method: q.method || 'GET', headers: q.headers || {}, body, credentials: 'include', ...(page ? {} : { referrerPolicy: 'strict-origin' }), cache: q.cache || 'default' });
           back({ ok: r.ok, status: r.status, url: r.url, redirected: r.redirected, type: r.headers.get('content-type') || '', text: await r.text() });
         } catch (err) { back({ err: String((err && err.message) || err).slice(0, 200) }); }
       };
-      port.postMessage({ ready: 1 });
+      shown.then(() => { try { port.postMessage({ ready: 1 }); } catch (_) { /* */ } });
     };
     addEventListener('message', (e) => hello(e));
-    try { window.parent.postMessage({ bnpRelay: 'up' }, MALL); } catch (_) { /* */ }
+    for (const to of [MALL, WWW]) { try { window.parent.postMessage({ bnpRelay: 'up' }, to); } catch (_) { /* */ } }   // (to the page around it, the Mall's or www's: the other never hears it)
   }
   const report = (e) => { try { console.warn(`[${APP}]`, e); } catch (_) { /* */ } };
   const uid = () => 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
@@ -12904,8 +12927,8 @@
     nmw.err.hidden = !msg;
     if (el) el.focus();
   }
-  async function nmSendNow(to, subject, body) {   // (a Neomail sent as Neopets' own page sends it; its answer read: '' once it's gone, or what's wrong)
-    const r = await fetch('/process_neomessages.phtml', { method: 'POST', credentials: 'include', body: new URLSearchParams({ recipient: to, neofriends: '', subject, message_type: 'notitle', message_body: body }) });
+  async function nmSendNow(to, subject, body) {   // (a Neomail sent from Neopets' own Send page (fromPage), as that page sends one; its answer read: '' once it's gone, or what's wrong)
+    const r = await fromPage('/neomessages.phtml?type=send', '/process_neomessages.phtml', { method: 'POST', credentials: 'include', body: new URLSearchParams({ recipient: to, neofriends: '', subject, message_type: 'notitle', message_body: body }) });
     const doc = nmDoc(await r.text());
     if (/\/login\b/.test(new URL(r.url || location.href).pathname) || doc.querySelector('form[action*="login"] input[type="password"]')) return 'Neopets has logged you out. Log in again, then send it: what you’ve written is kept.';
     const em = doc.querySelector('.errormess');
@@ -13129,7 +13152,8 @@
   }
   async function nclRead(id, d, rd, href) {   // (one Neomail, read as Neopets shows it: who, when, the subject, the message, and what you'd written it was a reply to. rd: already read on Neopets; href: the Inbox's own link to it)
     const own = typeof href === 'string' && /^\/neomessages\.phtml\?type=read_message&/.test(href) && href.includes(`id=${id}`) ? href : '';
-    const r = await fetch(own || `/neomessages.phtml?type=read_message&folder=Inbox&id=${encodeURIComponent(id)}`, { credentials: 'include' });   // (as a click in your Inbox opens it)
+    const link = own || `/neomessages.phtml?type=read_message&folder=Inbox&id=${encodeURIComponent(id)}`;
+    const r = await fetch(rd || /[?&]delevent=/.test(link) ? link : `${link}&delevent=yes`, { credentials: 'include' });   // (one not read yet on Neopets: as its alert opens it, so Neopets clears that alert, as before 4.4; one read already: as your Inbox opens it)
     if (!r.ok) throw new Error(`Neopets answered ${r.status}`);   // (read again at the next look, never put aside)
     const doc = nmDoc(await r.text());
     if (/\/login\b/.test(new URL(r.url || location.href).pathname) || doc.querySelector('form[action*="login"] input[type="password"]')) throw new Error('logged out');
@@ -13948,16 +13972,17 @@
     say.textContent = 'Sending…';
     let bad = '';
     try {
-      const page = nmDoc(await (await fetch('/neofriend_requests.phtml', { credentials: 'include' })).text());
+      const page = nmDoc(await fromPageHtml('/neofriend_requests.phtml'));   // (Neopets' Neofriends page, opened unseen: its token, as a person there has it)
       try { nfReqRead(page); } catch (e) { report(e); }   // (its requests waiting, seen while there)
       const ck = (page.querySelector('input[name="_ref_ck"]') || {}).value || '';
       if (!ck) bad = page.querySelector('form[action*="login"] input[type="password"]') ? 'Log in to Neopets first.' : 'Neopets’ Neofriends page didn’t answer as it should: try again in a moment.';
       else {
-        const r = await fetch('/process_neofriend_requests.phtml', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ neofriend_add: name, dowhat: 'add_single_neofriend', _ref_ck: ck }).toString() });
+        const r = await fromPage('/neofriend_requests.phtml', '/process_neofriend_requests.phtml', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ neofriend_add: name, dowhat: 'add_single_neofriend', _ref_ck: ck }).toString() });
         const done = nmDoc(await r.text()), err = done.querySelector('.errormess');
         if (err) bad = reClean(err.textContent).replace(/^error:\s*/i, '');
       }
     } catch (e) { report(e); bad = 'Neopets didn’t answer, so it may not have gone: try again in a moment.'; }
+    wwwShut('/neofriend_requests.phtml');   // (put away: a later request reads the page afresh)
     if (bad) { say.textContent = bad; ask.classList.add('is-bad'); const no = ask.querySelector('[data-ncl="nfno"]'); no.disabled = false; no.textContent = 'OK'; ask.querySelector('[data-ncl="nfyes"]').remove(); return; }
     const v = nbJson(acctKey('bnp-nf-pend'), {}) || {};
     v[k] = Date.now();
@@ -29653,8 +29678,8 @@
     s.src = js;
     (document.head || document.documentElement).append(s);
   }
-  // (sent as from General Settings itself: Neopets only takes them from there, "directed to this page from the wrong place" otherwise)
-  const themePost = (u, body, form) => fetch(u, { method: 'POST', credentials: 'include', headers: form ? { 'x-requested-with': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' } : { 'x-requested-with': 'XMLHttpRequest' }, body }).then((r) => { if (!r.ok) throw new Error(`Neopets answered ${r.status}`); return r.text(); }).then((t) => { try { return JSON.parse(t); } catch (_) { throw new Error(/wrong place/i.test(t) ? 'Neopets wouldn’t take it from this page' : 'Neopets answered with a page, not the setting'); } });
+  // (asked from General Settings itself (fromPage): Neopets only takes a theme saved from there, "directed to this page from the wrong place" otherwise)
+  const themePost = (u, body, form) => fromPage('/settings/general/', u, { method: 'POST', credentials: 'include', headers: form ? { 'x-requested-with': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' } : { 'x-requested-with': 'XMLHttpRequest' }, body }).then((r) => { if (!r.ok) throw new Error(`Neopets answered ${r.status}`); return r.text(); }).then((t) => { try { return JSON.parse(t); } catch (_) { throw new Error(/wrong place/i.test(t) ? 'Neopets wouldn’t take it from this page' : 'Neopets answered with a page, not the setting'); } });
   async function themeSave(id) {   // General Settings, read; then saved with every setting as it was, the theme changed
     const body = await themeForm(id);
     const r = await themePost('/np-templates/ajax/settings/general/general_save.php', body.toString(), true);
@@ -43168,6 +43193,11 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.4.1', '2026-10-30', [
+      'Switching your theme works again',
+      'NeoChat sends Neomail again, and Neofriend requests go through',
+      'Neopets’ Neomail alerts clear once NeoChat has shown you the message',
+    ]],
     ['4.4', '2026-10-30', [
       'Settings made over: a shorter side list with tabs, each page’s name in a band of your theme’s colour, and Find always in reach',
       'Stamp Album: New for your album folds into one line, with how many are still to get',
@@ -43537,7 +43567,7 @@
       for (const k of ['fquest', 'fqfold']) GM_addValueChangeListener(KEY + k, (n, o, v, remote) => { if (remote) paintFq(); });   // (your faerie quest, changed in another tab)
     } catch (_) { /* */ }
   }
-  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { wwwAsk: (u, o) => fetch(u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }), (e) => ({ err: String(e && e.message) })), ncValue, remSoundOnce, sa: () => sa, saKnown, saState, saMarksLoad, saMark, saMineLoad, itSsw, sswPanel, mark: (id, how) => dailyMark(id, how || { full: true }), dstate: (id) => { const d = dailyById(id); return d ? dailyState(d) : null; }, dlogNow: () => dlog(), dproof: DAILY_PROOF, remEvents: (a, b, c) => remEvents(a, b, c).map((e) => ({ key: e.key, at: e.at, kind: e.kind, title: e.title, text: e.textNow ? e.textNow() : e.text })), remSchedule, remPerOn: (id) => remPerOn(dailyById(id)), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbLivePill, pageSay, nbSay, toast, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, themeChanged, nclUnhold: () => new Promise((r) => { if (nclHoldEnd) { nclHoldEnd(); setTimeout(r, 80); } else r(); }), nclOpen, nclMin, nclTell, nclFold, myMainColour, myColouriseShift, myColoursNow, myAll: () => S.myThemes, myTurnNow: () => myTurn, soundDraw, nclGlance, captureChrome, acctCheck, dlog, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
+  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { wwwAsk: (u, o) => fetch(u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }), (e) => ({ err: String(e && e.message) })), fromAsk: (p, u, o) => (p === 'html' ? fromPageHtml(u).then((t) => ({ text: t.slice(0, 300) })) : fromPage(p, u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }))).catch((e) => ({ err: String(e && e.message) })), wwwShut, nmSendNow, ncValue, remSoundOnce, sa: () => sa, saKnown, saState, saMarksLoad, saMark, saMineLoad, itSsw, sswPanel, mark: (id, how) => dailyMark(id, how || { full: true }), dstate: (id) => { const d = dailyById(id); return d ? dailyState(d) : null; }, dlogNow: () => dlog(), dproof: DAILY_PROOF, remEvents: (a, b, c) => remEvents(a, b, c).map((e) => ({ key: e.key, at: e.at, kind: e.kind, title: e.title, text: e.textNow ? e.textNow() : e.text })), remSchedule, remPerOn: (id) => remPerOn(dailyById(id)), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbLivePill, pageSay, nbSay, toast, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, themeChanged, nclUnhold: () => new Promise((r) => { if (nclHoldEnd) { nclHoldEnd(); setTimeout(r, 80); } else r(); }), nclOpen, nclMin, nclTell, nclFold, myMainColour, myColouriseShift, myColoursNow, myAll: () => S.myThemes, myTurnNow: () => myTurn, soundDraw, nclGlance, captureChrome, acctCheck, dlog, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
   if (FRAME) { lookFrame(); return; }   // (the "Your look" window's page: Neoboard Settings alone, in the boards' look)
   // A page this makes over is never seen first as it was: the top bar is made over as soon as it's all there (Neopets puts it, the side
   // menu and their drop-downs before the page's own box, so that's before anything is drawn), and a page whose own layout changes much

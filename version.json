@@ -1,10 +1,9 @@
 {
- "version": "4.4",
+ "version": "4.4.1",
  "date": "2026-10-30",
  "notes": [
-  "Settings made over: tabs, theme-coloured page bands, Find always in reach",
-  "NC Mall: the Dyeworks aisle has what’s in the Dyeworks now; Dyeworks gets Current only",
-  "Shop Wizard: you press Search; Closet: moves show at once",
-  "Neoboard Settings laid out right again"
+  "Switching your theme works again",
+  "NeoChat sends Neomail and Neofriend requests again",
+  "Neomail alerts clear once NeoChat has shown you the message"
  ]
 }
