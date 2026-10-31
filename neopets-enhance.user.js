@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.7
+// @version      4.8
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -306,7 +306,7 @@
     ['puzzle', 'Daily Puzzle', '/community/index.phtml', 'free', '', [AV('ava_puzzle_addict.gif')], 'day', 'Once a day'],
     ['neggcave', 'Negg Cave', '/shenkuu/neggcave/', 'free', 'shenkuu', [AV('neggenigma.gif')], 'day', 'Once a day'],
     ['symol', 'Symol Hole', '/medieval/symolhole.phtml', 'timers', 'meridell', [AV('symol.gif')], 'day', 'Once a day, in a 4-minute window each hour (needs a petpet)', 'l'],
-    ['fishing', 'Underwater Fishing', '/water/fishing.phtml', 'timers', 'maraqua', [AV('ava_fishing_vortex.gif')], 'any', 'Any time: catches are random'],
+    ['fishing', 'Underwater Fishing', '/water/fishing.phtml', 'timers', 'maraqua', [AV('ava_fishing_vortex.gif')], 'any', 'Each pet once a day, a day after its last catch'],
     ['tarlatb', 'Tarla\'s Treasures', '/freebies/tarlastoolbar.phtml', 'free', '', [IT('toy_tarla_squirty.gif')], 'day', 'Random days and times', 'v'],
     ['hwhunt', 'Haunted Woods Hunt', '/halloween/haunted_woods_hunt.phtml', 'free', 'hauntedwoods', [IT('gif_lantern_spooky.gif')], 'day', 'Once a day, twice with Premium'],
     ['beast', 'Lair of the Beast', '/prehistoric/thebeast.phtml', 'pets', 'tyrannia', [AV('ava_lairbeast.gif')], 'day', 'Once a day (after The Void Within)', 'l'],
@@ -1630,6 +1630,7 @@
     for (const [id, p] of Object.entries(DAILY_PROOF)) {
       for (const r of p.ajax || []) {
         if (!r.u.test(h.u) || (r.post && !r.post.test(h.post || '')) || (r.page && !r.page.test(location.pathname)) || (r.after === 'pending' && !dailyPendHere.has(id))) continue;
+        if (id === 'coconut' && Date.now() - cocoOwnAt < 5000) continue;   // (a throw NE made from the Shy's own page: counted there already)
         let ok = false;
         try { ok = !!r.when(j, h.text); } catch (_) { ok = false; }
         if (!ok) continue;
@@ -1771,7 +1772,7 @@
   // Settings (and 2.1's, carried over the first time)
   // ═══════════════════════════════════════════════════════════════════════════
   const FEAT = {
-    profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, noAds: true, tillLog: true, tpSales: true, auSales: true,
+    profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, tillLog: true, tpSales: true, auSales: true,
     scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: true, oldBtns: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldGalleries: false, oldShops: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
     updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
@@ -3530,6 +3531,15 @@
       const at = base + Math.max(1, Math.ceil((now - 20 * 60000 - base) / step)) * step;
       add({ key: `backup:${at}`, at, kind: 'backup', title: last ? 'Time for a backup' : 'Save a backup of your settings', text: last ? `Your last one was ${Math.max(1, Math.round((at - last) / DAY_MS))} days ago. One small file keeps your menus, themes and settings safe.` : 'Your menus, themes and settings live only in this browser: one small file keeps them safe.', icon: iconOf(['side:/settings/', 'el:#navprofiledropdown__2020 .nav-settings-icon']), hub: 'backup', sound: 'chime' });
     }
+    if (R.fish !== false) {   // (Underwater Fishing: each pet whose bell is on, the hours you chose after its last catch; pets due within 15 minutes of each other in one note)
+      const f = fishKeep(), W = fishWait(f), due = Object.keys(f.rem).filter((n) => f.rem[n] && f.pets[n] && f.pets[n].at).map((n) => ({ n, at: f.pets[n].at + W })).sort((x, y) => x.at - y.at);
+      for (let i = 0; i < due.length;) {
+        const first = due[i], group = [];
+        while (i < due.length && due[i].at - first.at <= 15 * 60000) group.push(due[i++]);
+        const names = group.map((g) => g.n), at = group[group.length - 1].at;
+        add({ key: `fish:${names.join(',')}:${first.at}`, at, kind: 'fish', title: names.length === 1 ? `${names[0]} can fish again` : `${names.length} pets can fish again`, text: `Underwater Fishing: ${names.length === 1 ? '' : `${fishNames(names)}, `}${f.delay} hours since ${names.length === 1 ? 'its' : 'their'} last catch.`, icon: fishIcon(names[0]), href: `/water/fishing.phtml#fish=${encodeURIComponent(names[0])}`, sound: 'chime' });
+      }
+    }
     for (const s of get('remsnooze', []) || []) if (s && s.key) add({ ...s, kind: s.kind === 'ready' ? 'later' : s.kind || 'later', ...(Array.isArray(s.dids) && s.dids.length ? { check: () => s.dids.some((id) => { const d = dailyById(id); return !!d && dailyReady(d); }) } : {}), ...(s.kind === 'snow' && s.until ? { check: snowCheck(s.start || 0, s.until) } : {}) });   // ("In 10 minutes": the Snowager's only while it's still asleep and you haven't been)
     for (const c of R.custom || []) {   // (your own)
       let at = 0;
@@ -3614,6 +3624,7 @@
     if (n.kind === 'fc') { const d = dailyById('foodclub'); return !d || dailyReady(d); }
     if (n.kind === 'dayend') return remDayLeft().length > 0;
     if (n.kind === 'backup') return !(Number(get('bkat', 0)) > (n.at || 0));
+    if (n.kind === 'fish') { const f = fishKeep(), W = fishWait(f); return (String((n.keys || [])[0] || '').split(':')[1] || '').split(',').some((name) => { const r = f.pets[name]; return !(r && r.at && r.at + W > Date.now()); }); }   // (one of those pets hasn't fished again since)
     return true;
   }
   const remDayLeft = () => trackedDailies().filter((d) => d.rule.kind === 'day' && !dailyTimely(d) && d.id !== 'foodclub' && dailyReady(d)).sort((a, b) => (b.id === 'trudy') - (a.id === 'trudy'));   // (still to do today (a Premium try left is one), Trudy's streak first; Food Club's day isn't this one)
@@ -6897,28 +6908,572 @@
     const btn = document.getElementById('bob_button');
     if (btn) { btn.classList.add('bnp-bob-used'); btn.title = 'Already bobbed today'; }
   }
-  function cocoFront() {   // (the Coconut Shy's own page: today's throws; a throw from here at the coconut you threw at last)
+  let cocoOwnAt = 0;   // (when NE last threw from the Shy's own page: that answer is counted there, never heard and counted again)
+  const cocoTo = (u) => { const m = /\/halloween\/process_cocoshy\.phtml\?(?:[^#]*&)?coconut=(\d+)/.exec(String(u || '')); return m ? `/halloween/process_cocoshy.phtml?coconut=${m[1]}` : ''; };   // (a throw's address: just its coconut, as the quick link has it)
+  function cocoFront() {   // (the Coconut Shy's own page, throwing as the quick link does (user, 2026-10-31): today's throws, a throw from here at the coconut you threw at last, its answer shown in place; the page's own game's throws heard and shown too)
     if (FRAME || location.pathname !== '/halloween/coconutshy.phtml') return;
     const td = document.querySelector('td.content');
     if (!td || td.querySelector('[data-bnp="cocofront"]')) return;
-    const day = nstOf(Date.now()).day, kept0 = get(dkey().replace(/^dlog/, 'cocoday'), null), kept = kept0 && kept0.day === day && Array.isArray(kept0.t) ? kept0 : { day, t: [] };
-    const throws = kept.t.length, won = kept.t.reduce((n, x) => n + (Number(x[1]) || 0), 0), spent = throws * 100, net = won - spent, next = nextNstMidnight(Date.now());
-    const out = /had your lot of throws/i.test(td.textContent) || throws >= 20, to = kept0 && /^\/halloween\/process_cocoshy\.phtml\?coconut=\d+$/.test(kept0.u || '') ? kept0.u : '';
-    const sign = (n) => `${n > 0 ? '+' : n < 0 ? '−' : '±'}${Math.abs(n).toLocaleString()} NP`;
-    const strip = kept.t.map(([sc, p], i) => `<i class="is-${sc === 1 ? 'miss' : sc === 2 ? 'wobble' : sc === 3 ? 'near' : 'prize'}" title="Throw ${i + 1}: ${sc === 1 ? 'missed' : `+${Number(p).toLocaleString()} NP`}"></i>`).join('') + '<i class="is-left"></i>'.repeat(Math.max(0, 20 - throws));
     const card = document.createElement('div');
     card.className = 'bnp-coco is-front';
     card.setAttribute('data-bnp', 'cocofront');
-    card.innerHTML = `<p class="bnp-coco-more">${out ? `No more throws today · new ones at ${esc(fmtNst(next))} NST (in ${esc(fmtLeft(next - Date.now()))})` : throws ? `${throws} of 20 thrown today` : 'No throws yet today: 20 to go'}</p>
-      <div class="bnp-coco-strip" aria-label="Today’s throws">${strip}</div>
-      ${throws ? `<p class="bnp-coco-tot">Spent ${spent.toLocaleString()} NP · Won ${won.toLocaleString()} NP · <b class="${net >= 0 ? 'is-up' : 'is-down'}">${sign(net)}</b> today</p>` : ''}
-      ${!out && to ? `<div class="bnp-coco-acts"><button type="button" class="button-default__2020 button-yellow__2020" data-coco="throw">Throw (100 NP)</button></div><p class="bnp-coco-note">At the coconut you threw at last; each press is one throw.</p>` : ''}`;
     const keeper = td.querySelector('center');
     if (keeper) keeper.before(card); else td.prepend(card);
-    const go = card.querySelector('[data-coco="throw"]');
-    if (go) go.addEventListener('click', () => { go.disabled = true; go.textContent = 'Throwing…'; location.assign(to); });   // (one press, one throw; held down till the next page comes)
+    const st = { last: null, busy: false, msg: '', out: /had your lot of throws/i.test(td.textContent) };
+    const keep = () => { const day = nstOf(Date.now()).day, k = dkey().replace(/^dlog/, 'cocoday'), v = get(k, null); return { k, v: v && v.day === day && Array.isArray(v.t) ? v : { day, t: [], ...(v && v.u ? { u: v.u } : {}) } }; };   // (its coconut kept across days)
+    const sign = (n) => `${n > 0 ? '+' : n < 0 ? '−' : '±'}${Math.abs(n).toLocaleString()} NP`;
+    const paint = () => {
+      const { v } = keep(), throws = v.t.length, won = v.t.reduce((n, x) => n + (Number(x[1]) || 0), 0), spent = throws * 100, net = won - spent, next = nextNstMidnight(Date.now());
+      const out = st.out || throws >= 20, to = cocoTo(v.u), r = st.last;
+      const kind = !r ? '' : r.success === 0 ? 'none' : r.success === 1 ? 'miss' : r.success === 2 ? 'wobble' : r.success === 3 ? 'near' : 'prize';
+      const strip = v.t.map(([sc, p], i) => `<i class="is-${sc === 1 ? 'miss' : sc === 2 ? 'wobble' : sc === 3 ? 'near' : 'prize'}" title="Throw ${i + 1}: ${sc === 1 ? 'missed' : `+${Number(p).toLocaleString()} NP`}"></i>`).join('') + '<i class="is-left"></i>'.repeat(Math.max(0, 20 - throws));
+      card.innerHTML = `${r ? `<div class="bnp-coco-res is-${kind}" role="status"><b>${esc(r.msg)}</b>${r.success >= 1 ? `<span>${r.points ? `+${r.points.toLocaleString()} NP` : 'No prize'}</span>` : ''}</div>` : ''}
+        <p class="bnp-coco-more">${out ? `No more throws today · new ones at ${esc(fmtNst(next))} NST (in ${esc(fmtLeft(next - Date.now()))})` : throws ? `Throw ${throws} of 20 today` : 'No throws yet today: 20 to go'}</p>
+        <div class="bnp-coco-strip" aria-label="Today’s throws">${strip}</div>
+        ${throws ? `<p class="bnp-coco-tot">Spent ${spent.toLocaleString()} NP · Won ${won.toLocaleString()} NP · <b class="${net >= 0 ? 'is-up' : 'is-down'}">${sign(net)}</b> today</p>` : ''}
+        ${st.msg ? `<p class="bnp-coco-note is-err">${esc(st.msg)}</p>` : ''}
+        ${out ? '' : to ? `<div class="bnp-coco-acts"><button type="button" class="button-default__2020 button-yellow__2020" data-coco="throw"${st.busy ? ' disabled' : ''}>${st.busy ? 'Throwing…' : r ? 'Throw again' : 'Throw (100 NP)'}</button></div><p class="bnp-coco-note">At the coconut you threw at last; each press is one throw (100 NP), right here.</p>` : '<p class="bnp-coco-note">Throw at a coconut once and NE remembers it: then each throw can be made from here.</p>'}`;
+      const go = card.querySelector('[data-coco="throw"]');
+      if (go) go.addEventListener('click', throwOnce);
+    };
+    const apply = (m, u, own) => {   // (a throw's answer: shown, kept for today's strip and sums; its coconut remembered)
+      const points = Number(m[1]) || 0, success = Number(m[3]), msg = (() => { try { return decodeURIComponent(m[4].replace(/\+/g, ' ')); } catch (_) { return m[4]; } })(), np = m[2].replace(/[^\d]/g, '');
+      const { k, v } = keep(), to = cocoTo(u);
+      if (success >= 1) v.t.push([success, points, Date.now()]);
+      if (to) v.u = to;
+      set(k, v);
+      st.last = { success, points, msg };
+      if (success === 0) st.out = true;
+      if (own) { try { dailyMark('coconut', success >= 1 ? { proof: 'try', tries: [Math.min(20, v.t.length), 20], log: success > 3 || points > 300 ? `${msg} (+${points.toLocaleString()} NP)` : '' } : { proof: 'limit' }); } catch (e) { report(e); } }   // (the page's own game's: counted where they're heard)
+      if (np) for (const a of $$('#npanchor')) a.textContent = Number(np).toLocaleString();   // (your Neopoints as this throw left them)
+    };
+    async function throwOnce() {   // (one press, one throw: the quick link's address, asked from here)
+      const to = cocoTo(keep().v.u);
+      if (st.busy || !to) return;
+      st.busy = true;
+      st.msg = '';
+      paint();
+      try {
+        cocoOwnAt = Date.now();
+        const res = await fetch(to, { credentials: 'include' });
+        if (/login/i.test(new URL(res.url).pathname)) throw new Error('signed out');
+        const m = COCO_RE.exec((await res.text()).trim());
+        if (!m) throw new Error('unread');
+        apply(m, to, true);
+      } catch (e) { st.msg = /signed out/.test(String(e && e.message)) ? 'You seem to be logged out: log in again, then throw.' : 'Couldn’t throw just now: try again in a moment.'; }
+      st.busy = false;
+      paint();
+      const again = card.querySelector('[data-coco="throw"]');
+      if (again) again.focus();   // (Throw again in your hand: Enter or Space throws)
+    }
+    document.addEventListener('bnp-heard', (e) => {   // (a throw of the page's own game, as it comes)
+      let h = null;
+      try { h = JSON.parse(e.detail); } catch (_) { return; }
+      if (!h || !/\/halloween\/process_cocoshy\.phtml/.test(h.u || '') || Date.now() - cocoOwnAt < 5000) return;
+      const m = COCO_RE.exec(String(h.text || '').trim());
+      if (m) { apply(m, h.u, false); paint(); }
+    });
+    paint();
     for (const b of td.querySelectorAll('form[action*="index_fair"] input[type="submit"]')) b.classList.add('button-default__2020', 'button-yellow__2020', 'bnp-coco-back');
   }
+
+  // Underwater Fishing (the user, 2026-10-31: "Ability to see all your pets and switch them to your active on the page, option to set up
+  // reminder notifications when fishing is up per pet"; "I'd still like the page to be set up extremely well and aesthetically pleasing";
+  // "make it so someone can easily see all their pets even if they have 26 pets"). Each pet fishes once a day, its own 24 hours after its
+  // last catch (SunnyNeo; a cast too soon: "Nothing! Maybe you should be more patient."). The page as read live: Neopets' title bar, the
+  // vortex picture (div.fishing-img: water/fishing.gif, 550×400), its words (#pageDesc), "<pet>'s fishing skill is <b>N</b>." and the form
+  // (POST go_fish=1, "Reel In Your Line"); a catch's answer: "You reel in your line and get...", the prize as div.item-single__2020's
+  // picture, "<b>Name</b>!", "Your pet's fishing skill increases to <b>N</b>!" and "Cast Your Line Again" (a link back). Made over: a band
+  // with the picture and the jetty (your active pet at its size, its skill, Reel In; after a cast, the catch and who's next), then every
+  // pet as a tile, ready or resting, made active by a press, each with a bell for a reminder. The wait between catches isn't known ("a
+  // cooldown period between successful catches, ranging from less than 2 hours to over 24 hours", Jellyneo, via the user): a pet counts as
+  // ready, and its bell rings, the hours you choose after its last catch (24 unless you say)
+  const FISH_CAST = 'bnp-fishcast', FISH_MAX = 500, FISH_DELAYS = [2, 4, 6, 12, 24, 36];
+  const FISH_SKILL = /(\w+)['’]s fishing skill is\s*(\d+)/i;
+  const fishHere = () => location.hostname === 'www.neopets.com' && location.pathname === '/water/fishing.phtml';
+  const fishKey = () => dkey().replace(/^dlog/, 'fish');   // (this account's: { pets: { name: { at (last catch), tried (a cast too soon), skill, item, pic, n } }, rem: { name: true }, delay: hours })
+  const fishKeep = () => { const v = get(fishKey(), null); return { pets: (v && v.pets) || {}, rem: (v && v.rem) || {}, delay: FISH_DELAYS.includes(Number(v && v.delay)) ? Number(v.delay) : 24, string: v && Array.isArray(v.string) ? v.string.filter((n) => typeof n === 'string') : [], back: !(v && v.back === false), v: Number(v && v.v) || 1 }; };   // (string: the pets you fish in a row; back: the pet active before put back after it)
+  const fishWait = (f) => f.delay * 3600000;
+  const fishSet = (v) => { set(fishKey(), v); try { remSchedule(); } catch (e) { report(e); } };
+  const fishBig = (img) => (img ? fullUrl(img).replace(/\/(\d+)\/(\d+)\.png$/, '/$1/4.png') : '');   // (a pet's 300px picture: shown at half or less, so it's crisp)
+  const fishNext = (rec, wait, now = Date.now()) => { const at = rec && rec.at ? rec.at + wait : 0; return at > now ? at : 0; };   // (when it counts as ready again; 0: now)
+  const fishIcon = (name) => { const p = petsNow().find((x) => x.name === name); return p && p.image ? headOf(p.image) : dailyIcon(dailyById('fishing')); };
+  const fishNames = (names) => (names.length <= 3 ? names.join(', ').replace(/, ([^,]*)$/, ' and $1') : `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`);
+  let fishUi = null;   // (this page: { band, jetty, pets, mode ('cast' | 'catch' | 'soon' | 'other'), got: { item, pic, up, pet }, form, busy, msg, show, focus })
+  function fishEarly() {   // (the very start: its look on and your theme's colours, so the bare page never shows first)
+    if (FRAME || !fishHere() || !document.documentElement) return;
+    const root = document.documentElement;
+    root.classList.add('bnp-fish-page', 'bnp-fish-wait');
+    try { nbPaintVars(JSON.parse(localStorage.getItem('bnp-nbtheme') || 'null')); } catch (_) { /* */ }
+    if (!document.getElementById('bnp-fish-style')) { const st = document.createElement('style'); st.id = 'bnp-fish-style'; st.textContent = FISH_CSS; root.append(st); }
+    setTimeout(() => root.classList.remove('bnp-fish-wait'), 6000);   // (whatever happens, the page shows)
+  }
+  function fishSkillEl(doc) {   // (the page's own "Name's fishing skill is N.": the smallest element that holds it)
+    if (!doc.body) return null;
+    const w = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+    for (let t = w.nextNode(); t; t = w.nextNode()) {
+      if (!/fishing skill/i.test(t.nodeValue || '')) continue;
+      let el = t.parentElement;
+      while (el && el !== doc.body && !FISH_SKILL.test(el.textContent || '')) el = el.parentElement;
+      if (el && el !== doc.body && !el.closest('[data-bnp]')) return el;
+    }
+    return null;
+  }
+  function fishSkillSet(el, name, n) {   // (that line made to name another pet and its skill, in place: only its words change)
+    const m = FISH_SKILL.exec(el.textContent || '');
+    if (!m) return;
+    const nodes = [], w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let pos = 0;
+    for (let t = w.nextNode(); t; t = w.nextNode()) { nodes.push([t, pos]); pos += t.nodeValue.length; }
+    for (const [at, len, put] of [[m.index + m[0].length - m[2].length, m[2].length, String(n)], [m.index, m[1].length, name]]) {   // (the later spot first, so the earlier one's place holds)
+      const hit = nodes.find(([t, p]) => at >= p && at + len <= p + t.nodeValue.length);
+      if (hit) hit[0].nodeValue = hit[0].nodeValue.slice(0, at - hit[1]) + put + hit[0].nodeValue.slice(at - hit[1] + len);
+    }
+  }
+  function fishNote(doc, f) {   // (a fishing page's word on the active pet's skill: true when it's news)
+    const el = fishSkillEl(doc), m = el && FISH_SKILL.exec(el.textContent || '');
+    if (!m) return false;
+    const rec = f.pets[m[1]] || (f.pets[m[1]] = {}), n = Number(m[2]);
+    if (rec.skill === n) return false;
+    rec.skill = n;
+    return true;
+  }
+  function fishRead(box) {   // (what this page is: the jetty with its form, a catch, a cast too soon, or something else; and what it says)
+    const text = reClean(box.textContent || ''), form = [...box.querySelectorAll('form')].find((x) => x.querySelector('input[name="go_fish"]'));
+    const tile = box.querySelector('.item-single__2020'), pic = tile ? ((/url\((['"]?)(.+?)\1\)/.exec(tile.style.backgroundImage || '') || [])[2] || '') : '';
+    let item = '';
+    for (let n = tile && tile.nextElementSibling; n && !item; n = n.nextElementSibling) { const b = n.querySelector && n.querySelector('b'); if (b) item = reClean(b.textContent); }
+    const prize = /\/items\//i.test(pic), up = /fishing skill increases to\s*(\d+)/i.exec(text);
+    const mode = form ? 'cast' : /be more patient/i.test(text) || (/(?:^|\s)Nothing!/.test(text) && !prize) ? 'soon' : prize ? 'catch' : /reel in your line/i.test(text) ? 'soon' : 'other';   // (its words first: "Nothing! Maybe you should be more patient." comes with a picture of the pet, not a prize; a catch's picture is an item's)
+    const said = mode === 'soon' ? ([...box.querySelectorAll('p, b')].map((x) => reClean(x.textContent || '')).find((x) => x && !/reel in your line|fishing skill/i.test(x) && /nothing|patient|empty|nibble|bite|again/i.test(x)) || '') : '';   // (its own words for it)
+    return { mode, form, text, item: mode === 'catch' ? item : '', said, pic: mode === 'catch' && pic ? fullUrl(pic) : '', up: up ? Number(up[1]) : null };
+  }
+  function fishPage() {
+    if (FRAME || !fishHere() || !document.body || document.querySelector('[data-bnp="fishband"]')) return;
+    const root = document.documentElement, box = document.getElementById('container__2020') || document.querySelector('.container');
+    if (!box) { root.classList.remove('bnp-fish-wait'); return; }
+    const f = fishKeep(), got = fishRead(box);
+    let changed = fishNote(document, f), cast = null;
+    if (f.v < 3) {   // (once: an answer with nothing on the line was read as a catch before; one kept with no item, or a picture that isn't an item's, wasn't one)
+      for (const rec of Object.values(f.pets)) if (rec && rec.at && !(rec.item && /\/items\//i.test(rec.pic || ''))) { rec.tried = Math.max(rec.tried || 0, rec.at); delete rec.at; delete rec.item; delete rec.pic; rec.n = Math.max(0, (rec.n || 1) - 1); }
+      f.v = 3;
+      changed = true;
+    }
+    try { cast = JSON.parse(sessionStorage.getItem(FISH_CAST) || 'null'); } catch (_) { cast = null; }
+    if (cast) {
+      try { sessionStorage.removeItem(FISH_CAST); } catch (_) { /* */ }
+      const nav = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || {};
+      if (cast.pet && Date.now() - cast.at < 180000 && nav.type !== 'back_forward' && (got.mode === 'catch' || got.mode === 'soon')) {   // (this page is that cast's answer)
+        const rec = f.pets[cast.pet] || (f.pets[cast.pet] = {});
+        if (got.mode === 'soon') rec.tried = cast.at;   // (too soon: its day still runs from its last catch)
+        else { rec.at = cast.at; rec.n = (rec.n || 0) + 1; if (got.item) { rec.item = got.item; rec.pic = got.pic; } }
+        if (got.up != null) rec.skill = got.up;
+        got.pet = cast.pet;
+        changed = true;
+      }
+    }
+    if (changed) fishSet(f);
+    if (!got.pet) { const a = activePet(); got.pet = a ? a.name : ''; }
+    const title = box.querySelector('.page-title__2020');
+    const band = document.createElement('section');
+    band.className = 'bnp-fish-band';
+    band.setAttribute('data-bnp', 'fishband');
+    band.innerHTML = '<div class="bnp-fish-art"></div><div class="bnp-fish-jetty" data-fish-jetty></div>';
+    const pets = document.createElement('section');
+    pets.className = 'bnp-fish-pets';
+    pets.setAttribute('data-bnp', 'fishpets');
+    if (title) title.after(band, pets); else box.prepend(band, pets);
+    const art = box.querySelector('.fishing-img');
+    if (art) band.querySelector('.bnp-fish-art').append(art);
+    else band.querySelector('.bnp-fish-art').innerHTML = `<div class="fishing-img bnp-fish-img" style="background-image:url('${esc(`${NPI}water/fishing.gif`)}')"></div>`;   // (an answer page has none: the same picture of Neopets')
+    const words = box.querySelector('#pageDesc');
+    if (words) { words.classList.add('bnp-fish-words'); band.append(words); }
+    for (const el of [...box.children]) if (el !== band && el !== pets && el !== title && !el.matches('link, script, style, #navsub-buffer__2020')) el.classList.add('bnp-fish-gone');   // (Neopets' own bits, now in the band: kept, out of sight)
+    fishUi = { band, jetty: band.querySelector('[data-fish-jetty]'), pets, mode: got.mode, got, form: got.form || null, back: [...box.querySelectorAll('a[href="/water/fishing.phtml"]')].find((a) => a.querySelector('button')) || null, busy: '', msg: '', show: (() => { try { return localStorage.getItem('bnp-fish-show') || 'all'; } catch (_) { return 'all'; } })(), focus: '' };
+    const want = /^#fish=(.+)$/.exec(location.hash);
+    if (want) { try { fishUi.focus = decodeURIComponent(want[1]); } catch (_) { /* */ } }
+    band.addEventListener('click', fishClick);
+    pets.addEventListener('click', fishClick);
+    pets.addEventListener('change', fishChange);
+    fishPaint();
+    root.classList.remove('bnp-fish-wait');
+    if (fishUi.focus) { const t = pets.querySelector(`[data-fish-pet="${CSS.escape(fishUi.focus)}"]`); if (t) t.scrollIntoView({ block: 'center' }); }
+    setInterval(() => { if (!document.hidden && !fishUi.busy && !fishUi.running) fishPaint(); }, 30000);
+    if (!petsNow().length) loadPets(false).then(fishPaint, fishPaint);   // (no pets kept yet: My Pets read once, unseen)
+    const run = fishRunGet();
+    if (run && !run.paused) {   // (a string under way: on from this page, if it's the one the run itself opened a moment ago)
+      if (run.go && Date.now() - run.go < 120000) setTimeout(() => fishRunGo(run).catch(report), 300 + Math.random() * 500);
+      else fishRunPause(run, 'away');
+    }
+  }
+  // Fish in a row: the pets you choose, one after another, each as you'd fish it yourself
+  const FISH_RUN = 'bnp-fishrun';
+  function fishRunGet() { try { const r = JSON.parse(sessionStorage.getItem(FISH_RUN) || 'null'); return r && r.v === 1 && Array.isArray(r.list) && Date.now() - (r.at || 0) < 6 * 3600000 ? r : null; } catch (_) { return null; } }   // (this tab's, a few hours at most)
+  function fishRunSet(r) { try { if (r) { r.at = Date.now(); sessionStorage.setItem(FISH_RUN, JSON.stringify(r)); } else sessionStorage.removeItem(FISH_RUN); } catch (_) { /* */ } }
+  const fishGap = (k) => (k === 'cast' ? 2500 + Math.random() * 2500 : k === 'switch' ? 3000 + Math.random() * 3500 : 1200 + Math.random() * 1800) + (Math.random() < 0.2 ? 2000 + Math.random() * 4000 : 0);   // (a person's moment: before a cast, before the next pet, before the page; now and then a longer breath)
+  async function fishRunWait(ms) {   // (that moment, counted only while this tab is in front; false: stopped meanwhile)
+    let left = ms;
+    while (left > 0) {
+      if (fishUi.stop) return false;
+      if (document.hidden) { fishUi.away = true; fishPaint(); await untilShown(); fishUi.away = false; fishPaint(); continue; }
+      const step = Math.min(250, left);
+      await new Promise((ok) => setTimeout(ok, step));
+      left -= step;
+    }
+    return !fishUi.stop;
+  }
+  function fishRunPause(run, why, who = '') { Object.assign(run, { paused: true, why, who }); delete run.go; fishRunSet(run); if (fishUi) { fishUi.stop = false; fishPaint(); } }
+  function fishRunStart() {   // (Start: the string in My Pets' order, from the pet on the jetty if it's in it)
+    const f = fishKeep(), list = petsNow().map((p) => p.name).filter((n) => f.string.includes(n));
+    if (!list.length || !fishUi || fishUi.running) return;
+    const me = (activePet() || {}).name || '';
+    if (list.includes(me)) list.unshift(...list.splice(list.indexOf(me), 1));   // (the one already there goes first: no switch for it)
+    const run = { v: 1, list, i: 0, step: 'switch', orig: me, got: [] };
+    Object.assign(fishUi, { choosing: false, stop: false, msg: '' });
+    fishRunSet(run);
+    fishRunGo(run).catch(report);
+  }
+  async function fishRunGo(run) {   // (the string's next steps, from this page: a step that loads a page ends here, the page it loads carries on)
+    if (!fishUi || fishUi.running) return;
+    fishUi.running = true;
+    fishPaint();
+    try {
+      for (let guard = 0; guard < 8 && run && !run.paused; guard++) {
+        const me = (activePet() || {}).name || '', want = run.list[run.i];
+        if (run.step === 'read') {   // (this page: the last cast's answer)
+          if (fishUi.mode !== 'catch' && fishUi.mode !== 'soon') { fishRunPause(run, 'odd', want); return; }
+          const g = fishUi.got;
+          run.got.push({ pet: want, kind: fishUi.mode, item: g.item || '', pic: g.pic || '', up: g.up });
+          run.i += 1;
+          run.step = run.i < run.list.length ? 'switch' : 'home';
+          fishRunSet(run);
+          fishPaint();
+          continue;
+        }
+        if (run.step === 'switch') {   // (the next pet made active, as Switch Pet makes one)
+          if (me !== want) {
+            if (!await fishRunWait(fishGap('switch'))) { fishRunPause(run, 'stop'); return; }
+            try { await activate(want, (petsNow().find((p) => p.name === want) || {}).image); } catch (e) { fishRunPause(run, /signed out/.test(String(e && e.message)) ? 'out' : 'switch', want); return; }
+            run.moved = true;   // (switched: the page loaded again, as you'd load it, before its cast)
+          }
+          run.step = 'go';
+          fishRunSet(run);
+          fishPaint();
+          continue;
+        }
+        if (run.step === 'go') {   // (the fishing page, loaded as you'd load it, that pet on the jetty)
+          if (fishUi.got.form && fishUi.mode === 'cast' && me === want && !run.moved) { run.step = 'cast'; continue; }   // (already here, with it: the first pet only)
+          if (!await fishRunWait(fishGap('page'))) { fishRunPause(run, 'stop'); return; }
+          Object.assign(run, { step: 'cast', go: Date.now(), moved: true });
+          fishRunSet(run);
+          location.assign('/water/fishing.phtml');
+          return;
+        }
+        if (run.step === 'cast') {   // (Neopets' own Reel In Your Line, pressed)
+          if (!fishUi.got.form) { run.step = 'go'; continue; }
+          if (me !== want) { fishRunPause(run, 'switch', want); return; }
+          if (!await fishRunWait(fishGap('cast'))) { fishRunPause(run, 'stop'); return; }
+          Object.assign(run, { step: 'read', go: Date.now() });
+          fishRunSet(run);
+          const form = fishCastForm();
+          if (form.requestSubmit) form.requestSubmit(); else { form.dispatchEvent(new Event('submit', { cancelable: true })); form.submit(); }
+          return;
+        }
+        if (run.step === 'home') {   // (all done: the pet that was active before, put back, if that's chosen)
+          run.last = me;
+          if (fishKeep().back && run.orig && me !== run.orig && petsNow().some((p) => p.name === run.orig)) {
+            if (await fishRunWait(fishGap('switch'))) { try { await activate(run.orig, (petsNow().find((p) => p.name === run.orig) || {}).image); run.back = true; } catch (_) { run.back = false; } }
+          }
+          Object.assign(run, { paused: true, why: 'done' });
+          delete run.go;
+          fishRunSet(run);
+          return;
+        }
+        return;
+      }
+    } finally { if (fishUi) { fishUi.running = false; fishPaint(); } }
+  }
+  function fishCastForm() {   // (the cast: Neopets' own form where the page has it; after a catch, the same form of NE's, sending what Neopets' sends)
+    let form = fishUi.form;
+    if (!form) {
+      form = document.createElement('form');
+      form.action = '/water/fishing.phtml';
+      form.method = 'post';
+      form.innerHTML = '<input type="hidden" name="go_fish" value="1"><input class="button-default__2020 button-yellow__2020 btn-single__2020" type="submit" value="Reel In Your Line">';
+      fishUi.form = form;
+    }
+    if (!form.__bnpFish) {
+      form.__bnpFish = 1;
+      form.addEventListener('submit', () => {   // (a cast: whose, and when, for the page that comes back)
+        const a = activePet();
+        try { sessionStorage.setItem(FISH_CAST, JSON.stringify({ pet: (a && a.name) || '', at: Date.now() })); } catch (_) { /* */ }
+      }, true);
+    }
+    form.classList.remove('bnp-fish-gone');
+    return form;
+  }
+  const FISH_BELL = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6v-5a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2Z"/></svg>';
+  function fishPaint() {
+    if (!fishUi || !fishUi.band.isConnected) return;
+    const f = fishKeep(), W = fishWait(f), now = Date.now(), act = activePet(), me = act ? act.name : '', all = petsNow(), pet = all.find((p) => p.name === me) || act || null;
+    const nx = (p) => fishNext(f.pets[p.name], W, now);
+    const sorted = all.slice().sort((a, b) => (b.name === me) - (a.name === me) || nx(a) - nx(b) || a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    const ready = sorted.filter((p) => !nx(p)), waiting = sorted.length - ready.length;
+    const nextUp = ready.find((p) => p.name !== me);
+    const skillOf = (n) => { const r = f.pets[n]; return r && r.skill != null ? r.skill : null; };
+    const meter = (n) => (n == null ? '' : `<i class="bnp-fish-meter" title="${esc(`${n} of ${FISH_MAX}`)}"><i style="width:${Math.max(2, Math.min(100, Math.round((100 * n) / FISH_MAX)))}%"></i></i>`);
+    const VARIES = 'the wait between catches varies, from under 2 hours to over a day';
+    const nextBtn = nextUp ? `<div class="bnp-fish-nextup"><img src="${esc(fishBig(nextUp.image))}" alt="" width="60" height="60"><span><b>${esc(nextUp.name)}</b> is ready to fish${ready.length > 2 ? ` · ${ready.length - 1} ready in all` : ''}</span><button type="button" class="bnp-fish-pill is-go" data-fish-act="${esc(nextUp.name)}"${fishUi.busy ? ' disabled' : ''}>${fishUi.busy === nextUp.name ? 'Switching…' : 'Make active'}</button></div>` : '';
+    const recMe = me ? f.pets[me] : null, meWait = !!fishNext(recMe, W, now);
+    let jetty = '';
+    const run = fishRunGet(), going = !!run && !run.paused, nRun = run ? run.list.length : 0;
+    const WHY = { stop: 'stopped', away: 'you went to another page', switch: `Neopets didn’t make ${run && run.who} active`, odd: `the page after ${run && run.who}’s cast wasn’t a catch`, out: 'you seem to be logged out' };
+    const runBar = !run || run.why === 'done' ? '' : going
+      ? `<div class="bnp-fish-run"><div class="bnp-fish-runhead"><span class="bnp-fish-lbl">Fishing in a row · ${Math.min(run.i + 1, nRun)} of ${nRun}</span><button type="button" class="bnp-fish-pill" data-fish-run="stop"${fishUi.stop ? ' disabled' : ''}>${fishUi.stop ? 'Stopping…' : 'Stop'}</button></div><i class="bnp-fish-meter is-run"><i style="width:${Math.round((100 * run.i) / Math.max(1, nRun))}%"></i></i>${run.orig ? `<label class="bnp-fish-backopt"><input type="checkbox" data-fish-backopt${f.back ? ' checked' : ''}><span>Switch back to ${esc(run.orig)} at the end</span></label>` : ''}<span class="bnp-fish-runsay">${fishUi.away ? 'Waiting for this tab to be in front' : run.list[run.i] ? `${esc(run.list[run.i])} ${run.step === 'switch' ? 'next, made active in a moment' : run.step === 'read' ? 'casting…' : 'on the jetty, casting in a moment'}` : 'Putting your active pet back'}${run.list[run.i + 1] ? ` · then ${esc(run.list[run.i + 1])}` : ''}</span></div>`
+      : `<div class="bnp-fish-run is-paused"><span class="bnp-fish-lbl">Fishing in a row · stopped at ${Math.min(run.i + 1, nRun)} of ${nRun}</span><span class="bnp-fish-runsay">${esc(run.why === 'stop' ? 'Stopped.' : `It stopped: ${WHY[run.why] || 'it was stopped'}.`)}${run.got.length ? ` ${run.got.length} fished so far.` : ''}</span><span class="bnp-fish-runbtns"><button type="button" class="bnp-fish-pill is-go" data-fish-run="carry">Carry on</button><button type="button" class="bnp-fish-pill" data-fish-run="forget">Forget it</button></span></div>`;
+    if (run && run.why === 'done') {   // (the string done: what each pet caught)
+      const caught = run.got.filter((g) => g.kind === 'catch'), soon = run.got.length - caught.length;
+      jetty = `<div class="bnp-fish-sum"><span class="bnp-fish-lbl">Fishing in a row · done</span><h2>${run.got.length} pet${run.got.length === 1 ? '' : 's'} fished</h2>
+        <p class="bnp-fish-again">${caught.length} caught something${soon ? ` · ${soon} caught nothing` : ''}${run.orig && run.back ? ` · ${esc(run.orig)} is your active pet again` : run.last ? ` · ${esc(run.last)} stays your active pet` : ''}</p>
+        <ol class="bnp-fish-sumlist">${run.got.map((g) => `<li class="${g.kind === 'catch' ? 'is-catch' : 'is-soon'}"><b>${esc(g.pet)}</b>${g.kind === 'catch' ? `${g.pic ? `<img src="${esc(g.pic)}" alt="" width="40" height="40">` : ''}<span>${esc(g.item || 'Something')}</span>` : '<span>Nothing</span>'}</li>`).join('')}</ol>
+        <button type="button" class="bnp-fish-pill is-go" data-fish-run="ok">OK</button></div>`;
+    }
+    if (!jetty && (fishUi.mode === 'catch' || fishUi.mode === 'soon')) {
+      const g = fishUi.got, who = g.pet || me;
+      jetty = fishUi.mode === 'catch'
+        ? `<div class="bnp-fish-catch"><span class="bnp-fish-lbl">${esc(who ? `${who} reels in their line and gets…` : 'You reel in your line and get…')}</span>
+          <figure class="bnp-fish-prize">${g.pic ? `<img src="${esc(g.pic)}" alt="" width="80" height="80">` : ''}<figcaption>${esc(g.item || 'Something!')}</figcaption></figure>
+          ${g.up != null ? `<p class="bnp-fish-up"><span>Fishing skill up to <b>${g.up.toLocaleString()}</b></span>${meter(g.up)}</p>` : ''}
+          ${who ? `<p class="bnp-fish-again">${esc(who)} can try again later: ${VARIES}.${f.rem[who] ? ` Your reminder: ${esc(fmtNst(now + W))} NST.` : ''}</p>` : ''}</div>`
+        : `<div class="bnp-fish-catch is-soon">${(() => { const wp = all.find((p) => p.name === who); return wp && wp.image ? `<img class="bnp-fish-soonpic" src="${esc(fishBig(wp.image))}" alt="" width="130" height="130">` : ''; })()}<span class="bnp-fish-lbl">${esc(g.said || 'Nothing on the line this time.')}</span>
+          <p class="bnp-fish-again">Neopets says this when a pet isn’t ready yet, and when its line comes up empty${who && recMe && recMe.at ? `: ${esc(who)} last caught something ${esc(colAgo(recMe.at))}` : ''}. ${VARIES.charAt(0).toUpperCase() + VARIES.slice(1)}: try another pet, or ${esc(who || 'this one')} again later.</p></div>`;
+      const switched = fishUi.switched && fishUi.switched === me;   // (another pet made active here: the jetty, ready to cast)
+      if (switched) jetty = '';
+      if (!jetty) fishUi.mode = 'cast';
+    }
+    if (!jetty && (fishUi.mode === 'cast' || fishUi.mode === 'other')) {
+      jetty = `<div class="bnp-fish-me">${pet && pet.image ? `<img class="bnp-fish-mepic" src="${esc(fishBig(pet.image))}" alt="" width="150" height="150">` : '<span class="bnp-fish-mepic is-none"></span>'}
+        <div class="bnp-fish-meabout"><span class="bnp-fish-lbl">On the jetty</span><h2>${esc(me || 'Your active pet')}</h2>
+        <p class="bnp-fish-skill"><span>Fishing skill <b>${skillOf(me) != null ? skillOf(me).toLocaleString() : '?'}</b></span>${meter(skillOf(me))}</p>
+        <p class="bnp-fish-state ${meWait ? 'is-wait' : 'is-ready'}">${meWait ? `Caught something ${esc(colAgo(recMe.at))}: ${VARIES}` : 'Ready to fish'}</p></div></div>
+        ${recMe && recMe.item && recMe.at ? `<div class="bnp-fish-last">${recMe.pic ? `<img src="${esc(recMe.pic)}" alt="" width="40" height="40">` : ''}<span><span class="bnp-fish-lbl">Last catch</span><b>${esc(recMe.item)}</b> · ${esc(colAgo(recMe.at))}</span></div>` : ''}
+        <div class="bnp-fish-cast" data-fish-cast></div>`;
+    }
+    const wasCast = fishUi.form && fishUi.form.parentElement;   // (Neopets' form, kept whole while the card is drawn again)
+    if (wasCast) fishUi.form.remove();
+    fishUi.jetty.innerHTML = `${runBar}${jetty}${fishUi.msg ? `<p class="bnp-fish-msg">${esc(fishUi.msg)}</p>` : ''}${run ? '' : fishUi.mode !== 'cast' ? nextBtn : meWait ? nextBtn : ''}<div class="bnp-fish-backrow" data-fish-back></div>`;
+    const castBox = fishUi.jetty.querySelector('[data-fish-cast]');
+    if (castBox) castBox.append(fishCastForm());
+    const backBox = fishUi.jetty.querySelector('[data-fish-back]');
+    if (fishUi.back && fishUi.mode !== 'cast' && !(run && run.why === 'done') && !going) { fishUi.back.classList.remove('bnp-fish-gone'); fishUi.back.classList.add('bnp-fish-backlink'); backBox.append(fishUi.back); } else backBox.remove();
+    const castBtn = castBox && castBox.querySelector('input[type="submit"]');
+    if (castBtn) castBtn.disabled = going;   // (the string casts it, in its own time)
+    // every pet: a tile each
+    const show = fishUi.show, list = sorted.filter((p) => show === 'ready' ? !nx(p) : show === 'wait' ? !!nx(p) : true);
+    const bellsOn = all.length && all.every((p) => f.rem[p.name]);
+    const tile = (p) => {
+      const rec = f.pets[p.name] || {}, at = nx(p), on = !!f.rem[p.name], isMe = p.name === me, sk = skillOf(p.name), busy = fishUi.busy === p.name, pick = f.string.includes(p.name), nPick = order.indexOf(p.name) + 1;
+      const chip = isMe ? '<em class="bnp-fish-chip is-now">On the jetty</em>' : busy ? '<em class="bnp-fish-chip">Switching…</em>' : at ? `<em class="bnp-fish-chip is-wait" title="${esc(`Caught something at ${fmtNst(rec.at)} NST; counted ready at ${fmtNst(at)} NST`)}">Caught ${esc(fmtLeft(now - rec.at))} ago</em>` : '<em class="bnp-fish-chip is-ready">Ready</em>';
+      return `<li class="bnp-fish-tile${isMe ? ' is-active' : ''}${at ? ' is-wait' : ' is-ready'}${fishUi.focus === p.name ? ' is-focus' : ''}${pick ? ' is-chosen' : ''}${fishUi.choosing ? ' is-choosing' : ''}" data-fish-pet="${esc(p.name)}">
+        ${pick ? `<span class="bnp-fish-check" title="${esc(`In your string: ${nPick} of ${order.length}`)}">${nPick}</span>` : ''}
+        <button type="button" class="bnp-fish-pick" ${fishUi.choosing ? `data-fish-tog="${esc(p.name)}" aria-pressed="${pick}" title="${esc(pick ? `Take ${p.name} out of your string` : `Add ${p.name} to your string`)}"` : `data-fish-act="${esc(p.name)}"${isMe || fishUi.busy || fishUi.running || going ? ' disabled' : ''} title="${esc(isMe ? `${p.name} is on the jetty` : `Make ${p.name} your active pet`)}"`}>
+          ${p.image ? `<img src="${esc(fishBig(p.image))}" alt="" width="88" height="88" loading="lazy">` : '<span class="bnp-fish-nopic"></span>'}
+          <b>${esc(p.name)}</b><span>${sk != null ? `Skill ${sk.toLocaleString()}` : 'Skill ?'}</span>${chip}</button>
+        <button type="button" class="bnp-fish-bell" data-fish-rem="${esc(p.name)}" aria-pressed="${on}" title="${esc(on ? `A reminder when ${p.name} can fish again: on` : `Remind me when ${p.name} can fish again`)}" aria-label="${esc(`Remind me when ${p.name} can fish again`)}">${FISH_BELL}</button></li>`;
+    };
+    const chips = [['all', 'All', sorted.length], ['ready', 'Ready', ready.length], ['wait', 'Resting', waiting]];
+    const order = all.map((p) => p.name).filter((n) => f.string.includes(n));   // (the string, in My Pets' order: as it's fished)
+    const strNames = order.length > 4 ? `${order.slice(0, 3).join(', ')} and ${order.length - 3} more` : order.join(', ').replace(/, ([^,]*)$/, ' and $1');
+    const stringBar = !all.length || going ? '' : fishUi.choosing
+      ? `<div class="bnp-fish-string is-choosing"><span class="bnp-fish-strwho"><b>Choose your string</b><span>Press pets to add or take them out · ${order.length} chosen</span></span><span class="bnp-fish-runbtns"><button type="button" class="bnp-fish-pill" data-fish-pickall="ready">All ready</button><button type="button" class="bnp-fish-pill" data-fish-pickall="all">Every pet</button><button type="button" class="bnp-fish-pill" data-fish-pickall="none">None</button><button type="button" class="bnp-fish-pill is-go" data-fish-choose>Done</button></span></div>`
+      : order.length
+        ? `<div class="bnp-fish-string"><span class="bnp-fish-strwho"><b>Fish in a row</b><span>${order.length} in your string: ${esc(strNames)}</span></span><span class="bnp-fish-runbtns">${me ? `<label class="bnp-fish-backopt" title="${esc(`When the string's done, ${me} is made your active pet again; off, its last pet stays active`)}"><input type="checkbox" data-fish-backopt${f.back ? ' checked' : ''}><span>Switch back to ${esc(me)} after</span></label>` : ''}<button type="button" class="bnp-fish-pill" data-fish-choose>Change</button><button type="button" class="bnp-fish-pill is-go" data-fish-run="start"${fishUi.running || (run && !run.paused) ? ' disabled' : ''}>Start fishing (${order.length})</button></span></div>`
+        : `<div class="bnp-fish-string"><span class="bnp-fish-strwho"><b>Fish in a row</b><span>Choose pets, then Start: each one fishes in turn, a moment apart, as you would.</span></span><span class="bnp-fish-runbtns"><button type="button" class="bnp-fish-pill is-go" data-fish-choose>Choose pets</button></span></div>`;
+    fishUi.pets.innerHTML = all.length
+      ? `<div class="bnp-fish-petshead"><h3>Your pets</h3><span class="bnp-fish-count">${ready.length === all.length ? `All ${all.length} ready to fish` : `${ready.length} of ${all.length} ready to fish`}</span>
+        <span class="bnp-fish-chips" role="group" aria-label="Show">${chips.map(([k, l, n]) => `<button type="button" data-fish-show="${k}" aria-pressed="${show === k}">${l}<i>${n}</i></button>`).join('')}</span>
+        <span class="bnp-fish-remrow"><button type="button" class="bnp-fish-pill bnp-fish-allbells" data-fish-bells aria-pressed="${!!bellsOn}">${FISH_BELL}<span>${bellsOn ? 'Every bell on' : 'Every bell'}</span></button>
+        <label class="bnp-fish-delay" title="The wait between catches varies, from under 2 hours to over a day: a pet counts as ready, and its bell rings, this long after its last catch"><span>Ready again</span><select data-fish-delay aria-label="Hours after a catch">${FISH_DELAYS.map((h) => `<option value="${h}"${f.delay === h ? ' selected' : ''}>${h} hours</option>`).join('')}</select><span>after a catch</span></label></span></div>
+        ${stringBar}
+        ${list.length ? `<ol class="bnp-fish-grid">${list.map(tile).join('')}</ol>` : `<p class="bnp-fish-none">${show === 'ready' ? 'No pet is ready just now.' : 'None resting: every pet can fish.'}</p>`}`
+      : '<div class="bnp-fish-petshead"><h3>Your pets</h3></div><p class="bnp-fish-none"><span>Your pets show here once NE has looked at My Pets.</span><button type="button" class="bnp-fish-pill is-go" data-fish-load>Look at My Pets</button></p>';
+  }
+  function fishClick(e) {
+    const t = e.target instanceof Element ? e.target : null;
+    if (!t || !fishUi) return;
+    const act = t.closest('[data-fish-act]'), bell = t.closest('[data-fish-rem]'), show = t.closest('[data-fish-show]'), bells = t.closest('[data-fish-bells]'), load = t.closest('[data-fish-load]');
+    const tog = t.closest('[data-fish-tog]'), choose = t.closest('[data-fish-choose]'), pickall = t.closest('[data-fish-pickall]'), runb = t.closest('[data-fish-run]');
+    if (t.matches('input[data-fish-backopt]')) { const f = fishKeep(); f.back = t.checked; fishSet(f); return; }   // (switch back after the string, or not)
+    if (tog) { const f = fishKeep(), n = tog.getAttribute('data-fish-tog'), i = f.string.indexOf(n); if (i >= 0) f.string.splice(i, 1); else f.string.push(n); fishSet(f); fishPaint(); return; }
+    if (choose) { fishUi.choosing = !fishUi.choosing; fishPaint(); return; }
+    if (pickall) { const f = fishKeep(), k = pickall.getAttribute('data-fish-pickall'), W = fishWait(f); f.string = k === 'none' ? [] : petsNow().filter((p) => k === 'all' || !fishNext(f.pets[p.name], W)).map((p) => p.name); fishSet(f); fishPaint(); return; }
+    if (runb && !runb.disabled) {
+      const k = runb.getAttribute('data-fish-run'), run = fishRunGet();
+      if (k === 'start') fishRunStart();
+      else if (k === 'stop') { fishUi.stop = true; fishPaint(); }
+      else if (k === 'carry' && run) { Object.assign(run, { paused: false, why: '', who: '' }); if (run.step === 'read' && fishUi.mode !== 'catch' && fishUi.mode !== 'soon') run.step = 'go'; fishUi.stop = false; fishRunSet(run); fishRunGo(run).catch(report); }   // (the last cast's answer never came: that pet again)
+      else if (k === 'forget' || k === 'ok') { fishRunSet(null); fishPaint(); }
+      return;
+    }
+    if (bell) { const f = fishKeep(), n = bell.getAttribute('data-fish-rem'); if (f.rem[n]) delete f.rem[n]; else f.rem[n] = true; fishSet(f); fishPaint(); return; }
+    if (bells) { const f = fishKeep(), names = petsNow().map((p) => p.name), on = !names.every((n) => f.rem[n]); for (const n of names) { if (on) f.rem[n] = true; else delete f.rem[n]; } fishSet(f); fishPaint(); return; }
+    if (show) { fishUi.show = show.getAttribute('data-fish-show'); try { localStorage.setItem('bnp-fish-show', fishUi.show); } catch (_) { /* */ } fishPaint(); return; }
+    if (load) { load.disabled = true; load.textContent = 'Looking…'; loadPets(true).then(fishPaint, fishPaint); return; }
+    if (act && !act.disabled && !fishUi.busy) fishMake(act.getAttribute('data-fish-act')).catch(report);
+  }
+  function fishChange(e) {   // (how long after a catch a pet counts as ready, and its bell rings)
+    const t = e.target instanceof Element ? e.target : null;
+    if (!t || !t.matches('[data-fish-delay]')) return;
+    const f = fishKeep();
+    f.delay = FISH_DELAYS.includes(Number(t.value)) ? Number(t.value) : 24;
+    fishSet(f);
+    fishPaint();
+  }
+  async function fishMake(name) {   // (that pet made the active one, as Switch Pet does; the jetty and the page's own skill line then name it)
+    fishUi.busy = name;
+    fishUi.msg = '';
+    fishPaint();
+    try {
+      const p = petsNow().find((x) => x.name === name);
+      await activate(name, p && p.image);
+      const r = await fetch('/water/fishing.phtml', { credentials: 'include' });   // (the page as it is now, its skill line for the new pet; nothing is cast)
+      if (/login/i.test(new URL(r.url).pathname)) throw new Error('signed out');
+      const doc = new DOMParser().parseFromString(await r.text(), 'text/html'), el = fishSkillEl(doc), m = el && FISH_SKILL.exec(el.textContent || ''), here = fishSkillEl(document);
+      if (m && here) fishSkillSet(here, m[1], m[2]);
+      const f = fishKeep();
+      if (fishNote(doc, f)) fishSet(f);
+      fishUi.switched = name;
+      fishUi.mode = 'cast';
+    } catch (e) { fishUi.msg = /signed out/.test(String(e && e.message)) ? 'You seem to be logged out: log in again, then try.' : `Couldn’t make ${name} active just now: try again in a moment.`; }
+    fishUi.busy = '';
+    fishPaint();
+  }
+  const FISH_CSS = `
+    @font-face { font-family: "Cafeteria"; src: url("https://images.neopets.com/js/fonts/cafeteria-black.otf") format("opentype"); font-display: swap; }
+    @font-face { font-family: "MuseoSansRounded500"; src: url("https://images.neopets.com/js/fonts/museosansrounded-500.woff") format("woff"); font-display: swap; }
+    @font-face { font-family: "MuseoSansRounded700"; src: url("https://images.neopets.com/js/fonts/museosansrounded-700.woff") format("woff"); font-display: swap; }
+    html.bnp-fish-page { --nb-acc: #fed123; --nb-pat: none; --nb-patsz: 121px 58px; --nb-patpos: 50% -10px; --nb-frame: #faa819; --nb-panel: #fffacd;
+      --nb-band: var(--nb-pat) var(--nb-patpos) / var(--nb-patsz), var(--nb-acc); --nb-line: color-mix(in srgb, var(--nb-frame) 30%, #fff);
+      --nb-bar: #2e72c0; --nb-bar-ink: #fff; --nb-muted: #5f5a4a; --nb-text: #262626; --nb-by: color-mix(in srgb, var(--nb-panel) 32%, #fff);
+      --nb-ui: "MuseoSansRounded700", Arial, sans-serif; --nb-txt: "MuseoSansRounded500", Arial, sans-serif;
+      --fish-edge: color-mix(in srgb, var(--nb-frame) 74%, #000); --fish-water: radial-gradient(circle at 50% 64%, #eef9fd, #cfe9f3 74%); }   /* (fish-edge: each box's outline, a deeper shade of your theme's frame) */
+    html.bnp-fish-wait #container__2020 > :not(.page-title__2020):not(#navsub-buffer__2020) { visibility: hidden; }   /* (Neopets' bare page never seen before it's made over) */
+    html.bnp-fish-page .bnp-fish-gone { display: none !important; }
+    /* the band: Neopets' own picture of the vortex, and the jetty */
+    html.bnp-fish-page .bnp-fish-band { display: grid; grid-template-columns: minmax(0, 550px) minmax(300px, 1fr); align-items: stretch; gap: 14px 16px; max-width: 980px; margin: 4px auto 16px; padding: 14px; border: 2px solid var(--nb-frame); border-radius: 20px; background: var(--nb-band); box-shadow: 0 3px 0 var(--nb-frame); box-sizing: border-box; color: var(--nb-text); text-align: left; }
+    html.bnp-fish-page .bnp-fish-art { display: flex; align-items: center; justify-content: center; min-width: 0; }
+    html.bnp-fish-page .bnp-fish-art .fishing-img { display: block; width: 100% !important; max-width: 550px; height: auto !important; aspect-ratio: 550 / 400; margin: 0 !important; padding: 0 !important; border: 3px solid #fff; border-radius: 15px; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important; box-shadow: 0 0 0 2px var(--fish-edge), 0 6px 14px rgba(0, 0, 0, .2); box-sizing: border-box; }
+    html.bnp-fish-page .bnp-fish-words { grid-column: 1 / -1; margin: 0 !important; padding: 9px 16px; border: 2px solid var(--fish-edge); border-radius: 14px; background: rgba(255, 255, 255, .95); color: var(--nb-muted); font: 13px/1.45 var(--nb-txt); text-align: center; }
+    html.bnp-fish-page .bnp-fish-words br { display: none; }
+    html.bnp-fish-page .bnp-fish-jetty { display: flex; flex-direction: column; justify-content: center; gap: 12px; min-width: 0; padding: 16px; border: 2px solid var(--fish-edge); border-radius: 16px; background: rgba(255, 255, 255, .97); box-shadow: 0 2px 0 var(--fish-edge); font: 14px var(--nb-txt); }
+    html.bnp-fish-page .bnp-fish-lbl { color: var(--nb-muted); font: bold 11px var(--nb-ui); letter-spacing: .7px; text-transform: uppercase; }
+    html.bnp-fish-page .bnp-fish-me { display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: center; gap: 16px; }
+    html.bnp-fish-page .bnp-fish-mepic { display: block; width: 150px; height: 150px; border: 2px solid var(--nb-line); border-radius: 18px; background: var(--fish-water); box-sizing: border-box; object-fit: contain; }
+    html.bnp-fish-page .bnp-fish-meabout { display: grid; gap: 4px; min-width: 0; }
+    html.bnp-fish-page .bnp-fish-meabout h2 { margin: 0; padding: 0; border: 0; background: none; overflow: hidden; color: var(--nb-text); font: 30px/1.05 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+    html.bnp-fish-page .bnp-fish-skill { display: grid; justify-items: start; gap: 4px; margin: 2px 0 0; color: var(--nb-muted); font: 13px var(--nb-ui); }
+    html.bnp-fish-page .bnp-fish-skill b, html.bnp-fish-page .bnp-fish-up b { color: var(--nb-text); font: 22px/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-fish-page .bnp-fish-meter { display: block; width: 100%; min-width: 120px; height: 8px; margin-top: 4px; overflow: hidden; border-radius: 4px; background: color-mix(in srgb, var(--nb-line) 70%, #fff); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .06); }   /* (its skill out of 500, the most there is) */
+    html.bnp-fish-page .bnp-fish-meter > i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #56bde0, #1f80b3); }
+    html.bnp-fish-page .bnp-fish-state { margin: 6px 0 0; font: 13px/1.35 var(--nb-ui); }
+    html.bnp-fish-page .bnp-fish-state.is-ready { color: #2e7d32; }
+    html.bnp-fish-page .bnp-fish-state.is-wait { color: var(--nb-muted); font-family: var(--nb-txt); }
+    html.bnp-fish-page .bnp-fish-cast form { margin: 0; }
+    html.bnp-fish-page .bnp-fish-cast input[type="submit"] { display: block; width: 100% !important; max-width: none !important; height: 48px !important; margin: 0 !important; font-size: 19px !important; }
+    /* after a cast: the catch */
+    html.bnp-fish-page .bnp-fish-catch { display: grid; justify-items: center; gap: 8px; text-align: center; }
+    html.bnp-fish-page .bnp-fish-prize { display: grid; justify-items: center; gap: 8px; margin: 2px 0 0; }
+    html.bnp-fish-page .bnp-fish-prize img { display: block; width: 80px; height: 80px; padding: 12px; border: 2px solid var(--nb-line); border-radius: 18px; background: var(--fish-water); box-shadow: 0 3px 0 var(--nb-line); }   /* (Neopets' item at its own 80px) */
+    html.bnp-fish-page .bnp-fish-prize figcaption { color: var(--nb-text); font: 26px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; }
+    html.bnp-fish-page .bnp-fish-up { display: grid; justify-items: center; gap: 4px; margin: 0; color: var(--nb-muted); font: 13px var(--nb-ui); }
+    html.bnp-fish-page :is(.bnp-fish-skill, .bnp-fish-up) > span { display: inline-flex; align-items: baseline; gap: 8px; }
+    html.bnp-fish-page .bnp-fish-up .bnp-fish-meter { width: 220px; }
+    html.bnp-fish-page .bnp-fish-catch.is-soon .bnp-fish-lbl { color: var(--nb-text); font: 22px/1.15 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-transform: none; }
+    html.bnp-fish-page .bnp-fish-again { margin: 0; color: var(--nb-muted); font: 13px/1.4 var(--nb-txt); }
+    html.bnp-fish-page .bnp-fish-nextup { display: grid; grid-template-columns: 60px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px 12px 8px 8px; border: 2px solid var(--nb-line); border-radius: 14px; background: var(--nb-by); }
+    html.bnp-fish-page .bnp-fish-nextup img { display: block; width: 60px; height: 60px; border-radius: 10px; background: var(--fish-water); }
+    html.bnp-fish-page .bnp-fish-nextup span { color: var(--nb-muted); font: 13px/1.35 var(--nb-txt); }
+    html.bnp-fish-page .bnp-fish-nextup b { color: var(--nb-text); font: 15px var(--nb-ui); }
+    html.bnp-fish-page .bnp-fish-backrow { display: flex; justify-content: center; }
+    html.bnp-fish-page .bnp-fish-backlink { display: inline-block; text-decoration: none !important; }
+    html.bnp-fish-page .bnp-fish-backlink button { width: auto !important; min-width: 200px; height: 38px !important; margin: 0 !important; font-size: 15px !important; }   /* (the same pet again: most likely too soon, so a size under Make active for the next one) */
+    html.bnp-fish-page .bnp-fish-last { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; padding: 8px 12px; border: 2px solid var(--nb-line); border-radius: 14px; background: var(--nb-by); }
+    html.bnp-fish-page .bnp-fish-last img { display: block; width: 40px; height: 40px; padding: 4px; border-radius: 10px; background: #fff; }   /* (an item's 80px picture at half) */
+    html.bnp-fish-page .bnp-fish-last > span { display: grid; gap: 1px; color: var(--nb-muted); font: 13px var(--nb-txt); }
+    html.bnp-fish-page .bnp-fish-last b { color: var(--nb-text); font: 14px var(--nb-ui); }
+    html.bnp-fish-page .bnp-fish-msg { margin: 0; color: #a3271b; font: 13px var(--nb-ui); }
+    /* the pill buttons */
+    html.bnp-fish-page .bnp-fish-pill { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 34px; margin: 0; padding: 0 15px; border: 2px solid var(--nb-line); border-radius: 999px; background: linear-gradient(#fff 40%, color-mix(in srgb, var(--fish-edge) 8%, #fff)); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), 0 2px 0 var(--nb-line); color: var(--nb-text); font: 13px var(--nb-ui); white-space: nowrap; cursor: pointer; }
+    html.bnp-fish-page .bnp-fish-pill:hover:not(:disabled) { border-color: var(--fish-edge); }
+    html.bnp-fish-page .bnp-fish-pill.is-go { border-color: color-mix(in srgb, var(--nb-bar) 70%, #000); background: linear-gradient(color-mix(in srgb, var(--nb-bar) 80%, #fff), var(--nb-bar) 70%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), 0 2px 0 color-mix(in srgb, var(--nb-bar) 60%, #000); color: var(--nb-bar-ink); }
+    html.bnp-fish-page .bnp-fish-pill:disabled { opacity: .55; cursor: default; }
+    html.bnp-fish-page .bnp-fish-pill svg { flex: none; }
+    /* every pet */
+    html.bnp-fish-page .bnp-fish-pets { max-width: 980px; margin: 0 auto 22px; padding: 14px 16px 16px; border: 2px solid var(--fish-edge); border-radius: 18px; background: rgba(255, 255, 255, .98); box-shadow: 0 3px 0 var(--fish-edge); box-sizing: border-box; color: var(--nb-text); text-align: left; font: 14px var(--nb-txt); }
+    html.bnp-fish-page .bnp-fish-petshead { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0 0 14px; }
+    html.bnp-fish-page .bnp-fish-petshead h3 { margin: 0; padding: 0; border: 0; background: none; color: var(--nb-text); font: 26px/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; text-align: left; }
+    html.bnp-fish-page .bnp-fish-count { color: var(--nb-muted); font: 13px var(--nb-ui); }
+    html.bnp-fish-page .bnp-fish-chips { display: inline-flex; gap: 2px; padding: 2px; border: 2px solid var(--nb-line); border-radius: 999px; background: #fff; }
+    html.bnp-fish-page .bnp-fish-chips button { height: 28px; margin: 0; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--nb-muted); font: 13px var(--nb-ui); cursor: pointer; }
+    html.bnp-fish-page .bnp-fish-chips button:not([aria-pressed="true"]):hover { background: var(--nb-by); color: var(--nb-text); }
+    html.bnp-fish-page .bnp-fish-chips button[aria-pressed="true"] { background: var(--nb-bar); color: var(--nb-bar-ink); }
+    html.bnp-fish-page .bnp-fish-chips i { margin-left: 6px; font-style: normal; opacity: .8; }
+    html.bnp-fish-page .bnp-fish-remrow { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-left: auto; }
+    html.bnp-fish-page .bnp-fish-allbells[aria-pressed="true"] { border-color: color-mix(in srgb, var(--nb-bar) 70%, #000); background: var(--nb-bar); color: var(--nb-bar-ink); }
+    html.bnp-fish-page .bnp-fish-delay { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: var(--nb-muted); font: 13px var(--nb-ui); }
+    html.bnp-fish-page .bnp-fish-delay select { height: 32px; margin: 0; padding: 0 8px; border: 2px solid var(--nb-line); border-radius: 10px; background: #fff; color: var(--nb-text); font: 13px var(--nb-ui); cursor: pointer; }
+    html.bnp-fish-page .bnp-fish-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }   /* (a tile each: 26 pets in four rows) */
+    html.bnp-fish-page .bnp-fish-tile { position: relative; margin: 0; padding: 0; list-style: none; }
+    html.bnp-fish-page .bnp-fish-pick { display: grid; justify-items: center; gap: 2px; width: 100%; height: 100%; margin: 0; padding: 8px 6px 10px; border: 2px solid var(--nb-line); border-radius: 15px; background: #fff; box-shadow: 0 2px 0 var(--nb-line); box-sizing: border-box; color: var(--nb-text); text-align: center; cursor: pointer; transition: border-color .12s, transform .12s, box-shadow .12s; }
+    html.bnp-fish-page .bnp-fish-pick:hover:not(:disabled) { border-color: var(--fish-edge); box-shadow: 0 3px 0 var(--fish-edge); transform: translateY(-1px); }
+    html.bnp-fish-page .bnp-fish-pick:disabled { cursor: default; }
+    html.bnp-fish-page .bnp-fish-pick img, html.bnp-fish-page .bnp-fish-nopic { display: block; width: 88px; height: 88px; margin-bottom: 4px; border-radius: 13px; background: var(--fish-water); object-fit: contain; }   /* (the 300px picture at 88: crisp) */
+    html.bnp-fish-page .bnp-fish-pick b { max-width: 100%; overflow: hidden; color: var(--nb-text); font: 14px var(--nb-ui); text-overflow: ellipsis; white-space: nowrap; }
+    html.bnp-fish-page .bnp-fish-pick span { color: var(--nb-muted); font: 12px var(--nb-txt); }
+    html.bnp-fish-page .bnp-fish-chip { margin-top: 4px; padding: 2px 9px; border-radius: 999px; font: 11.5px/1.5 var(--nb-ui); font-style: normal; white-space: nowrap; }
+    html.bnp-fish-page .bnp-fish-chip.is-ready { background: #e3f3df; box-shadow: inset 0 0 0 1.5px #a5d39b; color: #2b6a2f; }
+    html.bnp-fish-page .bnp-fish-chip.is-wait { background: #f2efe7; box-shadow: inset 0 0 0 1.5px #ddd5c2; color: var(--nb-muted); }
+    html.bnp-fish-page .bnp-fish-chip.is-now { background: var(--nb-bar); color: var(--nb-bar-ink); }
+    html.bnp-fish-page .bnp-fish-tile.is-wait:not(.is-active) .bnp-fish-pick img { filter: saturate(.6); opacity: .82; }   /* (resting: the ready ones stand out) */
+    html.bnp-fish-page .bnp-fish-tile.is-active .bnp-fish-pick { border-color: var(--nb-bar); box-shadow: 0 0 0 2px color-mix(in srgb, var(--nb-bar) 30%, #fff), 0 2px 0 var(--nb-bar); }
+    html.bnp-fish-page .bnp-fish-tile.is-focus .bnp-fish-pick { animation: bnp-fish-glow 1.6s ease-out 2; }
+    @keyframes bnp-fish-glow { 0% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--nb-bar) 55%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+    html.bnp-fish-page .bnp-fish-bell { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 28px; height: 28px; margin: 0; padding: 0; border: 2px solid var(--nb-line); border-radius: 50%; background: #fff; color: #a39a80; cursor: pointer; }
+    html.bnp-fish-page .bnp-fish-bell:hover { border-color: var(--fish-edge); color: var(--nb-text); }
+    html.bnp-fish-page .bnp-fish-bell[aria-pressed="true"] { border-color: color-mix(in srgb, var(--nb-bar) 70%, #000); background: var(--nb-bar); color: var(--nb-bar-ink); }
+    html.bnp-fish-page .bnp-fish-none { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0; color: var(--nb-muted); }
+    /* fish in a row: the string's bar, its run on the jetty, its summary */
+    html.bnp-fish-page .bnp-fish-string { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; margin: 0 0 14px; padding: 10px 12px 10px 16px; border: 2px solid var(--nb-line); border-radius: 14px; background: var(--nb-by); }
+    html.bnp-fish-page .bnp-fish-string.is-choosing { border-color: var(--nb-bar); background: color-mix(in srgb, var(--nb-bar) 8%, #fff); box-shadow: 0 0 0 2px color-mix(in srgb, var(--nb-bar) 18%, transparent); }
+    html.bnp-fish-page .bnp-fish-strwho { display: grid; gap: 2px; min-width: 0; }
+    html.bnp-fish-page .bnp-fish-strwho b { color: var(--nb-text); font: 18px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-fish-page .bnp-fish-strwho span { color: var(--nb-muted); font: 13px/1.35 var(--nb-txt); }
+    html.bnp-fish-page .bnp-fish-runbtns { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    html.bnp-fish-page .bnp-fish-check { position: absolute; top: 6px; left: 6px; z-index: 1; display: grid; place-items: center; min-width: 24px; height: 24px; padding: 0 5px; border-radius: 999px; background: var(--nb-bar); box-shadow: 0 0 0 2px #fff; box-sizing: border-box; color: var(--nb-bar-ink); font: 12px/1 var(--nb-ui); pointer-events: none; }   /* (in your string: its turn) */
+    html.bnp-fish-page .bnp-fish-tile.is-chosen .bnp-fish-pick { border-color: color-mix(in srgb, var(--nb-bar) 55%, var(--nb-line)); }
+    html.bnp-fish-page .bnp-fish-tile.is-choosing:not(.is-chosen) .bnp-fish-pick { border-style: dashed; }
+    html.bnp-fish-page .bnp-fish-tile.is-choosing .bnp-fish-pick img { filter: none; opacity: 1; }
+    html.bnp-fish-page .bnp-fish-run { display: grid; gap: 6px; padding: 10px 12px; border: 2px solid var(--nb-bar); border-radius: 14px; background: color-mix(in srgb, var(--nb-bar) 7%, #fff); }
+    html.bnp-fish-page .bnp-fish-run.is-paused { border-color: #d8a33a; background: #fff8e6; }
+    html.bnp-fish-page .bnp-fish-runhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    html.bnp-fish-page .bnp-fish-run .bnp-fish-pill { height: 30px; padding: 0 13px; }
+    html.bnp-fish-page .bnp-fish-meter.is-run > i { background: linear-gradient(90deg, color-mix(in srgb, var(--nb-bar) 70%, #fff), var(--nb-bar)); transition: width .4s; }
+    html.bnp-fish-page .bnp-fish-runsay { color: var(--nb-text); font: 13px/1.35 var(--nb-txt); }
+    html.bnp-fish-page .bnp-fish-sum { display: grid; justify-items: center; gap: 8px; text-align: center; }
+    html.bnp-fish-page .bnp-fish-sum h2 { margin: 0; padding: 0; border: 0; background: none; color: var(--nb-text); font: 28px/1.05 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; }
+    html.bnp-fish-page .bnp-fish-sumlist { display: grid; gap: 4px; width: 100%; max-height: 236px; margin: 2px 0 4px; padding: 0 4px 0 0; overflow-y: auto; list-style: none; text-align: left; }
+    html.bnp-fish-page .bnp-fish-sumlist li { display: grid; grid-template-columns: minmax(0, 8em) auto minmax(0, 1fr); align-items: center; gap: 8px; min-height: 50px; margin: 0; padding: 4px 10px; box-sizing: border-box; border: 1px solid var(--nb-line); border-radius: 10px; background: #fff; }
+    html.bnp-fish-page .bnp-fish-sumlist b { overflow: hidden; color: var(--nb-text); font: 13px var(--nb-ui); text-overflow: ellipsis; white-space: nowrap; }
+    html.bnp-fish-page .bnp-fish-sumlist img { display: block; width: 40px; height: 40px; }   /* (an item's 80px picture at half) */
+    html.bnp-fish-page .bnp-fish-sumlist span { color: var(--nb-text); font: 13px var(--nb-txt); }
+    html.bnp-fish-page .bnp-fish-sumlist li.is-soon span { grid-column: 2 / -1; color: var(--nb-muted); }
+    html.bnp-fish-page .bnp-fish-backopt { display: inline-flex; align-items: center; gap: 6px; margin: 0 4px 0 0; color: var(--nb-muted); font: 13px var(--nb-ui); cursor: pointer; }   /* (switch back after the string: a tick box) */
+    html.bnp-fish-page .bnp-fish-backopt input { width: 16px; height: 16px; margin: 0; accent-color: var(--nb-bar); cursor: pointer; }
+    html.bnp-fish-page .bnp-fish-run .bnp-fish-backopt { justify-self: start; font-size: 12.5px; }
+    html.bnp-fish-page .bnp-fish-soonpic { display: block; width: 130px; height: 130px; border: 2px solid var(--nb-line); border-radius: 18px; background: var(--fish-water); box-sizing: border-box; object-fit: contain; }   /* (nothing on the line: the pet, as Neopets' page shows it) */
+    @media (max-width: 880px) { html.bnp-fish-page .bnp-fish-band { grid-template-columns: minmax(0, 1fr); } html.bnp-fish-page .bnp-fish-remrow { margin-left: 0; } }
+    @media (max-width: 520px) { html.bnp-fish-page .bnp-fish-me { grid-template-columns: 110px minmax(0, 1fr); } html.bnp-fish-page .bnp-fish-mepic { width: 110px; height: 110px; } html.bnp-fish-page .bnp-fish-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); } }
+  `;
   function iglooPaint() {   // (the Igloo Garage Sale's shop: how many of today's 10 you've bought, as its answers said; the wait between two counting down)
     if (location.pathname !== '/winter/igloo.phtml') return;
     const shop = document.getElementById('IGSShop'), d = dailyById('igloo');
@@ -12103,15 +12658,21 @@
     html.bnp-nm form.bnp-nmsend::before { content: "Write a Neomail"; display: block; padding: 9px 18px 11px; border-bottom: 2px solid var(--nb-bar-edge); background: var(--nb-bar); color: var(--nb-bar-ink); font: 14.5pt/1.1 var(--nb-head); text-align: center; }
     html.bnp-nm form.bnp-nmsend > table { display: block; width: 100% !important; border: 0 !important; background: none !important; }
     html.bnp-nm form.bnp-nmsend > table > tbody { display: block; }
-    html.bnp-nm form.bnp-nmsend > table tr { display: grid; grid-template-columns: 110px minmax(0, 1fr); align-items: start; gap: 6px 14px; padding: 12px 18px; border-top: 2px solid var(--nb-line); background: none !important; }
-    html.bnp-nm form.bnp-nmsend > table tr:first-child { border-top: 0; }
-    html.bnp-nm form.bnp-nmsend > table td { padding: 0 !important; border: 0 !important; background: none !important; color: var(--nb-text); font: 13px/1.5 var(--nb-txt); }
+    html.bnp-nm form.bnp-nmsend > table > tbody > tr { display: grid; grid-template-columns: 110px minmax(0, 1fr); align-items: start; gap: 6px 14px; padding: 12px 18px; border-top: 2px solid var(--nb-line); background: none !important; }
+    html.bnp-nm form.bnp-nmsend > table > tbody > tr:first-child { border-top: 0; }
+    html.bnp-nm form.bnp-nmsend > table > tbody > tr > td { padding: 0 !important; border: 0 !important; background: none !important; color: var(--nb-text); font: 13px/1.5 var(--nb-txt); }
     html.bnp-nm form.bnp-nmsend > table td b, html.bnp-nm form.bnp-nmsend > table td .medText { color: var(--nb-text); font: 14.5px/2 var(--nb-ui) !important; }
     html.bnp-nm form.bnp-nmsend input[type="text"], html.bnp-nm form.bnp-nmsend select { height: 38px; margin: 0 6px 4px 0; padding: 0 11px; border: 2px solid var(--nb-frame); border-radius: 10px; background: #fff; color: #222; box-shadow: inset 0 2px 0 rgba(0, 0, 0, .05); font: 15px var(--nb-txt); outline: none; box-sizing: border-box; }
     html.bnp-nm form.bnp-nmsend input[type="text"] { width: min(320px, 100%); }
     html.bnp-nm form.bnp-nmsend textarea { display: block; width: 100% !important; min-height: 200px; padding: 10px 12px; border: 2px solid var(--nb-frame); border-radius: 12px; background: #fff; color: #222; box-shadow: inset 0 2px 0 rgba(0, 0, 0, .05); font: 15px/1.6 Verdana, Arial, Helvetica, sans-serif; resize: vertical; box-sizing: border-box; outline: none; }
     html.bnp-nm form.bnp-nmsend input[type="text"]:focus, html.bnp-nm form.bnp-nmsend select:focus, html.bnp-nm form.bnp-nmsend textarea:focus { box-shadow: 0 0 0 3px var(--nb-tint2); }
     html.bnp-nm form.bnp-nmsend iframe#block_frame { display: block; width: 100% !important; max-height: 30px; border: 0; }
+    html.bnp-nm form.bnp-nmsend :is(table[id^="Buttons1_"], table[id^="Buttons2_"]) { display: inline-table; width: auto !important; margin: 0 10px 8px 0; border: 0 !important; border-collapse: collapse; background: none !important; vertical-align: middle; }   /* (Advanced Neomail's editor, Firefox's alone: its two tables of buttons on one line, as a toolbar (user report, 2026-10-31)) */
+    html.bnp-nm form.bnp-nmsend :is(table[id^="Buttons1_"], table[id^="Buttons2_"]) td { padding: 0 1px !important; border: 0 !important; background: none !important; vertical-align: middle; }
+    html.bnp-nm form.bnp-nmsend table[id^="Buttons1_"] select { margin: 0 6px 0 0; }
+    html.bnp-nm form.bnp-nmsend img.btnImage { display: block; width: 25px; height: 24px; padding: 3px; border-radius: 8px; }
+    html.bnp-nm form.bnp-nmsend img.btnImage:hover { background: var(--nb-tint2); box-shadow: inset 0 0 0 1.5px var(--nb-line); }
+    html.bnp-nm form.bnp-nmsend iframe#message_body { display: block; width: 100% !important; height: 220px !important; border: 2px solid var(--nb-frame); border-radius: 12px; background: #fff; box-shadow: inset 0 2px 0 rgba(0, 0, 0, .05); box-sizing: border-box; }   /* (its writing box: framed as the plain one's) */
     html.bnp-nm form.bnp-nmsend > div { padding: 12px 18px 14px; border-top: 2px solid var(--nb-frame); background: var(--nb-panel); text-align: right; }
     html.bnp-nm form.bnp-nmsend input[type="submit"] { height: 40px; margin: 0; padding: 0 20px; border: 2px solid var(--nb-bar-edge); border-radius: 12px; background: var(--nb-bar); color: var(--nb-bar-ink); box-shadow: 0 3px 0 var(--nb-bar-edge); font: 15px var(--nb-ui); cursor: pointer; }
     html.bnp-nm form.bnp-nmsend input[type="submit"]:hover { filter: brightness(1.08); }
@@ -12200,7 +12761,7 @@
       html.bnp-nm table.bnp-nmread tr.bnp-nm-from { grid-column: 1; grid-row: auto; }
       html.bnp-nm table.bnp-nmread tr { grid-column: 1; }
       html.bnp-nm .bnp-nmacts { margin-left: 0; }
-      html.bnp-nm form.bnp-nmsend > table tr { grid-template-columns: minmax(0, 1fr); }
+      html.bnp-nm form.bnp-nmsend > table > tbody > tr { grid-template-columns: minmax(0, 1fr); }
     }
   `;
   function nmEarly() {   // (the very start: its look, with the colours your theme had last time)
@@ -25631,7 +26192,8 @@
       if (cost > 0) mine += cost * n; else off += 1;
       if (c && c.r && c.r.p > 0) { idb += c.r.p * n; priced += 1; }
     }
-    if (stats) stats.innerHTML = `<div class="bnp-shop-stat"><b>${stock.toLocaleString()}</b><span>item${stock === 1 ? '' : 's'} in stock<small>${rows.length.toLocaleString()} different</small></span></div>
+    const pg = shopPmPages(), whose = pg.find ? `Only the ${pg.total.toLocaleString()} item${pg.total === 1 ? '' : 's'} your search found${pg.pages > 1 ? ` · ${pg.from.toLocaleString()}–${pg.to.toLocaleString()} shown` : ''}` : pg.pages > 1 ? `This page only · items ${pg.from.toLocaleString()}–${pg.to.toLocaleString()} of ${pg.total.toLocaleString()}` : '';   // (whose figures these are: a page or a search, never the whole shop's)
+    if (stats) stats.innerHTML = `${whose ? `<p class="bnp-shop-statsfor">${esc(whose)}</p>` : ''}<div class="bnp-shop-stat"><b>${stock.toLocaleString()}</b><span>item${stock === 1 ? '' : 's'} in stock<small>${rows.length.toLocaleString()} different</small></span></div>
       <div class="bnp-shop-stat"><b>${mine.toLocaleString()}<i>NP</i></b><span>at your prices</span></div>
       ${priced ? `<div class="bnp-shop-stat"><b>≈ ${idb.toLocaleString()}<i>NP</i></b><span>at itemdb’s${priced < rows.length ? `<small>${priced} of ${rows.length} priced</small>` : ''}</span></div>` : ''}
       ${off ? `<div class="bnp-shop-stat is-off" title="Neopets doesn’t put an item priced 0 on show in your shop"><b>${off}</b><span>not on display<small>priced 0</small></span></div>` : ''}`;
@@ -25850,6 +26412,8 @@
   // Settings › Your shop turns Price mode off altogether ──
   const SHOP_PM_SRC = [['sw', 'Shop Wizard'], ['ssw', 'Super Shop Wizard']];
   const SHOP_PM_SCOPES = [['page', 'This page'], ['shop', 'Whole shop']];
+  const SHOP_PM_ONLY = [['all', 'Every item'], ['zero', 'Unpriced only']];
+  const SHOP_PM_SKIPS = [[0, 'Nothing'], [1, 'Priced in the last hour'], [6, 'Priced in the last 6 hours'], [24, 'Priced in the last day'], [72, 'Priced in the last 3 days'], [168, 'Priced in the last week']];
   const SHOP_PM_ICON = '<svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.6" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m13 13 4.5 4.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
   const SHOP_PM_AGAIN = '<svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path d="M15.5 8.5A6 6 0 1 0 14 13.6M15.5 3.5v5h-5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const SHOP_PM_RUN = 'bnp-shop-pmrun', SHOP_PM_PER = 30;   // (a whole-shop run, kept in this tab; Neopets shows 30 items a page)
@@ -25858,6 +26422,23 @@
   function shopPmTimes() { const n = Number(shopP().pmTimes); return [1, 3, 5].includes(n) ? n : 3; }   // (the Shop Wizard shows one section of shops a search: asked this many times an item)
   function shopPmUnder() { const u = String(shopP().pmUnder || '1'); return TP_UNDERS.some(([v]) => v === u) ? u : '1'; }
   const shopPmWaits = () => shopP().pmWait !== false;   // (wait out a wizard's "come back later": on unless you turn it off)
+  const shopPmOnly = () => (shopP().pmOnly === 'zero' ? 'zero' : 'all');   // (every item, or only those priced 0)
+  const shopPmSkip = () => { const h = Number(shopP().pmSkip) || 0; return SHOP_PM_SKIPS.some(([v]) => v === h) ? h : 0; };   // (items priced within this many hours left alone; 0: none)
+  const shopPmSeenKey = () => `shop-pmseen:${nclMe() || '-'}`;   // (what Price mode found for each item, when, with which wizard: kept a week, this account's)
+  function shopPmSeenPut(name, r) {
+    const pm = shop.pm;
+    if (!pm.seen || !name || !r || r.err) return;
+    pm.seen[name] = { at: Date.now(), src: r.src, ...(r.low ? { low: r.low, n: r.n } : r.cant ? { cant: r.cant } : { none: 1 }) };
+    clearTimeout(pm.seenT);
+    pm.seenT = setTimeout(() => { const old = Date.now() - 8 * 864e5; for (const [k, v] of Object.entries(pm.seen)) if (!v || !(v.at > old)) delete pm.seen[k]; idbSet(shopPmSeenKey(), pm.seen).catch(() => {}); }, 1200);
+  }
+  function shopPmFresh(name, hours = shopPmSkip(), src = shopPmSrc()) {   // (looked up lately enough to leave alone: within the hours chosen, or the wizard's no within a week ({ at, src, low | none | cant }); else null)
+    const v = shop.pm.seen && shop.pm.seen[name];
+    if (!v) return null;
+    const age = Date.now() - v.at;
+    if (v.cant) return v.src === src && age < 7 * 864e5 ? v : null;
+    return hours && age < hours * 36e5 ? v : null;
+  }
   const shopPmWiz = (src) => (src === 'ssw' ? 'The Super Shop Wizard' : 'The Shop Wizard');
   const shopPmSleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
   const shopPmHalt = () => { const pm = shop.pm; return pm.stop || pm.forget || !pm.on || !shopPmAllowed(); };   // (Stop, Forget it, Price mode switched off here or in Settings)
@@ -25867,15 +26448,16 @@
     const m = /([\d,]+)\s*[–-]\s*([\d,]+)\s+of\s+([\d,]+)/.exec(reClean(($('.market-your-toolbar .shop-feed-meta') || {}).textContent || ''));
     const f = (n) => String((shop.form.querySelector(`input[name="${n}"]`) || {}).value || '').trim();
     const total = m ? shopNum(m[3]) : shopTrs().length, lim = shopNum(f('lim')) || (m ? shopNum(m[2]) : SHOP_PM_PER);
-    return { total, pages: Math.max(1, Math.ceil(total / SHOP_PM_PER)), page: Math.max(1, Math.ceil(lim / SHOP_PM_PER)), order: f('order_by') || 'id', find: f('obj_name') };
+    return { total, pages: Math.max(1, Math.ceil(total / SHOP_PM_PER)), page: Math.max(1, Math.ceil(lim / SHOP_PM_PER)), order: f('order_by') || 'id', find: f('obj_name'), from: m ? shopNum(m[1]) : 1, to: m ? shopNum(m[2]) : total };
   }
   const shopPmScope = () => (shopP().pmScope === 'shop' && shopPmPages().pages > 1 ? 'shop' : 'page');
-  const shopPmTodo = (rows) => rows.filter((t) => { const r = shop.pm.res.get(t.dataset.name); return r ? !!r.err : !t.classList.contains('is-chg'); });   // (not looked up yet, and not a price you've typed yourself)
+  const shopPmTodo = (rows, run = null) => rows.filter((t) => { const n = t.dataset.name, r = shop.pm.res.get(n); if (r) return !!r.err; if (t.classList.contains('is-chg')) return false; if ((run ? run.only : shopPmOnly()) === 'zero' && Number(t.dataset.was) > 0) return false; return !(run ? shopPmFresh(n, run.skip || 0, run.src) : shopPmFresh(n)); });   // (not looked up yet, not a price you've typed yourself; only those priced 0 when that's chosen; none looked up lately enough to leave alone)
   const shopPmMine = (rows) => rows.filter((t) => t.classList.contains('is-chg') && !shop.pm.res.get(t.dataset.name)).length;
   const shopPmClock = (ms) => { const n = nstOf(ms); return `${n.h % 12 || 12}:${String(n.mi).padStart(2, '0')}:${String(n.s).padStart(2, '0')} ${n.h < 12 ? 'am' : 'pm'}`; };   // (Neopian time to the second: 4:00:53 am)
-  const shopPmTally = (run) => { const n = Object.values(run.done).filter((r) => r.low).length; return n ? ` · ${n.toLocaleString()} priced so far` : ''; };
+  const shopPmTally = (run) => { const v = Object.values(run.done), n = v.filter((r) => r.low).length, c = v.filter((r) => r.cant).length; return `${n ? ` · ${n.toLocaleString()} priced so far` : ''}${c ? ` · ${c.toLocaleString()} can’t be searched` : ''}`; };
   function shopPmInit() {
-    shop.pm = { on: !!shopP().pm, res: new Map(), busy: null, one: '', stop: false, forget: false, msg: '', why: '', ask: false, run: null, waitUntil: 0, waitTop: 0, waitSrc: '', watch: null };
+    shop.pm = { on: !!shopP().pm, res: new Map(), busy: null, one: '', stop: false, forget: false, msg: '', why: '', ask: false, run: null, waitUntil: 0, waitTop: 0, waitSrc: '', watch: null, seen: null, seenT: 0 };
+    idbGet(shopPmSeenKey()).then((v) => { if (!shop || !shop.pm) return; shop.pm.seen = v && typeof v === 'object' ? v : {}; shopPmPaint(); }).catch(() => { if (shop && shop.pm) shop.pm.seen = {}; });   // (what was found lately: rows to leave alone)
     shop.form.addEventListener('click', shopPmClick, true);   // (before the table's own heading hears it)
     const run = shopPmRunGet();
     if (run && shopPmAllowed()) shopPmResume(run);
@@ -25907,8 +26489,10 @@
     s.innerHTML = `<div class="bnp-shop-pmhow"><b class="bnp-shop-pmname">Price mode</b><span class="bnp-shop-pmsrc" role="group" aria-label="Look up with">${SHOP_PM_SRC.map(([k, l]) => `<button type="button" data-shop-pmsrc="${k}" aria-pressed="${src === k}"${k === 'ssw' && !prem ? ' disabled title="The Super Shop Wizard comes with Premium"' : ''}>${esc(l)}</button>`).join('')}</span>
       <label class="bnp-shop-pmtimes" title="The Shop Wizard shows one section of shops a search: the lowest of this many searches is taken"${src === 'ssw' ? ' hidden' : ''}><span>Searches each</span><select data-shop-pmtimes aria-label="Shop Wizard searches for each item">${[1, 3, 5].map((n) => `<option value="${n}"${shopPmTimes() === n ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
       <label class="bnp-shop-pmunder"><span>Just under by</span><select data-shop-pmunder aria-label="Just under the lowest by">${TP_UNDERS.map(([v, , l]) => `<option value="${v}"${under === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
-      <label class="bnp-shop-pmwait" title="When the wizard says to come back later: wait till just after the top of the hour, when it lets you search again, and carry on (at a moment in that hour’s first five minutes)"><input type="checkbox" data-shop-pmwait${shopPmWaits() ? ' checked' : ''}><span>Wait out a ban</span></label></div>
+      <label class="bnp-shop-pmwait" title="When the wizard says to come back later: wait till just after the top of the hour, when it lets you search again, and carry on (at a moment in that hour’s first five minutes)"><input type="checkbox" data-shop-pmwait${shopPmWaits() ? ' checked' : ''}><span>Wait out a ban</span></label>
+      <label class="bnp-shop-pmskip" title="Items Price mode looked up lately are left as they are: no search and no change (an item the Super Shop Wizard won’t search is left a week)"><span>Skip</span><select data-shop-pmskip aria-label="Skip items priced lately">${SHOP_PM_SKIPS.map(([h, l]) => `<option value="${h}"${shopPmSkip() === h ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label></div>
       <div class="bnp-shop-pmact"><span class="bnp-shop-pmsay" data-shop-pmsay aria-live="polite"></span>
+      <span class="bnp-shop-pmonly" role="group" aria-label="Which items">${SHOP_PM_ONLY.map(([k, l]) => `<button type="button" data-shop-pmonly="${k}" aria-pressed="${shopPmOnly() === k}">${l}</button>`).join('')}</span>
       <span class="bnp-shop-pmscope" role="group" aria-label="Price" hidden>${SHOP_PM_SCOPES.map(([k, l]) => `<button type="button" data-shop-pmscope="${k}" aria-pressed="false">${l}</button>`).join('')}</span>
       <button type="button" class="bnp-shop-pmstop" data-shop-pm="stop" hidden>Stop</button>
       <button type="button" class="bnp-shop-pmno" data-shop-pm="no" hidden></button>
@@ -25921,6 +26505,7 @@
       if (!t) return;
       if (t.matches('[data-shop-pmunder]')) shopPSet('pmUnder', t.value);
       if (t.matches('[data-shop-pmtimes]')) shopPSet('pmTimes', Number(t.value));
+      if (t.matches('[data-shop-pmskip]')) { shopPSet('pmSkip', Number(t.value)); shopPmPaint(); }   // (rows left alone now, or looked up again)
       if (t.matches('[data-shop-pmwait]')) { shopPSet('pmWait', t.checked); if (shop.pm.run) { shop.pm.run.wait = t.checked; shopPmRunSet(shop.pm.run); } }   // (a run under way goes by it from now)
     });
     return s;
@@ -25928,11 +26513,12 @@
   function shopPmSay() {   // (the strip's words and its buttons, as things stand)
     const s = document.getElementById('bnp-shop-pm'), pm = shop && shop.pm;
     if (!s || !pm || s.hidden) return;
-    const pg = shopPmPages(), run = pm.run, scope = run ? 'shop' : shopPmScope(), seen = shopSeen(), todo = shopPmTodo(seen);
+    const pg = shopPmPages(), run = pm.run, scope = run ? 'shop' : shopPmScope(), only = run ? run.only || 'all' : shopPmOnly(), seen = shopSeen(), todo = shopPmTodo(seen);
     const all = s.querySelector('[data-shop-pm="all"]'), stop = s.querySelector('[data-shop-pm="stop"]'), no = s.querySelector('[data-shop-pm="no"]'), say = s.querySelector('[data-shop-pmsay]'), sc = s.querySelector('.bnp-shop-pmscope');
     const going = !!(pm.busy || pm.waitUntil || (run && !run.paused));   // (looking up, waiting out a ban, or on its way to the next page)
     sc.hidden = pg.pages < 2 && !run;
     for (const b of sc.querySelectorAll('[data-shop-pmscope]')) { b.setAttribute('aria-pressed', String(b.getAttribute('data-shop-pmscope') === scope)); b.disabled = going || !!run || !!pm.one; }
+    for (const b of s.querySelectorAll('[data-shop-pmonly]')) { b.setAttribute('aria-pressed', String(b.getAttribute('data-shop-pmonly') === only)); b.disabled = going || !!run || !!pm.one; }
     stop.hidden = !going;
     let go, nope = '', words = pm.msg;
     if (pm.waitUntil) go = 'Waiting…';
@@ -25940,24 +26526,27 @@
     else if (run && !run.paused) go = 'On its way…';
     else if (pm.ask) { go = 'Start'; nope = 'Cancel'; }
     else if (run) { go = `Carry on · page ${run.page} of ${run.pages}`; nope = 'Forget it'; }
-    else go = scope === 'shop' ? `Price whole shop (${pg.total.toLocaleString()})` : `Price all shown (${todo.length})`;
+    else go = scope === 'shop' ? (only === 'zero' ? 'Price unpriced, whole shop' : `Price whole shop (${pg.total.toLocaleString()})`) : only === 'zero' ? `Price unpriced (${todo.length})` : `Price all shown (${todo.length})`;
     all.textContent = go;
     all.disabled = going || !!pm.one || (!run && !pm.ask && scope === 'page' && !seen.length);
     no.hidden = !nope;
     no.textContent = nope;
     if (!words && pm.waitUntil) words = `${shopPmWiz(pm.waitSrc)} said to come back later: carrying on just after ${fmtNst(pm.waitTop)} NST, at ${shopPmClock(pm.waitUntil)} (in ${fmtLeft(pm.waitUntil - Date.now())})`;
-    if (!words && pm.ask) words = `Price every item${shop.show === 'on' ? ' on display' : shop.show === 'off' ? ' not on display' : ''} in your shop, page by page from page 1 (${pg.pages} pages, ${pg.total.toLocaleString()} items in all)? Each page’s new prices go with Neopets’ own Update before the next page opens.`;
+    if (!words && pm.ask) words = `Price every ${only === 'zero' ? 'unpriced item' : `item${shop.show === 'on' ? ' on display' : shop.show === 'off' ? ' not on display' : ''}`} in your shop, page by page from page 1 (${pg.pages} pages, ${pg.total.toLocaleString()} items in all)? Each page’s new prices go with Neopets’ own Update before the next page opens.`;
     if (!words && run) words = run.paused ? shopPmWhy(run) : `Whole shop · page ${run.page} of ${run.pages}${shopPmTally(run)}`;
     if (!words) {
-      const res = seen.map((t) => pm.res.get(t.dataset.name)).filter(Boolean), got = res.filter((r) => r.low).length, none = res.filter((r) => r.none).length, mine = shopPmMine(seen);
-      words = res.length ? `${got} priced just under the lowest${none ? ` · ${none} in no other shop` : ''}` : scope === 'shop' ? 'Every item on every page, a page at a time: each page’s new prices go with Update before the next opens' : 'Look up one item under its price, or every item shown';
+      const res = seen.map((t) => pm.res.get(t.dataset.name)).filter(Boolean), got = res.filter((r) => r.low).length, none = res.filter((r) => r.none).length, cant = res.filter((r) => r.cant).length, mine = shopPmMine(seen);
+      words = res.length ? `${got} priced just under the lowest${none ? ` · ${none} in no other shop` : ''}${cant ? ` · ${cant} can’t be searched (price ${cant === 1 ? 'it' : 'them'} yourself)` : ''}` : scope === 'shop' ? 'Every item on every page, a page at a time: each page’s new prices go with Update before the next opens' : 'Look up one item under its price, or every item shown';
       if (mine) words += ` · ${mine} you’ve changed yourself left as ${mine === 1 ? 'it is' : 'they are'}`;
+      const fresh = seen.filter((t) => !pm.res.get(t.dataset.name) && shopPmFresh(t.dataset.name)).length;
+      if (fresh) words += ` · ${fresh} looked up lately left as ${fresh === 1 ? 'it is' : 'they are'}`;
     }
     say.textContent = words;
   }
   function shopPmWhy(run) {   // (why a whole-shop run waits for Carry on)
     const at = `page ${run.page} of ${run.pages}`;
     if (run.why === 'ban') return `${shopPmWiz(run.src)} said to come back later: stopped on ${at}. Update keeps the prices found here; Carry on after the top of the hour`;
+    if (run.why === 'out') return `You seem to be logged out (${shopPmWiz(run.src)} said “${run.msg}”): stopped on ${at}. Log in again, then Carry on`;
     if (run.why === 'pin') return 'Type your PIN by Update and press it: the pricing carries on once it’s saved';
     if (run.why === 'error') return `Update didn’t go through on ${at}${run.msg ? ` (${run.msg})` : ''}: press Update again, or Carry on`;
     if (run.why === 'away') return `Your whole-shop pricing stopped on ${at}: Carry on goes back to it`;
@@ -25970,23 +26559,26 @@
     if (!state) return;
     if (!line) { state.insertAdjacentHTML('afterend', '<span class="bnp-shop-pmrow" data-shop-pmrow></span>'); line = state.nextElementSibling; }
     line.hidden = false;
-    const name = tr.dataset.name || '', r = pm.res.get(name), now = pm.one === name || (pm.busy && pm.busy.name === name);
+    const name = tr.dataset.name || '', r = pm.res.get(name), now = pm.one === name || (pm.busy && pm.busy.name === name), fresh = !r && !now ? (pm.run ? shopPmFresh(name, pm.run.skip || 0, pm.run.src) : shopPmFresh(name)) : null;
     const again = `<button type="button" class="bnp-shop-pmagain" data-shop-pm="one" title="Look again" aria-label="${esc(`Look up ${name} again`)}">${SHOP_PM_AGAIN}</button>`;
     const html = now ? '<span class="bnp-shop-pmwait">Looking…</span>'
+      : fresh ? (fresh.cant ? `<span title="${esc(`${shopPmWiz(fresh.src)} says: ${fresh.cant}`)}">Can’t be searched</span>${again}` : `<span title="${esc(`Looked up ${new Date(fresh.at).toLocaleString()} with ${fresh.src === 'ssw' ? 'the Super Shop Wizard' : 'the Shop Wizard'}, so left as it is`)}">${fresh.low ? `Priced ${colAgo(fresh.at)} · lowest <b>${fresh.low.toLocaleString()} NP</b>` : `In no other shop ${colAgo(fresh.at)}`}</span>${again}`)
       : !r ? `<button type="button" class="bnp-shop-pmgo" data-shop-pm="one" title="${esc(`The lowest price for ${name} in other shops, and yours just under it`)}">${SHOP_PM_ICON}Look up</button>`
       : r.err ? `<span class="bnp-shop-pmerr">${esc(r.err)}</span>${again}`
       : r.none ? `<span>In no other shop</span>${again}`
+      : r.cant ? `<span title="${esc(`${shopPmWiz(r.src)} says: ${r.cant}`)}">Can’t be searched</span>${again}`
       : `<span title="${esc(`From ${r.src === 'ssw' ? 'the Super Shop Wizard' : `${r.times > 1 ? `${r.times} Shop Wizard searches` : 'a Shop Wizard search'}`}, your own shop left out`)}">Lowest <b>${r.low.toLocaleString()} NP</b> · ${r.n.toLocaleString()} shop${r.n === 1 ? '' : 's'}</span>${again}`;
     if (line.dataset.v !== html) { line.dataset.v = html; line.innerHTML = html; }
   }
   function shopPmClick(e) {
-    const t = e.target instanceof Element ? e.target : null, b = t && t.closest('[data-shop-pm], [data-shop-pmsrc], [data-shop-pmscope]');
+    const t = e.target instanceof Element ? e.target : null, b = t && t.closest('[data-shop-pm], [data-shop-pmsrc], [data-shop-pmscope], [data-shop-pmonly]');
     if (!b || !shop || !shop.pm) return;
     e.preventDefault();
     e.stopPropagation();   // (the table's own heading doesn't sort on the switch)
     const pm = shop.pm;
     if (b.matches('[data-shop-pmsrc]')) { if (b.disabled) return; shopPSet('pmSrc', b.getAttribute('data-shop-pmsrc')); for (const x of b.parentElement.children) x.setAttribute('aria-pressed', String(x === b)); const tm = document.querySelector('#bnp-shop-pm .bnp-shop-pmtimes'); if (tm) tm.hidden = b.getAttribute('data-shop-pmsrc') === 'ssw'; return; }
     if (b.matches('[data-shop-pmscope]')) { if (b.disabled) return; shopPSet('pmScope', b.getAttribute('data-shop-pmscope')); pm.ask = false; pm.msg = ''; shopPmSay(); return; }
+    if (b.matches('[data-shop-pmonly]')) { if (b.disabled) return; shopPSet('pmOnly', b.getAttribute('data-shop-pmonly')); pm.ask = false; pm.msg = ''; shopPmSay(); return; }
     const k = b.getAttribute('data-shop-pm');
     if (k === 'toggle') {   // (off: anything under way stops, and a whole-shop run is forgotten)
       pm.on = !pm.on;
@@ -26027,9 +26619,9 @@
       const j = await r.json().catch(() => null);
       if (!j || typeof j !== 'object') throw new Error('The Super Shop Wizard gave an answer NE couldn’t read');
       const d = j.data || {};
-      says = String(d.error || '');
-      if (Array.isArray(d.prices) && Array.isArray(d.owners)) d.prices.forEach((p, k) => offers.push({ owner: String(d.owners[k] || '').toLowerCase(), price: shopNum(p) }));
-      else doc = fromLinks(String(j.html || ''));
+      says = reClean(String(d.error || '').replace(/<[^>]*>/g, ' '));   // (its words as the page shows them: the SSW puts its error in as HTML)
+      if (Array.isArray(d.prices) && Array.isArray(d.owners) && d.prices.length) d.prices.forEach((p, k) => offers.push({ owner: String(d.owners[k] || '').toLowerCase(), price: shopNum(p) }));
+      else doc = fromLinks(String(j.html || ''));   // (no prices: what it says is in its html, as its page shows it ("Whoa there, too many searches!…" comes so, with data's lists empty))
     } else {   // (the Shop Wizard: one section of shops a search)
       const o = { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' }, body: wizParam({ type: 'process_wizard', feedset: '0', shopwizard: name, table: 'shop', criteria: 'exact', min_price: '0', max_price: '999999' }) };
       let r;
@@ -26040,10 +26632,11 @@
     const mine = offers.filter((o) => o.owner && o.owner !== me && o.price > 0);
     if (mine.length || offers.length) return mine;
     const words = reClean(`${says} ${doc && doc.body ? doc.body.textContent : ''}`).replace(/\s+/g, ' ');
-    const none = /did\s*n[o’']?t find|no (?:results|items|shops)|nothing (?:found|like)|could\s*n[o’']?t find|not find anything/i.test(words);
-    if (!none && (says || /too (?:many|busy)|come back|try again (?:later|in)|limit|slow down|take a break|exceeded|wait (?:a|an|for|till|until)\b/i.test(words))) {   // (anything else the Super Shop Wizard says counts as no too: never searched on through it)
-      throw Object.assign(new Error(says ? `The Super Shop Wizard says: ${says.slice(0, 120)}` : src === 'ssw' ? 'The Super Shop Wizard says to wait a while: try again later' : 'The Shop Wizard says it’s busy: try again in a while'), { busy: true });
+    if (/too (?:many|busy)|come back|try again (?:later|in)|limit|slow down|take a break|exceeded|wait (?:a|an|for|till|until)\b|\bbann?ed\b/i.test(words)) {   // (come back later, wherever the wizard says it: first, whatever else its answer holds)
+      throw Object.assign(new Error(`${shopPmWiz(src)} says: ${words.slice(0, 140)}`), { busy: true });
     }
+    const none = /did\s*n[o’']?t find|no (?:results|items|shops)|nothing (?:found|like)|could\s*n[o’']?t find|not find anything/i.test(words);
+    if (!none && says) throw Object.assign(new Error(`The Super Shop Wizard says: ${says.slice(0, 120)}`), { cant: says.slice(0, 160) });   // (anything else it says is about this item: some it never searches (user, 2026-10-31). That one marked and the run goes on; logged out, the run stops)
     return [];
   }
   async function shopPmLook(name, src, times0) {   // ({ low, n, times }: the lowest price in another's shop, how many shops, from how many searches; { none: true } when it's in no other shop; busy: the wizard said to come back later after some answers, those kept)
@@ -26063,9 +26656,11 @@
     if (!o.inAll) { pm.one = name; pm.msg = ''; shopPmSay(); }
     shopPmRow(tr);
     let r, busy = false;
-    try { const got = await shopPmLook(name, src, o.times); busy = !!got.busy; delete got.busy; r = { ...got, src, at: Date.now() }; } catch (e) { busy = !!e.busy; r = { err: busy ? 'Wizard busy' : 'Couldn’t look', src }; if (!o.inAll) pm.msg = String(e.message || e); }
+    try { const got = await shopPmLook(name, src, o.times); busy = !!got.busy; delete got.busy; r = { ...got, src, at: Date.now() }; } catch (e) { busy = !!e.busy; r = e.cant ? { cant: e.cant, src, at: Date.now() } : { err: busy ? 'Wizard busy' : 'Couldn’t look', src }; if (!o.inAll) pm.msg = String(e.message || e); }
     pm.res.set(name, r);
+    shopPmSeenPut(name, r);
     if (!o.inAll) pm.one = '';
+    else if (pm.busy && pm.busy.name === name) pm.busy.name = '';   // (this one done: its line says what was found while the run goes on, not Looking… till the run's end)
     if (r.low) shopPmPut(tr, tpUnder(r.low, o.under || shopPmUnder()));
     shopPmRow(tr);
     shopPmSay();
@@ -26092,10 +26687,13 @@
     shopPmSay();
     return !shopPmHalt();
   }
+  async function shopPmIn() {   // (still logged in? This page asked for again, as a reload asks: Neopets sends a logged-out visit on to its login page)
+    try { const r = await fetch(location.pathname + location.search, { credentials: 'include', redirect: 'manual' }); return !(r.type === 'opaqueredirect' || /\/login\//.test(r.url)); } catch (_) { return true; }
+  }
   async function shopPmLoop(rows, run) {   // (one at a time, a person's moment apart, only while this tab is in sight; told to come back later, waited out when that's on (three times in a row at most). true: every row done)
     const pm = shop.pm, src = run ? run.src : shopPmSrc(), o = { inAll: true, src, under: run ? run.under : shopPmUnder(), times: run ? run.times : shopPmTimes() };
-    let waits = 0;
-    Object.assign(pm, { stop: false, why: '', msg: '' });
+    let waits = 0, cants = [];
+    Object.assign(pm, { stop: false, why: '', msg: '', whyMsg: '' });
     for (let i = 0; i < rows.length; i++) {
       if (document.hidden) { pm.msg = 'Carrying on when this tab is in sight…'; shopPmSay(); }
       await untilShown();
@@ -26106,6 +26704,15 @@
       shopPmSay();
       const got = await shopPmOne(rows[i], o);
       if (run) { run.done[name] = got.r; shopPmRunSet(run); }
+      if (got.r.cant) {
+        cants.push(rows[i]);
+        if ((cants.length === 1 || cants.length % 5 === 0) && !/not allowed to search/i.test(got.r.cant) && !await shopPmIn()) {   // (a no that isn't its "You are not allowed to search for … in the Super Wiz.": to you, logged out (it says "Access denied."), rather than to the item? Then stopped, and these asked again once you're back)
+          for (const t of cants) { pm.res.delete(t.dataset.name); if (run) delete run.done[t.dataset.name]; shopPmRow(t); }
+          if (run) shopPmRunSet(run);
+          Object.assign(pm, { why: 'out', whyMsg: got.r.cant });
+          break;
+        }
+      } else if (!got.busy) cants = [];
       if (got.busy) {
         if (!(run ? run.wait : shopPmWaits()) || waits >= 3) { pm.why = 'ban'; break; }
         waits += 1;
@@ -26123,8 +26730,8 @@
     const pm = shop.pm;
     if (pm.busy || pm.one || pm.waitUntil) return;
     const rows = shopPmTodo(shopSeen());
-    if (!rows.length) { pm.msg = 'Every item shown is looked up: Look again on one to ask once more'; shopPmSay(); return; }
-    if (!await shopPmLoop(rows, null)) pm.msg = pm.why === 'ban' ? `${shopPmWiz(shopPmSrc())} said to come back later: Price all goes on from where it stopped, after the top of the hour` : 'Stopped: Price all again goes on from where it stopped';
+    if (!rows.length) { pm.msg = shopPmOnly() === 'zero' && !shopSeen().some((t) => !(Number(t.dataset.was) > 0)) ? 'No unpriced items shown: Every item prices the rest' : 'Every item shown is looked up, or left alone as looked up lately: Look again on one to ask once more'; shopPmSay(); return; }
+    if (!await shopPmLoop(rows, null)) pm.msg = pm.why === 'ban' ? `${shopPmWiz(shopPmSrc())} said to come back later: Price all goes on from where it stopped, after the top of the hour` : pm.why === 'out' ? `You seem to be logged out (${shopPmWiz(shopPmSrc())} said “${pm.whyMsg}”): log in again, then Price all goes on from where it stopped` : 'Stopped: Price all again goes on from where it stopped';
     shopPmSay();
     for (const tr of shopTrs()) shopPmRow(tr);
   }
@@ -26135,7 +26742,7 @@
     if (trs.some((t) => t.classList.contains('is-out')) || (every && every.checked)) { pm.msg = 'Some items here are set to go back to your inventory: Update or undo that first'; shopPmSay(); return; }
     const here = pg.page === 1 && pg.order === 'id' && !pg.find;
     if (!here && trs.some((t) => t.classList.contains('is-chg'))) { pm.msg = 'Update or undo your changes on this page first: the pricing starts on page 1'; shopPmSay(); return; }
-    const run = { v: 1, src: shopPmSrc(), under: shopPmUnder(), times: shopPmTimes(), wait: shopPmWaits(), show: ['on', 'off'].includes(shop.show) ? shop.show : 'all', page: 1, pages: pg.pages, total: pg.total, step: 'price', done: {} };
+    const run = { v: 1, src: shopPmSrc(), under: shopPmUnder(), times: shopPmTimes(), wait: shopPmWaits(), show: shopPmOnly() === 'zero' ? 'off' : ['on', 'off'].includes(shop.show) ? shop.show : 'all', only: shopPmOnly(), skip: shopPmSkip(), page: 1, pages: pg.pages, total: pg.total, step: 'price', done: {} };
     Object.assign(pm, { run, stop: false, forget: false, msg: '' });
     shopPmRunSet(run);
     if (here) shopPmRunPage(run); else shopPmGoTo(1);
@@ -26179,7 +26786,7 @@
     if (chip) chip.click();   // (the run's own Show choice on this page too, so the rows it prices are the ones in sight)
     for (const t of rows) { const d = run.done[t.dataset.name]; if (d && !d.err) { pm.res.set(t.dataset.name, d); if (d.low) shopPmPut(t, tpUnder(d.low, run.under)); } }
     shopPmPaint();
-    if (!await shopPmLoop(shopPmTodo(rows), run)) { shopPmPause(run, pm.why || 'stop'); return; }
+    if (!await shopPmLoop(shopPmTodo(rows, run), run)) { shopPmPause(run, pm.why || 'stop', pm.why === 'out' ? pm.whyMsg : ''); return; }
     await shopPmSend(run);
   }
   async function shopPmSend(run) {   // (this page's new prices sent with Neopets' own Update (it saves in place: its popup says Success!), then the next page; nothing to send: straight on)
@@ -26915,8 +27522,9 @@
     html.bnp-shop-page .bnp-shop-room small { font: 12px var(--nb-txt); }
     html.bnp-shop-page .bnp-shop-about > .bnp-shop-stats { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px 0; min-width: 0; margin-top: auto; padding-top: 13px; border-top: 2px solid var(--nb-line); }
     html.bnp-shop-page .bnp-shop-about > .bnp-shop-stats:empty { display: none; }
+    html.bnp-shop-page .bnp-shop-about .bnp-shop-statsfor { flex: 0 0 100%; margin: -2px 0 0 2px; color: var(--nb-muted); font: bold 11px var(--nb-ui); letter-spacing: .7px; text-transform: uppercase; }   /* (whose figures these are: this page's, or a search's) */
     html.bnp-shop-page .bnp-shop-about .bnp-shop-stat { flex: 1 1 0; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 3px; min-width: max-content; height: auto; margin: 0; padding: 0 18px; border: 0; border-left: 2px solid var(--nb-line); border-radius: 0; background: none; box-shadow: none; }
-    html.bnp-shop-page .bnp-shop-about .bnp-shop-stat:first-child { padding-left: 2px; border-left: 0; }   /* (equal parts, but none narrower than its own figure, so a long one (≈ 3,999,098 NP) never runs over the line beside it: user, 2026-10-31) */
+    html.bnp-shop-page .bnp-shop-about .bnp-shop-stat:first-child, html.bnp-shop-page .bnp-shop-about .bnp-shop-statsfor + .bnp-shop-stat { padding-left: 2px; border-left: 0; }   /* (equal parts, but none narrower than its own figure, so a long one (≈ 3,999,098 NP) never runs over the line beside it: user, 2026-10-31) */
     html.bnp-shop-page .bnp-shop-about .bnp-shop-stat > b { display: flex; align-items: baseline; gap: 5px; font: 30px/1.05 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; white-space: nowrap; }
     html.bnp-shop-page .bnp-shop-about .bnp-shop-stat > b i { color: var(--nb-muted); font: 15px "Cafeteria", "Arial Bold", sans-serif; font-style: normal; letter-spacing: .3pt; }
     html.bnp-shop-page .bnp-shop-about .bnp-shop-stat span { color: var(--nb-muted); font: 13px/1.3 var(--nb-ui); }
@@ -26934,13 +27542,13 @@
     html.bnp-shop-on #bnp-shop-pm { display: grid; gap: 10px; margin: 0 0 10px; padding: 10px 14px; border: 2px solid var(--shop-edge); border-radius: 14px; background: var(--shop-card); box-shadow: 0 2px 0 var(--shop-edge); }
     html.bnp-shop-on #bnp-shop-pm[hidden], html.bnp-shop-on #bnp-shop-pm [hidden] { display: none !important; }
     html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmname { color: var(--nb-text); font: 17px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
-    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmsrc, .bnp-shop-pmscope) { display: inline-flex; gap: 2px; padding: 2px; border: 2px solid var(--nb-line); border-radius: 999px; background: #fff; }
-    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmsrc, .bnp-shop-pmscope) button { height: 28px; margin: 0; padding: 0 12px !important; border: 0 !important; border-radius: 999px !important; background: transparent !important; color: var(--nb-muted) !important; box-shadow: none !important; font: 13px var(--nb-ui) !important; text-shadow: none !important; cursor: pointer; }
-    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmsrc, .bnp-shop-pmscope) button:not([aria-pressed="true"]):not(:disabled):hover { background: var(--nb-by) !important; color: var(--nb-text) !important; }
-    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmsrc, .bnp-shop-pmscope) button[aria-pressed="true"] { background: var(--nb-bar) !important; color: var(--nb-bar-ink) !important; }
-    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmsrc, .bnp-shop-pmscope) button:disabled { opacity: .45; cursor: default; }
-    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmunder, .bnp-shop-pmtimes) { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: var(--nb-muted); font: 13px var(--nb-ui); }
-    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmunder, .bnp-shop-pmtimes) select { height: 32px; margin: 0; padding: 0 8px; border: 2px solid var(--nb-line); border-radius: 10px; background: #fff; color: var(--nb-text); font: 13px var(--nb-ui); }
+    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmsrc, .bnp-shop-pmscope, .bnp-shop-pmonly) { display: inline-flex; gap: 2px; padding: 2px; border: 2px solid var(--nb-line); border-radius: 999px; background: #fff; }
+    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmsrc, .bnp-shop-pmscope, .bnp-shop-pmonly) button { height: 28px; margin: 0; padding: 0 12px !important; border: 0 !important; border-radius: 999px !important; background: transparent !important; color: var(--nb-muted) !important; box-shadow: none !important; font: 13px var(--nb-ui) !important; text-shadow: none !important; cursor: pointer; }
+    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmsrc, .bnp-shop-pmscope, .bnp-shop-pmonly) button:not([aria-pressed="true"]):not(:disabled):hover { background: var(--nb-by) !important; color: var(--nb-text) !important; }
+    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmsrc, .bnp-shop-pmscope, .bnp-shop-pmonly) button[aria-pressed="true"] { background: var(--nb-bar) !important; color: var(--nb-bar-ink) !important; }
+    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmsrc, .bnp-shop-pmscope, .bnp-shop-pmonly) button:disabled { opacity: .45; cursor: default; }
+    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmunder, .bnp-shop-pmtimes, .bnp-shop-pmskip) { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: var(--nb-muted); font: 13px var(--nb-ui); }
+    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmunder, .bnp-shop-pmtimes, .bnp-shop-pmskip) select { height: 32px; margin: 0; padding: 0 8px; border: 2px solid var(--nb-line); border-radius: 10px; background: #fff; color: var(--nb-text); font: 13px var(--nb-ui); }
     html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmhow, .bnp-shop-pmact) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; min-width: 0; }   /* (how it looks up on the first line; what's happening and its buttons on the second) */
     html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmact { padding-top: 10px; border-top: 2px solid var(--nb-line); }
     html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmwait { display: inline-flex; align-items: center; gap: 7px; margin: 0; color: var(--nb-muted); font: 13px var(--nb-ui); cursor: pointer; }
@@ -26972,7 +27580,7 @@
     html.bnp-shop-on .mkt-pagination .mkt-pagination-label { color: var(--nb-muted) !important; font: 13px var(--nb-ui) !important; }
     html.bnp-shop-on .mkt-pagination .mkt-pagination-buttons { display: inline-flex !important; align-items: center; gap: 6px !important; }
     html.bnp-shop-on .mkt-pagination .mkt-pagination-btn { display: inline-flex !important; align-items: center; justify-content: center; min-width: 34px; height: 32px !important; box-sizing: border-box; margin: 0 !important; padding: 0 12px !important; border: 2px solid var(--nb-line) !important; border-radius: 999px !important; background: linear-gradient(#fff 45%, color-mix(in srgb, var(--shop-edge) 9%, #fff)) !important; color: var(--nb-text) !important; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), 0 2px 0 var(--nb-line) !important; font: 13px/1 var(--nb-ui) !important; letter-spacing: 0 !important; text-decoration: none !important; text-shadow: none !important; transition: border-color .15s, box-shadow .15s; }
-    html.bnp-shop-on .mkt-pagination a.mkt-pagination-btn:hover, html.bnp-shop-on .mkt-pagination a.mkt-pagination-btn:focus-visible { border-color: var(--shop-edge) !important; background: linear-gradient(#fff 30%, color-mix(in srgb, var(--shop-edge) 15%, #fff)) !important; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), 0 2px 0 var(--shop-edge) !important; outline: none; }
+    html.bnp-shop-on .mkt-pagination a.mkt-pagination-btn:hover, html.bnp-shop-on .mkt-pagination a.mkt-pagination-btn:focus-visible { font: 13px/1 var(--nb-ui) !important; border-color: var(--shop-edge) !important; background: linear-gradient(#fff 30%, color-mix(in srgb, var(--shop-edge) 15%, #fff)) !important; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), 0 2px 0 var(--shop-edge) !important; outline: none; }   /* (its font held on hover too: Neopets' market sheet gives .mkt-page a.mkt-pagination-btn:hover "TP Cafeteria" !important, as strong as NE's own font rule (user, 2026-10-31)) */
     html.bnp-shop-on .mkt-pagination .mkt-pagination-btn.active { border-color: var(--shop-edge) !important; background: linear-gradient(color-mix(in srgb, var(--shop-edge) 72%, #fff), var(--shop-edge) 70%) !important; color: #fff !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -3px 2px rgba(0, 0, 0, .18), 0 2px 0 color-mix(in srgb, var(--shop-edge) 66%, #000) !important; text-shadow: 0 1px 0 rgba(0, 0, 0, .25) !important; }
     html.bnp-shop-on .mkt-pagination .mkt-pagination-btn.is-disabled { background: #fff !important; box-shadow: none !important; opacity: .45; cursor: default; }
     html.bnp-shop-on .bnp-shop-pagesby select { width: auto !important; height: 34px !important; margin: 0 !important; padding: 0 10px !important; border: 2px solid var(--nb-line) !important; border-radius: 10px !important; background-color: #fff !important; color: var(--nb-text) !important; box-shadow: none !important; font: 13.5px var(--nb-ui) !important; cursor: pointer; }
@@ -29115,7 +29723,7 @@
       if (r && r.visit) s.visit = true;
       if (r && r.busy) s.busy = true;
       if (r && r.err && !r.busy) s.fail++;   // (itemdb didn't answer for it: not the same as no price)
-      if (!it.nc && r && r.p > 0) { const t = r.p * it.q; s.np += t; s.priced++; s.list.push({ n: it.n, q: it.q, p: r.p, t, img: it.img || r.img || '', slug: r.slug || '' }); continue; }
+      if (!it.nc && r && r.p > 0) { const t = r.p * it.q; s.np += t; s.priced++; s.list.push({ n: it.n, q: it.q, p: r.p, t, img: it.img || r.img || '', slug: r.slug || '', ...(r.r != null ? { r: r.r } : {}) }); continue; }
       if (it.nc || c) {
         s.nc.n++;
         const g = c && wtRange(c);
@@ -29133,10 +29741,11 @@
     const x = (a.caps && wtRange(a.caps)) || { lo: 0, hi: 0 }, y = (b.caps && wtRange(b.caps)) || { lo: 0, hi: 0 };
     return (y.hi - x.hi) || (y.lo - x.lo) || ((b.capsN || 0) - (a.capsN || 0)) || String(a.n).localeCompare(String(b.n));
   };
-  const wtShape = (s, extra = {}) => {   // (what's kept of a sum: its totals, the 50 most valuable, the 30 most valuable NC items, and the names without a price or a value)
-    const ncv = s.ncList.filter((x) => x.caps), ncn = s.ncList.filter((x) => !x.caps);
+  const wtShape = (s, extra = {}, wide = false) => {   // (what's kept of a sum: its totals, the 50 most valuable (a whole count: its 50 highest, lowest and rarest each too, so each order has its own), the 30 most valuable NC items, and the names without a price or a value)
+    const ncv = s.ncList.filter((x) => x.caps), ncn = s.ncList.filter((x) => !x.caps), keep = new Set(s.list.slice(0, 50));
+    if (wide && s.list.length > 50) for (const f of [(a, b) => b.p - a.p, (a, b) => a.p - b.p, (a, b) => (b.r ?? -1) - (a.r ?? -1)]) for (const x of s.list.slice().sort(f).slice(0, 50)) keep.add(x);
     return { at: Date.now(), np: s.np, items: s.items, qty: s.qty, priced: s.priced, none: s.none.length, noneNames: s.none.slice(0, 40), pb: s.pb, nc: s.nc,
-      top: s.list.slice(0, 50).map(({ n, q, p, t, img, slug }) => ({ n, q, p, t, img, slug })),
+      top: [...keep].sort((a, b) => b.t - a.t).map(({ n, q, p, t, img, slug, r }) => ({ n, q, p, t, img, slug, ...(r != null ? { r } : {}) })),
       ncTop: ncv.slice(0, 30).map(({ n, q, caps, capsN, img, np }) => ({ n, q, caps, capsN, img, ...(np ? { np: 1 } : {}) })),
       ncNone: ncn.length, ncNoneNames: ncn.slice(0, 40).map((x) => x.n), ...extra };
   };
@@ -29394,10 +30003,10 @@
     let lists = '';
     if (!nc) {
       const whole2 = key === 'safetydeposit' && whole && src === whole ? whole : null, led = whole2 && whole2.whole ? wtLedList(`${whole2.at}|${whole2.upd || ''}`, whole2.at) : null;   // (the whole SDB: every row it has, not its first 50)
-      const sortK = S.features.wtSort || 'value', list = (led || (src ? src.top || [] : [])).slice().sort(wtSortBy(sortK));
-      const cap = Math.max(wt.full ? 50 : 10, wt.show || 10), shown = list.slice(0, cap), most = list.reduce((m, x) => Math.max(m, x.t || 0), 1);
-      const rows = shown.map((it) => li(it, `${pic(it.img)}<span class="bnp-wt-n">${it.slug ? `<a href="https://itemdb.com.br/item/${esc(encodeURIComponent(it.slug))}" target="_blank" rel="noopener" title="${esc(`${it.n} on itemdb`)}">${esc(it.n)}</a>` : `<span>${esc(it.n)}</span>`}${it.q > 1 || it.r != null ? `<small>${[it.q > 1 ? `${it.q.toLocaleString()} × ${npShort(it.p)} NP` : '', it.r != null ? `r${it.r}` : ''].filter(Boolean).join(' · ')}</small>` : ''}<i class="bnp-wt-bar" aria-hidden="true"><i style="width:${Math.max(2, Math.min(100, Math.round(100 * (it.t || 0) / most)))}%"></i></i></span><b class="bnp-wt-v" title="${esc(`${Math.round(it.t).toLocaleString()} NP`)}">${npShort(it.t)} NP</b>`)).join('');   // (its value once; a stack's how many × each; the bar: its worth beside the most valuable's)
-      const title = sortK === 'each' ? 'Dearest each' : sortK === 'rarity' ? 'Rarest' : sortK === 'cheap' ? 'Cheapest each' : 'Most valuable';
+      const sortK = S.features.wtSort || 'value', full = !led && s && src === here ? s.list : null, list = (led || full || (src ? src.top || [] : [])).slice().sort(wtSortBy(sortK));   // (this page as it is: every row, not only its 50 most valuable)
+      const cap = Math.max(wt.full ? 50 : 10, wt.show || 10), shown = list.slice(0, cap), one = sortK === 'each' || sortK === 'cheap', fig = (it) => (one ? it.p : it.t) || 0, most = list.reduce((m, x) => Math.max(m, fig(x)), 1);   // (in order of each one's price: one's price shown, a stack noted, never its total)
+      const rows = shown.map((it) => li(it, `${pic(it.img)}<span class="bnp-wt-n">${it.slug ? `<a href="https://itemdb.com.br/item/${esc(encodeURIComponent(it.slug))}" target="_blank" rel="noopener" title="${esc(`${it.n} on itemdb`)}">${esc(it.n)}</a>` : `<span>${esc(it.n)}</span>`}${it.q > 1 || it.r != null ? `<small>${[it.q > 1 ? (one ? `Qty: ${it.q.toLocaleString()}` : `${it.q.toLocaleString()} × ${npShort(it.p)} NP`) : '', it.r != null ? `r${it.r}` : ''].filter(Boolean).join(' · ')}</small>` : ''}<i class="bnp-wt-bar" aria-hidden="true"><i style="width:${Math.max(2, Math.min(100, Math.round(100 * fig(it) / most)))}%"></i></i></span>${one ? `<b class="bnp-wt-v" title="${esc(it.q > 1 ? `${Math.round(it.p).toLocaleString()} NP each · ${it.q.toLocaleString()} of them, ${Math.round(it.t).toLocaleString()} NP in all` : `${Math.round(it.p).toLocaleString()} NP`)}">${it.q > 1 ? '<small>each</small>' : ''}${npShort(it.p)} NP</b>` : `<b class="bnp-wt-v" title="${esc(`${Math.round(it.t).toLocaleString()} NP`)}">${npShort(it.t)} NP</b>`}`)).join('');   // (its value once; a stack's how many × each (in order of each one's price: one's price, "each" before a stack's, its Qty under its name); the bar: beside the first's)
+      const title = sortK === 'each' ? 'Highest price each' : sortK === 'rarity' ? 'Rarest' : sortK === 'cheap' ? 'Lowest price each' : 'Most valuable';
       if (rows) lists += `<section>${head(`${title}${pg}`, shown)}<div class="bnp-wt-sorts" role="group" aria-label="In order of">${WT_SORTS.map(([v, l]) => `<button type="button" class="bnp-wt-pb is-sm" data-wtsort="${v}" aria-pressed="${sortK === v}">${l}</button>`).join('')}</div><ol class="bnp-wt-top${can ? ' is-pick' : ''}">${rows}</ol></section>`;
       if (list.length > shown.length || cap > 10) lists += `<div class="bnp-wt-morerow">${list.length > shown.length ? `<button type="button" class="bnp-wt-pb" data-wt="more">${cap <= 10 ? `Show more (${Math.min(list.length, 50)})` : `Show ${Math.min(50, list.length - shown.length).toLocaleString()} more`}</button>` : ''}${cap > 10 && !wt.full ? '<button type="button" class="bnp-wt-pb" data-wt="fewer">Fewer</button>' : ''}<span class="bnp-wt-count">${shown.length.toLocaleString()} of ${list.length.toLocaleString()}</span></div>`;
       if (src && src.none) lists += `<details class="bnp-wt-noneb"><summary>${src.none.toLocaleString()} without an itemdb price</summary><p>${esc((src.noneNames || []).join(', '))}${src.none > (src.noneNames || []).length ? '…' : ''}</p></details>`;
@@ -29609,12 +30218,12 @@
       const s = wtSum(items, prices, caps);
       if (s.visit || s.busy) {   // (itemdb paused it: what's read and priced so far kept, to carry on from)
         err = s.visit ? 'visit' : 'busy';
-        const p = { at: Date.now(), items, pools, pages: me.pages, seen, priced: s.priced, toPrice: me.toPrice, shape: wtShape(s) };
+        const p = { at: Date.now(), items, pools, pages: me.pages, seen, priced: s.priced, toPrice: me.toPrice, shape: wtShape(s, {}, true) };
         idbSet(wtPartKey(), p).catch(() => {});
         if (wt) wt.part = p;
       } else if (s.fail && !s.priced) err = 'fail';
       else {
-        const shape = wtShape(s, { whole: true, pools, ...(carried ? { carried: { pool: carried.pool, at: carried.at } } : {}) });
+        const shape = wtShape(s, { whole: true, pools, ...(carried ? { carried: { pool: carried.pool, at: carried.at } } : {}) }, true);
         wtKeepSet(key, shape);
         idbSet(wtPartKey(), null).catch(() => {});
         if (wt) wt.part = null;
@@ -29686,7 +30295,7 @@
       const ask = fresh.filter((x) => !caps[x] && items.some((it) => it.n === x && (it.nc || !prices[x])));
       if (ask.length) Object.assign(caps, await wtCaps(ask));
       const now = Date.now();
-      wtKeepSet('safetydeposit', wtShape(wtSum(items, prices, caps), { whole: true, pools, at: kept.at, upd: now }));
+      wtKeepSet('safetydeposit', wtShape(wtSum(items, prices, caps), { whole: true, pools, at: kept.at, upd: now }, true));
       await idbSet(wtLedKey(), { ...led, items, pools, prices, caps, upd: now });
       if (wt && wt.key === 'safetydeposit') { wtPillPaint(); wtWinPaint(); }
     };
@@ -30783,7 +31392,7 @@
   function winDrag(win, onEnd) {   // (a pop-up's header moves it; onEnd: where it was put down)
     const head = win.querySelector('.bnp-hub-head');
     head.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0 || e.target.closest('button') || win.classList.contains('is-max')) return;   // (full screen: it stays put)
+      if (e.button !== 0 || e.target.closest('button, input, select, textarea, label, a') || win.classList.contains('is-max')) return;   // (full screen: it stays put; a field in the header (Settings' Find) is for typing in)
       const r = win.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
       head.setPointerCapture(e.pointerId);
       head.classList.add('is-drag');
@@ -32701,7 +33310,7 @@
     const root = document.documentElement;
     root.classList.toggle('bnp-no-friends', !S.features.friends);
     root.classList.toggle('bnp-no-social', !S.features.social);
-    for (const fn of [themeVars, adsApply, profileMenu, () => applyNav('top'), () => applyNav('bottom'), natRemember, sideExtras, searchExtras, gearBar, dailyBar, dailyTicker, dock, tpApply, () => { if (sdbObs) sdbNavPaint(); }, () => { if (document.documentElement.classList.contains('bnp-nb')) nbcApply(); }, mallSlimPaint]) {
+    for (const fn of [themeVars, profileMenu, () => applyNav('top'), () => applyNav('bottom'), natRemember, sideExtras, searchExtras, gearBar, dailyBar, dailyTicker, dock, tpApply, () => { if (sdbObs) sdbNavPaint(); }, () => { if (document.documentElement.classList.contains('bnp-nb')) nbcApply(); }, mallSlimPaint]) {
       try { fn(); } catch (e) { report(e); }
     }
     natCacheMap = null;
@@ -35045,13 +35654,14 @@
     win.innerHTML = `
       <div class="popup-header__2020 bnp-hub-head">
         <h3><span class="bnp-hub-brand" aria-hidden="true"><span class="bnp-hub-word"><i class="bnp-hub-stars" hidden></i>Neopets Enhance</span></span><i class="bnp-hub-gear" data-g="hubgear" aria-hidden="true" hidden></i>Settings</h3>
+        <label class="bnp-hub-findbox" title="Find a setting: anything on any page here, by what it says"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.4" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.4 15.4 20.6 20.6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><input type="search" class="bnp-hub-find" data-g="find" placeholder="Find a setting…" aria-label="Find a setting" spellcheck="false" autocomplete="off"></label>
         <button type="button" class="button-default__2020 button-yellow__2020 bnp-headbtn bnp-peek" data-g="peek" title="Peek at the page (hold for a quick look)" aria-label="Peek at the page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1.8 12s3.7-6.6 10.2-6.6S22.2 12 22.2 12s-3.7 6.6-10.2 6.6S1.8 12 1.8 12z"/><circle cx="12" cy="12" r="3.1"/></svg></button>
         <button type="button" class="button-default__2020 button-yellow__2020 bnp-headbtn bnp-max" data-g="max" title="Full screen" aria-label="Full screen" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="is-out" d="M4 9.5V4h5.5M14.5 4H20v5.5M20 14.5V20h-5.5M9.5 20H4v-5.5"/><path class="is-in" d="M9.5 4v5.5H4M20 9.5h-5.5V4M14.5 20v-5.5H20M4 14.5h5.5V20"/></svg></button>
         <button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button>
         <div class="popup-header-pattern__2020"></div>
       </div>
       <div class="popup-body__2020 bnp-hub-body">
-        <nav class="bnp-rail" aria-label="Sections"><input type="search" class="bnp-hub-find" data-g="find" placeholder="Find a setting…" aria-label="Find a setting" spellcheck="false" autocomplete="off">${rail}</nav>
+        <nav class="bnp-rail" aria-label="Sections">${rail}</nav>
         <section class="bnp-main" data-g="main"></section>
       </div>
       <div class="popup-footer__2020 bnp-hub-foot">
@@ -35068,7 +35678,7 @@
     try { maxSet(localStorage.getItem('bnp-hubmax') === '1'); } catch (_) { maxSet(false); }
     const maxFlip = () => { const on = !win.classList.contains('is-max'); maxSet(on); try { localStorage.setItem('bnp-hubmax', on ? '1' : '0'); } catch (_) { /* */ } requestAnimationFrame(() => hubPal()); };   // (the whole browser window, a little edge left; remembered)
     max.addEventListener('click', maxFlip);
-    win.querySelector('.bnp-hub-head').addEventListener('dblclick', (e) => { if (!e.target.closest('button')) maxFlip(); });
+    win.querySelector('.bnp-hub-head').addEventListener('dblclick', (e) => { if (!e.target.closest('button, label, input')) maxFlip(); });   // (a double-click in Find picks a word, as anywhere you type)
     const peek = win.querySelector('[data-g="peek"]');
     peek.addEventListener('pointerdown', (e) => {   // (a click: the page until you come back; held: the page while it's held)
       if (e.button !== 0) return;
@@ -41071,9 +41681,6 @@
       ['general', `<div class="bnp-card"><h4>Pets</h4>
         ${sw('pets', 'Switch Pet', 'A swap button beside “Active Pet” in the side menu, and Switch Pet in the Profile menu: every pet with what it is and how hungry; one click makes it your active pet.')}
       </div>`],
-      ['general', `<div class="bnp-card"><h4>Ads</h4>
-        ${sw('noAds', 'Hide Neopets’ ads', 'For accounts without Premium: the banner over the page, the ads beside it and under it, and the video ones, gone from every page from the moment it starts, as Premium has it. Daily Ad Rewards’ video, which you start yourself, still plays. Off: Neopets’ ads as they are.')}
-      </div>`],
       ['general', `<div class="bnp-card"><h4>Windows</h4>
         <div class="bnp-f"><span>Their footers</span><span class="bnp-seg" role="group">${[['pop', 'Like Neopets’ pop-ups'], ['page', 'Like the foot of the page']].map(([v, l]) => `<button type="button" data-featv="hubFoot:${v}" aria-pressed="${(f.hubFoot || 'pop') === v}">${l}</button>`).join('')}</span></div>
         ${sw('hubPal', 'A Neopian in Settings’ corner', palNote())}
@@ -41727,7 +42334,7 @@
   function oldCssLite() {   // (an owner's page under the beta bar: Neopets' old top bar and its ads step aside and the page moves down under the bar; nothing of theirs is restyled)
     return `
       html.bnp-oldwait body { visibility: hidden !important; }
-      html.bnp-old.bnp-oldlite #header, html.bnp-old.bnp-oldlite #ban, html.bnp-old.bnp-oldlite #pushdown_banner { display: none !important; }
+      html.bnp-old.bnp-oldlite #header { display: none !important; }
       html.bnp-old.bnp-oldlite body { position: relative !important; margin-top: 112px !important; }
       html.bnp-old.bnp-oldlite #navtop__2020, html.bnp-old.bnp-oldlite #navbottom__2020, html.bnp-old.bnp-oldlite #navprofiledropdown__2020, html.bnp-old.bnp-oldlite #navnewsdropdown__2020 { text-align: left; }
       html.bnp-old.bnp-oldlite body > .navsub-right__2020[data-bnp-old] { position: fixed !important; top: 75px !important; right: 16px !important; left: auto !important; margin: 0 !important; }
@@ -41763,7 +42370,7 @@
       html.bnp-oldwait body, html.bnp-qrwait td.content { visibility: hidden !important; }
       html.bnp-old body { margin: 0 !important; }
       ${sameBg ? `html:not(.bnp-my).bnp-old body { margin: 0 !important; background-color: ${bgc || '#fff'} !important; background-image: ${bgi || 'none'} !important; background-size: ${bgs || 'auto'} !important; background-repeat: ${bgr || 'repeat'} !important; background-position: ${bgp || '0 0'} !important; background-attachment: ${bga || 'scroll'} !important; }` : ''}
-      html.bnp-old #header, html.bnp-old #footer, html.bnp-old #ban, html.bnp-old td.sidebar, html.bnp-old #pushdown_banner { display: none !important; }
+      html.bnp-old #header, html.bnp-old #footer, html.bnp-old td.sidebar { display: none !important; }
       html.bnp-old #main { position: relative !important; top: 0 !important; left: 0 !important; width: 1080px !important; max-width: calc(100vw - 16px) !important; min-height: calc(100vh - 110px); margin: 10px auto 0 !important; padding: 104px 0 64px !important; box-sizing: border-box !important; ${boxBg} border: 0 !important; border-left: ${box.side || '0 none'} !important; border-right: ${box.side || '0 none'} !important; border-radius: ${box.radius || '0'} !important; box-shadow: ${box.shadow || 'none'} !important; }
       html.bnp-old #navtop__2020, html.bnp-old #navbottom__2020, html.bnp-old #navprofiledropdown__2020, html.bnp-old #navnewsdropdown__2020, html.bnp-old #footer__2020 { text-align: left; }
       html.bnp-old #content, html.bnp-old #content > table { width: 100% !important; }
@@ -42809,6 +43416,12 @@
     .bnp-hub .bnp-max { right: 54px; }
     .bnp-hub .bnp-peek { right: 100px; }
     .bnp-hub .bnp-peek[hidden] { display: none; }
+    .bnp-hub .bnp-hub-findbox { position: absolute; right: 148px; top: 50%; z-index: 1; display: flex; align-items: center; gap: 7px; width: min(240px, 26%); height: 35px; margin: 0; padding: 0 12px 0 11px; border: 2px solid rgba(0, 0, 0, .2); border-radius: 999px; background: rgba(255, 255, 255, .94); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .12), 0 1px 0 rgba(255, 255, 255, .35); box-sizing: border-box; color: #6b6653; transform: translateY(-50%); cursor: text; }   /* (Find a setting: in the header, by its buttons (user, 2026-10-31); its left holds the wordmark) */
+    .bnp-hub .bnp-hub-head:has(.bnp-peek[hidden]) .bnp-hub-findbox { right: 102px; }   /* (Peek not there: up to Full screen) */
+    .bnp-hub .bnp-hub-findbox svg { flex: none; }
+    .bnp-hub .bnp-hub-findbox:focus-within { border-color: rgba(0, 0, 0, .34); background: #fff; box-shadow: 0 0 0 3px rgba(255, 255, 255, .6); color: #3d382c; }
+    .bnp-hub .bnp-hub-head .bnp-hub-find, .bnp-hub .bnp-hub-head .bnp-hub-find:focus { position: static; flex: 1; min-width: 0; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none !important; color: #262626; font: 14px "MuseoSansRounded500", Arial, sans-serif; outline: none; }
+    @media (max-width: 940px) { .bnp-hub:not(.is-max) .bnp-hub-findbox { position: relative; left: auto; right: auto !important; top: auto; width: min(340px, calc(100% - 24px)); margin: 8px auto 0; transform: none; } .bnp-hub:not(.is-max) .bnp-hub-head :is(.bnp-headbtn, .bnp-x) { top: 27px; } }   /* (a narrow window: under the title, the buttons by the title still) */
     .bnp-hub .bnp-headbtn svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
     .bnp-hub .bnp-max .is-in, .bnp-hub.is-max .bnp-max .is-out { display: none; }
     .bnp-hub.is-max .bnp-max .is-in { display: inline; }
@@ -43836,6 +44449,8 @@
     .bnp-wt-n > a:hover { text-decoration: underline !important; }
     .bnp-wt-n small { color: #8a8571; font-size: 11.5px; }
     .bnp-wt-v { color: #2b6a2f; font: 15px "MuseoSansRounded700", Arial, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .bnp-wt-v small { margin-right: 4px; color: #8a8571 !important; font: 11px "MuseoSansRounded500", Arial, sans-serif; }   /* (a stack's one price: "each" before it) */
+    .bnp-wt-top .bnp-wt-v { min-width: 6em; text-align: right; }   /* (one width for every row's figure: each bar as long as the next's for the same share) */
     .bnp-wt-top .bnp-it-nc { justify-self: end; }
     .bnp-wt-none-v { color: #8a8571; font-size: 11.5px; }
     .bnp-wt-morerow { display: flex; justify-content: center; margin-top: -6px; }
@@ -43897,6 +44512,7 @@
     .bnp-wt.is-full .bnp-wt-n > a, .bnp-wt.is-full .bnp-wt-n > span { display: -webkit-box; min-height: 2.6em; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; line-height: 1.3; }   /* (a long name on two lines) */
     .bnp-wt.is-full .bnp-wt-bar { width: 100%; }
     .bnp-wt.is-full .bnp-wt-v { font-size: 17px; }
+    .bnp-wt.is-full .bnp-wt-v small { font-size: 12px; }
     .bnp-wt.is-full .bnp-wt-tick { position: absolute; top: 9px; right: 9px; }
     .bnp-wt.is-full .bnp-wt-top .bnp-it-nc { justify-self: center; }
     @media (max-width: 760px) { .bnp-wt.is-full .bnp-wt-body { grid-template-columns: minmax(0, 1fr); } .bnp-wt.is-full .bnp-wt-side { position: static; } }
@@ -44861,6 +45477,8 @@
     .bnp-bob-used { opacity: .5; filter: saturate(.5); }
     .bnp-coco.is-front { max-width: 520px; margin: 10px auto 14px; padding: 12px 16px; border: 2px solid rgba(0, 0, 0, .12); border-radius: 16px; background: #fff; text-align: center; }
     .bnp-coco.is-front .bnp-coco-more { margin-top: 0; }
+    .bnp-coco.is-front .bnp-coco-res { margin-bottom: 10px; }
+    .bnp-coco-note.is-err { color: #a3271b; }
     input.bnp-coco-back { width: auto !important; padding: 6px 20px !important; font-size: 15px !important; }
     .bnp-bt { max-width: 520px; margin: 10px auto 16px; padding: 16px 20px 18px; border: 2px solid rgba(0, 0, 0, .12); border-radius: 16px; background: #fff; color: #2a2a2a; font: 14px "MuseoSansRounded500", Arial, sans-serif; text-align: center; }
     .bnp-bt-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 22px; text-align: left; }
@@ -46147,6 +46765,16 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.8', '2026-10-31', [
+      'Underwater Fishing made over: all your pets as tiles to make active with a press, each with a reminder bell; Fish in a row fishes a string of your pets one after another, as you would, at a person’s pace',
+      'Your shop: Price mode can price only your unpriced items and skip ones priced lately; an item the Super Shop Wizard won’t search is marked and passed by, and its real “come back later” is caught',
+      'Your shop: the band says when its figures are for this page only',
+      'Coconut Shy’s own page throws as your quick link does: each throw’s answer, today’s throws and sums, right there',
+      'What it’s worth: Price each and Cheapest show one item’s price, a stack marked “each”',
+      'Settings: Find a setting is in the window’s header',
+      'Neopets’ ads are no longer hidden',
+      'Fixes: Write a Neomail’s buttons in Firefox, a Price mode row stuck on Looking…, the shop’s page buttons changing font on hover',
+    ]],
     ['4.7', '2026-10-31', [
       'Food Club: Neopets Enhance’s bets: ten for the round, worked out from each pirate’s chance (NeoFoodClub’s model: strength, favourite foods and allergies on the menu), on a dial from Safest to Most profit',
       'Food Club: What these bets can really win made over in a box of its own, with the pirates’ pictures; it shows under any list on Place a Bet too, its chances from the same model',
@@ -46588,11 +47216,9 @@
     if (document.documentElement) { fn(); return; }
     const o = new MutationObserver(() => { if (document.documentElement) { o.disconnect(); fn(); } });
     o.observe(document, { childList: true });
-  })(() => { for (const f of [barLook, boxEarly, nclPinEarly, tpEarly, tpSalesEar, invEar, sdbEar, qsAllEar, pageEar, dailyFormEar, quietEar, cocoEarly, myEarly, tabsMark, dockMark, shopMin, srEarly, adsApply, nbEarly, stEarly, nmEarly, nmSentEarly, smEarly, cuEarly, colEarly, saEarly, cloEarly, galEarly, shopEarly, mallEarly, pinAdEarly, pageWait, waitStyle, navEarly]) { try { f(); } catch (e) { report(e); } } });
+  })(() => { for (const f of [barLook, boxEarly, nclPinEarly, tpEarly, tpSalesEar, invEar, sdbEar, qsAllEar, pageEar, dailyFormEar, quietEar, cocoEarly, fishEarly, myEarly, tabsMark, dockMark, shopMin, srEarly, nbEarly, stEarly, nmEarly, nmSentEarly, smEarly, cuEarly, colEarly, saEarly, cloEarly, galEarly, shopEarly, mallEarly, pinAdEarly, pageWait, waitStyle, navEarly]) { try { f(); } catch (e) { report(e); } } });
   // ═══════════════════════════════════════════════════════════════════════════
-  // Ads gone (accounts without Premium): Neopets' own ad places out of sight from the very start, as Premium has the page — the banner
-  // over it, the ones beside it and under it, its phone-size one, Playwire's and Google's slots, and old pages' banner and boxes. Only
-  // their places: none of Neopets' scripts is touched, and nothing inside a pop-up (Daily Ad Rewards' video, yours to start, still plays)
+  // The page at its very start
   // ═══════════════════════════════════════════════════════════════════════════
   // The page box as Neopets' own code makes it once the whole page has loaded — at least the window's height less its footer
   // (bodyHeightAdjust2020), and on the Inventory 1300 px wide (its own sheet) — from the very start, so nothing jumps meanwhile: not the
@@ -46612,24 +47238,6 @@
     const f = document.getElementById('footer__2020'), h = f ? f.offsetHeight : 0;
     if (!h) return;
     try { if (localStorage.getItem('bnp-foot-h') !== String(h)) localStorage.setItem('bnp-foot-h', String(h)); } catch (_) { /* */ }
-  }
-  function adCss() {   // (a function, so it's there at the page's very start, before the rest is read)
-    return `.nl-ad-top, .nl-ad-top-content, .nl-ad-left, .nl-ad-right, .nl-ad-bottom, .nl-ad-bottom-content, .nl-mobile-ad, .nl-ads-wrapper, .nl-ads-leaderWrapper,
-    [id^="pb-slot-"]:not(.togglePopup__2020 *), [id^="pw-oop"]:not(.togglePopup__2020 *), [class*="pw-corner-ad"]:not(.togglePopup__2020 *),
-    ins.adsbygoogle:not(.togglePopup__2020 *), [id^="div-gpt-ad"]:not(.togglePopup__2020 *), [id^="google_ads_iframe"]:not(.togglePopup__2020 *),
-    iframe[src*="googlesyndication.com"]:not(.togglePopup__2020 *), iframe[src*="doubleclick.net"]:not(.togglePopup__2020 *), iframe[src*="amazon-adsystem.com"]:not(.togglePopup__2020 *),
-    #ad-table, #ad-table-btf, #pushdown_banner, #pushdown_banner_btf, #ad_theme_bar, #ad-slug-wrapper, #ad-slug-wrapper-btf, .ad_slug_hor, #ad-300x250Div-atfWrapper, #ad-300x250Div-btfWrapper { display: none !important; }
-    div#ban { height: 0 !important; min-height: 0 !important; overflow: hidden !important; }`;
-  }
-  function adsApply() {   // (on, or off again, as Settings has it: at the page's start, and whenever it changes)
-    const st = document.getElementById('bnp-noads');
-    if (S.features.noAds === false) { if (st) st.remove(); return; }
-    if (st) return;
-    const el = document.createElement('style');
-    el.id = 'bnp-noads';
-    el.setAttribute('data-bnp', 'noads');
-    el.textContent = adCss();
-    (document.head || document.documentElement).append(el);
   }
   function srEarly() {   // (search results: Neopets' plain list stays out of sight from the start, so it never shows first and goes)
     if (!S.features.searchPage || location.pathname !== '/search.phtml' || /selected_type=object/.test(location.search)) return;
@@ -46726,7 +47334,7 @@
     setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 4000 + Math.random() * 12000);   // (the Turmaculus' due hours, if they're needed: a moment after the page, not at once)
     document.addEventListener('visibilitychange', () => { if (document.hidden) return; clearTimeout(turmacRead.t); turmacRead.t = setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 3000 + Math.random() * 6000); });
     try { startKeep(); } catch (e) { report(e); }
-    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, labPage, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
+    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, labPage, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
     themeAfter(themeChanged);   // (an old page, its theme's sheets still coming: everything of ours dressed again once they're in)
     whenLoaded(() => { setTimeout(() => { try { boxFootNote(); } catch (e) { report(e); } }, 900); try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } setTimeout(() => { updCheck(false).catch(report); try { updSeen(); } catch (e) { report(e); } }, 1500); try { const w = myWorn(), sw = w && themeData().sw[myLive(w).base]; if (w && (!sw || sw.v !== 7)) themeSwatches(); } catch (e) { report(e); } });   // (a theme of yours: its base's sheet read, if it hasn't been yet)   // (a random event Neopets adds a moment later; theme pictures for the tab)
     if (document.getElementById('navtop__2020') || document.getElementById('navbottom__2020')) startOnce();
