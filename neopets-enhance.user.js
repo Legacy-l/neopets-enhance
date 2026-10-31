@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.6.1
+// @version      4.7
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -28500,6 +28500,93 @@
   }
   // ── Food Club's possible winnings, worked out (user, 2026-10-31: "neopets own potential winnings calculator, it's technically incorrect,
   // since it's impossible for one bet to be won if another has a different selection… expand upon it with better mathematics") ──
+  const FC_PIRATES = ['Scurvy Dan the Blade', 'Young Sproggie', 'Orvinn the First Mate', 'Lucky McKyriggan', 'Sir Edmund Ogletree', 'Peg Leg Percival', 'Bonnie Pip Culliford', 'Puffo the Waister', 'Stuff-A-Roo', 'Squire Venable', 'Captain Crossblades', "Ol' Stripey", 'Ned the Skipper', 'Fairfax the Deckhand', 'Gooblah the Grarrl', 'Franchisco Corvallio', 'Federismo Corvallio', 'Admiral Blackbeard', 'Buck Cutlass', 'The Tailhook Kid'];   // (Food Club's twenty pirates by Neopets' own numbers, 1–20: fc_pirate_N.gif)
+  // (NeoFoodClub's Food Club model, github.com/rneopets/neofoodclub.rs, MIT licence: a multinomial logit by pirate (its intercept; a
+  // weight for each of its favourite foods on the arena's menu and for each of its allergies; a bonus for being listed 2nd, 3rd or 4th),
+  // its coefficients as retrained up to 2026-10; and each pirate's favourite and allergy foods, by pirate (1–20, Neopets' own numbers) and
+  // food (1–40, the courses' own numbers), one digit a food)
+  const FC_LOGIT = { b: [-0.597311, -2.36367, -3.49727, -1.48954, -1.81704, -2.44644, -2.27779, -2.92608, -3.84654, -3.56052, -3.2059, -2.41246, -1.75536, -2.50907, 0, -1.28392, -1.11057, -2.26418, -0.578194, -1.5915],
+    fav: [0.152937, 0.250219, 0.233038, 0.174098, 0.254426, 0.301878, 0.23905, 0.26944, 0.344943, 0.193284, 0.16357, 0.233343, 0.235159, 0.24449, 0.26716, 0.186612, 0.156896, 0.18335, 0.261004, 0.287479],
+    all: [0.471132, 0.318556, 0.280734, 0.513584, 0.381881, 0.404172, 0.314107, 0.324665, 0.231247, 0.333325, 0.379198, 0.456155, 0.471113, 0.382383, 0.493606, 0.440176, 0.480774, 0.458499, 0.416675, 0.369342],
+    pos: [null, [0.0591164, 0.0207222, 0.240574, 0.299393, 0.213519, 0.166072, 0.331516, 0.126745, 0.124936, 0.543363, 0.603947, 0.324269, 0.419661, 0.175897, 0.153594, 0.103696, 0.0560253, 0.43774, 0.215961, 0.0915752],
+      [0.367861, 0.390255, 0.650837, 0.608047, 0.466135, 0.384034, 0.537972, 0.290377, 0.524824, 0.827181, 0.629512, 0.624005, 0.586818, 0.446215, 0.412788, 0.397627, 0.226585, 0.649799, 0.51032, 0.501842],
+      [0.578419, 0.625148, 0.851697, 0.889391, 0.783049, 0.664188, 0.835825, 0.677538, 0.936741, 1.05695, 1.09069, 0.982654, 0.988496, 0.685486, 0.55243, 0.74124, 0.536347, 0.97245, 0.689451, 0.753814]] };
+  const FC_FOOD_FAV = ['2001011101020000000000001000000020000000', '1001111101011000000000000000000010110000', '0000000000000111111111000001000101001001', '0010000000100000100000001001000000000011', '0000000000000000010000110000101000000110', '0000000001000000000000000110000001000000', '0000000000000111000000110001001100000100', '0000000000000111000111110001001100001100', '0000000000000000111000000000000001000001', '0000000110000000000000000000100100000000', '0000000000000000111111000000000001001001', '1001011101010000000111000000000010001000', '1001011101010000000000000000000010000000', '0100000000100000011000110110110001000000', '1001011101010000000000000000000010000000', '1001011102010000000000000110000011000000', '0010000000100000211000001001000001000012', '0100000000100000011000110110110001000000', '0000000000000111000000000001000100000000', '0100000000000000010000000110010001000000'];
+  const FC_FOOD_ALL = ['0000000000000111000000000001000100000000', '0010000000100000100000001001000000000011', '0000000000100000001000110000100000000000', '0000000000000000111000000000000001000001', '0000000110000000000000000000100100000000', '0000000000000000000000110000001000000100', '0000000001000000000000000110000001000000', '1001011101010000000000000000000010000000', '0000100000001000000000000000000000110000', '0000000000100000001000110000100000000000', '1000000000010000000000001000000010000000', '0000000110000000000000000000100100000000', '0000000000000000010000110000101000000110', '1000000000010000000000001000000010000000', '0000000000000000000111000000000000001000', '0000000000000111000000000001000100000000', '0000000000000000000000110000001000000100', '0000000000000000010000110000101000000110', '0100000000000000010000000110010001000000', '0000100000001000000000000000000000110000'];
+  function fcModelProbs(arenas) {   // (each pirate's chance in its arena, NeoFoodClub's way. arenas: [arena] → [{ id, foods, … }] in the page's order (where a pirate stands counts); null when one isn't a pirate NE knows)
+    if (arenas.length !== 5 || arenas.some((ps) => ps.length !== 4 || ps.some((p) => !(p.id >= 1 && p.id <= 20)))) return null;
+    return arenas.map((ps) => {
+      const e = ps.map((p, i) => {
+        const fav = (p.foods || []).reduce((t, f) => t + (Number(FC_FOOD_FAV[p.id - 1][f - 1]) || 0), 0), all = (p.foods || []).reduce((t, f) => t - (Number(FC_FOOD_ALL[p.id - 1][f - 1]) || 0), 0);
+        return Math.exp(FC_LOGIT.b[p.id - 1] + FC_LOGIT.fav[p.id - 1] * fav + FC_LOGIT.all[p.id - 1] * all + (i ? FC_LOGIT.pos[i][p.id - 1] : 0));
+      });
+      const sum = e.reduce((t, x) => t + x, 0);
+      return ps.map((p, i) => ({ ...p, p: e[i] / sum }));
+    });
+  }
+  function fcModelKeep(round, read) {   // (NE's model's chances for the round, kept for Current Bets' box)
+    const m = round ? fcModelProbs(read) : null;
+    if (m) fcKeepSet({ model: { round, at: Date.now(), menu: read.every((ps) => (ps[0].foods || []).length), arenas: m.map((ps) => ps.map((p) => ({ name: p.name, odds: p.odds, p: p.p }))) } });
+    return m;
+  }
+  function fcModelHere() {   // (on Place a Bet: the slip's pirates (Neopets' numbers, in their places, with their odds) and each arena's courses from its info panel)
+    const read = fc.arenas.map((ps, a) => { const foods = [...document.querySelectorAll(`#fc-arena-info-${a + 1} [data-fc-tip^="fc-tip-food-"]`)].map((x) => Number(x.getAttribute('data-fc-tip').slice(12)) || 0).filter((f) => f >= 1 && f <= 40); return ps.map((p, i) => ({ id: Number(p.r.value) || 0, name: p.name, odds: p.odds, place: i + 1, foods })); });
+    return fcModelKeep(fc.round, read);
+  }
+  const fcEncode = (bets) => { const d = bets.flatMap((b) => b); if (d.length % 2) d.push(0); let t = ''; for (let i = 0; i < d.length; i += 2) t += String.fromCharCode(97 + d[i] * 5 + d[i + 1]); return t; };   // (NeoFood.Club's string, as fcDecode reads it)
+  const FC_PRESETS = [   // (NE's ten, one dial: each step picks its bets for the profit to expect plus mu × what ten cost × the chance the ten together come out ahead)
+    ['safest', 'Safest', 8, 'The best chance of coming out ahead: bets whose one win covers what all ten cost, on the pirates likeliest to win'],
+    ['steady', 'Steady', 2, 'Nearly as likely to come out ahead, with more to expect'],
+    ['sweet', 'Sweet spot', 1, 'Chance and profit in balance: bigger wins, still a fair chance of coming out ahead'],
+    ['bold', 'Bold', 0.5, 'Bigger wins, a bit less often: most of the profit to expect, without the long shots'],
+    ['profit', 'Most profit', 0, 'The most profit to expect at your bet, however rarely it comes; still no bet less likely than 1 in 50'],
+  ];
+  const FC_FLOOR = 0.02;   // (no bet in any step less likely than 1 in 50 (the user: "might not want to go so far that the odds are extremely unlikely"))
+  function fcPresetBets(kind) {   // (NE's ten for this round, by NE's model: [place 0–4 × 5] each)
+    const M = fc.model;
+    if (!M) return [];
+    const all = [];
+    for (let k = 1; k < 3125; k++) {   // (every bet there is: each arena none or one of its four)
+      const bet = [];
+      let x = k, p = 1;
+      for (let a = 0; a < 5; a++) { bet.push(x % 5); x = Math.floor(x / 5); }
+      for (let a = 0; a < 5; a++) if (bet[a]) p *= M[a][bet[a] - 1].p;
+      const amt = fcAmount(bet), pay = Math.min(amt * fcOdds(bet), fcWin());
+      all.push({ bet, p, amt, pay, ev: p * pay - amt });
+    }
+    const mu = ((FC_PRESETS.find(([k]) => k === kind) || [])[2]) ?? 1;
+    const outP = new Float64Array(1024);   // (every way the round can end: each arena's winner, its chance)
+    for (let o = 0; o < 1024; o++) { let pr = 1, x = o; for (let a = 0; a < 5; a++) { pr *= M[a][x & 3].p; x >>= 2; } outP[o] = pr; }
+    const wins = (bet) => { const w = []; for (let o = 0; o < 1024; o++) { let ok = true, x = o; for (let a = 0; a < 5 && ok; a++) { if (bet[a] && bet[a] - 1 !== (x & 3)) ok = false; x >>= 2; } if (ok) w.push(o); } return w; };
+    const pool = all.filter((c) => c.p >= FC_FLOOR).map((c) => ({ ...c, w: wins(c.bet) })), run = new Float64Array(1024), chosen = [];
+    const target = 10 * (Number(fc.form.dataset.maxBet) || 0);   // (what ten bets cost at your max: the ten together should pay back more)
+    for (let k = 0; k < 10; k++) {
+      let best = null, score = -Infinity;
+      for (const c of pool) {
+        if (chosen.includes(c)) continue;
+        let g = 0;
+        if (mu) for (const o of c.w) if (run[o] <= target && run[o] + c.pay > target) g += outP[o];
+        const sc = c.ev + mu * target * g;   // (its profit to expect, and what it adds to the chance the ten come out ahead)
+        if (sc > score) { best = c; score = sc; }
+      }
+      if (!best) break;
+      chosen.push(best);
+      for (const o of best.w) run[o] += best.pay;
+    }
+    return chosen.map((c) => c.bet);
+  }
+  function fcPreset(kind) {   // (NE's ten for this round, as a list: Fill and Place all as ever)
+    const bets = fcPresetBets(kind);
+    if (!bets.length) { Object.assign(fc, { err: 'NE couldn’t work out bets for this round: Neopets’ page didn’t show every pirate it needs.', preset: '' }); fcPaint(); return; }
+    Object.assign(fc, { who: '', paste: false, edit: false, err: '', errPlace: false, said: '', filled: -1, preset: kind, at: Date.now(), sets: [{ round: fc.round, b: fcEncode(bets), label: '' }], set: 0 });
+    fcKeepSet({ who: '', paste: null, preset: kind });
+    fcChoose();
+  }
+  function fcListMath(list, open) {   // (under a list on Place a Bet: what its bets can really win, with NE's model's chances)
+    const bets = list.map((bet, i) => { const amt = fcAmount(bet); return { picks: bet.map((n, a) => (n ? fc.arenas[a][n - 1].name : '')), no: i + 1, amt, pay: Math.min(amt * fcOdds(bet), fcWin()) }; });
+    const roster = fc.model ? fc.model.map((ps) => ps.map((p) => ({ name: p.name, odds: p.odds, p: p.p }))) : fc.arenas.map((ps) => ps.map((p) => ({ name: p.name, odds: p.odds })));
+    return `<div class="bnp-fcm is-list" data-fc-math>${fcMathHtml(bets, fcMath(bets, roster), open, fc.model ? 'model' : 'odds', 'list')}</div>`;
+  }
   const fcArenaKey = (t) => String(t || '').toLowerCase().replace(/[^a-z]/g, '');
   const FC_KEYS = FC_ARENAS.map(fcArenaKey);
   function fcOddsKeep(round, arenas) {   // (this round's pirates and odds, as Place a Bet or the Overview shows them: kept for Current Bets' chances)
@@ -28507,19 +28594,22 @@
     fcKeepSet({ odds: { round, at: Date.now(), arenas: arenas.map((ps) => ps.map((p) => ({ name: p.name, odds: p.odds }))) } });
   }
   function fcOddsFromOverview(box) {   // (the Overview's arenas: each pirate's name and odds)
-    const round = Number((/Round\s+(\d+)/i.exec((document.querySelector('.fc-round__status') || {}).textContent || '') || [])[1]) || 0, arenas = [[], [], [], [], []];
+    const round = Number((/Round\s+(\d+)/i.exec((document.querySelector('.fc-round__status') || {}).textContent || '') || [])[1]) || 0, arenas = [[], [], [], [], []], foods = [[], [], [], [], []];
     for (const ar of box.querySelectorAll('.fc-arena')) {
       const a = FC_KEYS.indexOf(fcArenaKey((ar.querySelector('.fc-arena__banner span') || {}).textContent));
       if (a < 0) continue;
-      arenas[a] = [...ar.querySelectorAll('.fc-arena__pirate')].map((p) => ({ name: reClean((p.querySelector('.fc-arena__pirate-name') || {}).textContent || '').trim(), odds: Number((/(\d+)\s*:\s*1/.exec((p.querySelector('.fc-arena__odds') || {}).textContent || '') || [])[1]) || 0 }));
+      foods[a] = [...ar.querySelectorAll('[data-fc-tip^="fc-tip-food-"]')].map((x) => Number(x.getAttribute('data-fc-tip').slice(12)) || 0).filter((f) => f >= 1 && f <= 40);
+      arenas[a] = [...ar.querySelectorAll('.fc-arena__pirate')].map((p, i) => ({ id: Number(String(p.getAttribute('data-fc-tip') || '').replace(/\D/g, '')) || 0, place: i + 1, name: reClean((p.querySelector('.fc-arena__pirate-name') || {}).textContent || '').trim(), odds: Number((/(\d+)\s*:\s*1/.exec((p.querySelector('.fc-arena__odds') || {}).textContent || '') || [])[1]) || 0 }));
     }
     fcOddsKeep(round, arenas);
+    fcModelKeep(round, arenas.map((ps, a) => ps.map((p) => ({ ...p, foods: foods[a] }))));   // (NE's model's chances, for Current Bets' box)
   }
   function fcMath(bets, roster) {   // (every way the round can end, weighed. bets: [{ picks: [name or '' × 5], pay, amt }]; roster: [arena] → [{ name, odds }] when this round's odds are known)
     const fromPicks = (a) => { const named = [...new Set(bets.map((b) => b.picks[a]).filter(Boolean))]; return [...named.map((name) => ({ name, p: null })), ...(named.length < 4 ? [{ name: '', p: null }] : [])]; };   // (unknown: the pirates bet on, and "another")
     let cand = [0, 1, 2, 3, 4].map((a) => {
       const ps = roster && roster[a];
       if (!ps || ps.length !== 4) return fromPicks(a);
+      if (ps.every((p) => p.p > 0)) return ps.map((p) => ({ name: p.name, p: p.p }));   // (NE's model's chances)
       const inv = ps.map((p) => 1 / p.odds), sum = inv.reduce((t, x) => t + x, 0);
       return ps.map((p, i) => ({ name: p.name, p: inv[i] / sum }));
     });
@@ -28560,26 +28650,33 @@
     const bets = fcMathRows(), round = Number(((document.querySelector('[data-tab-panel="current"] .fc-round-pill') || {}).textContent || '').replace(/\D/g, '')) || 0, k = fcKeep();
     box.hidden = !bets.length;
     if (!bets.length) return;
-    const m = fcMath(bets, k.odds && k.odds.round === round ? k.odds.arenas : null);
+    const via = k.model && k.model.round === round ? 'model' : k.odds && k.odds.round === round ? 'odds' : '';
+    const m = fcMath(bets, via === 'model' ? k.model.arenas : via === 'odds' ? k.odds.arenas : null);
+    box.innerHTML = fcMathHtml(bets, m, !!box.querySelector('details.bnp-fcm-all[open]'), via, 'current');   // (the list as it was, open or shut, after a bet's ticked in or out)
+  }
+  function fcMathHtml(bets, m, open, via, where) {   // (the box's inside: Current Bets' ticked bets, or a list on Place a Bet)
     const np = (x) => `${Math.round(x).toLocaleString()} NP`, pct = (x) => (x >= 0.9995 ? '100%' : x < 0.0005 ? 'under 0.1%' : `${(x * 100).toFixed(1)}%`);
-    const stat = (label, value, small, cls = '') => `<div class="fc-totals__stat${cls}"><span>${label}</span><b>${value}</b>${small ? `<small>${small}</small>` : ''}</div>`;
-    const open = !!box.querySelector('details.bnp-fcm-all[open]');   // (the list as it was, open or shut, after a bet's ticked in or out)
+    const tile = (label, value, small, cls = '', meter = null) => `<div class="bnp-fcm-tile${cls}"><span>${label}</span><b>${value}</b>${meter != null ? `<i class="bnp-fcm-meter" aria-hidden="true"><i style="width:${Math.max(2, Math.min(100, meter * 100)).toFixed(1)}%"></i></i>` : ''}${small ? `<small>${small}</small>` : ''}</div>`;
+    const pic = (name) => { const id = FC_PIRATES.indexOf(name) + 1; return id ? `https://images.neopets.com/pirates/fc/fc_pirate_${id}.gif` : ''; };   // (the pirate's own picture, at Neopets' own address for it: on any tab)
     const ways = m.sets.map((g) => `<tr${g.wi.length ? '' : ' class="is-none"'}><td>${g.wi.length ? g.wi.map((i) => `<b class="bnp-fcm-no">${bets[i].no}</b>`).join('') : 'No bet wins'}${g.need.length ? `<small>${g.need.map(([ar, who]) => `${esc(ar)}: ${esc(who)}`).join(' · ')}</small>` : ''}</td><td class="is-np">${g.won ? np(g.won) : '—'}</td>${m.known ? `<td class="is-np">${pct(g.p)}</td>` : ''}</tr>`).join('');
-    box.innerHTML = `<div class="bnp-fcm-title">What these bets can really win</div>
-      <div class="fc-totals__body"><div class="fc-totals__grid">
-        ${stat('Most at once', np(m.most), `${m.mostBets} of ${m.n} bet${m.n === 1 ? '' : 's'} win`, ' fc-totals__return')}
-        ${stat('Bets that can win together', `${m.mostN} of ${m.n}`, m.mostN < m.n ? 'never all at once' : 'all of them')}
-        ${stat('Chance of a win', m.known ? pct(m.pAny) : '—', m.known ? 'any bet at all' : '')}
-        ${stat('Chance to come out ahead', m.known ? pct(m.pAhead) : '—', m.known ? `more than ${np(m.stake)} back` : '')}
-        ${stat('Expected back', m.known ? np(m.ev) : '—', m.known ? `on average, of ${np(m.stake)} bet` : '')}
-      </div></div>
-      ${m.line.length ? `<p class="bnp-fcm-line"><span>The most needs</span>${m.line.map(([ar, who]) => `<i>${esc(ar)}:</i><b>${esc(who)}</b>`).join('<span class="bnp-fcm-dot" aria-hidden="true">·</span>')}</p>` : ''}
+    const odds = 'needs this round’s odds';
+    return `<div class="bnp-fcm-bar"><h3>What these bets can really win</h3></div>
+      <div class="bnp-fcm-body">
+        <div class="bnp-fcm-hero"><span>Most at once</span><b>${np(m.most)}</b><small>${m.mostBets === 1 ? `1 of your ${m.n} bets wins` : `${m.mostBets} of your ${m.n} bets win together`}</small></div>
+        <div class="bnp-fcm-tiles">
+          ${tile('Bets that can win together', `${m.mostN} of ${m.n}`, m.mostN < m.n ? 'never all at once' : 'all of them at once')}
+          ${tile('Chance of a win', m.known ? pct(m.pAny) : '—', m.known ? 'any bet at all' : odds, ' is-chance', m.known ? m.pAny : null)}
+          ${tile('Chance to come out ahead', m.known ? pct(m.pAhead) : '—', m.known ? `more than ${np(m.stake)} back` : odds, ' is-chance', m.known ? m.pAhead : null)}
+          ${tile('Expected back', m.known ? np(m.ev) : '—', m.known ? `on average, of ${np(m.stake)} bet` : odds)}
+        </div>
+      </div>
+      ${m.line.length ? `<div class="bnp-fcm-needs"><span>The most needs</span>${m.line.map(([ar, who]) => { const src = pic(who); return `<span class="bnp-fcm-pir">${src ? `<img src="${esc(src)}" alt="" width="32" height="32" loading="lazy">` : ''}<b>${esc(who)}</b><i>${esc(ar)}</i></span>`; }).join('')}</div>` : ''}
       <details class="bnp-fcm-all"${open ? ' open' : ''}><summary>Every way they can pay <span>(${m.sets.length})</span></summary><div class="bnp-fcm-scroll"><table class="bnp-fcm-t"><thead><tr><th scope="col">Bets that win together</th><th scope="col" class="is-np">Pays</th>${m.known ? '<th scope="col" class="is-np">Chance</th>' : ''}</tr></thead><tbody>${ways}</tbody></table></div></details>
-      <p class="bnp-fcm-note">Neopets’ Total Payoff adds up every bet as if they could all win, but bets that pick different pirates in the same arena never can. These weigh every way the round can end${m.known ? ', each pirate’s chance taken from this round’s odds' : '. The chances come once NE has seen this round’s odds, on Place a Bet or the Overview'}.</p>`;
+      <p class="bnp-fcm-note">${where === 'list' ? '' : 'Neopets’ Total Payoff adds up every bet as if they could all win, but bets that pick different pirates in the same arena never can. '}These weigh every way the round can end${!m.known ? '. The chances come once NE has seen this round’s pirates, on Place a Bet or the Overview' : via === 'model' ? ', each pirate’s chance worked out NeoFoodClub’s way: its own strength, its favourite foods and allergies on this round’s menu, and where it stands' : ', each pirate’s chance taken from this round’s odds'}.</p>`;
   }
   function fcMathMount(totals) {   // (under Neopets' own calculator, which is left as it is)
     const box = document.createElement('div');
-    box.className = 'fc-totals bnp-fcm';
+    box.className = 'bnp-fcm';
     box.setAttribute('data-bnp', 'fcmath');
     totals.after(box);
     fcMathPaint();
@@ -28739,17 +28836,19 @@
     const root = document.createElement('section');
     root.className = 'bnp-fc';
     root.setAttribute('data-bnp', 'fc');
-    root.setAttribute('aria-label', 'Copy a bettor’s bets');
+    root.setAttribute('aria-label', 'Bets for this round');
     form.before(root);
     const k = fcKeep();
     if (!k.placed || k.placed.round !== round) fcKeepSet({ placed: { round, keys: [] } });
-    fc = { form, root, round, arenas, who: '', sets: null, set: 0, bets: null, at: 0, err: '', said: '', busy: false, filling: false, filled: -1, sent: '', paste: false, edit: false, fold: !!k.fold, queue: [], placing: -1, all: false };   // (all: Place all's line going)
+    fc = { form, root, round, arenas, who: '', preset: '', model: null, sets: null, set: 0, bets: null, at: 0, err: '', said: '', busy: false, filling: false, filled: -1, sent: '', paste: false, edit: false, fold: !!k.fold, queue: [], placing: -1, all: false };   // (all: Place all's line going)
     root.addEventListener('click', fcClick);
     root.addEventListener('keydown', fcKey);
     root.addEventListener('toggle', (e) => { if (e.target instanceof Element && e.target.matches('[data-fc-stats]')) fcKeepSet({ stats: e.target.open }); }, true);   // (the record open or shut, as you left it)
     let n = fcPlacedN();
     new MutationObserver(() => { const now = fcPlacedN(); if (now > n) fcPlaced(); else fcPaint(); n = now; }).observe(form, { attributes: true, attributeFilter: ['data-bets-placed'] });   // (Neopets' own count, from its server, after each bet it takes)
+    try { fc.model = fcModelHere(); } catch (e) { report(e); }   // (NE's model's chances for this round, from the page's own pirates and courses)
     if (k.who && fcBettors().includes(k.who)) fcRead(k.who, false);
+    else if (!k.who && k.preset && fc.model) fcPreset(k.preset);   // (NE's list, worked out again for the odds as they are now)
     else if (!k.who && k.paste && k.paste.round === round) { fc.sets = [{ round, b: k.paste.b, label: '' }]; fcChoose(); }
     else fcPaint();
   }
@@ -28802,8 +28901,8 @@
     Object.assign(fc, { err: '', said: '', filled: -1 });
     if (!m || !fcDecode(m[2])) { fc.err = 'That isn’t a bet string: copy NeoFood.Club’s whole address (it has round= and b= in it).'; fcPaint(); fcFocus('[data-fc-paste]'); return; }
     if (Number(m[1]) !== fc.round) { fc.err = `That string is for round ${Number(m[1]).toLocaleString()}, and this is round ${fc.round.toLocaleString()}: a string only fits its own round.`; fcPaint(); fcFocus('[data-fc-paste]'); return; }
-    Object.assign(fc, { who: '', paste: false, sets: [{ round: fc.round, b: m[2], label: '' }], set: 0 });
-    fcKeepSet({ who: '', paste: { round: fc.round, b: m[2] } });
+    Object.assign(fc, { who: '', preset: '', paste: false, sets: [{ round: fc.round, b: m[2], label: '' }], set: 0 });
+    fcKeepSet({ who: '', preset: '', paste: { round: fc.round, b: m[2] } });
     fcChoose();
   }
   const fcOdds = (bet) => bet.reduce((p, n, a) => p * (n ? fc.arenas[a][n - 1].odds : 1), 1);
@@ -28815,6 +28914,7 @@
   const FC_TICK = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function fcPaint() {
     if (!fc) return;
+    const mathOpen = !!fc.root.querySelector('[data-fc-math] details.bnp-fcm-all[open]');   // (the list's every-way list, open or shut as it was)
     const keys = fcPlacedKeys(), bets = fc.bets || [], sets = fc.sets || [], who = fcBettors(), next = fcNext(), placedN = fcPlacedN(), maxN = fcMaxN();
     const chip = (attr, val, label, on, title) => `<button type="button" class="bnp-fc-chip" ${attr}="${esc(val)}" aria-pressed="${on}"${title ? ` title="${esc(title)}"` : ''}>${label}</button>`;
     const pick = (a, n) => { const p = fc.arenas[a][n - 1]; return `<span class="bnp-fc-c" role="cell" title="${esc(`${FC_ARENAS[a]}: ${p.name}, ${p.odds}:1`)}"><img src="${esc(p.img)}" alt="" width="34" height="34" loading="lazy"><span><b>${esc(p.name)}</b><small><i class="bnp-fc-ar">${esc(FC_ARENAS[a])} · </i>${p.odds}:1</small></span></span>`; };
@@ -28831,7 +28931,7 @@
     const cur = sets[fc.set] || {};
     const say = fc.busy ? `<p class="bnp-fc-say">Reading ~${esc(fc.who)}’s page…</p>`
       : fc.err ? `<p class="bnp-fc-say is-err">${esc(fc.err)}${fc.who && !fc.errPlace ? ' <button type="button" class="bnp-fc-pill" data-fc-again>Try again</button>' : ''}</p>`
-      : bets.length ? `<p class="bnp-fc-say">${fc.said ? `<b class="bnp-fc-said">${FC_TICK}${esc(fc.said)}</b>` : ''}<span>${fc.who ? `From ~${esc(fc.who)}${cur.label ? `’s ${esc(cur.label)} list` : ''}, read ${colAgo(fc.at || Date.now())}` : 'From your string'} · ${left.length ? `${left.length} of ${bets.length} to place: ${cost.toLocaleString()} NP${have && cost > have ? ` <span class="bnp-fc-warn">(you have ${have.toLocaleString()} NP on hand)</span>` : ''}${maxN - placedN < left.length ? ` · <span class="bnp-fc-warn">${maxN > placedN ? `${maxN - placedN} more fit this round` : 'no more fit this round'} (Neopets takes ${maxN} a round; ${placedN} placed)</span>` : ''}` : `all ${bets.length} placed`}</span>${fc.who ? `<button type="button" class="bnp-fc-pill" data-fc-again title="Their page read again, for any change since">Read again</button><a class="bnp-fc-pill" href="/~${encodeURIComponent(fc.who)}" target="_blank" rel="noopener">Their page</a>` : ''}</p>`
+      : bets.length ? `<p class="bnp-fc-say">${fc.said ? `<b class="bnp-fc-said">${FC_TICK}${esc(fc.said)}</b>` : ''}<span>${fc.who ? `From ~${esc(fc.who)}${cur.label ? `’s ${esc(cur.label)} list` : ''}, read ${colAgo(fc.at || Date.now())}` : fc.preset ? `Neopets Enhance’s bets, ${esc((FC_PRESETS.find(([k]) => k === fc.preset) || [])[1] || '')}, for this round: worked out ${colAgo(fc.at || Date.now())}` : 'From your string'} · ${left.length ? `${left.length} of ${bets.length} to place: ${cost.toLocaleString()} NP${have && cost > have ? ` <span class="bnp-fc-warn">(you have ${have.toLocaleString()} NP on hand)</span>` : ''}${maxN - placedN < left.length ? ` · <span class="bnp-fc-warn">${maxN > placedN ? `${maxN - placedN} more fit this round` : 'no more fit this round'} (Neopets takes ${maxN} a round; ${placedN} placed)</span>` : ''}` : `all ${bets.length} placed`}</span>${fc.who ? `<button type="button" class="bnp-fc-pill" data-fc-again title="Their page read again, for any change since">Read again</button><a class="bnp-fc-pill" href="/~${encodeURIComponent(fc.who)}" target="_blank" rel="noopener">Their page</a>` : ''}</p>`
       : !fc.who && !fc.paste ? '<p class="bnp-fc-say">Choose whose bets to copy: today’s are read from their petpage.</p>' : '';
     const nextBtn = bets.length && next >= 0 && fc.filled !== next && placedN < maxN && !fc.busy ? `<button type="button" class="button-default__2020 button-yellow__2020 bnp-fc-next" data-fc-fill="${next}">Fill bet ${next + 1}</button>` : '';
     const running = !!((fc.queue && fc.queue.length) || fc.placing >= 0), allIs = left.map((bet) => bets.indexOf(bet)).filter((i) => i !== fc.placing && !(fc.queue || []).includes(i)).slice(0, Math.max(0, maxN - placedN - (fc.queue || []).length - (running ? 1 : 0)));
@@ -28840,17 +28940,19 @@
       : !running && !fc.busy && allIs.length > 1 ? `<button type="button" class="button-default__2020 button-yellow__2020 bnp-fc-all" data-fc-all title="${esc(`All ${allIs.length} placed one after another, each through Neopets’ own slip and Place a Bet: ${allCost.toLocaleString()} NP`)}">Place all ${allIs.length}</button>` : '';
     fc.root.innerHTML = `
       <div class="bnp-fc-head">
-        <div class="bnp-fc-title"><img src="https://images.neopets.com/neoboards/avatars/ava_food_club_smmmmm.gif" alt="" width="50" height="50"><div><h4>Copy a bettor’s bets</h4><small>Round ${fc.round.toLocaleString()} · ${placedN} of ${maxN} bets placed${fc.filled >= 0 && bets[fc.filled] ? ` · <b>bet ${fc.filled + 1} is in the slip</b>` : ''}</small></div></div>
+        <div class="bnp-fc-title"><img src="https://images.neopets.com/neoboards/avatars/ava_food_club_smmmmm.gif" alt="" width="50" height="50"><div><h4>Bets for this round</h4><small>Round ${fc.round.toLocaleString()} · ${placedN} of ${maxN} bets placed${fc.filled >= 0 && bets[fc.filled] ? ` · <b>bet ${fc.filled + 1} is in the slip</b>` : ''}</small></div></div>
         ${allBtn}${running && fc.all ? '' : nextBtn}
         <button type="button" class="bnp-fc-fold" data-fc-fold aria-expanded="${!fc.fold}" title="${fc.fold ? 'Show the bets' : 'Fold the bets away'}"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
       <div class="bnp-fc-body"${fc.fold ? ' hidden' : ''}>
-        <div class="bnp-fc-who" role="group" aria-label="Whose bets">${who.map((w) => chip('data-fc-who', w, `~${esc(w)}`, fc.who === w, `${w}’s bets for today, read from their petpage`)).join('')}${chip('data-fc-pastebtn', '1', 'Paste a string', fc.paste || (!fc.who && !!fc.bets), 'A NeoFood.Club string of your own')}<button type="button" class="bnp-fc-pill" data-fc-edit aria-expanded="${fc.edit}">Change the list</button></div>
+        <div class="bnp-fc-ne" role="group" aria-label="Neopets Enhance’s bets for this round"><span class="bnp-fc-nelbl">Neopets Enhance’s bets</span><span class="bnp-fc-dial">${FC_PRESETS.map(([k, l, , t]) => `<button type="button" data-fc-preset="${k}" aria-pressed="${fc.preset === k}" title="${esc(t)}">${l}</button>`).join('')}</span><span class="bnp-fc-ends"><span>win more often</span><span aria-hidden="true">⟷</span><span>win bigger</span></span></div>
+        <div class="bnp-fc-who" role="group" aria-label="Whose bets">${who.map((w) => chip('data-fc-who', w, `~${esc(w)}`, fc.who === w, `${w}’s bets for today, read from their petpage`)).join('')}${chip('data-fc-pastebtn', '1', 'Paste a string', fc.paste || (!fc.who && !fc.preset && !!fc.bets), 'A NeoFood.Club string of your own')}<button type="button" class="bnp-fc-pill" data-fc-edit aria-expanded="${fc.edit}">Change the list</button></div>
         ${fc.edit ? `<div class="bnp-fc-line"><input type="text" class="bnp-fc-in" data-fc-list value="${esc(who.join(', '))}" aria-label="Bettors: their petpage names, commas between" spellcheck="false" autocomplete="off"><button type="button" class="bnp-fc-pill is-go" data-fc-listok>Save</button><button type="button" class="bnp-fc-pill" data-fc-edit>Cancel</button></div>` : ''}
         ${fc.paste ? '<div class="bnp-fc-line"><input type="text" class="bnp-fc-in" data-fc-paste placeholder="https://neofood.club/#round=…&amp;b=…" aria-label="A bet string" spellcheck="false" autocomplete="off"><button type="button" class="bnp-fc-pill is-go" data-fc-pasteok>Use it</button></div>' : ''}
         ${sets.length > 1 ? `<div class="bnp-fc-sets" role="group" aria-label="Which of their lists"><span class="bnp-fc-lbl">Their lists</span>${sets.map((s, i) => chip('data-fc-set', i, esc(s.label || `List ${i + 1}`), fc.set === i)).join('')}</div>` : ''}
         ${say}
         ${rows ? `<div class="bnp-fc-grid" role="table" aria-label="Their bets"><div class="bnp-fc-gh" role="row"><span role="columnheader">#</span>${FC_ARENAS.map((a) => `<span role="columnheader">${esc(a)}</span>`).join('')}<span role="columnheader">Odds</span><span role="columnheader">Bet</span><span role="columnheader"></span></div>${rows}</div>` : ''}
+        ${bets.length && !fc.busy ? fcListMath(bets, mathOpen) : ''}
         <div class="bnp-fc-foot"><span class="bnp-fc-amts" role="group" aria-label="How much each bet">Each bet: ${chip('data-fc-amt', 'cap', 'Max bet, not past the 1M cap', S.features.fcAmt !== 'max', 'Your max bet, or less where your max would win more than the 1,000,000 NP a bet can pay: no NP spent past the cap')}${chip('data-fc-amt', 'max', 'Always max bet', S.features.fcAmt === 'max', 'Your max bet, every time')}</span><span class="bnp-fc-note"><b>Place all</b> places every one still to go, one after another, each through Neopets’ own slip; <b>Place bet</b> just that one. <b>Fill</b> only puts it in the slip below.</span></div>
         ${fcStatsHtml()}
       </div>`;
@@ -28894,7 +28996,8 @@
     const t = e.target instanceof Element ? e.target.closest('button') : null;
     if (!t || !fc) return;
     const d = t.dataset;
-    if (d.fcWho) { if (d.fcWho !== fc.who || fc.err || !fc.bets) fcRead(d.fcWho, false); return; }
+    if (d.fcPreset) { fcPreset(d.fcPreset); return; }
+    if (d.fcWho) { if (fc.preset) { fc.preset = ''; fcKeepSet({ preset: '' }); } if (d.fcWho !== fc.who || fc.err || !fc.bets) fcRead(d.fcWho, false); return; }
     if (d.fcSet != null) { fc.set = Number(d.fcSet) || 0; fcKeepSet({ setOf: { ...(fcKeep().setOf || {}), [fc.who]: fc.set } }); Object.assign(fc, { filled: -1, said: '' }); fcChoose(); return; }
     if (d.fcPlace != null) { fcQueue(Number(d.fcPlace)); return; }
     if ('fcAll' in d) { fcQueueAll(); return; }
@@ -41019,7 +41122,7 @@
         ${sw('dailyFill', 'Their forms filled in for you', 'The Lottery gets a Pick numbers for me button: six different numbers from 1 to 30, new ones each click. The Wishing Well fills in your last donation and wish again. Neopets’ own button still buys the ticket or makes the wish.')}
       </div>`],
       ['dailies', () => `<div class="bnp-card"><h4>Food Club</h4>
-        ${sw('fcHelp', 'Copy a bettor’s bets', 'On Food Club’s Place a Bet page: the bets popular bettors post on their petpages each day, with today’s pirates, odds and an amount for each (or paste a NeoFood.Club string of your own). Fill puts a bet in Neopets’ own slip: its arenas, pirates and amount. Neopets’ Place a Bet places it, each time you press it.')}
+        ${sw('fcHelp', 'Food Club bets for each round', 'On Food Club’s Place a Bet page: Neopets Enhance’s own ten for the round, worked out from NeoFoodClub’s model of each pirate’s chance (its strength, its favourite foods and allergies on the menu, where it stands), on a dial from Safest to Most profit; or the bets popular bettors post on their petpages each day (or a NeoFood.Club string of your own). Under any list, and under Neopets’ own calculator on Current Bets: what the bets can really win together, and the chances. Fill puts a bet in Neopets’ own slip: its arenas, pirates and amount. Neopets’ Place a Bet places it, each time you press it.')}
         ${sw('fcNext', 'The next bet in the slip after each one', 'Once Neopets takes a bet, the list’s next one goes straight into the slip: press Place a Bet again for it.')}
         <label class="bnp-f bnp-fc-setf"><span>Bettors</span><input type="text" data-feat="fcBettors" value="${esc(f.fcBettors == null ? FC_DEF : f.fcBettors)}" spellcheck="false" autocomplete="off" title="Their petpage names, with commas between"></label>
         <label class="bnp-f"><span>Each bet</span><select data-feat="fcAmt"><option value="cap"${f.fcAmt !== 'max' ? ' selected' : ''}>Max bet, not past the 1M cap</option><option value="max"${f.fcAmt === 'max' ? ' selected' : ''}>Always max bet</option></select></label>
@@ -43870,16 +43973,39 @@
     .bnp-fc-said { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px 2px 8px; border-radius: 999px; background: #e3f4e6; color: #1f7a35; font: 12.5px var(--fc-font-bold, "Museo Sans Rounded Bold"), "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-fc-say.is-err { padding: 7px 10px; border-radius: 10px; background: var(--fc-red-wash, #fdecea); color: var(--fc-red, #c0392b); }
     .bnp-fc-warn { color: var(--fc-red, #c0392b); }
-    .bnp-fcm { margin-top: 12px; }   /* (Food Club's winnings worked out: Neopets' own calculator's look, under it) */
+    .bnp-fc-ne { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0 0 10px; padding: 9px 12px; border: 2px solid #e4c574; border-radius: 14px; background: linear-gradient(#fffdf4, #fff3d1); }   /* (NE's ten: its own line, apart from the bettors') */
+    .bnp-fc-nelbl { color: #7a4a00; font: 16px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; }
+    .bnp-fc-dial { display: inline-flex; padding: 3px; border: 2px solid #c79a3a; border-radius: 999px; background: #fff; box-shadow: inset 0 1px 2px rgba(122, 74, 0, .12); }
+    .bnp-fc-dial button { height: 30px; margin: 0; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: #5b3a00; font: 13px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; cursor: pointer; transition: background-color .15s, color .15s; }
+    .bnp-fc-dial button:not([aria-pressed="true"]):hover { background: #fff3cf; }
+    .bnp-fc-dial button[aria-pressed="true"] { background: linear-gradient(#a06b1c, #7a4a00); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 1px 0 #5f3a00; text-shadow: 0 1px 0 rgba(0, 0, 0, .3); }
+    .bnp-fc-ends { display: inline-flex; align-items: center; gap: 6px; color: var(--fc-ink-soft, #6b6b6b); font: 12px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-fc .bnp-fcm.is-list { margin: 14px 0 4px; }
+    .bnp-fcm { margin-top: 14px; overflow: hidden; border: 2px solid #c79a3a; border-radius: 16px; background: #fffaea; box-shadow: 0 3px 0 #c79a3a; color: var(--fc-ink, #2c2c2c); }   /* (Food Club's winnings worked out (2026-10-31): the page's own gold and cream, in a box of its own under Neopets' calculator) */
     .bnp-fcm[hidden] { display: none; }
-    .bnp-fcm-title { padding: 10px 14px 0; color: var(--fc-title, #7a4a00); font: 15.5px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-align: center; }
-    .bnp-fcm .fc-totals__stat small { display: block; margin-top: 2px; color: var(--fc-ink-soft, #6b6b6b); font: 11.5px/1.3 "MuseoSansRounded500", Arial, sans-serif; }
-    .bnp-fcm-line { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 4px 8px; margin: 0; padding: 4px 14px 2px; color: var(--fc-ink, #2c2c2c); font: 13px "MuseoSansRounded700", Arial, sans-serif; }
-    .bnp-fcm-line > span:first-child { color: var(--fc-ink-soft, #6b6b6b); }
-    .bnp-fcm-line i { margin-right: -4px; color: var(--fc-ink-soft, #6b6b6b); font: 11.5px "MuseoSansRounded500", Arial, sans-serif; font-style: normal; }
-    .bnp-fcm-dot { color: var(--fc-ink-soft, #9a9a9a); }
-    .bnp-fcm-all { margin: 6px 14px 0; }
-    .bnp-fcm-all > summary { display: flex; align-items: center; justify-content: center; gap: 6px; width: max-content; margin: 0 auto; padding: 5px 14px; border: 2px solid var(--fc-arena-border, #e0b968); border-radius: 999px; background: #fff; color: var(--fc-ink, #2c2c2c); font: 13px "MuseoSansRounded700", Arial, sans-serif; list-style: none; cursor: pointer; }
+    .bnp-fcm-bar { padding: 8px 14px 9px; border-bottom: 2px solid #5f3a00; background: linear-gradient(#a06b1c, #7a4a00); text-align: center; }
+    .bnp-fcm-bar h3 { margin: 0; color: #fff; font: 18px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .5pt; text-shadow: 0 1px 0 rgba(0, 0, 0, .35); }
+    .bnp-fcm-body { display: grid; grid-template-columns: minmax(210px, 1fr) minmax(0, 3fr); gap: 10px; padding: 14px 14px 4px; }
+    .bnp-fcm-hero { display: grid; align-content: center; justify-items: center; gap: 3px; padding: 14px 12px; border: 2px solid #86c08a; border-radius: 14px; background: linear-gradient(#f5fbf3, #e3f2df); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .9), 0 2px 0 #86c08a; text-align: center; }
+    .bnp-fcm-hero span { color: #3f6b43; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-fcm-hero b { color: #2c8a3a; font: 30px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; }
+    .bnp-fcm-hero small { color: #4f6f52; font: 12px/1.35 "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-fcm-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .bnp-fcm-tile { display: grid; align-content: start; justify-items: center; gap: 4px; padding: 11px 8px 10px; border: 2px solid #e4c574; border-radius: 12px; background: linear-gradient(#fff 55%, #fff6dc); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), 0 2px 0 #e4c574; text-align: center; }
+    .bnp-fcm-tile span { color: #6b5a33; font: 12px/1.25 "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-fcm-tile b { color: #3a2a08; font: 21px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    .bnp-fcm-tile small { color: var(--fc-ink-soft, #6b6b6b); font: 11.5px/1.3 "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-fcm-meter { display: block; width: 78%; height: 6px; overflow: hidden; border-radius: 999px; background: #f1e3b6; }
+    .bnp-fcm-meter i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(#e8b84a, #c08d17); }
+    .bnp-fcm-needs { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 8px; padding: 10px 14px 2px; }
+    .bnp-fcm-needs > span:first-child { color: var(--fc-ink-soft, #6b6b6b); font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-fcm-pir { display: inline-flex; align-items: center; gap: 6px; height: 36px; box-sizing: border-box; padding: 0 12px 0 2px; border: 2px solid #e4c574; border-radius: 999px; background: #fff; box-shadow: 0 2px 0 #e4c574; }
+    .bnp-fcm-pir img { width: 32px; height: 32px; border-radius: 50%; background: #fff3cf; object-fit: cover; }
+    .bnp-fcm-pir b { color: #3a2a08; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-fcm-pir i { color: var(--fc-ink-soft, #6b6b6b); font: 11px "MuseoSansRounded500", Arial, sans-serif; font-style: normal; }
+    @media (max-width: 860px) { .bnp-fcm-body { grid-template-columns: minmax(0, 1fr); } .bnp-fcm-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .bnp-fcm-all { margin: 10px 14px 0; }
+    .bnp-fcm-all > summary { display: flex; align-items: center; justify-content: center; gap: 6px; width: max-content; margin: 0 auto; padding: 5px 14px; border: 2px solid #e4c574; border-radius: 999px; background: linear-gradient(#fff 45%, #fff6dc); box-shadow: 0 2px 0 #e4c574; color: var(--fc-ink, #2c2c2c); font: 13px "MuseoSansRounded700", Arial, sans-serif; list-style: none; cursor: pointer; }
     .bnp-fcm-all > summary::-webkit-details-marker { display: none; }
     .bnp-fcm-all > summary::before { content: ""; border: 5px solid transparent; border-left-color: currentColor; transition: transform .15s; }
     .bnp-fcm-all[open] > summary::before { transform: rotate(90deg) translate(2px, 2px); }
@@ -46021,6 +46147,10 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.7', '2026-10-31', [
+      'Food Club: Neopets Enhance’s bets: ten for the round, worked out from each pirate’s chance (NeoFoodClub’s model: strength, favourite foods and allergies on the menu), on a dial from Safest to Most profit',
+      'Food Club: What these bets can really win made over in a box of its own, with the pirates’ pictures; it shows under any list on Place a Bet too, its chances from the same model',
+    ]],
     ['4.6.1', '2026-10-31', [
       'Your shop: Remove 1 works: it takes one out through Neopets’ own Update, the list updating in place',
     ]],
