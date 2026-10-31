@@ -1,9 +1,11 @@
 {
- "version": "4.4.1",
+ "version": "4.5",
  "date": "2026-10-30",
  "notes": [
-  "Switching your theme works again",
-  "NeoChat sends Neomail and Neofriend requests again",
-  "Neomail alerts clear once NeoChat has shown you the message"
+  "Neomail: a Sent folder of what you’ve sent, in Neomail and in NeoChat",
+  "Your shop: Edit your shop and Choose your shopkeeper made over",
+  "NC Mall 2: a Neopets-width view, scrolling boxes, and New Items with what Neopets’ list leaves out",
+  "Food Club: Place all goes through your whole list of bets",
+  "Fixes: Ninja School’s Pay button, the compact Neomail bar"
  ]
 }
