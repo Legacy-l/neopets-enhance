@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.6
+// @version      4.6.1
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -25698,13 +25698,18 @@
     if (find) { find.addEventListener('input', shopFilter); find.title = 'Narrows this page as you type; Enter looks through your whole shop'; }
     if (clear) clear.addEventListener('click', () => setTimeout(shopFilter, 0));
     shop.form.addEventListener('click', shopTableClick);
-    shop.form.addEventListener('click', (e) => {   // (Remove 1, before Neopets' own handler takes it: not while changes wait; the page's last item noted, so the items left open after)
-      const a = e.target instanceof Element ? e.target.closest('[data-shop-rm1]') : null;
-      if (!a) return;
-      if (a.getAttribute('aria-disabled') === 'true') { e.preventDefault(); e.stopPropagation(); return; }
-      const tr = a.closest('tr');
-      shop.sent = { at: Date.now(), gone: (Number(tr && tr.dataset.stock) || 1) <= 1 ? 1 : 0, rows: shopTrs().length, pg: shopPmPages() };
+    shop.form.addEventListener('click', (e) => {   // (Remove 1: that row's Remove set to one through Neopets' own field, then Neopets' own Update pressed: it saves over AJAX and redraws the list in place. Not while other changes wait, as they'd go with it)
+      const b = e.target instanceof Element ? e.target.closest('[data-shop-rm1]') : null;
+      if (!b) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (b.getAttribute('aria-disabled') === 'true') return;
+      const tr = b.closest('tr'), box = tr && tr.querySelector('input[data-rm]'), upd = document.getElementById('market-your-update');
+      if (!box || !upd) return;
+      box.value = '1';
+      box.dispatchEvent(new Event('input', { bubbles: true }));
       shop.rm1At = Date.now();
+      setTimeout(() => { if (!upd.disabled) upd.click(); }, 0);   // (after Neopets' own check turns Update on)
     }, true);
     shop.form.addEventListener('keydown', shopTableKey);
     if (all && shopNum(all[1]) > shopTrs().length) shopPagesBar();
@@ -25766,7 +25771,7 @@
     if (!(field.nextElementSibling && field.nextElementSibling.matches('[data-shop-state]'))) field.insertAdjacentHTML('afterend', '<span class="bnp-shop-state" data-shop-state></span>');
     if (rm && Number(tr.dataset.stock) > 1 && !(rm.nextElementSibling && rm.nextElementSibling.matches('[data-shop-all]'))) rm.insertAdjacentHTML('afterend', '<button type="button" class="bnp-shop-allout" data-shop-all>All</button>');
     const rmIn = rm && rm.querySelector('input[data-rm]'), oi = rmIn ? (/\[(\d+)\]/.exec(rmIn.name || '') || [])[1] : '';
-    if (oi && !tr.querySelector('[data-shop-rm1]')) (tr.querySelector('[data-shop-all]') || rm).insertAdjacentHTML('afterend', `<span class="bnp-shop-rm1line"><a class="bnp-shop-rm1" data-shop-rm1 href="process_market.phtml?remove_one_object=${oi}">Remove 1</a></span>`);   // (Neopets' own Rm One: its page takes it in place)
+    if (oi && !tr.querySelector('[data-shop-rm1]')) (tr.querySelector('[data-shop-all]') || rm).insertAdjacentHTML('afterend', '<span class="bnp-shop-rm1line"><button type="button" class="bnp-shop-rm1" data-shop-rm1>Remove 1</button></span>');   // (one taken out by Neopets' own Update, in place)
   }
   function shopRm1Paint() {   // (Remove 1 waits while the page has changes: Neopets redraws its rows after taking one out, and they'd be lost)
     const dirty = shopTrs().some((t) => t.classList.contains('is-chg') || t.classList.contains('is-out'));
@@ -26715,8 +26720,8 @@
     html.bnp-shop-on #market-your-form .bnp-shop-allout:hover { border-color: var(--shop-edge) !important; }
     html.bnp-shop-on #market-your-form .market-your__col-rm > span, html.bnp-shop-on #market-your-form td:has(> span > .mkt-stepper) > span { flex-wrap: wrap; align-items: center; }
     html.bnp-shop-on #market-your-form .bnp-shop-rm1line { display: flex; flex: 0 0 100%; margin-top: 5px; }   /* (Remove 1: a small pill under the stepper (user, 2026-10-31)) */
-    html.bnp-shop-on #market-your-form .bnp-shop-rm1 { display: inline-flex; align-items: center; height: 22px; padding: 0 10px; border: 2px solid var(--nb-line); border-radius: 999px; background: #fff; color: var(--nb-muted) !important; font: 11.5px var(--nb-ui); text-decoration: none !important; white-space: nowrap; cursor: pointer; transition: border-color .15s, color .15s; }
-    html.bnp-shop-on #market-your-form .bnp-shop-rm1:hover { border-color: #e3958e; color: #b03a2e !important; }
+    html.bnp-shop-on #market-your-form .bnp-shop-rm1 { display: inline-flex; align-items: center; width: auto !important; height: 22px !important; margin: 0 !important; padding: 0 10px !important; border: 2px solid var(--nb-line) !important; border-radius: 999px !important; background: #fff !important; color: var(--nb-muted) !important; box-shadow: none !important; font: 11.5px var(--nb-ui) !important; text-shadow: none !important; text-transform: none !important; white-space: nowrap; cursor: pointer; transition: border-color .15s, color .15s; }   /* (a button now: Neopets' market sheet paints buttons, so its own look is held) */
+    html.bnp-shop-on #market-your-form .bnp-shop-rm1:hover:not([aria-disabled="true"]) { border-color: #e3958e !important; color: #b03a2e !important; }
     html.bnp-shop-on #market-your-form .bnp-shop-rm1[aria-disabled="true"] { opacity: .45; cursor: default; }
     @media (min-width: 980px) {   /* (a wide enough window: the rows laid out anew; a narrow one keeps Neopets' own cards) */
       html.bnp-shop-on #market-your-app .np-table-container { overflow: clip; border: 2px solid var(--nb-frame); border-top: 0; border-radius: 0 0 14px 14px; background: #fff; }
@@ -46016,6 +46021,9 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.6.1', '2026-10-31', [
+      'Your shop: Remove 1 works: it takes one out through Neopets’ own Update, the list updating in place',
+    ]],
     ['4.6', '2026-10-31', [
       'My Gallery made over: a big title, a band with your keeper, how full it is, what it’s worth and how many items are NC; every item a card to find, sort and size. Galleries as visitors see them stay as their owners made them',
       'My Gallery: Rank by dragging items into place (several at once, the page scrolling at its edges), Take out and Categorise on the cards; Categories, Quick Remove and Quick Categorise dressed to match',
