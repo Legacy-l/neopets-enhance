@@ -1,10 +1,9 @@
 {
- "version": "4.8",
+ "version": "4.8.1",
  "date": "2026-10-31",
  "notes": [
-  "Underwater Fishing made over, with Fish in a row",
-  "Price mode: unpriced only, skip priced lately, the SSW’s bans and refusals",
-  "Coconut Shy’s page throws in place",
-  "Neopets’ ads are no longer hidden"
+  "Food Club’s Bet History: your bets round by round, with totals",
+  "Clear the Bet History, or remove a round",
+  "Fishing’s “nothing” card shows Neopets’ own answer"
  ]
 }

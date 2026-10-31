@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.8
+// @version      4.8.1
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -7045,7 +7045,9 @@
     for (let n = tile && tile.nextElementSibling; n && !item; n = n.nextElementSibling) { const b = n.querySelector && n.querySelector('b'); if (b) item = reClean(b.textContent); }
     const prize = /\/items\//i.test(pic), up = /fishing skill increases to\s*(\d+)/i.exec(text);
     const mode = form ? 'cast' : /be more patient/i.test(text) || (/(?:^|\s)Nothing!/.test(text) && !prize) ? 'soon' : prize ? 'catch' : /reel in your line/i.test(text) ? 'soon' : 'other';   // (its words first: "Nothing! Maybe you should be more patient." comes with a picture of the pet, not a prize; a catch's picture is an item's)
-    const said = mode === 'soon' ? ([...box.querySelectorAll('p, b')].map((x) => reClean(x.textContent || '')).find((x) => x && !/reel in your line|fishing skill/i.test(x) && /nothing|patient|empty|nibble|bite|again/i.test(x)) || '') : '';   // (its own words for it)
+    const own = [...box.querySelectorAll('p, b')].filter((x) => !x.closest('.togglePopup__2020, [id^="infoPopup"], #pageDesc') && !/^\s*Welcome to the underwater fishing cavern/i.test(x.textContent || ''));   // (the answer's own lines: never the page's welcome, in its info popup or its description, which says "be patient" too)
+    const reel = own.findIndex((x) => /reel in your line/i.test(x.textContent || ''));
+    const said = mode === 'soon' ? ((reel >= 0 ? own.slice(reel + 1) : own).map((x) => reClean(x.textContent || '')).find((x) => x && !/reel in your line|fishing skill/i.test(x) && /nothing|patient|empty|nibble|bite|again|already|recent|tired|rest|wait/i.test(x)) || '') : '';   // (its own words for it: what follows "You reel in your line and get...")
     return { mode, form, text, item: mode === 'catch' ? item : '', said, pic: mode === 'catch' && pic ? fullUrl(pic) : '', up: up ? Number(up[1]) : null };
   }
   function fishPage() {
@@ -29039,7 +29041,7 @@
   // ═══════════════════════════════════════════════════════════════════════════
   const FC_ARENAS = ['Shipwreck', 'Lagoon', 'Treasure Island', 'Hidden Cove', 'Harpoon Harry’s'];
   const FC_DEF = 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent';
-  const fcOn = () => S.features.fcHelp !== false && location.pathname === '/pirates/foodclub.phtml';
+  const fcOn = () => (S.features.fcHelp !== false || S.features.fcHist !== false) && location.pathname === '/pirates/foodclub.phtml';   // (its bets, or its Bet History: either on)
   const fcList = (s) => [...new Set(String(s || '').split(/[\s,]+/).map((x) => x.replace(/^~/, '')).filter((x) => /^\w{1,20}$/.test(x)))];   // (petpage names, as typed: "~Name, Other")
   const fcBettors = () => fcList(S.features.fcBettors == null ? FC_DEF : S.features.fcBettors);
   function fcDecode(b) {   // (NeoFood.Club's string: each letter two arenas' picks — 0 none, else the pirate's place 1–4 in its arena — five to a bet)
@@ -29294,60 +29296,394 @@
     const go = () => {
       try { fcWinsRead(); } catch (e) { report(e); }
       const form = document.getElementById('fc-bet-form');
-      if (form && !form.hasAttribute('data-bnp-fc')) { form.setAttribute('data-bnp-fc', ''); fcMount(form); }
+      if (form && !form.hasAttribute('data-bnp-fc')) { form.setAttribute('data-bnp-fc', ''); fcMount(form, S.features.fcHelp === false); }
       const ov = document.querySelector('.fc-round .fc-arenas');
       if (ov && !ov.hasAttribute('data-bnp-fco')) { ov.setAttribute('data-bnp-fco', ''); try { fcOddsFromOverview(ov); } catch (e) { report(e); } }   // (the round's odds, kept for Current Bets)
       const tot = document.getElementById('fc-cb-totals');
-      if (tot && !(tot.nextElementSibling && tot.nextElementSibling.matches('[data-bnp="fcmath"]'))) { styles(); try { fcMathMount(tot); } catch (e) { report(e); } }   // (Current Bets: the box under Neopets' calculator)
+      if (S.features.fcHelp !== false && tot && !(tot.nextElementSibling && tot.nextElementSibling.matches('[data-bnp="fcmath"]'))) { styles(); try { fcMathMount(tot); } catch (e) { report(e); } }   // (Current Bets: the box under Neopets' calculator)
+      try { fcHistGo(); } catch (e) { report(e); }   // (what each tab says of your bets, kept; Bet History's own section)
     };
     go();
     new MutationObserver(go).observe(document.getElementById('fc-app') || document.body, { childList: true, subtree: true });   // (Neopets changes its tabs in place: the list comes back with the slip)
     document.addEventListener('change', (e) => { if (e.target instanceof Element && e.target.closest('#fc-cb-table')) setTimeout(fcMathPaint, 0); }, true);   // (a bet ticked in or out of Neopets' calculator: the box follows, after Neopets' own ticks)
     document.addEventListener('click', (e) => { if (fc && e.target instanceof Element && e.target.closest('#fc-bet-submit')) { fc.sent = fcFormSig(); fc.sentAmt = (document.getElementById('fc-bet-amount') || {}).value || ''; } }, true);   // (what's in the slip as you place it: that bet, once Neopets takes it)
+    document.addEventListener('click', fcColPress, true);   // (Collect Winnings' Collect pressed: those bets, once Neopets pays them)
+    setTimeout(() => { fcWinsFetch().catch(report); }, 1500 + Math.random() * 2500);   // (the round before's winners, if bets wait on them: a moment after the page, as a look at the Overview would be)
   }
-  const fcLog = () => { try { const v = JSON.parse(localStorage.getItem(acctKey('bnp-fclog')) || 'null'); return { bets: v && Array.isArray(v.bets) ? v.bets : [], wins: v && v.wins && typeof v.wins === 'object' ? v.wins : {} }; } catch (_) { return { bets: [], wins: {} }; } };   // ({ bets: [{ round, picks, odds, amt, cap, src, at }], wins: { round: [five names] } })
-  const fcLogSet = (v) => { try { localStorage.setItem(acctKey('bnp-fclog'), JSON.stringify(v)); } catch (_) { /* */ } };
-  function fcWinsRead() {   // (the round before's winners, as the Food Club's front shows them: kept, for that round's bets)
-    const box = document.querySelector('.fc-winners'), round = box ? Number(((box.querySelector('.fc-winners__round') || {}).textContent || '').replace(/\D/g, '')) : 0;
-    if (!round) return;
-    const names = [...box.querySelectorAll('.fc-wcard')].map((c) => reClean((c.querySelector('.fc-wcard__name') || {}).textContent || ''));
-    if (names.length !== 5 || names.some((x) => !x)) return;
+  // ── Food Club's record (the user's notes #14: "track which bettors petpages you followed and how you did with them, Also keep track of
+  // bets you make yourself"; then, 2026-10-31, of Neopets' Bet History, a lifetime summary only now: "we should be adding our own section
+  // to it"). Each bet kept: its round, picks, odds, amount and where it came from (your own picks, Neopets Enhance's bets by step, a
+  // bettor's list, a pasted string, or "other bets": ones NE didn't see placed, as Current Bets or Collect Winnings list them). Results
+  // from Neopets' own pages: each round's winners from the Overview the day after (read once, unseen, when bets wait on them and the
+  // Overview wasn't opened), the wins Collect Winnings lists (it keeps them seven days, so a bet of those days it doesn't list didn't win,
+  // or was collected), and each collect as Neopets answers it ──
+  const FC_LOG_N = 1500;   // (bets kept one by one: about five months of ten a round; the oldest rounds go into All's totals)
+  const fcLog = () => {   // ({ v, bets: [{ round, picks, odds, amt, cap, pay, src, at, won, got }], wins: { round: [five names] }, part: { round: { arena: name } }, none: { round: at }, old, gone: { "round|picks": at } })
+    let v = null;
+    try { v = JSON.parse(localStorage.getItem(acctKey('bnp-fclog')) || 'null'); } catch (_) { v = null; }
+    const o = (x) => (x && typeof x === 'object' && !Array.isArray(x) ? x : {});
+    const L = { v: Number(v && v.v) || 1, bets: v && Array.isArray(v.bets) ? v.bets.filter((b) => b && Array.isArray(b.picks)) : [], wins: o(v && v.wins), part: o(v && v.part), none: o(v && v.none), old: v && v.old && typeof v.old === 'object' ? v.old : null, gone: o(v && v.gone) };
+    if (L.v < 2) {   // (once: 4.7 and 4.8 kept Neopets Enhance's own bets as strings you pasted (from 31 October 2026); a round you pasted a string for stays one)
+      const k = fcKeep(), since = Date.UTC(2026, 9, 31, 7);
+      for (const b of L.bets) if (b.src === 'string' && (b.at || 0) >= since && !(k.paste && k.paste.round === b.round)) b.src = `ne:${k.preset || ''}`;
+      L.v = 2;
+      if (L.bets.length) fcLogSet(L);
+    }
+    return L;
+  };
+  const fcNewest = (o, n) => Object.fromEntries(Object.keys(o).map(Number).filter((r) => r > 0).sort((a, b) => b - a).slice(0, n).map((r) => [r, o[r]]));
+  function fcLogSet(L) {
+    if (L.bets.length > FC_LOG_N) {   // (the oldest rounds out of the list, whole, into All's totals: what they won and lost still counts)
+      const now = fcRoundNow(L), rounds = [...new Set(L.bets.map((b) => b.round))].sort((a, b) => a - b), drop = new Set(), old = L.old || { by: {}, rounds: 0, ahead: 0, from: 0 };
+      let n = L.bets.length;
+      for (const r of rounds) { if (n <= FC_LOG_N) break; drop.add(r); n -= L.bets.filter((b) => b.round === r).length; }
+      for (const r of drop) {
+        let net = 0, any = false;
+        for (const b of L.bets) {
+          if (b.round !== r) continue;
+          if (b.at) old.from = old.from ? Math.min(old.from, b.at) : b.at;
+          const res = fcResult(L, b, now).r;
+          if (res !== 'won' && res !== 'lost') continue;
+          const s = old.by[b.src] || (old.by[b.src] = { n: 0, hits: 0, spent: 0, won: 0 }), pay = res === 'won' ? fcPay(b) : 0;
+          s.n += 1; s.spent += b.amt || 0; s.won += pay; if (pay) s.hits += 1;
+          net += pay - (b.amt || 0); any = true;
+        }
+        if (any) { old.rounds += 1; if (net > 0) old.ahead += 1; }
+      }
+      L.old = old;
+      L.bets = L.bets.filter((b) => !drop.has(b.round));
+    }
+    L.v = 2;
+    L.wins = fcNewest(L.wins, 160);
+    L.part = fcNewest(L.part, 160);
+    L.none = fcNewest(L.none, 40);
+    const lo = fcRoundNow(L) - 8;
+    L.gone = Object.fromEntries(Object.entries(L.gone || {}).filter(([k]) => Number(k.split('|')[0]) >= lo));   // (bets taken out stay out while Neopets still lists them: Current Bets, and Collect Winnings' seven days)
+    try { localStorage.setItem(acctKey('bnp-fclog'), JSON.stringify(L)); } catch (_) { /* */ }
+  }
+  const fcPay = (b) => (b.pay > 0 ? b.pay : Math.min((b.amt || 0) * (b.odds || 0), b.cap || 1e6));   // (what a bet pays if it wins: as Neopets listed it, else its odds at its amount, to the cap)
+  const fcBetKey = (b) => `${b.round}|${b.picks.join('|')}`;
+  const fcPic = (name) => { const id = FC_PIRATES.indexOf(name) + 1; return id ? `https://images.neopets.com/pirates/fc/fc_pirate_${id}.gif` : ''; };   // (the pirate's own picture, at Neopets' own address for it)
+  const fcCal = (t) => { const d = nstOf(t).day; return Math.round(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 864e5); };   // (a moment's date in Neopian time, as a number of days)
+  const fcDayOf = (t) => fcCal(t - 14 * 3600e3);   // (Food Club's day: from 2 pm NST, when its round changes, to the next; named by the date it starts on)
+  const fcDate = (dn) => new Date(dn * 864e5).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const fcRoundAge = () => ((((nstOf(Date.now()).sec - 14 * 3600) % 86400) + 86400) % 86400) * 1000;   // (how long ago the round changed, at 2 pm NST)
+  function fcRoundSeen(round) {   // (the round Neopets' page says is open: kept, so NE knows which rounds are over)
+    if (!(round > 0)) return;
+    const k = fcKeep().now;
+    if (k && k.round === round && Date.now() - (k.at || 0) < 3600e3) return;
+    fcKeepSet({ now: { round, at: Date.now() } });
+  }
+  function fcRoundNow(L) {   // (the round open now: the last one Neopets showed, one on for each 2 pm NST since; never below one bets were placed in)
+    const k = fcKeep().now;
+    let top = 0;
+    for (const b of (L || fcLog()).bets) if (b.round > top) top = b.round;
+    return Math.max(top, k && k.round > 0 ? k.round + Math.max(0, fcDayOf(Date.now()) - fcDayOf(k.at || Date.now())) : 0);
+  }
+  const fcDue = (L, b, now, r) => r === 'won' && !b.got && b.round < now && b.round >= now - 7 && !!(b.won || !L.none[b.round]);   // (a win still to collect: Collect Winnings had it, or hasn't been seen without it since its round)
+  const fcWinners = (L, round) => { const w = L.wins[round], p = L.part[round] || {}; return [0, 1, 2, 3, 4].map((a) => (w && w[a]) || p[a] || ''); };   // (a round's winner in each arena as far as seen: '' for one not seen)
+  function fcResult(L, b, now) {   // (a bet: won, lost, open (its round still going) or unseen (over, its winners not seen); and its picks that won their arena)
+    const w = fcWinners(L, b.round), n = b.picks.filter(Boolean).length;
+    let right = 0, wrong = 0;
+    b.picks.forEach((p, a) => { if (p && w[a]) { if (w[a] === p) right++; else wrong++; } });
+    if (b.won || b.got > 0) return { r: 'won', right: n, n };   // (Collect Winnings listed it, or Neopets paid it out)
+    if (wrong) return { r: 'lost', right, n };
+    if (n && right === n) return { r: 'won', right, n };
+    if (b.round >= now) return { r: 'open', right, n };
+    if (L.none[b.round]) return { r: 'lost', right, n, by: 'collect' };   // (its round's over, and Collect Winnings didn't have it)
+    return { r: 'unseen', right, n };
+  }
+  function fcTally(L, bets, now) {   // (bets with a result: how many, won, bet, won back; their rounds, and how many came out ahead; those still to come, or not seen)
+    const t = { n: 0, hits: 0, spent: 0, won: 0, open: 0, openAmt: 0, unseen: 0, rounds: 0, ahead: 0 }, net = new Map();
+    for (const b of bets) {
+      const r = fcResult(L, b, now).r;
+      if (r === 'open') { t.open += 1; t.openAmt += b.amt || 0; continue; }
+      if (r === 'unseen') { t.unseen += 1; continue; }
+      const pay = r === 'won' ? fcPay(b) : 0;
+      t.n += 1; t.spent += b.amt || 0; t.won += pay; if (pay) t.hits += 1;
+      net.set(b.round, (net.get(b.round) || 0) + pay - (b.amt || 0));
+    }
+    t.rounds = net.size;
+    for (const x of net.values()) if (x > 0) t.ahead += 1;
+    return t;
+  }
+  const FC_SEEN_TIP = 'Bets Neopets Enhance didn’t see you place (on another device or browser, or before it kept them), as Current Bets or Collect Winnings list them';
+  const fcSrcName = (src) => { const s = String(src || ''); if (s === 'own') return 'Your own picks'; if (s === 'string') return 'Strings you pasted'; if (s === 'seen') return 'Other bets'; if (/^ne(:|$)/.test(s)) { const p = FC_PRESETS.find(([k]) => k === s.slice(3)); return `Neopets Enhance’s bets${p ? ` · ${p[1]}` : ''}`; } return s; };   // ('~name': a bettor's list)
+  let fcWinsSig = '';
+  function fcWinsRead(root) {   // (the round before's winners, as the Overview shows them: kept, for that round's bets; and the round open now)
+    const doc = root || document, box = doc.querySelector('.fc-winners'), st = doc.querySelector('.fc-round__status');
+    const now = Number((/Round\s+(\d+)/i.exec((st && st.textContent) || '') || [])[1]) || 0;
+    if (now) fcRoundSeen(now);
+    const round = box ? Number(((box.querySelector('.fc-winners__round') || {}).textContent || '').replace(/\D/g, '')) : 0;
+    if (!round) return false;
+    const names = ['', '', '', '', ''];
+    for (const c of box.querySelectorAll('.fc-wcard')) { const a = FC_KEYS.indexOf(fcArenaKey((c.querySelector('.fc-wcard__banner span') || {}).textContent)); if (a >= 0) names[a] = reClean((c.querySelector('.fc-wcard__name') || {}).textContent || ''); }
+    const sig = `${round}:${names.join('|')}`;
+    if (sig === fcWinsSig || names.some((x) => !x)) return false;
+    fcWinsSig = sig;
     const L = fcLog();
-    if (JSON.stringify(L.wins[round]) === JSON.stringify(names)) return;
+    if (JSON.stringify(L.wins[round]) === JSON.stringify(names)) return false;
     L.wins[round] = names;
-    L.wins = Object.fromEntries(Object.keys(L.wins).map(Number).sort((a, b) => b - a).slice(0, 90).map((r) => [r, L.wins[r]]));   // (about three months of rounds)
     fcLogSet(L);
     if (fc) fcPaint();
+    fchPaint();
+    return true;
   }
-  function fcLogBet(sig, amt) {   // (a bet Neopets took: its picks by name, its odds and amount, and whose it was)
+  async function fcWinsFetch() {   // (the round before's winners when bets wait on them and the Overview wasn't opened: it's read once, unseen, as a look at it would)
+    if (document.hidden || document.querySelector('.fc-winners')) return;
+    const L = fcLog(), now = fcRoundNow(L), r = now - 1, k = fcKeep();
+    if (!now || L.wins[r] || !L.bets.some((b) => b.round === r) || fcRoundAge() < 10 * 60e3) return;   // (nothing waits on them, or the round only just changed)
+    if (k.winAsk && k.winAsk.r === r && Date.now() - (k.winAsk.at || 0) < 30 * 60e3) return;   // (looked lately)
+    fcKeepSet({ winAsk: { r, at: Date.now() } });
+    try {
+      const res = await fetch('/pirates/foodclub.phtml', { credentials: 'include' });
+      if (!res.ok || /login/i.test(new URL(res.url).pathname)) return;
+      fcWinsRead(new DOMParser().parseFromString(await res.text(), 'text/html'));
+    } catch (_) { /* (another visit) */ }
+  }
+  function fcLogBet(sig, amt) {   // (a bet Neopets took: its picks by name, its odds and amount, and where it came from)
     if (!fc || !/[1-4]/.test(sig)) return;
     const picks = [...sig].map((ch, a) => (Number(ch) ? fc.arenas[a][Number(ch) - 1].name : ''));
     const odds = [...sig].reduce((p, ch, a) => p * (Number(ch) ? fc.arenas[a][Number(ch) - 1].odds : 1), 1);
-    const src = (fc.bets || []).some((b) => fcSig(b) === sig) ? (fc.who ? `~${fc.who}` : 'string') : 'own';
-    const L = fcLog();
-    L.bets.push({ round: fc.round, picks, odds, amt: Number(String(amt || '').replace(/\D/g, '')) || 0, cap: fcWin(), src, at: Date.now() });
-    L.bets = L.bets.slice(-600);
+    const listed = (fc.bets || []).some((b) => fcSig(b) === sig);
+    const src = !listed ? 'own' : fc.who ? `~${fc.who}` : fc.preset ? `ne:${fc.preset}` : 'string';   // (Neopets Enhance's ten, by their step on the dial)
+    const L = fcLog(), a = Number(String(amt || '').replace(/\D/g, '')) || 0, cap = fcWin();
+    if (L.bets.some((b) => b.round === fc.round && b.picks.join('|') === picks.join('|'))) return;   // (kept already: Neopets takes a bet once a round)
+    L.bets.push({ round: fc.round, picks, odds, amt: a, cap, pay: Math.min(a * odds, cap), src, at: Date.now() });
+    delete L.gone[`${fc.round}|${picks.join('|')}`];   // (placed again after it was taken out: kept)
     fcLogSet(L);
   }
-  function fcStats() {   // (each source: bets with a result, how many won, spent, won back; and those still waiting on their round)
-    const L = fcLog(), by = new Map();
-    for (const b of L.bets) {
-      const s = by.get(b.src) || { src: b.src, bets: 0, open: 0, spent: 0, won: 0, hits: 0, rounds: new Set() }, w = L.wins[b.round];
-      by.set(b.src, s);
-      s.rounds.add(b.round);
-      if (!w) { s.open++; continue; }
-      s.bets++;
-      s.spent += b.amt;
-      if (b.picks.every((p, a) => !p || p === w[a])) { s.hits++; s.won += Math.min(b.amt * b.odds, b.cap || 1e6); }
+  const fcNum = (t) => Number(String(t || '').replace(/[^\d]/g, '')) || 0;
+  function fcRowRead(r, round) {   // (a bet as Neopets lists it, on Current Bets or Collect Winnings: its round, its picks by arena, odds, amount, what it pays)
+    const picks = ['', '', '', '', ''];
+    let legOdds = 1;
+    for (const l of r.querySelectorAll('.fc-cb-leg')) {
+      const a = FC_KEYS.indexOf(fcArenaKey((l.querySelector('.fc-cb-leg__arena') || {}).textContent));
+      if (a < 0) return null;
+      picks[a] = reClean((l.querySelector('.fc-cb-leg__pirate') || {}).textContent || '').trim();
+      legOdds *= Number((/(\d+)\s*:\s*1/.exec((l.querySelector('.fc-cb-leg__odds') || {}).textContent || '') || [])[1]) || 1;
     }
-    return [...by.values()].sort((x, y) => (y.bets + y.open) - (x.bets + x.open));
+    if (!picks.some(Boolean)) return null;
+    const cell = (re) => { const c = [...r.querySelectorAll('.fc-cb-cell[data-label]')].find((x) => re.test(x.getAttribute('data-label') || '')); return c ? c.textContent : ''; };
+    const om = /([\d,]+)\s*:\s*1/.exec(cell(/odds/i)), odds = (om && Number(om[1].replace(/,/g, ''))) || legOdds;
+    const amt = Number(r.getAttribute('data-amount')) || fcNum(cell(/amount/i));
+    const btn = r.querySelector('[data-round]'), tag = r.querySelector('.fc-round-tag');
+    return { round: Number(btn && btn.getAttribute('data-round')) || fcNum(tag && tag.textContent) || round, picks, odds, amt, pay: Number(r.getAttribute('data-payoff')) || fcNum(cell(/payoff|winning/i)) || Math.min(amt * odds, 1e6) };
+  }
+  function fcMerge(round, seen, won) {   // (bets Neopets lists for a round, matched to the kept ones by their picks. Current Bets lists the round's whole list: a kept bet it hasn't is one NE misread, put right by one it has that NE didn't keep, else dropped. Collect Winnings lists its wins)
+    const L = fcLog(), key = (p) => p.join('|'), mine = L.bets.filter((b) => b.round === round), free = new Set(mine), extra = [];
+    seen = seen.filter((s) => !L.gone[`${round}|${key(s.picks)}`]);   // (bets you took out of the history: left out)
+    let changed = false;
+    const fix = (b, s) => { for (const f of ['odds', 'amt', 'pay']) if (s[f] > 0 && b[f] !== s[f]) { b[f] = s[f]; changed = true; } if (won && !b.won) { b.won = 1; changed = true; } };
+    const add = (s) => { L.bets.push({ round, picks: s.picks, odds: s.odds, amt: s.amt, cap: 0, pay: s.pay, src: 'seen', at: Date.now(), ...(won ? { won: 1 } : {}) }); changed = true; };
+    for (const s of seen) { const b = mine.find((x) => free.has(x) && key(x.picks) === key(s.picks)); if (b) { free.delete(b); fix(b, s); } else extra.push(s); }
+    if (won) {
+      extra.forEach(add);
+      const p = L.part[round] || {};
+      for (const s of seen) s.picks.forEach((n, a) => { if (n && p[a] !== n) { p[a] = n; changed = true; } });   // (a winning bet's picks won their arenas)
+      L.part[round] = p;
+    } else {
+      const left = [...free].sort((x, y) => (x.at || 0) - (y.at || 0));
+      for (const s of extra) { const b = left.shift(); if (b) { b.picks = s.picks; fix(b, s); changed = true; } else add(s); }
+      for (const b of left) { L.bets.splice(L.bets.indexOf(b), 1); changed = true; }
+    }
+    if (changed) fcLogSet(L);
+    return changed;
+  }
+  function fcCurRead(sec) {   // (Current Bets: this round's bets as Neopets has them; the record kept to them)
+    const round = fcNum((sec.querySelector('.fc-round-pill') || {}).textContent);
+    if (!round) return;
+    fcRoundSeen(round);
+    const rows = [...sec.querySelectorAll('#fc-cb-table .fc-cb-row')];
+    if (!rows.length) return;   // (none listed: the record left as it is)
+    const seen = rows.map((r) => fcRowRead(r, round));
+    if (seen.some((x) => !x || x.round !== round)) return;   // (a row NE can't read: the record left as it is)
+    if (fcMerge(round, seen, false)) fchPaint();
+  }
+  function fcColRead(sec) {   // (Collect Winnings: every win not collected yet, of the last seven days)
+    const rows = [...sec.querySelectorAll('.fc-collect-row')];
+    if (!rows.length && !/winning bets to collect/i.test(sec.textContent || '')) return;   // (not its list, nor its "nothing to collect": left alone)
+    const seen = rows.map((r) => fcRowRead(r, 0));
+    if (seen.some((x) => !x || !x.round)) return;
+    const by = new Map();
+    for (const s of seen) by.set(s.round, [...(by.get(s.round) || []), s]);
+    for (const [round, list] of by) fcMerge(round, list, true);
+    fcNoneSeen(new Set(seen.map(fcBetKey)), fcRoundNow());
+    fchPaint();
+  }
+  function fcNoneSeen(keys, now) {   // (Collect Winnings' list as it is now (keys: the bets on it): a round of the last six has no win left to collect but those, so its other bets didn't win, or were collected)
+    if (!now) return;
+    const L = fcLog();
+    let changed = false;
+    for (let r = now - 6; r < now; r++) {
+      if (r === now - 1 && fcRoundAge() < 3600e3) continue;   // (the round just over: its wins may not be listed yet)
+      if (!L.none[r]) { L.none[r] = Date.now(); changed = true; }
+    }
+    for (const b of L.bets) if (!b.got && b.round >= now - 6 && b.round < now && !keys.has(fcBetKey(b)) && fcResult(L, b, now).r === 'won') { b.got = -1; changed = true; }   // (a win gone from the list: collected, here or elsewhere)
+    if (changed) fcLogSet(L);
+  }
+  let fcColWait = null;   // (the bets a press of Collect Winnings' Collect is for: kept as collected once Neopets says so)
+  document.addEventListener('bnp-heard', (e) => {   // (Neopets' answer to a collect: those bets paid out)
+    if (location.pathname !== '/pirates/foodclub.phtml') return;
+    let d = null, j = null, p = null;
+    try { d = JSON.parse(e.detail); } catch (_) { return; }
+    if (!d || !/\/foodclub\/collect\.php/.test(d.u || '')) return;
+    try { j = JSON.parse(d.text); } catch (_) { j = null; }
+    try { p = JSON.parse(d.post || 'null'); } catch (_) { p = null; }
+    const w = fcColWait;
+    fcColWait = null;
+    if (!j || !j.success) return;
+    const keys = w && Date.now() - w.at < 120000 ? new Set(w.keys) : null, L = fcLog(), now = fcRoundNow(L);
+    let changed = false;
+    for (const b of L.bets) {
+      if (b.got > 0) continue;
+      if (keys ? keys.has(fcBetKey(b)) : p && p.mode === 'all' && b.round >= now - 7 && fcResult(L, b, now).r === 'won') { b.got = Date.now(); b.won = 1; changed = true; }
+    }
+    if (changed) { fcLogSet(L); fchPaint(); }
+  });
+  function fcColPress(e) {   // (a press of Collect Winnings' Collect, or Collect All: the bets it's for)
+    const t = e.target instanceof Element ? e.target.closest('.fc-collect-one, #fc-collect-all') : null;
+    if (!t || t.disabled) return;
+    const sec = t.closest('section') || document, rows = t.matches('#fc-collect-all') ? [...sec.querySelectorAll('.fc-collect-row')] : [t.closest('.fc-collect-row')].filter(Boolean);
+    fcColWait = { at: Date.now(), keys: rows.map((r) => fcRowRead(r, 0)).filter(Boolean).map(fcBetKey) };
+  }
+  function fcHistGo() {   // (each tab as Neopets shows it: what it says of your bets, kept; and Bet History's own section put in)
+    const cur = document.querySelector('section[data-tab-panel="current"]');
+    if (cur && !cur.hasAttribute('data-bnp-fcr')) { cur.setAttribute('data-bnp-fcr', ''); try { fcCurRead(cur); } catch (e) { report(e); } }
+    const col = document.querySelector('section[data-tab-panel="collect"], section.fc-tab--collect');
+    if (col && !col.hasAttribute('data-bnp-fcr')) { col.setAttribute('data-bnp-fcr', ''); try { fcColRead(col); } catch (e) { report(e); } }
+    const body = document.getElementById('fc-tab-body');
+    if (body && !body.hasAttribute('data-bnp-fcr')) { body.setAttribute('data-bnp-fcr', ''); if (!col && body.getAttribute('data-collect-count') === '0') { try { fcNoneSeen(new Set(), fcRoundNow()); } catch (e) { report(e); } } }   // (Neopets' count of wins to collect, on every tab: none at all)
+    const hs = document.querySelector('section[data-tab-panel="history"]');
+    if (hs && S.features.fcHist !== false && !hs.querySelector('[data-bnp="fchist"]')) { styles(); fcHistMount(hs); }
+  }
+  function fcStats() {   // (each source: bets with a result, how many won, bet, won back; and those still to come)
+    const L = fcLog(), now = fcRoundNow(L), by = new Map();
+    for (const b of L.bets) by.set(b.src, [...(by.get(b.src) || []), b]);
+    return [...by].map(([src, list]) => ({ src, ...fcTally(L, list, now) })).sort((x, y) => (y.n + y.open) - (x.n + x.open));
   }
   function fcStatsHtml() {
     const st = fcStats();
     if (!st.length) return '';
     const np = (n) => `${Math.round(n).toLocaleString()} NP`;
-    const rows = st.map((s) => { const net = s.won - s.spent; return `<tr><th scope="row">${esc(s.src === 'own' ? 'Your own picks' : s.src === 'string' ? 'Strings you pasted' : s.src)}</th><td>${s.bets.toLocaleString()}${s.open ? `<small>+${s.open} to come</small>` : ''}</td><td>${s.hits.toLocaleString()}</td><td>${np(s.spent)}</td><td>${np(s.won)}</td><td class="${net >= 0 ? 'is-up' : 'is-down'}">${s.bets ? `${net >= 0 ? '+' : '−'}${np(Math.abs(net))}` : '—'}</td></tr>`; }).join('');
-    return `<details class="bnp-fc-stats" data-fc-stats${fcKeep().stats ? ' open' : ''}><summary>How your bets have done <small>the bets placed here, by whose list they came from</small></summary><div class="bnp-fc-statwrap"><table><thead><tr><th>From</th><th>Bets</th><th>Won</th><th>Spent</th><th>Won back</th><th>Net</th></tr></thead><tbody>${rows}</tbody></table></div><p class="bnp-fc-note">Worked out from each round’s winners, as the Food Club shows them the next day, at the odds you placed at.</p></details>`;
+    const rows = st.map((s) => { const net = s.won - s.spent; return `<tr><th scope="row"${s.src === 'seen' ? ` title="${esc(FC_SEEN_TIP)}"` : ''}>${esc(fcSrcName(s.src))}</th><td>${s.n.toLocaleString()}${s.open ? `<small>+${s.open} to come</small>` : ''}${s.unseen ? `<small>${s.unseen} not seen</small>` : ''}</td><td>${s.hits.toLocaleString()}</td><td>${np(s.spent)}</td><td>${np(s.won)}</td><td class="${net >= 0 ? 'is-up' : 'is-down'}">${s.n ? `${net >= 0 ? '+' : '−'}${np(Math.abs(net))}` : '—'}</td></tr>`; }).join('');
+    return `<details class="bnp-fc-stats" data-fc-stats${fcKeep().stats ? ' open' : ''}><summary>How your bets have done <small>by where they came from</small></summary><div class="bnp-fc-statwrap"><table><thead><tr><th>From</th><th>Bets</th><th>Won</th><th>Spent</th><th>Won back</th><th>Net</th></tr></thead><tbody>${rows}</tbody></table></div><p class="bnp-fc-note">Worked out from each round’s winners and Collect Winnings, at the odds you placed at. <a class="bnp-fc-pill" href="/pirates/foodclub.phtml?tab=history" data-fc-tab="history">Round by round, on Bet History</a></p></details>`;
+  }
+  // Bet History: under Neopets' own lifetime summary, your bets round by round: totals for the last 7 or 30 rounds or all of them, a win
+  // still to collect, where the bets came from, and each round's bets under its winners, each pick that won its arena marked
+  const FC_CROWN = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M2.2 12.6h11.6l1-7.2-3.9 2.9L8 3.1 5.1 8.3 1.2 5.4z" fill="currentColor"/></svg>';
+  let fch = null;   // (Bet History's section: { root, per, more, open, shut })
+  function fcHistMount(sec) {
+    const root = document.createElement('section');
+    root.className = 'bnp-fch';
+    root.setAttribute('data-bnp', 'fchist');
+    root.setAttribute('aria-label', 'Your bets, round by round');
+    sec.append(root);
+    const k = fcKeep();
+    fch = { root, per: ['r7', 'r30', 'all'].includes(k.histPer) ? k.histPer : 'r30', more: 0, open: new Set(), shut: new Set(), ask: false, undo: null };   // (ask: Clear's "are you sure" open; undo: the record as it was before a round was taken out, or all of it)
+    root.addEventListener('click', fchClick);
+    root.addEventListener('toggle', (e) => {   // (a round opened or shut stays so when the section's drawn again)
+      const d = e.target;
+      if (!(d instanceof Element) || !d.matches('details[data-fch-round]') || !fch) return;
+      const r = Number(d.getAttribute('data-fch-round'));
+      if (d.open) { fch.open.add(r); fch.shut.delete(r); } else { fch.shut.add(r); fch.open.delete(r); }
+    }, true);
+    fchPaint();
+  }
+  function fchClick(e) {
+    const t = e.target instanceof Element ? e.target.closest('button') : null;
+    if (!t || !fch) return;
+    const d = t.dataset, focus = (sel) => { const x = fch.root.querySelector(sel); if (x) x.focus(); };
+    if (d.fchPer) { fch.per = d.fchPer; fch.more = 0; fcKeepSet({ histPer: fch.per }); fchPaint(); return; }
+    if ('fchMore' in d) { fch.more += 10; fchPaint(); return; }
+    if ('fchClear' in d) { fch.ask = true; fchPaint(); focus('[data-fch-clearno]'); return; }
+    if ('fchClearno' in d) { fch.ask = false; fchPaint(); focus('[data-fch-clear]'); return; }
+    if ('fchClearok' in d) { fchTakeOut(null); focus('[data-fch-undo]'); return; }
+    if (d.fchRemove) { fchTakeOut(Number(d.fchRemove)); focus('[data-fch-undo]'); return; }
+    if ('fchUndo' in d) { if (fch.undo) { try { localStorage.setItem(acctKey('bnp-fclog'), fch.undo.snap); } catch (_) { /* */ } } fch.undo = null; fchPaint(); }
+  }
+  function fchTakeOut(round) {   // (a round's bets out of the history (round: null, every one): Current Bets and Collect Winnings won't bring them back; Undo puts them back while you're on the page)
+    const L = fcLog(), out = L.bets.filter((b) => round == null || b.round === round);
+    if (!out.length && !(round == null && L.old)) return;
+    fch.undo = { snap: JSON.stringify(L), what: round == null ? 'The history is cleared.' : `Round ${round.toLocaleString()} is out of the history.` };
+    fch.ask = false;
+    for (const b of out) L.gone[fcBetKey(b)] = Date.now();
+    L.bets = L.bets.filter((b) => !out.includes(b));
+    if (round == null) Object.assign(L, { part: {}, none: {}, old: null });
+    fcLogSet(L);
+    fchPaint();
+    if (fc) fcPaint();
+  }
+  const fcNp = (x) => `${Math.round(x).toLocaleString()} NP`;
+  const fcSgn = (x) => `${x >= 0 ? '+' : '−'}${fcNp(Math.abs(x))}`;
+  function fchPaint() {
+    if (!fch || !fch.root.isConnected) return;
+    const L = fcLog(), now = fcRoundNow(L), dayNow = fcDayOf(Date.now()), resDay = (r) => dayNow - now + r + 1, pct = (x) => `${Math.round(x * 100)}%`;
+    const undo = fch.undo ? `<div class="bnp-fch-undo" role="status"><span>${esc(fch.undo.what)}</span><button type="button" class="bnp-fc-pill is-go" data-fch-undo>Undo</button></div>` : '';
+    if (!L.bets.length && !L.old) {
+      fch.root.className = 'bnp-fch is-empty';
+      fch.root.innerHTML = `<p class="bnp-fch-empty"><b>Your bets, round by round</b>Neopets Enhance keeps each bet you place from now on, with its round’s winners and what it paid.</p>${undo}`;
+      return;
+    }
+    fch.root.className = 'bnp-fch';
+    const from = fch.per === 'r7' ? now - 6 : fch.per === 'r30' ? now - 29 : -Infinity;
+    const bets = L.bets.filter((b) => b.round >= from), old = fch.per === 'all' && L.old ? L.old : null, t = fcTally(L, bets, now);
+    if (old) { for (const s of Object.values(old.by || {})) { t.n += s.n; t.hits += s.hits; t.spent += s.spent; t.won += s.won; } t.rounds += old.rounds || 0; t.ahead += old.ahead || 0; }
+    const net = t.won - t.spent, since = Math.min(...L.bets.map((b) => b.at || Infinity), (L.old && L.old.from) || Infinity);
+    const tile = (label, value, small, meter) => `<div class="bnp-fcm-tile"><span>${label}</span><b>${value}</b>${meter != null ? `<i class="bnp-fcm-meter" aria-hidden="true"><i style="width:${Math.max(2, Math.min(100, meter * 100)).toFixed(1)}%"></i></i>` : ''}${small ? `<small>${small}</small>` : ''}</div>`;
+    const nRounds = new Set(L.bets.map((b) => b.round)).size + ((L.old && L.old.rounds) || 0);
+    const clear = fch.ask ? `<div class="bnp-fch-ask" role="group" aria-label="Clear the history"><span>Clear every bet kept here (${nRounds.toLocaleString()} round${nRounds === 1 ? '' : 's'})? Neopets’ own summary above stays as it is.</span><button type="button" class="bnp-fc-pill is-warn" data-fch-clearok>Clear it</button><button type="button" class="bnp-fc-pill" data-fch-clearno>Keep them</button></div>`
+      : '<button type="button" class="bnp-fc-pill is-warn" data-fch-clear title="Every bet kept here taken out: from Bet History, and from Place a Bet’s How your bets have done">Clear the history</button>';
+    const top = `<div class="bnp-fch-top"><span class="bnp-fc-dial" role="group" aria-label="Which rounds">${[['r7', 'Last 7 rounds'], ['r30', 'Last 30 rounds'], ['all', 'All']].map(([k, l]) => `<button type="button" data-fch-per="${k}" aria-pressed="${fch.per === k}">${l}</button>`).join('')}</span>${isFinite(since) ? `<small>Kept by Neopets Enhance since ${esc(fcDate(fcCal(since)))}</small>` : ''}${fch.ask ? '' : clear}</div>${fch.ask ? clear : ''}${undo}`;
+    const sum = `<div class="bnp-fcm-body">
+        <div class="bnp-fcm-hero${!t.n ? ' is-none' : net < 0 ? ' is-down' : ''}"><span>Difference</span><b>${t.n ? fcSgn(net) : '—'}</b><small>${t.n ? `over ${t.rounds.toLocaleString()} round${t.rounds === 1 ? '' : 's'} with a result` : 'A round’s result comes at 2 pm NST, when it ends'}</small></div>
+        <div class="bnp-fcm-tiles">
+          ${tile('Rounds ahead', t.rounds ? `${t.ahead.toLocaleString()} of ${t.rounds.toLocaleString()}` : '—', t.rounds ? 'won back more than was bet' : '', t.rounds ? t.ahead / t.rounds : null)}
+          ${tile('Bets won', t.n ? `${t.hits.toLocaleString()} of ${t.n.toLocaleString()}` : '—', t.n ? pct(t.hits / t.n) : '', t.n ? t.hits / t.n : null)}
+          ${tile('Bet total', fcNp(t.spent), [t.open ? `${t.open} still to come` : '', t.unseen ? `${t.unseen} not seen` : ''].filter(Boolean).join(' · ') || 'on bets with a result')}
+          ${tile('Win total', fcNp(t.won), t.spent ? `${pct(t.won / t.spent)} of the bet total back` : '')}
+        </div>
+      </div>`;
+    const due = L.bets.filter((b) => fcDue(L, b, now, fcResult(L, b, now).r));
+    const first = due.length ? Math.min(...due.map((b) => b.round)) : 0;
+    const collect = due.length ? `<div class="bnp-fch-collect"><span><b>${due.length === 1 ? 'A winning bet' : `${due.length} winning bets`} to collect: ${fcNp(due.reduce((s, b) => s + fcPay(b), 0))}</b><small>Neopets keeps winnings seven days: collect round ${first.toLocaleString()}’s by ${esc(fcDate(resDay(first) + 7))}</small></span><a class="bnp-fch-go" href="/pirates/foodclub.phtml?tab=collect" data-fc-tab="collect"><span class="button-default__2020 button-green__2020">Collect Winnings</span></a></div>` : '';
+    const by = new Map();
+    for (const b of bets) by.set(b.src, [...(by.get(b.src) || []), b]);
+    const srows = [...by].map(([src, list]) => [src, fcTally(L, list, now)]);
+    if (old) for (const [src, s] of Object.entries(old.by || {})) { let row = srows.find(([x]) => x === src); if (!row) srows.push(row = [src, fcTally(L, [], now)]); row[1].n += s.n; row[1].hits += s.hits; row[1].spent += s.spent; row[1].won += s.won; }
+    srows.sort((x, y) => (y[1].n + y[1].open) - (x[1].n + x[1].open));
+    const srcs = srows.length > 1 ? `<div class="bnp-fc-stats bnp-fch-src"><div class="bnp-fch-cap">Where the bets came from</div><div class="bnp-fc-statwrap"><table><thead><tr><th scope="col">From</th><th scope="col">Bets</th><th scope="col">Won</th><th scope="col">Bet total</th><th scope="col">Win total</th><th scope="col">Difference</th><th scope="col">Return</th></tr></thead><tbody>${srows.map(([src, s]) => { const d = s.won - s.spent; return `<tr><th scope="row"${src === 'seen' ? ` title="${esc(FC_SEEN_TIP)}"` : ''}>${esc(fcSrcName(src))}</th><td>${s.n.toLocaleString()}${s.open ? `<small>+${s.open} to come</small>` : ''}${s.unseen ? `<small>${s.unseen} not seen</small>` : ''}</td><td>${s.hits.toLocaleString()}</td><td>${fcNp(s.spent)}</td><td>${fcNp(s.won)}</td><td class="${d >= 0 ? 'is-up' : 'is-down'}">${s.n ? fcSgn(d) : '—'}</td><td>${s.spent ? pct(s.won / s.spent) : '—'}</td></tr>`; }).join('')}</tbody></table></div></div>` : '';
+    const rounds = [...new Set(bets.map((b) => b.round))].sort((a, b) => b - a), shown = rounds.slice(0, 10 + fch.more);
+    const cards = shown.map((r, i) => fchRound(L, r, bets.filter((b) => b.round === r), now, resDay(r), i === 0)).join('');
+    const more = rounds.length > shown.length ? `<div class="bnp-fch-more"><button type="button" class="bnp-fc-pill" data-fch-more>Show ${Math.min(10, rounds.length - shown.length)} more rounds</button></div>` : '';
+    fch.root.innerHTML = `<div class="bnp-fcm-bar"><h3>Your bets, round by round</h3></div>${top}${sum}${collect}${srcs}
+      <div class="bnp-fch-rounds">${cards || `<p class="bnp-fch-wnote">${fch.per === 'all' ? 'These bets are older than the ones kept one by one: they count in the totals above.' : `No bets in the last ${fch.per === 'r7' ? 7 : 30} rounds.`}</p>`}</div>${more}
+      <p class="bnp-fcm-note">Kept here: each bet placed on this page, and any others Neopets lists on Current Bets or Collect Winnings. A round’s winners come from the Overview the day after; Collect Winnings keeps a round’s wins seven days, so a bet of those days it doesn’t list didn’t win.</p>`;
+  }
+  function fchRound(L, round, list, now, day, first) {   // (one round: its winners over its bets, each pick that won its arena marked, and what came of each)
+    const res = list.map((b) => fcResult(L, b, now)), w = fcWinners(L, round), seenW = w.filter(Boolean).length;
+    const cnt = (k) => res.filter((x) => x.r === k).length, W = cnt('won'), O = cnt('open'), U = cnt('unseen'), n = list.length;
+    let bet = 0, back = 0;
+    list.forEach((b, i) => { if (res[i].r === 'won' || res[i].r === 'lost') { bet += b.amt || 0; if (res[i].r === 'won') back += fcPay(b); } });
+    const state = O === n ? 'open' : U === n ? 'unseen' : W ? 'won' : U ? 'unseen' : 'lost';
+    const chip = O === n ? 'Waiting for the result' : U === n ? 'Result not seen' : `${W ? (n === 1 ? 'Won' : `Won ${W} of ${n}`) : n === 1 ? 'Lost' : `None of ${n} won`}${U ? ` · ${U} not seen` : ''}`;
+    const srcs = [...new Set(list.map((b) => b.src))];
+    const cell = (a, name, cls) => { const src = fcPic(name); return `<span class="bnp-fc-c${cls ? ` ${cls}` : ''}" role="cell" title="${esc(`${FC_ARENAS[a]}: ${name}${cls === 'is-hit' ? ' (won)' : cls === 'is-miss' ? ` (${w[a]} won)` : ''}`)}">${src ? `<img src="${esc(src)}" alt="" width="34" height="34" loading="lazy">` : ''}<span><b>${esc(name)}</b><small><i class="bnp-fc-ar">${esc(FC_ARENAS[a])}${cls === 'is-hit' ? ' · ' : ''}</i>${cls === 'is-hit' ? `<i class="bnp-fch-hit">${FC_TICK}won</i>` : ''}</small></span></span>`; };
+    const wrow = seenW ? `<div class="bnp-fc-bet bnp-fch-wrow" role="row"><span class="bnp-fc-n bnp-fch-wn" role="cell" title="The winners">${FC_CROWN}</span><span class="bnp-fc-picks">${w.map((name, a) => (name ? cell(a, name, 'is-win') : `<span class="bnp-fc-c is-unk" role="cell"><span><b>Not seen</b><small><i class="bnp-fc-ar">${esc(FC_ARENAS[a])}</i></small></span></span>`)).join('')}</span><span class="bnp-fch-wlbl" role="cell">${seenW === 5 ? 'The winners' : 'Winners seen on Collect Winnings'}</span></div>` : '';
+    const wnote = seenW ? '' : `<p class="bnp-fch-wnote">${round >= now ? `The winners come when the round ends: 2 pm NST, ${esc(fcDate(day))}.` : 'This round’s winners weren’t seen: Neopets shows them on the Overview only the day after the round.'}</p>`;
+    const rows = list.map((b, i) => {
+      const r = res[i], pay = fcPay(b);
+      const picks = b.picks.map((name, a) => (name ? cell(a, name, w[a] ? (w[a] === name ? 'is-hit' : 'is-miss') : '') : '<span class="bnp-fc-c is-none" role="cell"></span>')).join('');
+      const out = r.r === 'won' ? `<span class="bnp-fc-tag is-done">${FC_TICK}Won</span>${b.got > 0 ? '<small>collected</small>' : fcDue(L, b, now, r.r) ? '<small>to collect</small>' : ''}`
+        : r.r === 'lost' ? `<span class="bnp-fc-tag is-lost">Lost</span>${r.n > 1 && r.right ? `<small>${r.right} of ${r.n} right</small>` : r.by === 'collect' ? '<small>not on Collect Winnings</small>' : ''}`
+        : r.r === 'open' ? '<span class="bnp-fc-tag is-wait">Waiting</span>' : '<span class="bnp-fc-tag is-unseen">Not seen</span>';
+      return `<div class="bnp-fc-bet bnp-fch-bet is-${r.r}" role="row"><span class="bnp-fc-n" role="cell">${i + 1}</span><span class="bnp-fc-picks">${picks}</span><span class="bnp-fc-sum"><span class="bnp-fc-odds" role="cell"><b>${(b.odds || 0).toLocaleString()}:1</b></span><span class="bnp-fc-amt" role="cell"><b>${(b.amt || 0).toLocaleString()} NP</b><small>${r.r === 'won' ? 'won' : 'pays'} ${pay.toLocaleString()}</small></span></span><span class="bnp-fc-act bnp-fch-out" role="cell">${out}${srcs.length > 1 ? `<small class="bnp-fch-by"${b.src === 'seen' ? ` title="${esc(FC_SEEN_TIP)}"` : ''}>${esc(fcSrcName(b.src))}</small>` : ''}</span></div>`;
+    }).join('');
+    const total = list.reduce((s, b) => s + (b.amt || 0), 0);
+    const head = `<summary><span class="bnp-fch-rno">Round ${round.toLocaleString()}</span><span class="bnp-fch-when">results ${esc(fcDate(day))}${round >= now ? ', 2 pm NST' : ''}</span><span class="bnp-fch-from"${srcs.length === 1 && srcs[0] === 'seen' ? ` title="${esc(FC_SEEN_TIP)}"` : ''}>${esc(srcs.map(fcSrcName).join(' + '))}</span><span class="bnp-fch-chip is-${state}">${chip}</span>${bet ? `<span class="bnp-fch-net ${back - bet >= 0 ? 'is-up' : 'is-down'}">${fcSgn(back - bet)}</span>` : `<span class="bnp-fch-net">${fcNp(total)} bet</span>`}</summary>`;
+    const gh = `<div class="bnp-fc-gh" role="row"><span role="columnheader">#</span>${FC_ARENAS.map((a) => `<span role="columnheader">${esc(a)}</span>`).join('')}<span role="columnheader">Odds</span><span role="columnheader">Bet</span><span role="columnheader">Result</span></div>`;
+    const foot = `<div class="bnp-fch-foot"><button type="button" class="bnp-fc-pill is-warn" data-fch-remove="${round}" title="${esc(`Round ${round.toLocaleString()}’s bets taken out of the history (and of Place a Bet’s How your bets have done); Current Bets and Collect Winnings won’t bring them back`)}">Remove this round</button></div>`;
+    return `<details class="bnp-fch-round is-${state}" data-fch-round="${round}"${fch.open.has(round) || (first && !fch.shut.has(round)) ? ' open' : ''}>${head}${wnote}<div class="bnp-fc-grid" role="table" aria-label="${esc(`Round ${round}’s bets`)}">${gh}${wrow}${rows}</div>${foot}</details>`;
   }
   let fcHeardWait = null;   // (a bet sent: Neopets' answer to it, when it comes)
   document.addEventListener('bnp-heard', (e) => {   // (Neopets' answer to a bet, as the page heard it: taken, or refused and why)
@@ -29432,7 +29768,7 @@
   }
   const fcPlacedN = () => Number(fc.form.dataset.betsPlaced) || 0;
   const fcMaxN = () => Number(fc.form.dataset.maxBets) || 10;
-  function fcMount(form) {
+  function fcMount(form, bare) {   // (bare: Food Club's bets switched off, only what's placed here kept, for Bet History)
     const sec = form.parentElement, pill = sec && sec.querySelector('.fc-round-pill'), round = Number(((pill && pill.textContent) || '').replace(/\D/g, '')) || 0;
     const arenas = [1, 2, 3, 4, 5].map((a) => [...form.querySelectorAll(`input.fc-bet-pirate-radio[data-match="${a}"]`)].map((r) => {
       const l = r.closest('label'), img = l && l.querySelector('img');
@@ -29440,6 +29776,13 @@
     }));
     if (!round || arenas.some((a) => a.length !== 4 || a.some((p) => !p.odds))) return;   // (not the slip as we know it: Neopets' own, untouched)
     fcOddsKeep(round, arenas);   // (the round's odds, kept for Current Bets' chances)
+    fcRoundSeen(round);
+    if (bare) {
+      fc = { form, root: null, round, arenas, who: '', preset: '', bets: null, sets: null, sent: '', sentAmt: '', queue: [], placing: -1 };
+      let n0 = fcPlacedN();
+      new MutationObserver(() => { const now = fcPlacedN(); if (now > n0) { const sig = fc.sent; fc.sent = ''; try { fcLogBet(sig, fc.sentAmt); } catch (e) { report(e); } } n0 = now; }).observe(form, { attributes: true, attributeFilter: ['data-bets-placed'] });   // (Neopets' own count, after each bet it takes)
+      return;
+    }
     styles();
     const root = document.createElement('section');
     root.className = 'bnp-fc';
@@ -29521,7 +29864,7 @@
   }
   const FC_TICK = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function fcPaint() {
-    if (!fc) return;
+    if (!fc || !fc.root) return;
     const mathOpen = !!fc.root.querySelector('[data-fc-math] details.bnp-fcm-all[open]');   // (the list's every-way list, open or shut as it was)
     const keys = fcPlacedKeys(), bets = fc.bets || [], sets = fc.sets || [], who = fcBettors(), next = fcNext(), placedN = fcPlacedN(), maxN = fcMaxN();
     const chip = (attr, val, label, on, title) => `<button type="button" class="bnp-fc-chip" ${attr}="${esc(val)}" aria-pressed="${on}"${title ? ` title="${esc(title)}"` : ''}>${label}</button>`;
@@ -41731,6 +42074,7 @@
       ['dailies', () => `<div class="bnp-card"><h4>Food Club</h4>
         ${sw('fcHelp', 'Food Club bets for each round', 'On Food Club’s Place a Bet page: Neopets Enhance’s own ten for the round, worked out from NeoFoodClub’s model of each pirate’s chance (its strength, its favourite foods and allergies on the menu, where it stands), on a dial from Safest to Most profit; or the bets popular bettors post on their petpages each day (or a NeoFood.Club string of your own). Under any list, and under Neopets’ own calculator on Current Bets: what the bets can really win together, and the chances. Fill puts a bet in Neopets’ own slip: its arenas, pirates and amount. Neopets’ Place a Bet places it, each time you press it.')}
         ${sw('fcNext', 'The next bet in the slip after each one', 'Once Neopets takes a bet, the list’s next one goes straight into the slip: press Place a Bet again for it.')}
+        ${sw('fcHist', 'Your bets, round by round', 'On Food Club’s Bet History, under Neopets’ own lifetime summary: each round’s bets under its winners, what each paid, a win still to collect, and totals for the last 7 or 30 rounds or all of them, by where the bets came from (your own picks, Neopets Enhance’s by step, a bettor’s). Kept from the bets placed here and those Current Bets and Collect Winnings list; each round’s winners read from the Overview the day after.')}
         <label class="bnp-f bnp-fc-setf"><span>Bettors</span><input type="text" data-feat="fcBettors" value="${esc(f.fcBettors == null ? FC_DEF : f.fcBettors)}" spellcheck="false" autocomplete="off" title="Their petpage names, with commas between"></label>
         <label class="bnp-f"><span>Each bet</span><select data-feat="fcAmt"><option value="cap"${f.fcAmt !== 'max' ? ' selected' : ''}>Max bet, not past the 1M cap</option><option value="max"${f.fcAmt === 'max' ? ' selected' : ''}>Always max bet</option></select></label>
       </div>`],
@@ -44690,6 +45034,81 @@
       .bnp-fc-ar { display: inline; }
       .bnp-fc-note { margin-left: 0; }
     }
+    /* Food Club's Bet History (2026-10-31): your bets round by round under Neopets' own lifetime summary, in the page's own gold and cream, as the box under its calculator */
+    .bnp-fch { container: bnpfc / inline-size; margin: 18px 0 6px; overflow: hidden; border: 2px solid #c79a3a; border-radius: 16px; background: #fffaea; box-shadow: 0 3px 0 #c79a3a; color: var(--fc-ink, #2c2c2c); font: 13px var(--fc-font-body, "Museo Sans Rounded"), "MuseoSansRounded500", Arial, sans-serif; text-align: left; }
+    .bnp-fch-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 16px; padding: 12px 14px 0; }
+    .bnp-fch-top small { color: var(--fc-ink-soft, #6b6b6b); font: 12px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-fch .bnp-fcm-body { padding: 12px 14px 0; }
+    .bnp-fcm-hero.is-down { border-color: #e0a59d; background: linear-gradient(#fdf5f3, #f9e3df); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .9), 0 2px 0 #e0a59d; }
+    .bnp-fcm-hero.is-down span { color: #7d3a32; }
+    .bnp-fcm-hero.is-down b { color: #b3261e; }
+    .bnp-fcm-hero.is-down small { color: #7d4f49; }
+    .bnp-fcm-hero.is-none { border-color: #e4c574; background: linear-gradient(#fff 55%, #fff6dc); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), 0 2px 0 #e4c574; }
+    .bnp-fcm-hero.is-none span, .bnp-fcm-hero.is-none small { color: #6b5a33; }
+    .bnp-fcm-hero.is-none b { color: #3a2a08; }
+    .bnp-fch-collect { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; margin: 12px 14px 0; padding: 10px 14px; border: 2px solid #86c08a; border-radius: 14px; background: linear-gradient(#f5fbf3, #e3f2df); box-shadow: 0 2px 0 #86c08a; }
+    .bnp-fch-collect > span { display: grid; gap: 2px; min-width: 0; }
+    .bnp-fch-collect b { color: #1f6b2b; font: 14px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-fch-collect small { color: #4f6f52; font: 12px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-fch-go { flex: none; text-decoration: none !important; }
+    .bnp-fch-go .button-default__2020 { display: inline-block; width: auto; height: auto; margin: 0; padding: 4px 18px 7px; font-size: 11pt; white-space: nowrap; }
+    .bnp-fch .bnp-fch-src { margin: 12px 14px 0; border-color: #e4c574; box-shadow: 0 2px 0 #e4c574; overflow: hidden; }
+    .bnp-fch-cap { padding: 9px 12px 3px; color: #7a4a00; font: 15px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; }
+    .bnp-fch-src table { margin-bottom: 4px; }
+    .bnp-fch-src th[title], .bnp-fch-from[title], .bnp-fch-by[title] { cursor: help; }
+    .bnp-fch-rounds { display: grid; gap: 10px; padding: 14px 14px 4px; }
+    .bnp-fch-round { border: 2px solid #e4c574; border-radius: 14px; background: #fff; box-shadow: 0 2px 0 #e4c574; overflow: hidden; }
+    .bnp-fch-round > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 8px 12px; background: linear-gradient(#fffdf6, #fff3d6); list-style: none; cursor: pointer; }
+    .bnp-fch-round > summary::-webkit-details-marker { display: none; }
+    .bnp-fch-round > summary::before { content: ""; flex: none; margin-right: -4px; border: 5px solid transparent; border-left-color: #7a4a00; transition: transform .15s; }
+    .bnp-fch-round[open] > summary { border-bottom: 1px solid #f1e3b6; }
+    .bnp-fch-round[open] > summary::before { transform: rotate(90deg) translate(2px, 2px); }
+    .bnp-fch-round > summary:focus-visible { outline: 2px solid var(--fc-link, #0357be); outline-offset: -2px; }
+    .bnp-fch-rno { color: #7a4a00; font: 17px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; }
+    .bnp-fch-when, .bnp-fch-from { color: var(--fc-ink-soft, #6b6b6b); font: 12px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-fch-from { margin-right: auto; }
+    .bnp-fch-chip { padding: 2px 10px; border: 2px solid; border-radius: 999px; font: 12px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }
+    .bnp-fch-chip.is-won { border-color: #86c08a; background: #e3f4e6; color: #1f7a35; }
+    .bnp-fch-chip.is-lost { border-color: #e0a59d; background: #fdecea; color: #a3261b; }
+    .bnp-fch-chip.is-open { border-color: #e4c574; background: #fff3cf; color: #7a4a00; }
+    .bnp-fch-chip.is-unseen { border-color: #d6d2c4; background: #f4f2ec; color: #5f5a48; }
+    .bnp-fch-net { color: var(--fc-ink, #2c2c2c); font: 14px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }
+    .bnp-fch-net.is-up { color: #1f6b16; }
+    .bnp-fch-net.is-down { color: #a3261b; }
+    .bnp-fch-wnote { margin: 10px 12px 0; color: var(--fc-ink-soft, #6b6b6b); font: 12px/1.4 "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-fch-rounds > .bnp-fch-wnote { margin: 0; text-align: center; }
+    .bnp-fch .bnp-fc-grid { --fc-cols: 26px repeat(5, minmax(0, 1fr)) 58px 98px 104px; margin: 10px 12px 12px; background: #fff; }
+    .bnp-fch .bnp-fc-bet.bnp-fch-wrow { background: #fff3cf; }
+    .bnp-fch .bnp-fc-bet.bnp-fch-bet.is-won { background: #f1faf2; box-shadow: inset 4px 0 0 #2e9e46; }
+    .bnp-fch-wn { border-color: #c08d17; background: linear-gradient(#e8b84a, #c08d17); color: #fff; }
+    .bnp-fch-wlbl { grid-column: span 3; justify-self: end; color: #7a4a00; font: 12px "MuseoSansRounded700", Arial, sans-serif; text-align: right; }
+    .bnp-fch .bnp-fc-c.is-win img { border: 2px solid #e8a41d; }
+    .bnp-fch .bnp-fc-c.is-hit img { border: 2px solid #2e9e46; }
+    .bnp-fch .bnp-fc-c.is-hit b, .bnp-fch-hit { color: #1f7a35; }
+    .bnp-fch-hit { display: inline-flex; align-items: center; gap: 2px; font-style: normal; }
+    .bnp-fch .bnp-fc-c.is-miss img { filter: grayscale(1); opacity: .45; }
+    .bnp-fch .bnp-fc-c.is-miss b { color: #8a8571; }
+    .bnp-fch .bnp-fc-c.is-unk b { color: #8a8571; font-family: "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-fc-tag.is-lost { background: #fdecea; color: #a3261b; }
+    .bnp-fc-tag.is-wait { background: #fff3cf; color: #7a4a00; }
+    .bnp-fc-tag.is-unseen { background: #f1efe8; color: #5f5a48; }
+    .bnp-fch-out { display: grid; justify-items: end; gap: 2px; text-align: right; }
+    .bnp-fch-out small { color: var(--fc-ink-soft, #555); font-size: 11px; line-height: 1.25; }
+    .bnp-fch-more { display: flex; justify-content: center; padding: 6px 14px 2px; }
+    .bnp-fc-pill.is-warn { border-color: #e0a59d; color: #a3261b !important; }
+    .bnp-fc-pill.is-warn:hover { border-color: #c0392b; background: #fdecea; }
+    .bnp-fch-ask, .bnp-fch-undo { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; margin: 10px 14px 0; padding: 8px 12px; border: 2px solid; border-radius: 12px; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; text-align: center; }
+    .bnp-fch-ask { border-color: #e0a59d; background: #fdf5f3; color: #7d3a32; }
+    .bnp-fch-undo { border-color: #e4c574; background: #fff; color: #5b3a00; }
+    .bnp-fch.is-empty .bnp-fch-undo { margin: 0 14px 12px; }
+    .bnp-fch-foot { display: flex; justify-content: flex-end; margin: -2px 12px 10px; }
+    .bnp-fch .bnp-fcm-note { padding-top: 10px; }
+    .bnp-fch.is-empty { box-shadow: none; }
+    .bnp-fch-empty { margin: 0; padding: 12px 16px; color: #5b3a00; font: 13px/1.45 "MuseoSansRounded500", Arial, sans-serif; text-align: center; }
+    .bnp-fch-empty b { display: block; margin-bottom: 2px; color: #7a4a00; font: 17px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; }
+    @container bnpfc (max-width: 760px) { .bnp-fch-wlbl { grid-column: 2; justify-self: start; text-align: left; } .bnp-fch-src th, .bnp-fch-src td { padding: 6px 5px; } .bnp-fch-src tbody th { min-width: 110px; white-space: normal; } }
+    @container bnpfc (max-width: 680px) { .bnp-fch .bnp-fcm-body { grid-template-columns: minmax(0, 1fr); } .bnp-fch .bnp-fcm-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bnp-fch-from { flex-basis: 100%; order: 9; margin-right: 0; } }
+    @media (prefers-reduced-motion: reduce) { .bnp-fch-round > summary::before { transition: none; } }
     .bnp-qlgo { flex: none; margin: 0 0 0 auto; padding: 2px 14px 3px; border: 2px solid #8a5a2b; border-radius: 999px; background: #fff8e6; color: #5a3a14 !important; box-shadow: 0 2px 0 #8a5a2b; font: 13px "MuseoSansRounded700", Arial, sans-serif; text-decoration: none !important; white-space: nowrap; }
     .bnp-qlgo:hover { background: #fff; }
     .questlog-quest[class*="complete"] .bnp-qlgo, .ql-task[class*="complete"] .bnp-qlgo, .ql-task[class*="done"] .bnp-qlgo { display: none; }
@@ -46765,6 +47184,12 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.8.1', '2026-10-31', [
+      'Food Club’s Bet History: your bets round by round under Neopets’ own summary, each round’s winners over its bets and what each paid, with totals for the last 7 or 30 rounds or all of them, by where the bets came from',
+      'Food Club’s Bet History: a win still to collect and the day Neopets keeps it until; bets placed on another device come in from Current Bets; clear the history, or remove a round',
+      'Food Club: Neopets Enhance’s own bets are kept as its own, by their step on the dial',
+      'Fixes: Underwater Fishing’s “nothing on the line” card shows Neopets’ own answer, not the page’s welcome',
+    ]],
     ['4.8', '2026-10-31', [
       'Underwater Fishing made over: all your pets as tiles to make active with a press, each with a reminder bell; Fish in a row fishes a string of your pets one after another, as you would, at a person’s pace',
       'Your shop: Price mode can price only your unpriced items and skip ones priced lately; an item the Super Shop Wizard won’t search is marked and passed by, and its real “come back later” is caught',
