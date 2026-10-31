@@ -1,11 +1,11 @@
 {
- "version": "4.5",
- "date": "2026-10-30",
+ "version": "4.6",
+ "date": "2026-10-31",
  "notes": [
-  "Neomail: a Sent folder of what you’ve sent, in Neomail and in NeoChat",
-  "Your shop: Edit your shop and Choose your shopkeeper made over",
-  "NC Mall 2: a Neopets-width view, scrolling boxes, and New Items with what Neopets’ list leaves out",
-  "Food Club: Place all goes through your whole list of bets",
-  "Fixes: Ninja School’s Pay button, the compact Neomail bar"
+  "My Gallery made over: Rank by dragging, Take out and Categorise on the cards",
+  "Your shop: Shop Stock made over, and Price mode for a page or your whole shop",
+  "NC Mall 2: Limited Time! tags, Leaving Soon at once, a faster Dyeworks page",
+  "Food Club: what your bets can really win, with your chances",
+  "The worth pills redone"
  ]
 }

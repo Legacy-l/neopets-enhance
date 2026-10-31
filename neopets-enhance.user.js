@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.5
+// @version      4.6
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -63,11 +63,19 @@
     if (other) {
       const tell = () => {
         if (!document.body || document.querySelector('[data-bnp-twice]')) return;
+        const day = () => { try { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }); } catch (_) { return ''; } };   // (today in Neopian time)
+        try { if (localStorage.getItem('bnp-twice-shut') === day()) return; } catch (_) { /* */ }   // (closed today: tomorrow it reminds you again)
         const n = document.createElement('div');
         n.setAttribute('data-bnp-twice', '');
         n.style.cssText = 'position:fixed;z-index:2147483646;left:50%;top:70px;transform:translateX(-50%);max-width:min(560px,calc(100vw - 24px));padding:10px 16px;border:2px solid #b03a2e;border-radius:12px;background:#fff6f4;color:#3a1d18;font:13px/1.45 Arial,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.25)';
         n.textContent = `Two copies are switched on in Tampermonkey: “${other}” and “${APP}”. Only “${other}” is running on this page. Turn the other one off (your settings come across with Settings › Back up: Save in one, Restore in the other).`;
-        n.addEventListener('click', () => n.remove());
+        const x = document.createElement('b');
+        x.textContent = '×';
+        x.style.cssText = 'float:right;margin:-2px -6px 0 12px;font-size:18px;line-height:1;cursor:pointer';
+        n.prepend(x);
+        n.style.cursor = 'pointer';
+        n.title = 'Close: not again till tomorrow';
+        n.addEventListener('click', () => { n.remove(); try { localStorage.setItem('bnp-twice-shut', day()); } catch (_) { /* */ } });
         document.body.append(n);
       };
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tell, { once: true }); else tell();
@@ -179,7 +187,7 @@
   // Requests Neopets takes only from one of its own pages (a theme saved in General Settings, a Neomail sent, a Neofriend request; it says
   // "directed to this page from the wrong place" otherwise): made from that page itself, opened unseen in a frame of NE's own with NE only
   // relaying there, so they carry that page as their referrer because they truly come from it. Already on that page: from here
-  function fromPageOk(p) { return /^\/(?:settings\/general\/|neomessages\.phtml|neofriend_requests\.phtml)$/.test(p); }
+  function fromPageOk(p) { return /^\/(?:settings\/general\/|neomessages\.phtml|neofriend_requests\.phtml|shops\/wizard\.phtml)$/.test(p); }   // (the Shop Wizard's page: Price mode's searches come from it, as a person's do)
   const fromHere = (page) => !ON_MALL && !FRAME && location.pathname + location.search === page;
   const fromPage = (page, u, o) => (fromHere(page) ? fetch(u, o) : wwwFetch(u, o, page));
   const fromPageHtml = (page) => (fromHere(page) ? Promise.resolve(document.documentElement.outerHTML) : wwwFetch(page, { page: 1 }, page).then((r) => r.text()));   // (the page as it is there: nothing asked for again)
@@ -1766,7 +1774,7 @@
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, noAds: true, tillLog: true, tpSales: true, auSales: true,
     scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: true, oldBtns: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldGalleries: false, oldShops: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
-    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
+    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, tone: '', vol: 100, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,   // (tone: '' each its own, or one of the sounds for all; vol: how loud, 5 to 100)
@@ -4750,6 +4758,50 @@
     if (how === 'append') at.append(row); else at.after(row);
     itBalance(row);
   }
+  function itGalHover() {   // (a gallery as its owner made it, custom layout and all: NE puts nothing in it; pointing at an item shows its row (its price, its buttons) in a small panel over the page (user, 2026-10-31: "Show on hover only"))
+    const cells = $$('img.itemimg[src*="/items/"]').map((img) => img.closest('td')).filter((td) => td && td.querySelector('b.textcolor'));
+    if (!cells.length) return;
+    if (!itGalHover.panel) {
+      if (!document.getElementById('bnp-itfloat-style')) { const st = document.createElement('style'); st.id = 'bnp-itfloat-style'; st.textContent = '.bnp-it-float { position: fixed; z-index: 2147482000; box-sizing: border-box; max-width: min(340px, calc(100vw - 16px)); margin: 0; padding: 6px 8px; border: 2px solid rgba(0, 0, 0, .16); border-radius: 12px; background: #fff; box-shadow: 0 8px 22px rgba(0, 0, 0, .22); line-height: normal; text-align: left; } .bnp-it-float[hidden] { display: none; } .bnp-it-float > .bnp-it { margin: 0; }'; (document.head || document.documentElement).append(st); }
+      const panel = itGalHover.panel = document.createElement('div');
+      panel.className = 'bnp-it-float';
+      panel.setAttribute('data-bnp', 'itfloat');
+      panel.hidden = true;
+      document.body.append(panel);
+      const rows = new Map();
+      let t = 0;
+      const place = (cell) => {   // (under the item, else over it when there's no room under; never off the window's sides)
+        const r = cell.getBoundingClientRect(), pw = panel.offsetWidth, ph = panel.offsetHeight;
+        let y = r.bottom + 6;
+        if (y + ph > innerHeight - 8) y = Math.max(8, r.top - ph - 6);
+        panel.style.left = `${Math.round(Math.max(8, Math.min(innerWidth - pw - 8, r.left + r.width / 2 - pw / 2)))}px`;
+        panel.style.top = `${Math.round(y)}px`;
+      };
+      itGalHover.show = (cell) => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+          const name = reClean(cell.querySelector('b.textcolor').textContent);
+          if (!rows.has(name)) rows.set(name, itRow(name, { maybeNc: true }));
+          const row = rows.get(name);
+          if (!row) return;
+          if (panel.firstChild !== row) panel.replaceChildren(row);
+          panel.hidden = false;
+          itBalance(row);
+          place(cell);
+        }, 120);
+      };
+      itGalHover.hide = () => { clearTimeout(t); t = setTimeout(() => { panel.hidden = true; }, 220); };   // (a moment to move onto the panel and press a button)
+      panel.addEventListener('pointerenter', () => clearTimeout(t));
+      panel.addEventListener('pointerleave', itGalHover.hide);
+      addEventListener('scroll', () => { panel.hidden = true; }, { passive: true });
+    }
+    for (const cell of cells) {
+      if (cell.dataset.bnpFloat) continue;
+      cell.dataset.bnpFloat = '1';
+      cell.addEventListener('pointerenter', () => itGalHover.show(cell));
+      cell.addEventListener('pointerleave', itGalHover.hide);
+    }
+  }
   function itBalance(row) {   // (a row too wide for its item: two even rows of buttons, never one left alone under the rest; measured together, once a frame)
     (itBalance.q = itBalance.q || new Set()).add(row);
     if (itBalance.raf) return;
@@ -4779,6 +4831,16 @@
   // panel, its search done as Neopets' own page does it, so the bar's SSW button and the item buttons open it there; an old page in its own
   // look opens its own (in the premium bar at its foot). Either way it opens with the item's name in: the search is yours to press
   const SSW_PANEL = `<div id="ssw__2020" class="premium-widget__2024" data-bnp-ssw style="display: none;"><div class="widget-header__2020"><div class="ssw-char__2020"></div><h3>Super Shop Wizard</h3><div class="widget-button-exit__2020 button-default__2020 button-red__2020" data-bnp-sswx role="button" tabindex="0" aria-label="Close"><div class="button-x__2020"></div></div></div><div class="widget-body__2020"><div id="ssw-tabs"><ul id="tabs-header" class="ssw-tabs-header"><li><a href="#ssw-tabs-1">Search</a></li><li><a href="#ssw-tabs-2">Results</a></li><li><a href="#ssw-tabs-3">Errors</a></li></ul><div id="ssw-tabs-1" class=""><fieldset id="search-form" style="border: none;"><div class="ssw-search__2020"><input name="searchstr" type="text" id="searchstr" class="textfield" value="" tabindex="10"><div class="ssw-button-search__2020 button-default__2020 button-blue__2020" id="ssw-button-search" role="button" tabindex="0" aria-label="Search"><div class="button-search-white__2020"></div></div></div><div class="ssw-filters__2020"><select name="ssw-criteria" id="ssw-criteria" tabindex="20"><option value="exact">Identical to</option><option value="containing">Containing my phrase</option></select><select name="ssw-area" id="ssw-area"><option value="shop">In Shops</option><option value="gallery">In Galleries</option></select></div><div class="ssw-price__2020"><p class="ssw-price-text__2020">Price:</p><input name="price" type="text" id="price" class="textfield" placeholder="Min"><div class="ssw-dash__2020"></div><input name="price-max" type="text" id="price-max" class="textfield" placeholder="Max"></div><div class="ssw-priceonly__2020"><p>Search price only</p><input type="checkbox" id="price-limited" value="price-limited"></div></fieldset></div><div id="ssw-tabs-2" class="ssw-hide"><div id="search_for" class="ssw-results-header"></div><div id="sswresults" class="ssw-results-body"></div><form id="sswsearch"><div class="button-grid2__2020"><input type="submit" name="submit" value="Resubmit" class="button-default__2020 button-blue__2020 ssw-button" id="ssw-button-resubmit"><input type="button" name="tryagain" value="New Search" class="button-default__2020 button-blue__2020 ssw-button" id="ssw-button-new-search"></div></form><div id="sswerror" class="ssw-results-error"></div></div></div></div></div>`;
+  // (Neopets' wizards asked as its own pages ask them: a query or form body as jQuery's $.param writes it (spaces as +; ' ( ) ! * as they
+  // are), the Super Shop Wizard's cb the number the page's own search code carries (one for every search from a page), jQuery's Accept for JSON)
+  const wizParam = (o) => Object.entries(o).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v == null ? '' : String(v))}`).join('&').replace(/%20/g, '+');
+  let sswCbNow = '';
+  function sswCb() {
+    if (sswCbNow) return sswCbNow;
+    for (const sc of document.scripts) { const m = /ssw_query\.php[\s\S]{0,1500}?\bcb\s*:\s*["'](\d+)["']/.exec(sc.textContent || ''); if (m) return (sswCbNow = m[1]); }
+    return (sswCbNow = String(100000 + Math.floor(Math.random() * 900000)));   // (an old page has none: one made up, kept for the page, as the widget's is)
+  }
+  const SSW_ACCEPT = 'application/json, text/javascript, */*; q=0.01';
   function sswPanel() {   // (the beta panel on an old page in the beta look: true once there's one to open)
     if (document.getElementById('ssw__2020')) return true;
     if (!document.documentElement.classList.contains('bnp-old') || typeof PAGE.toggleWidget__2020 !== 'function' || !document.body) return false;
@@ -4797,7 +4859,7 @@
         #ssw__2020[data-bnp-ssw] form#sswsearch { display: block; margin: 0 auto; }`;
       (document.head || document.documentElement).append(st);
     }
-    const w = document.getElementById('ssw__2020'), q = (s) => w.querySelector(s), cb = String(100000 + Math.floor(Math.random() * 900000));
+    const w = document.getElementById('ssw__2020'), q = (s) => w.querySelector(s), cb = sswCb();
     const tab = (n) => { q('#ssw-tabs-1').classList.toggle('ssw-hide', n !== 1); q('#ssw-tabs-2').classList.toggle('ssw-hide', n !== 2); };
     const go = async (e) => {   // (as Neopets' own page asks: the same address, the same answer drawn the same way)
       if (e) e.preventDefault();
@@ -4808,9 +4870,9 @@
       q('#search_for').innerHTML = '<p>Searching...</p>';
       q('#sswerror').textContent = '';
       tab(2);
-      const ask = new URLSearchParams({ q: str, caller: 'h5', priceOnly: q('#price-limited').checked ? '1' : '0', context: q('#ssw-area').value === 'shop' ? '0' : '1', partial: q('#ssw-criteria').value === 'containing' ? '1' : '0', min_price: q('#price').value.trim(), max_price: q('#price-max').value.trim(), lang: 'en', json: '1', cb });
+      const ask = wizParam({ q: str, caller: 'h5', priceOnly: q('#price-limited').checked ? '1' : '0', context: q('#ssw-area').value === 'shop' ? '0' : '1', partial: q('#ssw-criteria').value === 'containing' ? '1' : '0', min_price: q('#price').value.trim(), max_price: q('#price-max').value.trim(), lang: 'en', json: '1', cb });
       try {
-        const r = await fetch(`/np-templates/views/shops/ssw/ssw_query.php?${ask}`, { credentials: 'include', headers: { 'x-requested-with': 'XMLHttpRequest', Accept: 'application/json' } });
+        const r = await fetch(`/np-templates/views/shops/ssw/ssw_query.php?${ask}`, { credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: SSW_ACCEPT } });
         const j = await r.json();
         q('#sswresults').innerHTML = j.html || '';
         q('#search_for').innerHTML = `<p>${esc(`Searching for '${str}', matching '${(j.req && j.req.item_name) || str}'...`)}</p>`;
@@ -5282,7 +5344,7 @@
     othershops: () => { for (const b of $$('.igs-item b')) itPut(b, b.textContent); for (const t of $$('.item-title')) itPut(t, t.textContent); },
     moneytree: () => { for (const a of $$('.moneytree-grid .donated > a[data-name]')) { const n = reClean(a.dataset.name); if (n && !/^\d[\d,]*\s*NP$/i.test(n)) itPut(a, n); } },   // (after each card, never in it: the whole card is the link that takes the item)
     tradingpost: () => { for (const n of $$('p.item-name-text')) if (!/\d[\d,]*\s*NP$/i.test(n.textContent.trim())) itPut(n, n.textContent, { trade: true, maybeNc: true }); },
-    gallery: () => { if (gal) return; for (const img of $$('img.itemimg[src*="/items/"]')) { const b = [...img.parentElement.querySelectorAll('b.textcolor')][0]; if (b) itPut(b, b.textContent, { maybeNc: true }); } },
+    gallery: () => { if (gal) return; itGalHover(); },   // (a gallery as its owner made it: nothing put in it; its items' rows in a panel when pointed at (user, 2026-10-31))
     hiddentower: () => { for (const b of $$('td.content table b:not([style*="red"]), #container__2020 table b:not([style*="red"])')) if (b.closest('table') && b.closest('table').querySelector('img[src*="/items/"]')) itPut(b, b.textContent); },
     kadoatery: () => { for (const td of $$('td')) { if (td.querySelector('td')) continue; const t = td.textContent; if (/You should give it/i.test(t) && !/Thanks,/i.test(t)) { const s = [...td.querySelectorAll('strong')].pop(); if (s) itPut(s, s.textContent); } } },   // (the hungry Kadoaties' own cells, not the table round them)
     training: () => {
@@ -5452,6 +5514,7 @@
     [/^\/quickstock\.phtml$/, '.qs-title-container', '.qs-page-header', '.qs-menubar', () => [...LINKS.qs.icon, `url:${NPI}themes/h5/newyears/images/quickstock-icon.png`]],
     [/^\/safetydeposit\.phtml$/, '.sdb-header-title-row', '.sdb-header', '.sdb-menubar', () => [...LINKS.sdb.icon]],
     [/^\/closet\.phtml$/, '.closet-header-title-row', '.closet-header', '.closet-menubar', () => ['side:/closet.phtml', 'side:/customise/', `url:${NPI}themes/h5/basic/images/v3/customise-icon.svg`]],
+    [/^\/market\.phtml$/, '.qs-title-container', '.qs-page-header', '.mkt-banner', () => (/[?&]type=sales(?:&|$)/.test(location.search) ? MKT_JUMP.find(([re]) => re.test('market.phtml?type=sales'))[1] : ['nat:shop-usershop-icon'])],   // (Sales History: its "Jump to" chip's own picture)   // (the Marketplace's pages: Quick Stock's header, the market's banner under it)
   ];
   let ptObs = null, ptT = 0;
   function ptFit() {
@@ -6767,13 +6830,13 @@
     } else {
       const rows = [...tbl.rows], head = (rows[0] ? rows[0].textContent : '').replace(/\s+/g, ' ').trim(), lost = /nothing/i.test(head);
       mark = `<b class="bnp-bt-mark ${lost ? 'is-lost' : 'is-won'}">${esc(lost ? 'You won nothing' : head.replace(/\s*[:;]-?[()]+\s*$/, '') || 'You won!')}</b>`;   // (its words, without the :( )
-      pics = [...tbl.querySelectorAll('img')].map((im) => pic(im.getAttribute('src') || '', Math.min(150, Number(im.getAttribute('width')) || 150), Math.min(150, Number(im.getAttribute('height')) || 150))).join('');
+      pics = [...tbl.querySelectorAll('img')].filter((im) => !/\/pirates\/map_frontpg\.gif/.test(im.getAttribute('src') || '')).map((im) => pic(im.getAttribute('src') || '', Math.min(150, Number(im.getAttribute('width')) || 150), Math.min(150, Number(im.getAttribute('height')) || 150))).join('');
       prize = rows.slice(1).flatMap((r) => [...r.cells]).map((c) => c.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean);   // (a prize's words, if it has any)
     }
     const card = document.createElement('div');
     card.className = 'bnp-bt';
     card.setAttribute('data-bnp', 'bt');
-    card.innerHTML = `<div class="bnp-bt-head"><img src="${esc(`${NPI}pirates/map_frontpg.gif`)}" alt="" width="96" height="96"><div><h2>${esc(title)}</h2>${ticket ? `<p class="bnp-bt-who">${who ? `<b>${esc(who)}</b> ` : ''}pulls out a ticket… and…</p>` : ''}${mark}</div></div>
+    card.innerHTML = `<div class="bnp-bt-head"><img class="bnp-bt-host" src="${esc(`${NPI}pirates/map_frontpg.gif`)}" alt="" width="200" height="200"><div class="bnp-bt-side"><h2>${esc(title)}</h2>${ticket ? `<p class="bnp-bt-who">${who ? `<b>${esc(who)}</b> ` : ''}pulls out a ticket… and…</p>` : ''}${mark}</div></div>
       ${pics ? `<div class="bnp-bt-pics">${pics}</div>` : ''}
       ${prize.map((w) => `<p class="bnp-bt-prize">${esc(w)}</p>`).join('')}
       ${said.map((w) => `<p class="bnp-bt-said">${esc(w)}</p>`).join('')}
@@ -6799,8 +6862,8 @@
       const dice = [...td.querySelectorAll('img[src*="/deadlydice/d"]')].map((im) => im.getAttribute('src'));
       const words = [...td.querySelectorAll('p')].filter((p) => !p.querySelector('table, form, img')).map((p) => p.textContent.replace(/\s+/g, ' ').trim()).filter((t) => t && !/You can only dice with fate once a day/i.test(t));   // (Neopets' own words: what it cost or gave)
       const next = nextNstMidnight(Date.now());
-      card.innerHTML = `<div class="bnp-dd-head"><img src="${esc(`${NPI}worlds/deadlydice/vrw.gif`)}" alt="" width="96" height="96"><div><h2>Deadly Dice</h2><b class="bnp-dd-verdict ${lost ? 'is-lost' : won ? 'is-won' : 'is-draw'}">${lost ? 'You lost' : won ? 'You won' : 'A draw'}</b></div></div>
-        <div class="bnp-dd-dice"><figure>${dice[0] ? `<img src="${esc(dice[0])}" alt="" width="64" height="64">` : ''}<figcaption>You<b>${a}</b></figcaption></figure><span class="bnp-dd-vs">vs</span><figure>${dice[1] ? `<img src="${esc(dice[1])}" alt="" width="64" height="64">` : ''}<figcaption>von Roo<b>${b}</b></figcaption></figure></div>
+      card.innerHTML = `<div class="bnp-dd-head"><img class="bnp-dd-roo" src="${esc(`${NPI}worlds/deadlydice/vrw.gif`)}" alt="Count von Roo" width="200" height="200"><div class="bnp-dd-side"><h2>Deadly Dice</h2><b class="bnp-dd-verdict ${lost ? 'is-lost' : won ? 'is-won' : 'is-draw'}">${lost ? 'You lost' : won ? 'You won' : 'A draw'}</b>
+        <div class="bnp-dd-dice"><figure>${dice[0] ? `<img src="${esc(dice[0])}" alt="" width="64" height="64">` : ''}<figcaption>You<b>${a}</b></figcaption></figure><span class="bnp-dd-vs">vs</span><figure>${dice[1] ? `<img src="${esc(dice[1])}" alt="" width="64" height="64">` : ''}<figcaption>von Roo<b>${b}</b></figcaption></figure></div></div></div>
         ${words.map((w) => `<p class="bnp-dd-said">${esc(w)}</p>`).join('')}
         <p class="bnp-dd-next">Done for today · it opens again at ${esc(fmtNst(next))} NST, for an hour</p>`;
       const c0 = td.querySelector('center');
@@ -20469,9 +20532,8 @@
     ['stk', 'Stickers', (it) => /\bsticker pack/i.test(it.name)],
     ['gram', 'Gram', (it) => /\bgram\b/i.test(it.name) && !/\bbundle\b/i.test(it.name)],
     ['gramb', 'Gram Bundle', (it) => /\bgram\b/i.test(it.name) && /\bbundle\b/i.test(it.name)],   // (5-Bundle, 10-Bundle: how many, its picture says)
-    ['dye', 'Dyeworks', (it) => !it.wear && /\bhue brew\b|\bdyeworks\b/i.test(it.name)],
-    ['dye', 'In Dyeworks', (it) => !!it.dyeEnd],   // (in the Dyeworks for a while, so on sale itself: NE's Dyeworks aisle)
-    ['rerel', 'Re-release', (it) => mallBack(it) || (it.wear && /^dyeworks\b/i.test(it.name))],   // (an old item sold again for a while; a Dyeworks colour of a wearable sold as itself is one too)
+    ['dye', 'Dyeworks', (it) => mallIsDye(it)],   // (the Dyeworks': its Hue Brews, a colour sold as itself, an item in it for a while (on sale itself), any in its list)
+    ['rerel', 'Re-release', (it) => !mallIsDye(it) && mallBack(it)],   // (an old item sold again for a while — never the Dyeworks' (user, 2026-10-31: a true re-release told apart))
     ['style', 'Styling Studio', (it) => mallStudioOk(it)],
     ['cookie', 'Fortune cookie', (it) => /\bfortune cookie/i.test(it.name)],
     ['game', 'Wonderclaw', (it) => /\bwonderclaw\b/i.test(it.name)],
@@ -20811,7 +20873,7 @@
         <a class="bnp-mall-droprow" role="menuitem" href="/mall/shopping-rules.phtml"><span class="bnp-mall-dropic"><img src="${MALL_NAVIC.rules}" width="34" height="34" alt="" draggable="false"></span><span class="bnp-mall-dropname">Shopping rules</span></a>
         <button type="button" class="bnp-mall-droprow" role="menuitem" data-mall-swap="1"><span class="bnp-mall-dropic">${mallNavIc('ncmall-icon.png')}</span><span class="bnp-mall-dropname">Neopets’ own Mall<small>for this tab</small></span></button>
       </div></div></div></div>
-      <div class="bnp-mall-subside is-end"><a class="bnp-mall-nc" href="${MALL_GET_NC}" title="Your Neocash: get more"><span class="bnp-mall-ncic"><img src="${NPI}themes/h5/basic/images/nc-icon.svg" width="40" height="33" alt="NC"></span><b data-mall-nc>…</b><i class="bnp-mall-ncadd" aria-hidden="true"></i></a></div>`;
+      <div class="bnp-mall-subside is-end"><button type="button" class="bnp-mall-cartbtn" data-mall-panel="bag" aria-expanded="${!!(mall && mall.root && mall.root.classList.contains('is-bagopen'))}" aria-label="Your cart" title="Your cart"><img src="${MALL_NAVIC.cart}" width="34" height="34" alt="" draggable="false"><i hidden></i></button><a class="bnp-mall-nc" href="${MALL_GET_NC}" title="Your Neocash: get more"><span class="bnp-mall-ncic"><img src="${NPI}themes/h5/basic/images/nc-icon.svg" width="40" height="33" alt="NC"></span><b data-mall-nc>…</b><i class="bnp-mall-ncadd" aria-hidden="true"></i></a></div>`;
   }
   function mallPaintNav() {   // (both bars, as you are now: where you are, what's counted)
     if (!mall) return;
@@ -20819,11 +20881,13 @@
     mall.menu.innerHTML = mallMenuHtml();
     mall.sub.innerHTML = mallSubHtml();
     mallBarPaint();
+    mallTabsPaint();   // (the cart beside your Neocash, drawn anew: its count again)
     mallViewSwFit();
     if (g) mallDropOpen(g, mall.dropHow);
   }
 
   // ---- An item's card: its picture, name and price, one small line of what matters, Add to cart ----
+  function mallLtdTier(end) { const ms = end * 1000 - Date.now(); return ms < 86400e3 ? ' is-red' : ms < 3 * 86400e3 ? ' is-amber' : ''; }   // (the Limited Time! tag's colour: red on the last day, orange under three, else yellow)
   const mallWhen = (sec) => { const ms = sec * 1000; return `${new Date(ms).toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', weekday: 'short', month: 'short', day: 'numeric' })} at ${fmtNst(ms)} NST`; };
   function mallLeftLine(it) {   // (how long it has left in the Mall when that's soon, as a plain coloured line: amber under 3 days, red under one)
     const ms = mallLeftMs(it);
@@ -20851,7 +20915,7 @@
     const add = it.promo ? `<button type="button" class="button-default__2020 button-green__2020 bnp-mall-add" data-mall-claim="${it.id}" title="A free gift: claimed with Neopets’ own Mall">Claim it</button>`
       : `<button type="button" class="button-default__2020 button-yellow__2020 bnp-mall-add" data-mall-add="${it.id}"${can ? '' : ' disabled data-cant'}>${can ? (qty ? 'Add another' : 'Add to cart') : it.stock === 0 || it.gone ? 'Sold out' : 'Not for sale'}</button>`;
     return `<article class="bnp-mall-card${it.sale ? ' is-sale' : ''}${can ? '' : ' is-cant'}" data-mall-item="${it.id}" tabindex="0" aria-label="${esc(it.name)}">
-      <div class="bnp-mall-pic"><img src="${esc(it.img)}" width="80" height="80" alt="" loading="lazy" draggable="false">${it.wear ? `<button type="button" class="bnp-mall-cbtn is-try${trying ? ' is-on' : ''}" data-mall-try="${it.id}" title="${trying ? 'On your pet: take it off' : 'Try it on your pet'}" aria-pressed="${!!trying}">${MALL_SVG.hanger}</button>` : ''}<button type="button" class="bnp-mall-cbtn is-heart${wished ? ' is-on' : ''}" data-mall-wish="${it.id}" aria-pressed="${wished}" title="${wished ? 'On your wishlist' : 'Add to your wishlist'}">${MALL_SVG.heart}</button>${qty ? `<span class="bnp-mall-inbag" title="In your cart">${MALL_SVG.bag}${qty > 1 ? qty : ''}</span>` : ''}${it.end && it.end * 1000 > Date.now() ? `<span class="bnp-mall-ltd" title="Limited time: leaves the NC Mall ${esc(mallWhen(it.end))}"><img src="${NPI}questlog/images/timer.png" width="16" height="16" alt="Limited time" draggable="false"></span>` : ''}</div>
+      <div class="bnp-mall-pic"><img src="${esc(it.img)}" width="80" height="80" alt="" loading="lazy" draggable="false">${it.wear ? `<button type="button" class="bnp-mall-cbtn is-try${trying ? ' is-on' : ''}" data-mall-try="${it.id}" title="${trying ? 'On your pet: take it off' : 'Try it on your pet'}" aria-pressed="${!!trying}">${MALL_SVG.hanger}</button>` : ''}<button type="button" class="bnp-mall-cbtn is-heart${wished ? ' is-on' : ''}" data-mall-wish="${it.id}" aria-pressed="${wished}" title="${wished ? 'On your wishlist' : 'Add to your wishlist'}">${MALL_SVG.heart}</button>${qty ? `<span class="bnp-mall-inbag" title="In your cart">${MALL_SVG.bag}${qty > 1 ? qty : ''}</span>` : ''}${it.end && it.end * 1000 > Date.now() ? `<span class="bnp-mall-ltdtag${mallLtdTier(it.end)}" data-ltd="${it.end}" title="Limited time: leaves the NC Mall ${esc(mallWhen(it.end))}"><i class="bnp-mall-ltdic" aria-hidden="true"><img src="${NPI}questlog/images/timer.png" width="14" height="14" alt="" draggable="false"></i>Limited Time!</span>` : ''}</div>
       <div class="bnp-mall-tags">${tags.map(([k, l]) => `<span class="bnp-mall-tag is-${k}"${k === 'fill' ? ` title="${esc(MALL_FILL_TIP)}"` : ''}>${esc(l)}</span>`).join('')}</div>
       <h3 class="bnp-mall-name" title="${esc(it.name)}">${esc(it.name)}</h3>
       <div class="bnp-mall-pricerow">${mallPrice(it)}</div>${mallInfo(it, bundle)}
@@ -20901,7 +20965,7 @@
   function mallBoxHtml(k, o = {}) {   // (one of the front's boxes: its head, then as many of its cards as it has room for)
     const [svg, title, view] = MALL_BOXES[k];
     let items = null, total = 0, err = '';
-    if (k === 'soon' || k === 'sale') { items = mallFound(k, k === 'soon' ? 3 : 0); total = items.length; if (!items.length) return ''; }
+    if (k === 'soon' || k === 'sale') { items = mallFound(k, k === 'soon' ? 7 : 0); total = items.length; if (!items.length) return ''; }
     else { const d = mall.data[mallListKey(k)]; if (d && d.items) { items = d.items; total = d.total || d.items.length; } else if (d && d.err) err = d.err; }
     const head = `<header class="bnp-mall-boxh"><h2>${mallTitleIc(k)}${esc(title)}</h2><a class="bnp-mall-viewall" ${mallGoAttr(view)}>View all${total ? ` <b>${total}</b>` : ''}${MALL_SVG.next}</a></header>`;
     const rows = o.rows || 1;
@@ -20926,7 +20990,7 @@
   function mallDuoPlan(duo) {   // (two boxes side by side: two rows each when both have that many, else one; a box with only a few items made narrower, the other wider, so neither has empty room)
     if (matchMedia('(max-width: 1080px)').matches) return null;
     const ks = [...duo.children].map((x) => x.getAttribute('data-front'));
-    const n = (k) => { if (k === 'soon' || k === 'sale') return mallFound(k, k === 'soon' ? 3 : 0).length; const d = mall.data[mallListKey(k)]; return d && d.items ? d.items.length : Infinity; };
+    const n = (k) => { if (k === 'soon' || k === 'sale') return mallFound(k, k === 'soon' ? 7 : 0).length; const d = mall.data[mallListKey(k)]; return d && d.items ? d.items.length : Infinity; };
     const [a, b] = ks.map(n);
     if (!a || !b) return null;
     const L = mallFrontLayout(), rows = Math.min(a, b) > L.half ? 2 : 1, fit = (x) => Math.max(3, Math.ceil(x / rows));
@@ -20975,6 +21039,8 @@
   }
   async function mallFrontLoad() {   // (the front's lists: the release banners, then New, Popular and TNT Favourites whole, as Neopets' own front reads them)
     for (const k of ['rel', ...Object.keys(MALL_LISTS)]) {
+      if (k === 'best') await mallSoonRead().catch(report);   // (Leaving Soon's own reads before TNT Favourites, further down the front)
+      if (!mall) return;
       const key = mallListKey(k);
       if (k !== 'rel' && mall.data[key] && mall.data[key].items) continue;
       try {
@@ -20993,6 +21059,8 @@
       if (mall.view.k === 'soon' || mall.view.k === 'sale') mallFoundPage(mall.view.k);
       mallPaintNav();
     }
+    await mallSoonRead(true).catch(report);
+    if (mall) { const was = (get(MALL_DYE_SET, null) || {}).at; mallDyeSet(6 * 3600e3).then((ds) => { if (mall && ds.at !== was) { mallDyeIdx = null; for (const k of ['new', 'popular', 'soon', 'sale', 'best']) mallFrontPart(k); } }).catch(() => { /* (the Dyeworks didn't answer: its tag waits for its aisle) */ }); }   // (the Dyeworks' list, at most every six hours: its tag on its items on the front too)   // (then the hidden aisles TNT Favourites' items point to, if any aren't read yet; what's leaving soon kept again with its own)
   }
   // ---- New Items, filled in (user, 2026-10-30: the Going Ghost Sticker Pack dropped off Neopets' New list the day after it came out,
   // while the Nostalgic Halloween one from the same moment stayed). Neopets' list holds only so many (14, both times it was read), so new
@@ -21072,6 +21140,56 @@
     mallCountSet('lnew', d.total);
     if (mall.view.k === 'front') { mallFrontPart('new'); mallFrontPart('popular'); }
     else if (mall.aisle && mall.aisle.key === mallListKey('new')) { mallAisleTools(); mallAisleList(); }
+    mallPaintNav();
+  }
+  // ---- Leaving Soon and On Sale from across the Mall (user, 2026-10-30: they listed only what this tab had opened, so a fresh tab showed
+  // the front's three lists' few). After the front's lists: Specialty, both pages (its capsules, collectibles and new things), then up to
+  // three aisles a limited-time item seen belongs to that the Mall's menu doesn't list (an event's own, like the Halloween sale's). A few
+  // reads, a moment apart, kept ten minutes as every Mall answer is ----
+  const MALL_SOON_MEM = 'bnp-mall-soonmem';   // (what was leaving soon on the last visit: shown at once on the next, till the Mall's own lists are read again)
+  function mallSoonRecall() {   // (at the start: last visit's leaving-soon items, seen in the last 12 hours and not left yet)
+    let v = null;
+    try { v = JSON.parse(localStorage.getItem(MALL_SOON_MEM) || 'null'); } catch (_) { v = null; }
+    if (!v || !Array.isArray(v.items)) return;
+    const now = Date.now();
+    for (const x of v.items) {
+      if (!x || !x.id || !x.name || !(x.end * 1000 > now) || !(now - (x.seen || 0) < 12 * 3600e3) || MALL_ITEMS.has(x.id)) continue;
+      const over = x.sale && x.saleEnd && x.saleEnd * 1000 <= now;   // (its sale over since: its own price)
+      MALL_ITEMS.set(x.id, { ...x, sale: over ? 0 : x.sale, now: over ? x.price : x.now, packIds: x.packIds || [], packOf: [], cats: x.cats || [], kept: true });
+    }
+  }
+  function mallSoonRemember(full) {   // (the Mall's own lists read again: an item remembered that an aisle read whole no longer has is let go; what's leaving within the week kept for next time)
+    const now = Date.now(), out = [];
+    for (const [id, it] of MALL_ITEMS) {
+      if (it.kept && it.cats.some((c) => full.has(c))) { MALL_ITEMS.delete(id); continue; }
+      if (!it.end || it.end * 1000 <= now || it.end * 1000 - now > 7 * 86400e3 || !it.buyable || it.gone) continue;
+      const { packOf, kept, desc, ...rest } = it;
+      out.push({ ...rest, desc: String(desc || '').slice(0, 300), seen: kept ? it.seen : now });
+    }
+    out.sort((a, b) => a.end - b.end);
+    try { localStorage.setItem(MALL_SOON_MEM, JSON.stringify({ at: now, items: out.slice(0, 120) })); } catch (_) { /* */ }
+  }
+  async function mallSoonRead(more) {   // (more: the second go, once TNT Favourites is in — only the hidden aisles its items point to, not read yet)
+    if (!mall) return;
+    if (!more) { if (mall.soonAsked) return; mall.soonAsked = true; mall.soonFull = new Set(); mall.soonCats = new Set(); }
+    else if (!mall.soonAsked) return;
+    const menu = new Set(), done = mall.soonCats;
+    for (const t of mallMenu() || []) { if (t.cat_id) menu.add(Number(t.cat_id)); for (const c of t.children || []) if (c.cat_id) menu.add(Number(c.cat_id)); }
+    const full = mall.soonFull;   // (the aisles read whole: an item remembered that isn't in one any more has left)
+    const read = async (q) => { try { const j = await mallGet('category/index.phtml', q); for (const x of Array.isArray(j.data) ? j.data : []) mallItem(x); if (q.cat && mallNum(j.totalPages) <= q.page) full.add(Number(q.cat)); return j; } catch (_) { return null; } };
+    if (!more) {
+      const first = await read({ type: 'browse', cat: MALL_SPECIALTY, sort: '-saleBegin', page: 1, limit: 100 });   // (the same read as New Items' fill: one answer for both)
+      if (first && mallNum(first.totalPages) > 1 && mall) await read({ type: 'browse', cat: MALL_SPECIALTY, sort: '-saleBegin', page: 2, limit: 100 });
+    }
+    const now = Date.now() / 1000, ev = new Set();
+    for (const it of MALL_ITEMS.values()) if (it.end > now && it.end - now <= 7 * 86400) for (const c of it.cats) if (!menu.has(c) && c !== MALL_SPECIALTY && !done.has(c)) ev.add(c);
+    for (const c of [...ev].slice(0, Math.max(0, 3 - done.size))) { if (!mall) return; done.add(c); await read({ type: 'browse', cat: c, page: 1, limit: 100 }); }
+    if (more && !ev.size) { if (mall) mallSoonRemember(full); return; }   // (nothing more to read: TNT Favourites' own kept too)
+    if (!mall) return;
+    mallSoonRemember(full);
+    for (const k of ['soon', 'sale']) mallFrontPart(k);
+    mallFrontPart('soon');   // (the second time: each knows whether the other is there)
+    if (mall.view.k === 'soon' || mall.view.k === 'sale') mallFoundPage(mall.view.k);
     mallPaintNav();
   }
   const mallRelLive = () => { const now = Date.now() / 1000; return (mall.rel || []).filter((r) => !mallNum(r.end_time) || mallNum(r.end_time) > now); };
@@ -21166,7 +21284,7 @@
   function mallFoundPage(k) {
     if (!mall.frontAsked) { mall.frontAsked = true; mallFrontLoad(); }
     const items = mallFound(k, 7), sale = k === 'sale', reading = Object.keys(MALL_LISTS).some((x) => { const d = mall.data[mallListKey(x)]; return !d || d.loading; });
-    mall.floor.innerHTML = `${mallCrumbs([sale ? 'On Sale' : 'Leaving Soon'])}<header class="bnp-mall-pagehead is-${k}"><div><h1>${mallTitleIc(k, 'bnp-mall-pageic')}${sale ? 'On Sale' : 'Leaving Soon'}</h1><p>${sale ? 'Biggest saving first, from every list and aisle you’ve opened.' : 'Leaving within a week, soonest first, from every list and aisle you’ve opened.'}</p></div><span class="bnp-mall-hn is-big">${items.length}</span></header>
+    mall.floor.innerHTML = `${mallCrumbs([sale ? 'On Sale' : 'Leaving Soon'])}<header class="bnp-mall-pagehead is-${k}"><div><h1>${mallTitleIc(k, 'bnp-mall-pageic')}${sale ? 'On Sale' : 'Leaving Soon'}</h1><p>${sale ? 'Biggest saving first, from across the Mall and every aisle you’ve opened.' : 'Leaving within a week, soonest first, from across the Mall and every aisle you’ve opened.'}</p></div><span class="bnp-mall-hn is-big">${items.length}</span></header>
       ${!items.length && reading ? '<div class="bnp-mall-wait"><span></span>Reading the Mall’s lists…</div>' : mallGrid(items, { none: sale ? 'Nothing on sale in what you’ve opened yet.' : 'Nothing you’ve opened leaves within a week.' })}`;
   }
   function mallCrumbs(parts) {   // (where you are, from the Mall's front)
@@ -21312,46 +21430,115 @@
     while ((m = rx.exec(html))) out.push({ id: Number(m[1]), name: reClean(m[2].replace(/\\(.)/g, '$1')), end: m[3] });
     return out;
   }
-  async function mallDyeSet() {   // (kept where every Neopets address reads it; found: each one's Mall item as the Mall gave it, or null when it isn't on sale)
+  function mallDyeData(html) {   // (the Dyeworks page's own list, read as data — its script's object, its keys quoted, never run: every base item, its last day if it's in for a while, and its colours)
+    const at = html.indexOf('var categories'), start = at < 0 ? -1 : html.indexOf('{', at);
+    if (start < 0) return [];
+    let i = start, depth = 0, inStr = false;
+    for (; i < html.length; i++) { const c = html[i]; if (inStr) { if (c === '\\') { i++; continue; } if (c === '"') inStr = false; continue; } if (c === '"') { inStr = true; continue; } if (c === '{') depth++; else if (c === '}') { depth -= 1; if (!depth) break; } }
+    const src = html.slice(start, i + 1), str = /"(?:[^"\\]|\\.)*"/y, word = /[A-Za-z0-9_$]+/y;
+    let o = '', k = 0;
+    while (k < src.length) {
+      const c = src[k];
+      if (c === '"') { str.lastIndex = k; const m = str.exec(src); if (!m) return []; o += m[0].replace(/\\'/g, "'"); k = str.lastIndex; continue; }
+      if (/[A-Za-z0-9_$]/.test(c)) { word.lastIndex = k; const w = word.exec(src)[0]; let n = k + w.length; while (/\s/.test(src[n] || '')) n++; o += src[n] === ':' ? JSON.stringify(w) : w; k += w.length; continue; }
+      o += c;
+      k++;
+    }
+    let data = null;
+    try { data = JSON.parse(o.replace(/,\s*([}\]])/g, '$1')); } catch (_) { return []; }
+    const out = [], day = (v) => (typeof v === 'string' && /^\d{1,2}\/\d{1,2}$/.test(v) ? v : '');
+    for (const cat of Object.values(data || {})) for (const [id, b] of Object.entries((cat && cat.items) || {})) {
+      if (!b || !Number(id)) continue;
+      out.push({ id: Number(id), name: reClean(String(b.name || '')), img: String(b.image || ''), end: day(b.end), group: reClean(String((cat && cat.name) || '')), colors: Object.entries(b.colors || {}).map(([cid, c]) => ({ id: Number(cid), name: reClean(String((c && c.color) || '')), hex: /^[0-9a-f]{6}$/i.test((c && c.hex) || '') ? c.hex : '', img: String((c && c.image) || ''), end: day(c && c.end) })).filter((c) => c.id) });
+    }
+    return out;
+  }
+  const MALL_DYE_FOUND_MS = 12 * 3600e3;   // (what was found for a base: kept this long, across the list's own half-hourly reads)
+  const mallDyeFresh = (f) => !!f && typeof f === 'object' && 'at' in f && Date.now() - f.at < MALL_DYE_FOUND_MS;
+  async function mallDyeSet(maxAge = 30 * 60e3) {   // (the Dyeworks list as last read, read again when older than maxAge; kept where every Neopets address reads it)
     const c = get(MALL_DYE_SET, null);
-    if (c && Date.now() - (c.at || 0) < 30 * 60e3 && Array.isArray(c.list)) return c;
-    const r = await fetch(`${SITE}/mall/dyeworks/`, { credentials: 'include' });
-    if (!r.ok) throw new Error(`the Dyeworks answered ${r.status}`);
-    const keep = { at: Date.now(), list: mallDyeRead(await r.text()), found: {} };
+    if (c && Array.isArray(c.bases) && Date.now() - (c.at || 0) < maxAge) return c;
+    let html = '';
+    try {
+      const r = await fetch(`${SITE}/mall/dyeworks/`, { credentials: 'include' });
+      if (!r.ok) throw new Error(`the Dyeworks answered ${r.status}`);
+      html = await r.text();
+    } catch (e) { if (c && Array.isArray(c.bases)) return c; throw e; }   // (no answer: the list as last read, if there is one)
+    let bases = mallDyeData(html);
+    if (!bases.length) bases = mallDyeRead(html).map((b) => ({ ...b, img: '', group: '', colors: [] }));   // (its object unreadable: its last-day items, by pattern, as before)
+    const found = {};
+    for (const [id, f] of Object.entries((c && c.found) || {})) if (mallDyeFresh(f)) found[id] = f;
+    const keep = { at: Date.now(), bases, found };
     set(MALL_DYE_SET, keep);
+    mallDyeIdx = null;
     return keep;
   }
-  async function mallDyeBases(key, d) {   // (each into the aisle as it's found: one search at a time, a person's pace, only while you're on the aisle)
+  let mallDyeIdx = null;
+  function mallDyeOf(id) {   // ({ base, colour }: an item in the Dyeworks, from its list as last read — a base item, or one of its colours; null otherwise)
+    if (!mallDyeIdx) {
+      mallDyeIdx = new Map();
+      const c = get(MALL_DYE_SET, null);
+      for (const b of (c && Array.isArray(c.bases) ? c.bases : [])) { mallDyeIdx.set(b.id, { base: b, colour: null }); for (const k of b.colors || []) mallDyeIdx.set(k.id, { base: b, colour: k }); }
+    }
+    return mallDyeIdx.get(Number(id)) || null;
+  }
+  const mallIsDye = (it) => (!it.wear && /\bhue brew\b|\bdyeworks\b/i.test(it.name)) || (it.wear && /^dyeworks\b/i.test(it.name)) || !!mallDyeOf(it.id);   // (the Dyeworks': its Hue Brews, a colour sold as itself, or an item in its list)
+  const mallDyeDay = (v) => { const m = /^(\d{1,2})\/(\d{1,2})$/.exec(v || ''); return m ? `${MONTH_NAMES[Number(m[1]) - 1].slice(0, 3)} ${Number(m[2])}` : ''; };
+  function mallMenuCats() { const s = new Set(); for (const t of mallMenu() || []) { if (t.cat_id) s.add(Number(t.cat_id)); for (const c of t.children || []) if (c.cat_id) s.add(Number(c.cat_id)); } return s; }
+  async function mallDyeBases(key, d) {   // (what's in the Dyeworks for a while, into its aisle: from the Mall's own lists here already, found lately, or found now — one search, then that item's hidden aisle read once, which holds most of the others)
     const ds = await mallDyeSet();
-    const want = ds.list.filter((b) => !d.items.some((x) => x.id === b.id));
+    const want = ds.bases.filter((b) => b.end && !d.items.some((x) => x.id === b.id));
     if (!want.length) return;
     const here = () => mall && mall.data[key] === d;
     const paint = () => { if (here() && mall.aisle && mall.aisle.key === key) { mallAisleTools(); mallAisleList(); } };
+    const put = (it) => { if (!it || !it.id || !here() || d.items.some((x) => x.id === it.id)) return; d.items.push(it); d.items.sort(mallOwnOrder); d.total = d.items.length; };
+    const keep = (id, raw) => { const f = { raw, at: Date.now() }; ds.found[id] = f; const now = get(MALL_DYE_SET, null); if (now && now.at === ds.at) set(MALL_DYE_SET, { ...now, found: { ...(now.found || {}), [id]: f } }); };
+    let left = [];
+    for (const b of want) {
+      const known = MALL_ITEMS.get(b.id), f = ds.found[b.id];
+      if (known && known.name) put(known);
+      else if (mallDyeFresh(f)) { if (f.raw) put(mallItem(f.raw)); }   // (found lately; or found not to be on sale)
+      else left.push(b);
+    }
+    paint();
+    if (!left.length) return;
     d.dyeBusy = true;
     paint();
+    const menu = mallMenuCats(), read = new Set();
     try {
-      for (const b of want) {
-        if (!here()) return;
-        let raw = Object.prototype.hasOwnProperty.call(ds.found, b.id) ? ds.found[b.id] : undefined;
-        if (raw === undefined) {
-          if (document.hidden || mallAisleKey(mall.view) !== key) break;   // (out of sight or elsewhere: the rest next time)
-          await saSleep(900 + Math.random() * 1200);
-          const j = await mallGet('category/index.phtml', { type: 'search', text: b.name.replace(/[!?.]+$/, '').slice(0, 60), page: 1, limit: 100 });
-          raw = (Array.isArray(j.data) ? j.data : []).find((x) => Number(x.objInfoId || x.id) === b.id) || null;
-          ds.found[b.id] = raw;
-          const now = get(MALL_DYE_SET, null);
-          if (now && now.at === ds.at) set(MALL_DYE_SET, { ...now, found: { ...(now.found || {}), [b.id]: raw } });
+      while (left.length && here()) {
+        if (document.hidden || mallAisleKey(mall.view) !== key) break;   // (out of sight or elsewhere: the rest next time)
+        const b = left.shift();
+        const j = await mallGet('category/index.phtml', { type: 'search', text: b.name.replace(/[!?.]+$/, '').slice(0, 60), page: 1, limit: 100 });
+        const raw = (Array.isArray(j.data) ? j.data : []).find((x) => Number(x.objInfoId || x.id) === b.id) || null;
+        keep(b.id, raw);
+        if (raw) put(mallItem(raw));
+        const cats = raw && Array.isArray(raw.categories) ? raw.categories.map(Number).filter((c) => c > 0 && !menu.has(c) && !read.has(c)) : [];
+        for (const c of cats.slice(0, 1)) {   // (its hidden aisle, read once: the others in the Dyeworks for a while are mostly there with it)
+          read.add(c);
+          const cj = await mallGet('category/index.phtml', { type: 'browse', cat: c, page: 1, limit: 100 });
+          for (const x of Array.isArray(cj.data) ? cj.data : []) {
+            const id = Number(x.objInfoId || x.id), hit = left.find((y) => y.id === id);
+            if (!hit) continue;
+            keep(id, x);
+            put(mallItem(x));
+            left = left.filter((y) => y !== hit);
+          }
         }
-        if (!raw || !here()) continue;
-        const it = mallItem(raw);
-        if (!it.id || d.items.some((x) => x.id === it.id)) continue;
-        it.dyeEnd = b.end;
-        d.items.push(it);
-        d.items.sort(mallOwnOrder);
-        d.total = d.items.length;
         paint();
       }
     } finally { d.dyeBusy = false; paint(); }
+  }
+  function mallDyeHtml(it) {   // (an item's window: a base's Dyeworks colours, or a colour's base and its sisters, this one marked)
+    const dye = mallDyeOf(it.id);
+    if (!dye || !dye.base.colors || !dye.base.colors.length) return '';
+    const base = dye.base, till = base.end ? mallDyeDay(base.end) : '';
+    const tile = (k, img, label, dot, sub) => {
+      const own = MALL_ITEMS.get(k), mine = k === it.id, inner = `<img src="${esc(img)}" width="80" height="80" alt="" loading="lazy" draggable="false"><span>${dot ? `<i class="bnp-mall-dyedot" style="background:#${esc(dot)}" aria-hidden="true"></i>` : ''}${esc(label)}</span>${sub ? `<small>${esc(sub)}</small>` : ''}`;
+      return own && !mine && mallSold(own) && !own.gone ? `<button type="button" class="bnp-mall-mini" data-mall-item="${k}" title="${esc(own.name)}">${inner}</button>` : `<div class="bnp-mall-mini is-still${mine ? ' is-here' : ''}" title="${esc(label)}">${inner}</div>`;
+    };
+    const tiles = (dye.colour ? [tile(base.id, base.img, base.name, '', 'the base')] : []).concat(base.colors.map((k) => tile(k.id, k.img, k.name, k.hex, k.id === it.id ? 'this one' : '')));
+    return `<section class="bnp-mall-sheetsec is-dye"><h4>${dye.colour ? 'In the Dyeworks' : 'Dyeworks colours'} <i>${base.colors.length}</i><small>${dye.colour ? `a colour of ${esc(base.name)}` : 'dyed with a Hue Brew Potion'}${till ? `, in the Dyeworks till ${esc(till)}` : ''}</small><a class="bnp-mall-pill is-small" href="https://www.neopets.com/mall/dyeworks/" target="_blank" rel="noopener">The Dyeworks</a></h4><div class="bnp-mall-minis">${tiles.join('')}</div></section>`;
   }
 
   // ---- An item's own window: everything about it, your pet wearing it when it's wearable ----
@@ -21435,7 +21622,7 @@
     ].filter(Boolean).join('');
     const bundleline = b && b.one ? `<div class="bnp-mall-bundleline"><b class="bnp-mall-bundlen">${b.n}</b><span class="bnp-mall-bundlex">×</span><button type="button" class="bnp-mall-bundleit" data-mall-item="${b.one.id}" title="${esc(b.one.name)}: its own window"><img src="${esc(b.one.img)}" width="28" height="28" alt="">${esc(b.one.name)}</button></div>` : '';
     const when = !sold ? '' : !it.end ? '<p class="bnp-mall-sheetwhen is-stay">Here to stay</p>'
-      : left > 0 ? `<p class="bnp-mall-sheetwhen${left < 86400 ? ' is-red' : left < 3 * 86400 ? ' is-amber' : ''}">${MALL_SVG.clock}<b data-tick="${it.end}">${esc(mallTick(it.end))}</b><small>${esc(mallWhen(it.end))}</small></p>`
+      : left > 0 ? `<p class="bnp-mall-sheetwhen${left < 86400 ? ' is-red' : left < 3 * 86400 ? ' is-amber' : ''}">${MALL_SVG.clock}<b data-tick="${it.end}">${esc(mallTick(it.end))}</b><small>${esc(mallWhen(it.end))}</small><span class="bnp-mall-ltdtag is-big${mallLtdTier(it.end)}" data-ltd="${it.end}"><i class="bnp-mall-ltdic" aria-hidden="true"><img src="${NPI}questlog/images/timer.png" width="18" height="18" alt="" draggable="false"></i>Limited Time!</span></p>`
       : '<p class="bnp-mall-sheetwhen is-red">Gone from the Mall</p>';
     const out = it.begin && it.begin <= now ? `${esc(new Date(it.begin * 1000).toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', month: 'short', day: 'numeric', year: 'numeric' }))} <small>${esc(mallAgo(it.begin))}</small>` : it.begin ? `Coming ${esc(mallWhen(it.begin))}` : '';
     const facts = [
@@ -21458,6 +21645,7 @@
       more = `<section class="bnp-mall-sheetsec" data-mall-packsec><h4>What’s inside${items.length ? ` <i>${items.length}</i>` : ''}${items.some((y) => y.wear) ? `<button type="button" class="bnp-mall-pill is-small" data-mall-tryall="${it.id}">${MALL_SVG.hanger}Try them all on</button>` : ''}</h4>${items.length ? `<div class="bnp-mall-minis">${items.map((y) => tile(y, mallNc(y.now))).join('')}</div>` : '<div class="bnp-mall-wait"><span></span>Finding what’s inside…</div>'}</section>`;
     } else if (stk) more = mallStkHtml(stk);
     else if (it.cap) more = '<section class="bnp-mall-sheetsec is-pool" data-mall-capsec><div class="bnp-mall-wait"><span></span>Loading what could be inside…</div></section>';
+    more += mallDyeHtml(it);   // (a Dyeworks item: its colours)
     const wished = mallWished(it.id);
     return `<div class="bnp-mall-scrim" data-mall-shut></div><section class="bnp-mall-sheet is-${kind}" role="dialog" aria-modal="true" aria-labelledby="bnp-mall-sheet-h" tabindex="-1">
       <header class="bnp-mall-sheethead"><h3 id="bnp-mall-sheet-h">${esc(it.name)}</h3><button type="button" class="bnp-mall-x" data-mall-shut aria-label="Close" title="Close (Esc)">${MALL_SVG.x}</button></header>
@@ -21565,8 +21753,7 @@
     const open = on === undefined ? p.hidden : on;
     p.hidden = !open;
     mall.root.classList.toggle(`is-${k}open`, open);
-    const tab = mall.root.querySelector(`[data-mall-panel="${k}"].bnp-mall-sidetab`);
-    if (tab) tab.setAttribute('aria-expanded', String(open));
+    for (const tab of mall.root.querySelectorAll(`[data-mall-panel="${k}"]:is(.bnp-mall-sidetab, .bnp-mall-cartbtn)`)) tab.setAttribute('aria-expanded', String(open));
     if (!peek) mallPSet(`panel_${k}`, open);
     if (k === 'bag' && !peek) { mall.bagPeek = false; clearTimeout(mall.bagPeekT); }
     if (open) { if (k === 'pet') mallPetPaint(); else mallBagPanelPaint(); }
@@ -21877,7 +22064,7 @@
     }, 120);
   }
   function mallFly(img, from) {   // (the item's picture, flying into your cart: a moment of fun, never in the way)
-    const to = [mall.root.querySelector('.bnp-mall-bagbtn'), mall.root.querySelector('.bnp-mall-sidetab.is-bag')].find((x) => { if (!x) return false; const r = x.getBoundingClientRect(); return r.width && r.bottom > 0 && r.top < innerHeight; });
+    const to = [mall.root.querySelector('.bnp-mall-bagbtn'), mall.root.querySelector('.bnp-mall-cartbtn'), mall.root.querySelector('.bnp-mall-sidetab.is-bag')].find((x) => { if (!x) return false; const r = x.getBoundingClientRect(); return r.width && r.bottom > 0 && r.top < innerHeight; });
     const pic = from && (from.querySelector('.bnp-mall-pic img, .bnp-mall-bigwell img, img') || null);
     if (to) { to.classList.remove('is-bounce'); void to.offsetWidth; to.classList.add('is-bounce'); }
     if (!to || !pic || !img || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -21986,6 +22173,8 @@
     if (t1) { t1.textContent = mall.tryOn.length ? String(mall.tryOn.length) : ''; t1.hidden = !mall.tryOn.length; }
     const n = MALL_NOW.bag ? mallBagNums(MALL_NOW.bag.lines).n : 0;
     if (t2) { t2.textContent = n ? String(n) : ''; t2.hidden = !n; }
+    const t3 = mall.root.querySelector('.bnp-mall-cartbtn i');   // (the cart beside your Neocash says it too)
+    if (t3) { t3.textContent = n ? String(n) : ''; t3.hidden = !n; }
   }
   let mallToastT = 0;
   function mallToast(text, kind, o = {}) {   // (a short word under the bars: what just happened)
@@ -22127,6 +22316,12 @@
       el.classList.toggle('is-amber', ms >= 86400e3 && ms < 3 * 86400e3);
     }
     for (const el of mall.root.querySelectorAll('[data-tick]')) { const txt = mallTick(Number(el.getAttribute('data-tick'))); if (el.textContent !== txt) el.textContent = txt; }
+    for (const el of mall.root.querySelectorAll('[data-ltd]')) {   // (the Limited Time! tags' colours, as their time runs down)
+      const ms = Number(el.getAttribute('data-ltd')) * 1000 - now;
+      el.classList.toggle('is-red', ms < 86400e3);
+      el.classList.toggle('is-amber', ms >= 86400e3 && ms < 3 * 86400e3);
+      if (ms <= 0) el.hidden = true;
+    }
   }
 
   // ---- NE's own tooltip in the Mall: any title in it shown as a small card of the Mall's own, a moment after pointing at it (from one to
@@ -22277,6 +22472,7 @@
     root.setAttribute('data-bnp', 'mall');
     const id = Number(new URLSearchParams(location.search).get('item_detail')) || 0;
     mall = { root, view: mallViewOf(), data: {}, rel: null, relAt: 0, tryOn: [], pet: '', sheet: 0, aisle: null, panels: {} };
+    mallSoonRecall();   // (last visit's leaving-soon items, there at once)
     app.before(root);
     mallShell();
     const place = () => { root.style.setProperty('--mall-top', `${mallTop()}px`); const r = mall.root.querySelector('.bnp-mall-col').getBoundingClientRect(); root.style.setProperty('--mall-l', `${Math.round(r.left)}px`); root.style.setProperty('--mall-r', `${Math.round(document.documentElement.clientWidth - r.right)}px`); mallViewSwFit(); };
@@ -22371,7 +22567,7 @@
   const MALL_CSS = `
     html.bnp-mall-page { --m-plum: #4a2b5f; --m-plum2: #5e3a7a; --m-plum3: #3a2150; --m-lilac: #a780b1; --m-lilac2: #cbb2d6; --m-lilac3: #ebe1f1; --m-pale: #f7f2fa;
       --m-gold: #ffc928; --m-gold2: #f5a41c; --m-pink: #e0418c; --m-ink: #2b1838; --m-muted: #6c5c77; --m-card: #f2f2f2; --m-line: #e5dbec;
-      --m-green: #1e8a3a; --m-amber: #b56a00; --m-amberbg: #fff0c2; --m-red: #c4221f; --m-redbg: #ffe1de;
+      --m-green: #1e8a3a; --m-amber: #c25e00; --m-amberbg: #fff0c2; --m-red: #c4221f; --m-redbg: #ffe1de;
       --m-ui: "MuseoSansRounded700", Arial, sans-serif; --m-txt: "MuseoSansRounded500", Arial, sans-serif; --m-cafe: "Cafeteria", "Arial Bold", sans-serif; }
     /* the page: Neopets' own Mall out of sight (it keeps running underneath), NE's in its place */
     html.bnp-mall-page:not(.bnp-mall-co) #app { display: none !important; }
@@ -22555,6 +22751,13 @@
     .bnp-mall-nc b { color: #363636; font-family: "Cafeteria", "Arial Bold", sans-serif; font-size: 23px; font-weight: 900; line-height: 26px; }   /* (as Neopets' own .nc-text__2020, a little bigger) */
     .bnp-mall-nc.is-login .bnp-mall-ncic { display: none; }
     .bnp-mall-nc.is-login { padding-left: 14px; }
+    .bnp-mall-cartbtn { position: relative; display: grid; flex: none; place-items: center; width: 48px; height: 42px; margin: 0; padding: 0; border: 0; border-radius: 11px; background: #fff; box-shadow: 0 2px 0 rgba(58, 33, 80, .22); cursor: pointer; transition: box-shadow .15s; }   /* (your cart beside your Neocash, as the Neocash pill is drawn) */
+    .bnp-mall-cartbtn:hover, .bnp-mall-cartbtn:focus-visible { box-shadow: 0 2px 0 rgba(58, 33, 80, .22), 0 0 0 3px rgba(255, 255, 255, .55); outline: none; }
+    .bnp-mall-cartbtn img { display: block; width: 34px; height: 34px; transition: transform .15s; }
+    .bnp-mall-cartbtn:hover img { transform: scale(1.08); }
+    .bnp-mall-cartbtn i { position: absolute; top: -7px; right: -8px; display: grid; place-items: center; min-width: 21px; height: 21px; padding: 0 5px; border-radius: 999px; background: var(--m-plum); box-shadow: 0 0 0 2px #fff; color: #fff; font: 12.5px/1 var(--m-cafe); font-style: normal; letter-spacing: .3pt; box-sizing: border-box; }
+    .bnp-mall-cartbtn i[hidden] { display: none; }
+    .bnp-mall.is-bagopen .bnp-mall-cartbtn { box-shadow: 0 2px 0 rgba(58, 33, 80, .22), 0 0 0 3px var(--m-gold); }   /* (lit while your cart is out) */
     .bnp-mall .bnp-mall-getbtn { justify-self: start; width: auto !important; height: 30px !important; margin: 2px 0 0 !important; padding: 0 16px !important; font-size: 15px !important; line-height: 26px !important; }
     .bnp-mall .bnp-mall-bagbtn { display: inline-flex !important; align-items: center; gap: 7px; width: auto !important; height: 38px !important; margin: 0 0 0 2px !important; padding: 0 14px !important; font-size: 17px !important; line-height: 34px !important; white-space: nowrap; }
     .bnp-mall-bagbtn b { padding: 0 8px; border-radius: 999px; background: var(--m-plum); color: #fff; font: 13px/1.7 var(--m-ui); }
@@ -22618,9 +22821,15 @@
     .bnp-mall-cbtn.is-heart.is-pop svg { animation: bnp-mall-pop .45s cubic-bezier(.3, 1.6, .5, 1); }
     .bnp-mall-inbag { position: absolute; right: 6px; bottom: 6px; display: inline-flex; align-items: center; gap: 1px; padding: 2px 6px; border-radius: 999px; background: var(--m-plum); box-shadow: 0 0 0 2px #fff; color: #fff; font: 11px/1.2 var(--m-ui); }
     .bnp-mall-inbag svg { width: 12px; height: 12px; }
-    .bnp-mall-ltd { position: absolute; z-index: 1; left: 8px; top: 8px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(40, 20, 50, .28); }   /* (limited time: Neopets' own hourglass, as Leaving soon wears it; the left side's column, at its top) */
-    .bnp-mall-pic:has(> .bnp-mall-ltd) > .bnp-mall-cbtn.is-try { top: 36px; }   /* (the hourglass always in the same place, at the column's top: Try on under it (user, 2026-10-29)) */
-    .bnp-mall-ltd img { display: block; width: 15px; height: 15px; }
+    .bnp-mall-ltdtag { position: absolute; z-index: 2; top: -8px; left: 50%; box-sizing: border-box; height: 17px; padding: 0 8px; border-radius: 999px; background: var(--m-gold); box-shadow: 0 0 0 2px #fff, 0 2px 4px rgba(40, 20, 50, .25); color: #5a3800; font: 10.5px/17px var(--m-ui); letter-spacing: .1pt; white-space: nowrap; transform: translateX(-50%); }   /* (the Mall's bold UI letters: Cafeteria read poorly this small) */   /* (limited time: "Limited Time!" on the picture's top edge, a little over the card (user, 2026-10-31, in place of the hourglass); yellow for a while yet) */
+    .bnp-mall-ltdtag.is-amber { background: #d4690a; color: #fff; }   /* (under three days) */
+    .bnp-mall-ltdtag.is-red { background: var(--m-red); color: #fff; }   /* (its last day) */
+    .bnp-mall-ltdtag[hidden] { display: none; }
+    .bnp-mall-ltdtag:has(> .bnp-mall-ltdic) { padding-left: 13px; transform: translateX(calc(-50% + 8px)); }   /* (with the hourglass at its left: the two centred together) */
+    .bnp-mall-ltdic { position: absolute; top: 50%; right: calc(100% - 9px); display: grid; place-items: center; width: 21px; height: 21px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 2px var(--m-gold), 0 1px 3px rgba(40, 20, 50, .3); transform: translateY(-50%); }   /* (Neopets' own timer, ringed in the tag's colour) */
+    .bnp-mall-ltdtag.is-amber .bnp-mall-ltdic { box-shadow: 0 0 0 2px #d4690a, 0 1px 3px rgba(40, 20, 50, .3); }
+    .bnp-mall-ltdtag.is-red .bnp-mall-ltdic { box-shadow: 0 0 0 2px var(--m-red), 0 1px 3px rgba(40, 20, 50, .3); }
+    .bnp-mall-ltdic img, .bnp-mall-pic .bnp-mall-ltdic img, .bnp-mall-card:hover .bnp-mall-pic .bnp-mall-ltdic img { display: block; box-sizing: border-box; width: 14px; height: 14px; padding: 0; border-radius: 0; background: none; box-shadow: none; transform: none; }   /* (not the item picture's frame and tilt) */
     .bnp-mall-tags { display: none; }
     .bnp-mall-grid.has-tags .bnp-mall-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 3px; width: 100%; height: 14px; margin: -4px 0 -2px; overflow: hidden; }   /* (in the gap between the picture and the name, never on the picture: one line, the most telling first, as many as fit. Every card in a grid with tags keeps the line, so names stay level) */
     .bnp-mall.is-notags .bnp-mall-grid .bnp-mall-tags { display: none; }
@@ -22663,13 +22872,22 @@
     .bnp-mall-price.is-sale b, .bnp-mall-price.is-free b { color: var(--m-green); }
     .bnp-mall-off { padding: 0 5px; border-radius: 5px; background: var(--m-red); color: #fff; font: 11px/1.55 var(--m-ui); font-style: normal; }
     .bnp-mall-saleend { flex-basis: 100%; color: var(--m-green); font: 12.5px var(--m-ui); }
-    .bnp-mall-info { display: block; min-height: 17px; margin: 1px 0 7px; color: var(--m-muted); font: 12px/1.4 var(--m-ui); }
+    .bnp-mall-info { display: block; min-height: 19px; margin: 1px 0 7px; color: var(--m-muted); font: 12px/1.4 var(--m-ui); }
     .bnp-mall-info b { color: var(--m-green); font-weight: normal; }
     .bnp-mall-info.is-amber { color: var(--m-amber); }
     .bnp-mall-info.is-red { color: var(--m-red); }
     .bnp-mall-info.is-stock { color: #2f6fca; }
     .bnp-mall-info.is-new { color: var(--m-pink); }
     .bnp-mall-info.is-line { display: inline; min-height: 0; margin: 0; font-size: 12.5px; }
+    .bnp-mall-card > .bnp-mall-info:is(.is-red, .is-amber) { display: inline-block; box-sizing: border-box; height: 19px; margin: 1px 0 7px; padding: 0 9px; border-radius: 999px; background: var(--m-red); color: #fff; font: 15px/19px var(--m-cafe); letter-spacing: .3pt; }   /* (leaving within a day: its time left a solid red badge, as tall as the line it replaces; within three days the same in orange) */
+    .bnp-mall-card > .bnp-mall-info.is-amber { background: #d4690a; }
+    .bnp-mall-card > .bnp-mall-info[data-left]:not(.is-red):not(.is-amber) { font-size: 14px; }   /* (within the week: the plain timer) */
+    .bnp-mall-card:has(> .bnp-mall-info.is-red):not(:hover, :focus-visible) { box-shadow: 0 0 0 1px var(--m-red), 0 2px 5px rgba(58, 33, 80, .07); }   /* (its last day: the card's own 1px edge, red) */
+    .bnp-mall-card:has(> .bnp-mall-info.is-amber):not(:hover, :focus-visible) { box-shadow: 0 0 0 1px #d4690a, 0 2px 5px rgba(58, 33, 80, .07); }   /* (under three days: a darker orange edge) */
+    .bnp-mall-card:has(> .bnp-mall-info.is-red) .bnp-mall-pic > img { background: color-mix(in srgb, var(--m-red) 16%, #fff); box-shadow: 0 0 0 1px color-mix(in srgb, var(--m-red) 42%, #fff); }   /* (the white around its picture, tinted red) */
+    .bnp-mall-card:has(> .bnp-mall-info.is-amber) .bnp-mall-pic > img { background: color-mix(in srgb, #d4690a 20%, #fff); box-shadow: 0 0 0 1px color-mix(in srgb, #d4690a 46%, #fff); }   /* (and orange) */
+    .bnp-mall-card:has(> .bnp-mall-info.is-red) > .bnp-mall-pic { background: color-mix(in srgb, var(--m-red) 30%, #fff); }   /* (the band behind it, deeper than its frame: user, 2026-10-31) */
+    .bnp-mall-card:has(> .bnp-mall-info.is-amber) > .bnp-mall-pic { background: color-mix(in srgb, #d4690a 34%, #fff); }   /* (and its hourglass ringed red) */
     .bnp-mall-panel .bnp-mall-bagline .bnp-mall-off { display: none; }   /* (in the panel, what sales save is said once, below) */
     .bnp-mall-heart { display: grid; place-items: center; width: 28px; height: 26px; margin: 0; padding: 0; border: 0; border-radius: 8px; background: none; color: #a99fb1; cursor: pointer; }
     .bnp-mall-heart.is-on { color: var(--m-pink); }
@@ -22677,7 +22895,7 @@
     @keyframes bnp-mall-pop { 40% { transform: scale(1.45); } }
     .bnp-mall-add.is-busy { opacity: .55; pointer-events: none; }
     .bnp-mall .bnp-mall-card .bnp-mall-add { margin-top: auto !important; }
-    .bnp-mall .bnp-mall-add { width: 100% !important; height: 30px !important; margin: 0 !important; padding: 0 6px !important; font-size: 15px !important; line-height: 26px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bnp-mall .bnp-mall-add { width: 100% !important; height: 30px !important; margin: 0 !important; padding: 0 6px !important; font-size: 17px !important; line-height: 26px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .bnp-mall .bnp-mall-add:disabled { filter: grayscale(1); opacity: .55; cursor: default; }
     .bnp-mall .bnp-mall-add.is-big { width: auto !important; height: 42px !important; padding: 0 26px !important; font-size: 19px !important; line-height: 38px !important; }
     .bnp-mall .bnp-mall-add small { font: 12px var(--m-ui); opacity: .85; }
@@ -22755,7 +22973,7 @@
     .bnp-mall-box.is-sale { --bar: linear-gradient(180deg, #46c35a, #1e8a3a); --edge: #bfe6b8; --ink: #1b7433; --tint: #ebf7e8; --ring: #6cc27a; --frame: #30a347; }
     .bnp-mall-box.is-games { --bar: linear-gradient(180deg, #3f8fd6, #23609f); --edge: #c4dcf2; --ink: #1f5690; --tint: #eaf2fb; --ring: #6ea6dc; --frame: #2f74bb; }
     .bnp-mall-box.is-wishrow { --bar: linear-gradient(180deg, #f05aa2, #c42a74); --edge: #f6c3dc; --ink: #a81f60; --tint: #fdeef5; --ring: #e57aae; --frame: #e0559a; }
-    .bnp-mall-box > .bnp-mall-boxscroll { margin: 6px 8px; padding: 6px 6px 8px; overflow: hidden auto; scrollbar-width: thin; scrollbar-color: var(--frame) var(--tint); }   /* (a box's whole list, the rows past what shows a scroll away: the cards where they were, with room kept round them so a card's lift and ring aren't cut off; a thin scrollbar in the box's own colours) */
+    .bnp-mall-box > .bnp-mall-boxscroll { margin: 0 8px 6px; padding: 14px 6px 8px; overflow: hidden auto; scrollbar-width: thin; scrollbar-color: var(--frame) var(--tint); }   /* (a box's whole list, the rows past what shows a scroll away: the cards where they were, with room kept round them so a card's lift and ring aren't cut off; a thin scrollbar in the box's own colours) */
     .bnp-mall-boxscroll::-webkit-scrollbar { width: 8px; }   /* (the same for a browser that only reads these) */
     .bnp-mall-boxscroll::-webkit-scrollbar-track { border-radius: 999px; background: var(--tint); }
     .bnp-mall-boxscroll::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--frame); }
@@ -23026,7 +23244,7 @@
     .bnp-mall-sheet.is-look .bnp-mall-sheetinfo { grid-template-columns: minmax(0, 1fr); }
     .bnp-mall-sheet.is-look .bnp-mall-sheetinfo > .bnp-mall-sheetwhen { grid-column: 1; grid-row: auto; justify-self: start; justify-content: start; text-align: left; }
     .bnp-mall-bigpic { display: grid; justify-items: center; gap: 10px; }
-    .bnp-mall-bigwell { display: grid; place-items: center; width: 136px; height: 136px; border-radius: 18px; background: #fff; box-shadow: 0 0 0 1px var(--m-lilac2), 0 6px 16px rgba(58, 33, 80, .12); }
+    .bnp-mall-bigwell { display: grid; place-items: center; width: 136px; height: 136px; border-radius: 18px; background: #fff; box-shadow: 0 0 0 2px var(--m-lilac), 0 0 0 4px rgba(255, 255, 255, .9), 0 6px 16px rgba(58, 33, 80, .14); }   /* (a 2px edge in the Mall's lilac, a white keyline round it: user, 2026-10-31) */
     .bnp-mall-bigwell img { display: block; width: 120px; height: 120px; border-radius: 10px; }   /* (Neopets' 80px picture at 120: a touch soft, as their own window shows it, but big) */
     .bnp-mall-marks { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; }
     .bnp-mall-sheetinfo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 18px; align-content: start; min-width: 0; }
@@ -23039,15 +23257,20 @@
     .bnp-mall-deals { display: grid; gap: 3px; margin-top: -4px; color: var(--m-muted); font: 14px var(--m-ui); }
     .bnp-mall-deals b { color: var(--m-ink); font-weight: normal; }
     .bnp-mall-deals .is-good { color: var(--m-green) !important; }
-    .bnp-mall-sheetwhen { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; justify-self: start; margin: 0 !important; padding: 7px 14px 7px 11px; border-radius: 12px; background: var(--m-pale); box-shadow: inset 0 0 0 1px var(--m-line); color: var(--m-plum); font: 14.5px var(--m-ui); }
+    .bnp-mall-sheetwhen { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; justify-self: start; margin: 0 !important; padding: 7px 14px 7px 11px; border-radius: 12px; background: var(--m-pale); box-shadow: inset 0 0 0 2px var(--m-lilac2); color: var(--m-plum); font: 14.5px var(--m-ui); }
     .bnp-mall-sheetwhen svg { width: 17px; height: 17px; }
     .bnp-mall-sheetwhen b { font-weight: normal; }
     .bnp-mall-sheetwhen small { color: var(--m-muted); font: 12.5px var(--m-ui); }
-    .bnp-mall-sheetwhen.is-amber { background: var(--m-amberbg); box-shadow: inset 0 0 0 1px #f3d58b; color: var(--m-amber); }
-    .bnp-mall-sheetwhen.is-red { background: var(--m-redbg); box-shadow: inset 0 0 0 1px #f2b3ad; color: var(--m-red); }
+    .bnp-mall-sheetwhen.is-amber { background: var(--m-amberbg); box-shadow: inset 0 0 0 2px #eab25b; color: var(--m-amber); }
+    .bnp-mall-sheetwhen.is-red { background: var(--m-redbg); box-shadow: inset 0 0 0 2px #e8948b; color: var(--m-red); }
     .bnp-mall-sheetwhen.is-stay { color: var(--m-muted); }
     .bnp-mall-sheetinfo > .bnp-mall-sheetwhen { grid-column: 2; grid-row: 1; display: grid; grid-template-columns: auto auto; align-items: center; justify-content: end; align-self: start; gap: 2px 6px; padding: 7px 12px; text-align: right; }   /* (as wide as its words: the price beside it keeps its room) */
     .bnp-mall-sheetinfo > .bnp-mall-sheetwhen small { grid-column: 1 / -1; }
+    .bnp-mall-ltdtag.is-big { position: relative; top: auto; left: auto; z-index: auto; justify-self: end; height: 24px; margin: 5px 0 1px 16px; padding: 0 12px 0 18px; font: 13px/24px var(--m-ui); letter-spacing: .1pt; transform: none; }   /* (in an item's window: under its leaving date, bigger) */
+    .bnp-mall-sheetwhen > .bnp-mall-ltdtag { grid-column: 1 / -1; }
+    .bnp-mall-sheet.is-look .bnp-mall-sheetwhen > .bnp-mall-ltdtag { justify-self: start; }
+    .bnp-mall-ltdtag.is-big .bnp-mall-ltdic { right: calc(100% - 12px); width: 28px; height: 28px; }
+    .bnp-mall-ltdtag.is-big .bnp-mall-ltdic img { width: 18px; height: 18px; }
     .bnp-mall-facts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; margin: 0 !important; padding: 10px 0 0; border-top: 1px solid var(--m-line); }
     .bnp-mall-facts > div { display: flex; align-items: center; gap: 7px; }
     .bnp-mall-facts dd.bnp-mall-cats { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -23073,6 +23296,9 @@
     .bnp-mall-sheetsec h4 { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px !important; color: var(--m-plum); font: 24px/1.1 var(--m-cafe); letter-spacing: .4pt; }
     .bnp-mall-sheetsec h4 i, .bnp-mall-sheetgroup h5 i { display: inline-grid; place-items: center; box-sizing: border-box; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--m-plum2); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .2); color: #fff; font: 13px/1 var(--m-cafe); font-style: normal; letter-spacing: .3pt; }
     .bnp-mall-sheetsec h4 small { color: var(--m-muted); font: 13px var(--m-ui); letter-spacing: 0; }
+    .bnp-mall-sheetsec.is-dye h4 .bnp-mall-pill { margin-left: auto; }   /* (the Dyeworks, a press away) */
+    .bnp-mall-dyedot { display: inline-block; flex: none; width: 10px; height: 10px; margin-right: 5px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, .28); vertical-align: -1px; }
+    .bnp-mall-mini.is-here { box-shadow: 0 0 0 2px var(--m-plum2), 0 2px 4px rgba(58, 33, 80, .12); }   /* (the colour this window is about) */
     .bnp-mall-sheetsec h4 .bnp-mall-pill { margin-left: auto; }
     .bnp-mall-captop { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
     .bnp-mall-captop .bnp-mall-tiers { margin: 0 !important; gap: 5px; }
@@ -23817,7 +24043,7 @@
   const galSubKey = () => { const m = /^\/gallery\/(quickremove|quickcat|gallery_user_cats|gallery_desc_edit|gallery_world)\.phtml$/.exec(location.pathname); return m ? m[1] : ''; };
   // (Not shipped yet: the user, 2026-10-29, "toggle off all the gallery updates for the next push, I have lots of notes to make". Off for
   // everyone, its setting and its note hidden, till GAL_SHIP is true. To look at it meanwhile, in one browser: localStorage bnp-gal-try = 1)
-  const GAL_SHIP = false;
+  const GAL_SHIP = true;   // (shipped: the user, 2026-10-31, "we should be able to leave it on by default" — a gallery as everyone sees it is never touched)
   const galTry = () => { try { return localStorage.getItem('bnp-gal-try') === '1'; } catch (_) { return false; } };
   const galOn = () => (GAL_SHIP ? S.features.gal2 !== false : galTry()) && (/^\/gallery\/(?:index\.phtml)?$/.test(location.pathname) || !!galSubKey());
   let gal = null;
@@ -23831,9 +24057,17 @@
     eye: '<svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M1.8 10S5 4.5 10 4.5 18.2 10 18.2 10 15 15.5 10 15.5 1.8 10 1.8 10Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="10" cy="10" r="2.6" fill="currentColor"/></svg>',
     pen: '<svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="m3.5 13.8-.8 3.5 3.5-.8 9.6-9.6a1.9 1.9 0 0 0-2.7-2.7Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
     flag: '<svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M4.5 18V3m0 1h9.5l-2 3.5 2 3.5H4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    top: '<svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M4 3.5h12M10 17V8m-4.5 4.5L10 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    end: '<svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M4 16.5h12M10 3v9m-4.5-4.5L10 12l4.5-4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    tiny: `<svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><g fill="currentColor">${[1.8, 6.2, 10.6, 15].map((y) => [1.8, 6.2, 10.6, 15].map((x) => `<rect x="${x}" y="${y}" width="3.2" height="3.2" rx=".8"/>`).join('')).join('')}</g></svg>`,
+    undo: '<svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M7.5 4.5 3.5 8.5l4 4M4 8.5h7.5a4.5 4.5 0 0 1 0 9H8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   };
   function galEarly() {   // (the very start: the middle of the page out of sight a moment, till it's laid out; as Neopets has it if NE's never comes)
     if (!galOn() || !document.documentElement) return;
+    const q = new URLSearchParams(location.search), gu = (q.get('gu') || '').toLowerCase();
+    let me = '';
+    try { me = (localStorage.getItem('bnp-ncl-me') || '').toLowerCase(); } catch (_) { /* */ }
+    if (!galSubKey() && (q.get('is_owner') === 'no' || (gu && gu !== me))) return;   // (someone else's gallery, or yours as a guest: as its owner made it, never hidden even a moment)
     const root = document.documentElement;
     root.classList.add('bnp-gal-page');
     try { nbPaintVars(JSON.parse(localStorage.getItem('bnp-nbtheme') || 'null')); } catch (_) { /* */ }
@@ -23886,29 +24120,97 @@
     while (box.lastChild && (box.lastChild.nodeName === 'BR' || (box.lastChild.nodeType === 3 && !box.lastChild.textContent.trim()))) box.lastChild.remove();
     return box;
   }
-  function galTabs(nav) {   // (Neopets' own links: its pages as tabs, the one you're on lit; the pages beside the gallery as small pills. The very same links, moved)
-    const tabs = document.createElement('nav');
-    tabs.className = 'bnp-gal-tabs';
-    tabs.setAttribute('aria-label', 'Your gallery’s pages');
-    if (!nav) return tabs;
-    const TAB = [[/index\.phtml\?view=all$/, 'Your gallery'], [/gallery_desc_edit/, 'Edit description'], [/gallery_user_cats/, 'Categories'], [/quickremove/, 'Quick remove'], [/quickcat/, 'Quick categorise'], [/gallery_world/, 'Galleries by world']];
-    const ALSO = [/objects\.phtml\?type=inventory/, /quickstock/, /safetydeposit/, /market\.phtml\?type=your/, /shopblogs/, /cat_id=35/];
-    const navLinks = [...nav.querySelectorAll('a[href]')], here = location.pathname.replace(/\/$/, '/index.phtml');
-    const main = document.createElement('div'), also = document.createElement('div');
-    main.className = 'bnp-gal-tabrow';
-    also.className = 'bnp-gal-also';
-    for (const [re, label] of TAB) {
-      const a = navLinks.find((x) => re.test(x.getAttribute('href') || ''));
-      if (!a) continue;
-      a.className = 'bnp-gal-tab';
-      a.textContent = label;
-      if (new URL(a.href, location.href).pathname === here) a.setAttribute('aria-current', 'page');
-      main.append(a);
+  const GAL_PAGES = [   // (the gallery's pages: which, Neopets' link to it, its name, what it's for, its picture — your theme's where it has one; no two the same)
+    ['index', /index\.phtml\?view=all$/, 'My Gallery', '', ['el:.nav-gallery-icon', `url:${NPI}themes/h5/basic/images/v3/gallery-icon.svg`]],
+    ['gallery_desc_edit', /gallery_desc_edit/, 'Edit Description', 'Your gallery’s name, its setting, its words and its keeper.', [`url:${NPI}themes/h5/basic/images/releasenotes-icon.png`]],
+    ['gallery_user_cats', /gallery_user_cats/, 'Categories', 'Groups for your items: visitors pick one to see only what’s in it.', [`url:${NPI}themes/h5/basic/images/v3/myalbums-icon.svg`]],
+    ['quickremove', /quickremove/, 'Quick Remove', 'Tick what to take out, and how many of each: they go back to your inventory.', ['el:.nav-inventory-icon']],
+    ['quickcat', /quickcat/, 'Quick Categorise', 'A category for many items at once.', ['el:.nav-quickstock-icon']],
+    ['gallery_world', /gallery_world/, 'Galleries by World', 'Other Neopians’ galleries, by the land they’re set in.', ['el:.nav-explore-icon', `url:${NPI}themes/h5/basic/images/v3/explore-icon.svg`]],
+  ];
+  const GAL_ALSO = [[/objects\.phtml\?type=inventory/, 'Inventory'], [/quickstock/, 'Quick Stock'], [/safetydeposit/, 'SDB'], [/market\.phtml\?type=your/, 'Shop Stock'], [/shopblogs/, 'Shop Blogs'], [/cat_id=35/, 'FAQ']];
+  const galInfo = () => { try { const v = JSON.parse(localStorage.getItem(acctKey('bnp-galinfo')) || 'null'); return v && typeof v === 'object' ? v : {}; } catch (_) { return {}; } };   // (your gallery as its own page last showed it: for the band on its other pages)
+  const galInfoPut = (v) => { try { localStorage.setItem(acctKey('bnp-galinfo'), JSON.stringify(v)); } catch (_) { /* */ } };
+  async function galNcNp() {   // (how many of your gallery's items are NC, and how many Neopoints: the band's count says it)
+    const r = gal && gal.r, box = gal && gal.root.querySelector('[data-gal-ncnp]');
+    if (!r || !box || !r.items.length) return;
+    const prices = itPriceCache();
+    let nc = 0, ncAll = 0;
+    for (const x of r.items) {
+      const p = prices[x.n];
+      if (p && p.r && p.r.p > 0) continue;   // (itemdb has a Neopoint price: Neopoints)
+      let v = /\/items\/mall_/i.test(x.img);   // (the NC Mall's own picture)
+      if (!v) { try { v = !!(await ncValue(x.n)); } catch (_) { v = false; } }   // (valued by NE's NC guides: the caps pills' own)
+      if (v) { nc += 1; ncAll += x.q; }
     }
-    for (const re of ALSO) { const a = navLinks.find((x) => re.test(x.getAttribute('href') || '')); if (!a) continue; a.className = 'bnp-gal-pill is-small'; a.textContent = re.source.includes('cat_id') ? 'FAQ' : a.textContent.trim(); also.append(a); }
-    tabs.append(main, also);
-    nav.classList.add('bnp-gal-old');
-    return tabs;
+    if (!gal || gal.r !== r) return;
+    const np = r.items.length - nc;
+    box.innerHTML = galNcNpHtml(nc, np);
+    box.hidden = false;
+    galInfoPut({ ...galInfo(), nc, np, ncAll });
+  }
+  const galNcNpHtml = (nc, np) => `<i class="is-nc"><b>${nc.toLocaleString()}</b> NC</i><i class="is-np"><b>${np.toLocaleString()}</b> Neopoints</i>`;
+  function galBand(o = {}) {   // (the gallery's band on its other pages: its keeper and their words, its name and how full it is (o.title, o.keeper, o.say, o.sub: the page's own, else as kept); its figures along the foot, for the page to fill)
+    const info = galInfo(), src = String(o.keeper || info.keeper || '').replace(/^http:/, 'https:'), keeper = /^https:\/\/images\.neopets\.com\//.test(src) ? src : '';
+    const used = info.size && info.free != null ? info.size - info.free : 0, pct = info.size ? Math.min(100, Math.round((used / info.size) * 100)) : 0;
+    const who = o.say ? o.say[0] : info.who, say = o.say ? o.say[1] : info.say;
+    const band = document.createElement('section');
+    band.className = `bnp-gal-band${keeper ? '' : ' no-keeper'}`;
+    band.innerHTML = `${keeper ? `<figure class="bnp-gal-keeper"><span class="bnp-gal-keepic"><img src="${esc(keeper)}" alt="" width="150" height="150"></span>${say != null ? `<figcaption class="bnp-gal-say"><b data-gal-sayname>${esc(who || 'Your keeper')}</b><span data-gal-saygreet>${esc(say || '…')}</span></figcaption>` : ''}</figure>` : ''}
+      <div class="bnp-gal-about"><div class="bnp-gal-head"><div class="bnp-gal-titlerow"><h2 class="bnp-gal-title" data-gal-title>${esc(o.title || info.name || 'Your gallery')}</h2>${info.size ? `<div class="bnp-gal-space"><span class="bnp-gal-spacewords"><b>${used.toLocaleString()}</b> of ${info.size.toLocaleString()} spaces used</span><span class="bnp-gal-bar" role="progressbar" aria-label="Space used" aria-valuemin="0" aria-valuemax="${info.size}" aria-valuenow="${used}"><i style="width:${pct}%"></i></span>${info.free != null ? `<small>${info.free.toLocaleString()} free · ${pct}% full</small>` : ''}</div>` : ''}</div>${o.sub != null ? `<div class="bnp-gal-owner" data-gal-sub>${esc(o.sub)}</div>` : ''}<div class="bnp-gal-words" data-gal-words></div></div>
+      <div class="bnp-gal-stats" data-gal-stats>${o.figures !== false && info.kinds ? `<div class="bnp-gal-count"><b>${Number(info.kinds).toLocaleString()}</b><span>different item${info.kinds === 1 ? '' : 's'}${info.all ? `<small>${Number(info.all).toLocaleString()} in all</small>` : ''}${info.nc != null ? `<span class="bnp-gal-ncnp">${galNcNpHtml(Number(info.nc) || 0, Number(info.np) || 0)}</span>` : ''}</span></div>` : ''}</div></div>`;
+    return band;
+  }
+  function galTabs(nav, key) {   // (every gallery page's top: its big title and what it's for, then the gallery's pages as chips with pictures (the one you're on lit) and the pages beside it as small pills. Neopets' own links, moved; its rows of them put away)
+    const box = document.createElement('div');
+    box.className = 'bnp-gal-top';
+    const page = GAL_PAGES.find((p) => p[0] === key) || GAL_PAGES[0], ic = (spec) => { let u = ''; try { u = tabIconOf(spec); } catch (_) { u = ''; } return u; };
+    const pic = ic(page[4]);
+    box.innerHTML = `<header class="bnp-gal-pagehead">${pic ? `<img src="${esc(pic)}" alt="" width="56" height="56">` : ''}<h1>${esc(page[2])}</h1></header>${page[3] ? `<p class="bnp-gal-pageline">${esc(page[3])}</p>` : ''}`;
+    const bar = document.createElement('nav');
+    bar.className = 'bnp-gal-jump';
+    bar.setAttribute('aria-label', 'Your gallery’s pages');
+    const links = nav ? [...nav.querySelectorAll('a[href]')] : [];
+    for (const [k, re, label, , spec] of GAL_PAGES) {
+      let a = links.find((x) => re.test(x.getAttribute('href') || ''));
+      if (!a) { a = document.createElement('a'); a.href = k === 'index' ? '/gallery/index.phtml?view=all' : `/gallery/${k}.phtml`; }   // (a page whose own links don't list it: its address)
+      const u = ic(spec);
+      a.className = `bnp-gal-chip${k === key ? ' is-on' : ''}`;
+      a.innerHTML = `${u ? `<img src="${esc(u)}" alt="" width="26" height="26">` : ''}<span>${esc(label)}</span>`;
+      if (k === key) a.setAttribute('aria-current', 'page');
+      bar.append(a);
+    }
+    const also = document.createElement('span');
+    also.className = 'bnp-gal-also';
+    for (const [re, label] of GAL_ALSO) { const a = links.find((x) => re.test(x.getAttribute('href') || '')); if (!a) continue; a.className = 'bnp-gal-pill is-small'; a.textContent = label; also.append(a); }
+    if (also.firstChild) bar.append(also);
+    box.append(bar);
+    if (nav) nav.classList.add('bnp-gal-old');
+    return box;
+  }
+  function galPageBg(root) {   // (the page's own colour behind the gallery: the strip over a stuck bar painted with it, so nothing scrolls into sight there)
+    for (let n = root.parentElement; n; n = n.parentElement) { const c = getComputedStyle(n).backgroundColor; if (c && c !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(c)) { root.style.setProperty('--gal-page-bg', c); return; } }
+  }
+  let galTopObs = null;
+  function galTopFit() {   // (the big title, and its line, drawn in the middle of the room between the top bar and the chips bar, as Neopets' own big titles are (ptFit): only where it's drawn moves, so nothing under it does)
+    const box = $('.bnp-gal-top'), head = box && box.querySelector('.bnp-gal-pagehead'), bar = box && box.querySelector('.bnp-gal-jump');
+    if (!head || !bar) return;
+    const parts = [head, ...box.querySelectorAll('.bnp-gal-pageline')];
+    for (const p of parts) { p.style.position = ''; p.style.top = ''; }
+    if (S.features.bigTitles === false || !$('#navtop__2020')) return;
+    if (!galTopObs && window.ResizeObserver) {   // (fitted again when the page's width changes, and once its fonts are in)
+      galTopObs = new ResizeObserver(() => { clearTimeout(galTopFit.t); galTopFit.t = setTimeout(galTopFit, 60); });
+      galTopObs.observe(box);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => galTopFit()).catch(() => { /* */ });
+    }
+    const doc = (el) => { const q = el.getBoundingClientRect(), y = getComputedStyle(el).position === 'fixed' ? 0 : scrollY; return { l: q.left, r: q.right, t: q.top + y, b: q.bottom + y }; };   // (down the page: a fixed one as it is at the top)
+    const R = parts.map(doc), t0 = Math.min(...R.map((q) => q.t)), b0 = Math.max(...R.map((q) => q.b)), l0 = Math.min(...R.map((q) => q.l)), r0 = Math.max(...R.map((q) => q.r));
+    const above = roomAbove(box), below = doc(bar).t;
+    let y = Math.max((above + below) / 2 - (t0 + b0) / 2, above + 4 - t0);
+    for (const n of $$('.navsub-left__2020, .navsub-right__2020')) { if (!n.getClientRects().length) continue; const q = doc(n); if (q.l < r0 && q.r > l0) y = Math.max(y, q.b + 4 - t0); }   // (the Neopoints row over it, on a narrow page: just under that row)
+    y = Math.round(Math.min(0, y));
+    if (!y) return;
+    for (const p of parts) { p.style.position = 'relative'; p.style.top = `${y}px`; }
   }
   function galPage() {
     if (!galOn() || gal) return;
@@ -23917,26 +24219,33 @@
     if (!content || !form) { document.documentElement.classList.remove('bnp-gal-page'); return; }
     try { nbTheme(); } catch (e) { report(e); }
     const r = galRead(content, form);
+    if (r.mode === 'view') {   // (a gallery as everyone sees it, yours as a guest too: its owner's own layout, untouched (user, 2026-10-31: "we can't actually mess with the appearance of the real front page of peoples galleries"); NE's item panel shows when an item is pointed at instead)
+      document.documentElement.classList.remove('bnp-gal-page');
+      const st = document.getElementById('bnp-gal-style');
+      if (st) st.remove();
+      return;
+    }
     if (!r.items.length && !r.head) { document.documentElement.classList.remove('bnp-gal-page'); return; }
     const P = galP();
-    gal = { r, form, q: '', sort: P.sort || 'own', view: P.view || 'big', root: null, grid: null, seen: null };
+    gal = { r, form, q: '', sort: P.sort || 'own', view: (r.mode === 'rank' && P.rview) || P.view || 'big', root: null, grid: null, seen: null };   // (Rank keeps its own size: Pictures only is its own)
     const root = gal.root = document.createElement('div');
     root.className = 'bnp-gal';
     root.setAttribute('data-bnp', 'gal');
     root.dataset.mode = r.mode;
+    root.classList.toggle('no-hovacts', P.hoverActs !== true);   // (NE's item buttons on hover: off unless you turn them on (user, 2026-10-31: "have this turned off by default"))
     // (Neopets' own links: its pages as tabs, the pages beside the gallery as small pills; the very same links, moved)
-    const tabs = galTabs(r.nav);
+    galInfoPut({ ...galInfo(), name: r.name, keeper: r.keeper ? String(r.keeper.src || '').replace(/^http:/, 'https:') : '', who: r.who, say: r.say, size: r.size, free: r.free, kinds: r.items.length, all: r.items.reduce((s, x) => s + x.q, 0), gu: r.gu, at: Date.now() });   // (for the band on its other pages)
+    const tabs = galTabs(r.nav, 'index');
     // (the band: its name, its keeper and their words, its own description; how full it is and what it's worth)
     const band = document.createElement('section');
     band.className = 'bnp-gal-band';
     const used = r.size && r.free != null ? r.size - r.free : r.items.reduce((s, x) => s + x.q, 0), pct = r.size ? Math.min(100, Math.round((used / r.size) * 100)) : 0;
     band.innerHTML = `${r.keeper ? `<figure class="bnp-gal-keeper"><span class="bnp-gal-keepic"></span>${r.say ? `<figcaption class="bnp-gal-say"><b>${esc(r.who || 'The Keeper')}</b><span>${esc(r.say)}</span></figcaption>` : ''}</figure>` : ''}
-      <div class="bnp-gal-about"><h2 class="bnp-gal-title">${esc(r.name || 'Gallery')}</h2><div class="bnp-gal-owner" data-gal-owner></div><div data-gal-desc></div><div class="bnp-gal-acts" data-gal-acts></div></div>
+      <div class="bnp-gal-about"><div class="bnp-gal-head"><div class="bnp-gal-titlerow"><h2 class="bnp-gal-title">${esc(r.name || 'Gallery')}</h2>${r.size ? `<div class="bnp-gal-space" title="${esc(`Your gallery holds ${r.size.toLocaleString()} items: each copy takes a space`)}"><span class="bnp-gal-spacewords"><b>${used.toLocaleString()}</b> of ${r.size.toLocaleString()} spaces used</span><span class="bnp-gal-bar" role="progressbar" aria-label="Space used" aria-valuemin="0" aria-valuemax="${r.size}" aria-valuenow="${used}"><i style="width:${pct}%"></i></span>${r.free != null ? `<small>${r.free.toLocaleString()} free · ${pct}% full</small>` : ''}</div>` : ''}</div><div class="bnp-gal-owner" data-gal-owner></div><div data-gal-desc></div><div class="bnp-gal-acts" data-gal-acts></div></div>
       <div class="bnp-gal-stats">
-        <div class="bnp-gal-count"><b>${r.items.length.toLocaleString()}</b><span>different item${r.items.length === 1 ? '' : 's'}<small>${r.items.reduce((s, x) => s + x.q, 0).toLocaleString()} in all</small></span></div>
-        ${r.size ? `<div class="bnp-gal-space" title="${esc(`Your gallery holds ${r.size.toLocaleString()} items: each copy takes a space`)}"><span><span><b>${used.toLocaleString()}</b> of ${r.size.toLocaleString()} spaces</span>${r.free != null ? `<small>${r.free.toLocaleString()} free</small>` : ''}</span><span class="bnp-gal-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${r.size}" aria-valuenow="${used}"><i style="width:${pct}%"></i></span></div>` : ''}
+        <div class="bnp-gal-count"><b>${r.items.length.toLocaleString()}</b><span>different item${r.items.length === 1 ? '' : 's'}<small>${r.items.reduce((s, x) => s + x.q, 0).toLocaleString()} in all</small><span class="bnp-gal-ncnp" data-gal-ncnp hidden></span></span></div>
         <span class="bnp-gal-wt" data-bnp="wtline"></span>
-      </div>`;
+      </div></div>`;   // (as Shop Stock's band: one panel, how full at its top right, the figures along its foot)
     const desc = r.head ? galDesc(r.head, r.keeper) : null;   // (read before the keeper's picture moves: its words follow the keeper)
     if (r.keeper) { r.keeper.removeAttribute('border'); band.querySelector('.bnp-gal-keepic').append(r.keeper); }
     if (r.head) {
@@ -23978,7 +24287,7 @@
         m.append(un);
       }
       root.append(m);
-      const tip = { cat: r.noCats ? '' : 'Pick a category for each item, then Submit.', rank: 'Rank 1 shows first. Number them yourself, or sort them here and press “Number them as shown”; then Submit.', remove: 'Choose how many of each to take out, then Submit: they go back to your inventory.' }[r.mode];
+      const tip = { cat: r.noCats ? '' : 'Pick a category for each item, then Submit.', rank: 'Drag items into the order you want, or type a place in an item’s box; Ctrl- or Shift-click chooses several to move together. Then Submit: your gallery shows them in this order.', remove: 'Choose how many of each to take out, then Submit: they go back to your inventory.' }[r.mode];
       if (r.noCats && r.mode === 'cat') root.insertAdjacentHTML('beforeend', `<p class="bnp-gal-note is-cats"><span><b>No categories yet.</b> Categories sort your gallery into groups visitors can pick from (Wearables, Plushies…). Make some first, then choose one for each item here.</span></p>`);
       else if (tip) root.insertAdjacentHTML('beforeend', `<p class="bnp-gal-note">${esc(tip)}</p>`);
       if (r.noCats && r.mode === 'cat') { const mk = r.by(/gallery_user_cats/); const note = root.querySelector('.bnp-gal-note.is-cats'); if (note) note.insertAdjacentHTML('beforeend', `<a class="bnp-gal-pill is-go" href="${esc(mk ? mk.getAttribute('href') : '/gallery/gallery_user_cats.phtml')}">Make categories</a>`); }
@@ -23995,7 +24304,8 @@
     tools.className = 'bnp-gal-tools';
     tools.innerHTML = `<label class="bnp-gal-find">${GAL_IC.find}<input type="search" data-gal-q placeholder="Find in this gallery" aria-label="Find in this gallery" spellcheck="false" autocomplete="off"></label>
       <label class="bnp-gal-sel"><span>Sort</span><select data-gal-sort>${[['own', r.mode === 'rank' ? 'As ranked' : 'The gallery’s order'], ['az', 'Name, A to Z'], ['za', 'Name, Z to A'], ['qty', 'Most copies'], ['np', 'Priciest first (itemdb)']].map(([k, l]) => `<option value="${k}"${gal.sort === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
-      <span class="bnp-gal-segv" role="group" aria-label="Item size">${[['big', GAL_IC.big, 'Big'], ['small', GAL_IC.small, 'Small']].map(([v, ic, l]) => `<button type="button" data-gal-view="${v}" aria-pressed="${gal.view === v}" title="${l}" aria-label="${l}">${ic}</button>`).join('')}</span>
+      <span class="bnp-gal-segv" role="group" aria-label="Item size">${[['big', GAL_IC.big, 'Big'], ['small', GAL_IC.small, 'Small'], ...(r.mode === 'rank' ? [['tiny', GAL_IC.tiny, 'Pictures only']] : [])].map(([v, ic, l]) => `<button type="button" data-gal-view="${v}" aria-pressed="${gal.view === v}" title="${l}" aria-label="${l}">${ic}</button>`).join('')}</span>
+      <label class="bnp-gal-hovsw" title="NE’s buttons for an item (Shop Wizard, Trading Post, Dress to Impress…) over its picture when you point at it"><input type="checkbox" data-gal-hovacts${P.hoverActs === true ? ' checked' : ''}><span>Buttons on hover</span></label>
       <span class="bnp-gal-shown" data-gal-shown aria-live="polite"></span>`;
     root.append(tools);
     // (Neopets' form, moved here whole: its own table out of sight, the cards in it, its boxes on the cards, its Submit in the bar)
@@ -24010,7 +24320,7 @@
     if (r.submit && r.mode !== 'view' && !(r.mode === 'cat' && r.noCats)) {
       const bar = document.createElement('div');
       bar.className = 'bnp-gal-actbar';
-      bar.innerHTML = `<span class="bnp-gal-actsay" data-gal-say></span><span class="bnp-gal-sp"></span>${r.mode === 'rank' ? '<button type="button" class="bnp-gal-pill" data-gal-number title="Rank 1, 2, 3… in the order shown now (what the find box hides comes after, in its order)">Number them as shown</button><button type="button" class="bnp-gal-pill is-quiet" data-gal-unrank title="Every rank back to 0">Clear ranks</button>' : r.mode === 'remove' ? '<button type="button" class="bnp-gal-pill is-quiet" data-gal-untake>Clear</button>' : ''}`;
+      bar.innerHTML = `<span class="bnp-gal-actsay" data-gal-say></span>${r.mode === 'rank' ? `<span class="bnp-gal-chosen" data-gal-chosen hidden><span data-gal-chosensay></span><button type="button" class="bnp-gal-pill is-small" data-gal-move="top" title="Everything chosen to the first places, in its order">${GAL_IC.top}To the top</button><button type="button" class="bnp-gal-pill is-small" data-gal-move="end" title="Everything chosen to the last places, in its order">${GAL_IC.end}To the end</button><button type="button" class="bnp-gal-pill is-small is-quiet" data-gal-unchoose title="Choose none (Esc)">Choose none</button></span>` : ''}<span class="bnp-gal-sp"></span>${r.mode === 'rank' ? `<button type="button" class="bnp-gal-pill" data-gal-undo disabled title="Take back the last change (Ctrl+Z)">${GAL_IC.undo}Undo</button>` : ''}${r.mode === 'rank' ? '<button type="button" class="bnp-gal-pill" data-gal-number title="Rank 1, 2, 3… in the order shown now (what the find box hides comes after, in its order)">Number them as shown</button><button type="button" class="bnp-gal-pill is-quiet" data-gal-unrank title="Every rank back to 0">Clear ranks</button>' : r.mode === 'remove' ? '<button type="button" class="bnp-gal-pill is-quiet" data-gal-untake>Clear</button>' : ''}`;
       r.submit.classList.add('button-default__2020', 'button-yellow__2020', 'bnp-gal-submit');
       const pin = form.querySelector('input[name="pin"]');   // (a PIN of yours: its box beside Submit, still in the form)
       if (pin) { const l = document.createElement('label'); l.className = 'bnp-gal-pin'; l.innerHTML = '<span>PIN</span>'; pin.setAttribute('autocomplete', 'off'); l.append(pin); bar.append(l); }
@@ -24026,21 +24336,25 @@
     }
     content.prepend(root);
     galWire();
+    if (r.mode === 'rank' && r.items.some((x) => x.ctl)) galArrange();
     galSort();
     galSay();
     galWatchDti();
+    galNcNp().catch(report);   // (NC or Neopoints: counted once NE's NC guides are in)
     document.documentElement.classList.add('bnp-gal-on');
+    galTopFit();
   }
   function galCardHtml(x) {
-    return `<div class="bnp-gal-card" data-gal-i="${x.i}" title="${esc(x.d ? `${x.n}: ${x.d}` : x.n)}">${x.q > 1 ? `<i class="bnp-gal-q" title="${x.q} of them">×${x.q}</i>` : ''}<span class="bnp-gal-pic"><img src="${esc(x.img)}" alt="" width="80" height="80" loading="lazy" decoding="async"></span><b class="bnp-gal-name">${esc(x.n)}</b><span class="bnp-gal-worth" data-gal-worth></span><span class="bnp-gal-ctl" data-gal-ctl></span><span class="bnp-gal-itacts" data-gal-itacts></span></div>`;
+    return `<div class="bnp-gal-card" data-gal-i="${x.i}" title="${esc(x.d ? `${x.n}: ${x.d}` : x.n)}">${x.q > 1 ? `<i class="bnp-gal-q" title="${x.q} of them"><span>×</span>${x.q}</i>` : ''}<span class="bnp-gal-pic"><img src="${esc(x.img)}" alt="" width="80" height="80" loading="lazy" decoding="async"></span><b class="bnp-gal-name">${esc(x.n)}</b><span class="bnp-gal-worth" data-gal-worth></span><span class="bnp-gal-ctl" data-gal-ctl></span><span class="bnp-gal-itacts" data-gal-itacts></span></div>`;
   }
   function galCtl(x) {   // (the item's own box from Neopets' form, moved onto its card: the same box, sent with the form)
     const box = x.card.querySelector('[data-gal-ctl]'), c = x.ctl;
-    if (gal.r.mode === 'rank' && c.tagName === 'INPUT') {
-      box.innerHTML = '<label class="bnp-gal-rank"><span>Rank</span></label>';
+    if (gal.r.mode === 'rank' && c.tagName === 'INPUT') {   // (its rank box between ⤒ and ⤓, to the top and to the end; a place typed in it moves it there)
+      box.innerHTML = `<span class="bnp-gal-place"><button type="button" class="bnp-gal-mv" data-gal-move="top" title="To the top: first place" aria-label="${esc(`Move ${x.n} to the top`)}">${GAL_IC.top}</button><label class="bnp-gal-rank"><span>Rank</span></label><button type="button" class="bnp-gal-mv" data-gal-move="end" title="To the end: last place" aria-label="${esc(`Move ${x.n} to the end`)}">${GAL_IC.end}</button></span>`;
       c.setAttribute('inputmode', 'numeric');
-      c.setAttribute('aria-label', `Rank for ${x.n}`);
-      box.firstChild.append(c);
+      c.setAttribute('aria-label', `Rank for ${x.n}: its place, 1 shows first`);
+      box.querySelector('.bnp-gal-rank').append(c);
+      x.card.insertAdjacentHTML('beforeend', '<i class="bnp-gal-placeno" data-gal-place aria-hidden="true"></i>');
     } else if (gal.r.mode === 'remove' && c.tagName === 'SELECT') {
       const max = c.options.length - 1;
       box.innerHTML = `<span class="bnp-gal-take" role="group" aria-label="${esc(`How many ${x.n} to take out`)}"><button type="button" data-gal-take="-1" aria-label="One fewer">−</button><b data-gal-takeval>0</b><small>/${max}</small><button type="button" data-gal-take="1" aria-label="One more">+</button>${max > 1 ? '<button type="button" class="is-all" data-gal-take="all">All</button>' : ''}</span>`;
@@ -24070,7 +24384,7 @@
     else if (k === 'za') L.sort((a, b) => b.n.localeCompare(a.n));
     else if (k === 'qty') L.sort((a, b) => b.q - a.q || a.i - b.i);
     else if (k === 'np') L.sort((a, b) => galPrice(b) - galPrice(a) || a.i - b.i);
-    else L.sort((a, b) => a.i - b.i);
+    else L.sort((a, b) => galPos(a) - galPos(b));   // (as ranked: as arranged here, once moved)
     const frag = document.createDocumentFragment();
     for (const x of L) frag.append(x.card);
     gal.grid.append(frag);
@@ -24086,14 +24400,19 @@
       say.innerHTML = n ? `Taking out <b>${n.toLocaleString()}</b> item${n === 1 ? '' : 's'}${taking.length > 1 ? ` (${taking.length} kinds)` : ''}` : 'Nothing chosen to take out yet';
       gal.root.classList.toggle('is-taking', n > 0);
     } else if (gal.r.mode === 'rank') {
-      const n = gal.r.items.filter((x) => Number(x.ctl && x.ctl.value) > 0).length;
-      say.innerHTML = n ? `<b>${n.toLocaleString()}</b> of ${all.toLocaleString()} ranked` : 'None ranked yet: 0 is unranked';
+      const n = gal.r.items.filter((x) => Number(x.ctl && x.ctl.value) > 0).length, ch = gal.arr ? gal.arr.undo.length : 0;
+      say.innerHTML = `${n ? `<b>${n.toLocaleString()}</b> of ${all.toLocaleString()} ranked` : 'None ranked yet: 0 is unranked'}${ch ? ` · <b>${ch.toLocaleString()}</b> change${ch === 1 ? '' : 's'} not saved yet` : ''}`;
+      const u = gal.root.querySelector('[data-gal-undo]'), cs = gal.root.querySelector('[data-gal-chooseshown]');
+      if (u) u.disabled = !ch;
+      if (cs) { const on = !!gal.q.trim() && shown > 0 && shown < all; cs.hidden = !on; if (on) cs.textContent = `Choose these ${shown.toLocaleString()}`; }
     } else if (gal.r.mode === 'cat') say.textContent = 'Choose a category on each item you want to move';
   }
-  function galNumber() {   // (ranks 1, 2, 3… in the order shown now; the ones the find box hides after them, in their order)
-    const order = [...gal.grid.children].map((c) => gal.r.items[Number(c.dataset.galI)]).filter((x) => x && x.ctl);
-    const L = [...order.filter((x) => !x.card.hidden), ...order.filter((x) => x.card.hidden)];
-    L.forEach((x, i) => { x.ctl.value = String(i + 1); x.ctl.dispatchEvent(new Event('change', { bubbles: true })); });
+  function galNumber() {   // (ranks 1, 2, 3… in the order shown now; the ones the find box hides after them, in their order; the cards put in that order, as arranging does)
+    const order = galOrder(), L = [...order.filter((x) => !x.card.hidden), ...order.filter((x) => x.card.hidden)];
+    galPush(galSnap());
+    galPutOrder(L.map((x) => x.i));
+    galRenumber();
+    galSortSet('own');
     galSay();
     galToast(`Ranked 1 to ${L.length.toLocaleString()} as shown: press Submit to keep it`);
   }
@@ -24114,13 +24433,15 @@
     root.addEventListener('change', (e) => {
       const t = e.target;
       if (t.matches('[data-gal-sort]')) { gal.sort = t.value; galPSet('sort', gal.sort); galSort(); }
+      else if (t.matches('[data-gal-hovacts]')) { galPSet('hoverActs', t.checked); gal.root.classList.toggle('no-hovacts', !t.checked); }
       else if (t.matches('.bnp-gal-catpick')) t.closest('.bnp-gal-card').classList.toggle('is-moving', t.selectedIndex > 0);
+      else if (t.matches('.bnp-gal-rank input') && gal.arr) galTyped(t);
     });
     root.addEventListener('click', (e) => {
       const t = e.target instanceof Element ? e.target : null;
       if (!t) return;
       let b;
-      if ((b = t.closest('[data-gal-view]'))) { gal.view = b.dataset.galView; galPSet('view', gal.view); gal.grid.className = `bnp-gal-grid is-${gal.view}`; for (const x of root.querySelectorAll('[data-gal-view]')) x.setAttribute('aria-pressed', String(x === b)); return; }
+      if ((b = t.closest('[data-gal-view]'))) { gal.view = b.dataset.galView; galPSet(gal.r.mode === 'rank' ? 'rview' : 'view', gal.view); gal.grid.className = `bnp-gal-grid is-${gal.view}`; for (const x of root.querySelectorAll('[data-gal-view]')) x.setAttribute('aria-pressed', String(x === b)); return; }
       if ((b = t.closest('[data-gal-take]'))) {
         const x = gal.r.items[Number(b.closest('.bnp-gal-card').dataset.galI)], c = x && x.ctl;
         if (!c) return;
@@ -24132,8 +24453,12 @@
         return;
       }
       if (t.closest('[data-gal-untake]')) { for (const x of gal.r.items) if (x.ctl && Number(x.ctl.value)) { x.ctl.value = '0'; galTakePaint(x); } galSay(); return; }
+      if ((b = t.closest('[data-gal-move]')) && gal.arr) { galMoveBtn(b); return; }
+      if (t.closest('[data-gal-undo]') && gal.arr) { galUndo(); return; }
+      if (t.closest('[data-gal-unchoose]') && gal.arr) { galChoose([]); return; }
+      if (t.closest('[data-gal-chooseshown]') && gal.arr) { const L = galShown(); galChoose(L); galToast(`${L.length.toLocaleString()} chosen: drag one to move them all, or To the top / To the end below`); return; }
       if (t.closest('[data-gal-number]')) { galNumber(); return; }
-      if (t.closest('[data-gal-unrank]')) { for (const x of gal.r.items) if (x.ctl) x.ctl.value = '0'; galSay(); galToast('Every rank back to 0: press Submit to keep it'); return; }
+      if (t.closest('[data-gal-unrank]')) { if (gal.arr) galPush(galSnap()); for (const x of gal.r.items) if (x.ctl) { x.ctl.value = '0'; galPlace(x); } if (gal.arr) gal.arr.arranged = false; galSay(); galToast('Every rank back to 0: press Submit to keep it'); return; }
       if ((b = t.closest('[data-gal-copy]'))) {
         const url = b.dataset.galCopy;
         (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => galToast('Its link is copied'), () => galToast(url));
@@ -24143,7 +24468,7 @@
       if (e.key === 'Enter' && e.target.matches('.bnp-gal-rank input')) {
         e.preventDefault();
         const boxes = [...gal.grid.querySelectorAll('.bnp-gal-card:not([hidden]) .bnp-gal-rank input')], i = boxes.indexOf(e.target);
-        if (boxes[i + 1]) { boxes[i + 1].focus(); boxes[i + 1].select(); }
+        if (boxes[i + 1]) { boxes[i + 1].focus(); boxes[i + 1].select(); } else e.target.blur();   // (the last: out of its box, so what's typed moves it)
       }
     });
     document.addEventListener('keydown', (e) => {   // (/ to find)
@@ -24152,6 +24477,7 @@
       const f = root.querySelector('[data-gal-q]');
       if (f) { e.preventDefault(); f.focus(); }
     });
+    galPageBg(root);
     const head = $('.nav-top__2020, #navtop__2020');
     if (head && getComputedStyle(head).position === 'fixed') root.style.setProperty('--bnp-gal-top', `${Math.round(head.getBoundingClientRect().height) + 6}px`);   // (its tools in sight under the bar as you scroll)
     const foot = () => {   // (the Submit bar above the page's own fixed bottom strip (the old layout's footer, or the new one's bar), never under it)
@@ -24161,9 +24487,308 @@
     foot();
     addEventListener('resize', () => { clearTimeout(foot.t); foot.t = setTimeout(foot, 150); });
     if ('IntersectionObserver' in window) {   // (each item's price and buttons as it comes near: itemdb asked for what you look at, not all at once)
-      gal.seen = new IntersectionObserver((ents) => { for (const en of ents) if (en.isIntersecting) { gal.seen.unobserve(en.target); galFill(gal.r.items[Number(en.target.dataset.galI)]); } }, { rootMargin: '500px 0px' });
+      gal.seen = new IntersectionObserver((ents) => { for (const en of ents) if (en.isIntersecting) { if (gal.arr && gal.arr.drag) { gal.arr.later.add(en.target); continue; } gal.seen.unobserve(en.target); galFill(gal.r.items[Number(en.target.dataset.galI)]); } }, { rootMargin: '500px 0px' });   // (mid-drag, what scrolls past waits: filled once it's let go, if still near)
       for (const x of gal.r.items) gal.seen.observe(x.card);
     } else for (const x of gal.r.items) galFill(x);
+  }
+  // ── Arranging, in Rank (user, 2026-10-31: "making it easier for the user to arrange their items in their gallery… I think drag and drop
+  // would be nice, but keep in mind user may often be trying to drag items from the bottom all the way to the top, and that it would be
+  // good to easily visually tell when you're grabbing an item and which slot its moving into"). A card picked up lifts off the page under
+  // the pointer, saying where it's going (#812 → #3); its place becomes a numbered gap the others slide aside for. Near the top or the
+  // bottom the page scrolls by itself, faster the nearer and the longer it's held there; the tools bar and the Submit bar, dropped on, are
+  // the first and the last place. Ctrl- or Shift-click (a finger: held) chooses several to move together; ⤒ ⤓ on each card and for
+  // what's chosen; a place typed in an item's box moves it there; Undo (Ctrl+Z); Esc puts it back. After a move every item is ranked 1, 2,
+  // 3… as the cards stand, in Neopets' own boxes sent by its own Submit, so the gallery shows them in that order (its rank page lists them
+  // as the gallery shows them; Neopets' own check wanted 1 to how many there are). "Pictures only", a third size here, makes a long
+  // gallery short to cross
+  function galPos(x) { return x.o != null ? x.o : x.i; }
+  function galOrder() { const out = []; for (const c of gal.grid.children) { const x = c.classList.contains('bnp-gal-card') ? gal.r.items[Number(c.dataset.galI)] : null; if (x) out.push(x); } return out; }   // (every item, as the cards stand)
+  function galCards() { return [...gal.grid.children].filter((c) => !c.hidden && c.classList.contains('bnp-gal-card')); }   // (the cards the find box shows, as they stand)
+  function galPlace(x) { const b = x.card.querySelector('[data-gal-place]'), v = x.ctl && Number(x.ctl.value) > 0 ? String(x.ctl.value).trim() : ''; if (b && b.textContent !== v) b.textContent = v; }   // (its rank on its picture, in Pictures only)
+  function galSortSet(k) { gal.sort = k; const s = gal.root.querySelector('[data-gal-sort]'); if (s) s.value = k; }
+  function galSortName() { const s = gal.root.querySelector('[data-gal-sort]'); return s && s.selectedOptions[0] ? s.selectedOptions[0].textContent : ''; }
+  function galSnap() { return { order: galOrder().map((x) => x.i), vals: gal.r.items.map((x) => (x.ctl ? x.ctl.value : '')), o: gal.r.items.map(galPos), sort: gal.sort, arranged: !!(gal.arr && gal.arr.arranged) }; }   // (the order and every rank now: for Undo, and for Esc mid-drag)
+  function galPush(s) { const A = gal.arr; if (!A) return; A.undo.push(s); if (A.undo.length > 200) A.undo.shift(); }
+  function galPutOrder(order) { const frag = document.createDocumentFragment(); for (const i of order) frag.append(gal.r.items[i].card); gal.grid.append(frag); }
+  function galRenumber() {   // (every item ranked 1, 2, 3… as the cards stand, the ones the find box hides in their places too)
+    galOrder().forEach((x, k) => { x.o = k; if (x.ctl && x.ctl.value !== String(k + 1)) x.ctl.value = String(k + 1); galPlace(x); });
+    if (gal.arr) gal.arr.arranged = true;
+  }
+  const galFlipped = new Set();
+  function galFlip(change) {   // (a change of order with the cards in sight sliding to their new places, not jumping)
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { change(); return; }
+    const V = galCards(), was = new Map();
+    let lo = 0, hi = V.length;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (V[m].getBoundingClientRect().bottom < -60) lo = m + 1; else hi = m; }   // (the first in sight: down a grid, places only go down the page)
+    for (let k = lo; k < V.length && was.size < 300; k++) { const r = V[k].getBoundingClientRect(); if (r.top > innerHeight + 60) break; was.set(V[k], r); }
+    change();
+    for (const c of was.keys()) { c.style.transition = 'none'; c.style.transform = ''; galFlipped.add(c); }   // (each measured where it now is, not where a slide had got to)
+    const moved = [];
+    for (const [c, r0] of was) {
+      if (c.hidden || !c.isConnected) continue;
+      const r1 = c.getBoundingClientRect(), dx = r0.left - r1.left, dy = r0.top - r1.top;
+      if (Math.abs(dx) >= 1 || Math.abs(dy) >= 1) moved.push([c, dx, dy]);
+    }
+    for (const [c, dx, dy] of moved) c.style.transform = `translate(${dx}px, ${dy}px)`;
+    if (moved.length) { void gal.grid.offsetWidth; for (const [c] of moved) { c.style.transition = 'transform .18s cubic-bezier(.2, .7, .3, 1)'; c.style.transform = ''; } }   // (drawn where they were, then let go)
+    clearTimeout(galFlip.t);
+    galFlip.t = setTimeout(() => { for (const c of galFlipped) c.style.transition = ''; galFlipped.clear(); }, 240);
+  }
+  function galSlotAt(x, y, V) {   // (the place under the pointer, from the grid's own rows and columns as laid out, not as the cards slide)
+    if (!V.length) return -1;
+    const g = gal.grid.getBoundingClientRect(), px = x - g.left, py = y - g.top, top0 = V[0].offsetTop;
+    let cols = 1;
+    while (cols < V.length && V[cols].offsetTop === top0) cols++;
+    let lo = 0, hi = Math.ceil(V.length / cols) - 1;
+    while (lo < hi) { const m = (lo + hi + 1) >> 1; if (V[m * cols].offsetTop <= py) lo = m; else hi = m - 1; }
+    const w = V[0].offsetWidth, pitch = cols > 1 ? V[1].offsetLeft - V[0].offsetLeft : w;
+    const col = Math.max(0, Math.min(cols - 1, Math.floor((px - V[0].offsetLeft + (pitch - w) / 2) / Math.max(1, pitch))));
+    return Math.min(V.length - 1, lo * cols + col);
+  }
+  function galArrange() {
+    const A = gal.arr = { undo: [], sel: new Set(), anchor: null, down: null, drag: null, before: null, arranged: false, sent: false, later: new Set(), was: null };
+    const root = gal.root, grid = gal.grid, tools = root.querySelector('.bnp-gal-tools'), bar = root.querySelector('.bnp-gal-actbar'), shown = root.querySelector('[data-gal-shown]');
+    for (const x of gal.r.items) galPlace(x);
+    grid.addEventListener('pointerdown', galDown);
+    grid.addEventListener('dragstart', (e) => e.preventDefault());   // (the browser's own dragging of a picture: never, here)
+    grid.addEventListener('touchmove', (e) => { if (A.drag || (A.down && A.down.touch && A.down.ready)) e.preventDefault(); }, { passive: false });   // (a finger, once held: the page stays still under it)
+    if (tools) tools.insertAdjacentHTML('beforeend', `<span class="bnp-gal-drop" aria-hidden="true">${GAL_IC.top}<span data-gal-dropsay></span></span>`);
+    if (bar) bar.insertAdjacentHTML('beforeend', `<span class="bnp-gal-drop" aria-hidden="true">${GAL_IC.end}<span data-gal-dropsay></span></span>`);
+    if (shown) shown.insertAdjacentHTML('afterend', '<button type="button" class="bnp-gal-pill is-small" data-gal-chooseshown hidden title="Choose every item the find box shows, to move them together"></button>');
+    root.addEventListener('focusin', (e) => { if (e.target instanceof Element && e.target.matches('.bnp-gal-rank input')) A.was = { c: e.target, v: e.target.value }; });
+    document.addEventListener('keydown', (e) => {
+      const typing = e.target instanceof Element && !!e.target.closest('input, textarea, select, [contenteditable="true"]');
+      if (e.key === 'Escape') {
+        if (A.drag) { e.preventDefault(); galDragEnd(true); galDownEnd(); galToast('Put back where it was'); }
+        else if (A.sel.size && !typing) galChoose([]);
+      } else if ((e.key === 'z' || e.key === 'Z') && (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && !typing && !A.drag && A.undo.length) { e.preventDefault(); galUndo(); }
+    });
+    addEventListener('blur', () => { if (A.drag) { galDragEnd(true); galDownEnd(); } });
+    gal.form.addEventListener('submit', () => { A.sent = true; });
+    addEventListener('beforeunload', (e) => { if (A.undo.length && !A.sent) { e.preventDefault(); e.returnValue = ''; } });   // (changes not sent yet: the browser asks before they're lost)
+  }
+  function galDown(e) {   // (a press on a card: a drag once it moves (a finger: once it's been held a moment), else a click)
+    const A = gal.arr;
+    if (!A || A.drag || A.down || e.button !== 0 || !e.isPrimary) return;
+    const t = e.target instanceof Element ? e.target : null, card = t && t.closest('.bnp-gal-card');
+    if (!card || card.parentElement !== gal.grid || t.closest('input, button, select, textarea, a, label, .bnp-gal-itacts')) return;
+    const it = gal.r.items[Number(card.dataset.galI)];
+    if (!it) return;
+    if (e.pointerType === 'mouse') e.preventDefault();   // (no words chosen as it moves)
+    const D = A.down = { id: e.pointerId, touch: e.pointerType === 'touch', x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, it, card, add: e.ctrlKey || e.metaKey, range: e.shiftKey, ready: e.pointerType !== 'touch' };
+    card.classList.add('is-pressed');
+    if (!D.ready) D.timer = setTimeout(() => { if (A.down === D) { D.ready = true; card.classList.add('is-held'); } }, 300);   // (a finger: held a moment first, so a swipe still scrolls the page)
+    addEventListener('pointermove', galPMove, true);
+    addEventListener('pointerup', galPUp, true);
+    addEventListener('pointercancel', galPCancel, true);
+  }
+  function galPMove(e) {
+    const A = gal.arr, D = A && A.down;
+    if (!D || e.pointerId !== D.id) return;
+    D.x = e.clientX;
+    D.y = e.clientY;
+    if (A.drag) return;
+    const far = Math.hypot(D.x - D.x0, D.y - D.y0);
+    if (!D.ready) { if (far > 10) galDownEnd(); return; }   // (a finger that moves before it's held: a scroll, not a drag)
+    if (far >= 6) galLift();
+  }
+  function galPUp(e) {
+    const A = gal.arr, D = A && A.down;
+    if (!D || e.pointerId !== D.id) return;
+    if (A.drag) galDrop(); else galClickCard(D);
+    galDownEnd();
+  }
+  function galPCancel(e) {
+    const A = gal.arr, D = A && A.down;
+    if (!D || e.pointerId !== D.id) return;
+    if (A.drag) galDragEnd(true);
+    galDownEnd();
+  }
+  function galDownEnd() {
+    const A = gal.arr, D = A.down;
+    if (D) { clearTimeout(D.timer); D.card.classList.remove('is-pressed', 'is-held'); }
+    A.down = null;
+    removeEventListener('pointermove', galPMove, true);
+    removeEventListener('pointerup', galPUp, true);
+    removeEventListener('pointercancel', galPCancel, true);
+  }
+  function galClickCard(D) {   // (a click, not a drag: Ctrl/⌘-click (a finger: held a moment) chooses or unchooses it; Shift-click chooses all from the last chosen to it; a plain click chooses none)
+    const A = gal.arr, x = D.it;
+    if (D.add || (D.touch && D.ready)) { if (A.sel.has(x.i)) A.sel.delete(x.i); else { A.sel.add(x.i); A.anchor = x.i; } }
+    else if (D.range) {
+      const V = galOrder().filter((y) => !y.card.hidden), a = A.anchor != null ? V.findIndex((y) => y.i === A.anchor) : -1, b = V.indexOf(x);
+      if (a < 0) { A.sel.add(x.i); A.anchor = x.i; } else for (let k = Math.min(a, b); k <= Math.max(a, b); k++) A.sel.add(V[k].i);
+    } else if (A.sel.size) A.sel.clear();
+    else return;
+    galChosenPaint();
+  }
+  function galChoose(L) { const A = gal.arr; A.sel = new Set(L.map((x) => x.i)); A.anchor = L.length ? L[L.length - 1].i : null; galChosenPaint(); }
+  function galChosenPaint() {   // (what's chosen: lit, with a tick; the Submit bar says how many, with To the top, To the end and Choose none)
+    const A = gal.arr, n = A.sel.size;
+    for (const x of gal.r.items) x.card.classList.toggle('is-chosen', A.sel.has(x.i));
+    const box = gal.root.querySelector('[data-gal-chosen]'), say = gal.root.querySelector('[data-gal-say]');
+    if (box) { box.hidden = !n; box.querySelector('[data-gal-chosensay]').innerHTML = `<b>${n.toLocaleString()}</b> chosen`; }
+    if (say) say.hidden = !!n;
+  }
+  function galLift() {   // (the drag begins: the card lifts off under the pointer, its place the numbered gap)
+    const A = gal.arr, D = A.down, x = D.it, card = D.card;
+    if (A.sel.size && !A.sel.has(x.i)) { A.sel.clear(); galChosenPaint(); }   // (one not chosen: just it)
+    const order = galOrder(), C = A.sel.size ? order.filter((y) => A.sel.has(y.i)) : [x], r = card.getBoundingClientRect(), W = Math.round(r.width);
+    A.before = galSnap();
+    const g = document.createElement('div');
+    g.className = `bnp-gal-ghost is-${gal.view}${C.length > 1 ? ' is-many' : ''}`;
+    g.style.minWidth = `${W}px`;
+    g.innerHTML = `<span class="bnp-gal-ghostcard"><img src="${esc(x.img)}" alt="" width="80" height="80"><b style="max-width:${Math.max(60, W - 18)}px">${esc(x.n)}</b></span><span class="bnp-gal-ghostto"><small>${C.length > 1 ? `${C.length.toLocaleString()} items` : `#${(order.indexOf(x) + 1).toLocaleString()}`}</small><span aria-hidden="true">→</span><b data-gal-ghostto></b></span>${C.length > 1 ? `<i class="bnp-gal-ghostn">${C.length.toLocaleString()}</i>` : ''}`;
+    document.body.append(g);
+    const gr = g.getBoundingClientRect(), ox = Math.max(10, Math.min(D.x0 - r.left, gr.width - 14)), oy = Math.max(10, Math.min(D.y0 - r.top, gr.height - 14));
+    g.style.transformOrigin = `${Math.round(ox)}px ${Math.round(oy)}px`;
+    const G = A.drag = { C, set: new Set(C), P: card, ghost: g, to: g.querySelector('[data-gal-ghostto]'), ox, oy, cox: 0, coy: 0, y0: D.y, armed: false, over: '', at: -1, t: 0, edgeAt: 0, edgeDir: 0, raf: 0 };
+    card.classList.remove('is-pressed', 'is-held');
+    card.classList.add('is-lifted');
+    for (const y of C) if (y.card !== card) y.card.classList.add('is-carried');
+    document.documentElement.classList.add('bnp-gal-dragging');
+    gal.root.classList.add('is-dragging');
+    const them = C.length > 1 ? 'them' : 'it', says = gal.root.querySelectorAll('[data-gal-dropsay]');
+    if (says[0]) says[0].textContent = `Drop here to put ${them} first`;
+    if (says[1]) says[1].textContent = `Drop here to put ${them} last`;
+    try { getSelection().removeAllRanges(); } catch (_) { /* */ }
+    try { gal.grid.setPointerCapture(D.id); } catch (_) { /* */ }
+    galPaintGhost();
+    galAim();
+    G.raf = requestAnimationFrame(galTick);
+  }
+  function galPaintGhost() {   // (under the pointer where it was grabbed; over a bar, its pill just above the pointer)
+    const A = gal.arr, G = A.drag, D = A.down, ox = G.over ? G.cox : G.ox, oy = G.over ? G.coy : G.oy;
+    G.ghost.style.transform = `translate3d(${Math.round(D.x - ox)}px, ${Math.round(D.y - oy)}px, 0)${G.over ? '' : ' rotate(2deg) scale(1.04)'}`;
+  }
+  function galTick(t) {   // (each frame of a drag: the page scrolled near its edges, the ghost under the pointer, the gap moved to where it'd land)
+    const A = gal.arr, G = A.drag, D = A.down;
+    if (!G || !D) return;
+    const dt = G.t ? Math.min(48, t - G.t) : 16;
+    G.t = t;
+    const v = galEdge(G, D, t);
+    if (v) scrollBy(0, v * dt);
+    galPaintGhost();
+    galAim();
+    G.raf = requestAnimationFrame(galTick);
+  }
+  function galEdge(G, D, t) {   // (the page scrolling by itself near the top or the bottom of what's in sight: faster the nearer the edge, and up to four times as fast the longer it's held there, so the far end of a long gallery is seconds away; never past the gallery's first or last row)
+    if (G.over) { G.edgeAt = 0; return 0; }
+    const tools = gal.root.querySelector('.bnp-gal-tools'), bar = gal.root.querySelector('.bnp-gal-actbar'), g = gal.grid.getBoundingClientRect();
+    const top = Math.max(0, Math.min(innerHeight * 0.4, tools ? tools.getBoundingClientRect().bottom : 0)), bottom = bar ? Math.min(innerHeight, Math.max(innerHeight * 0.6, bar.getBoundingClientRect().top)) : innerHeight;
+    const band = Math.max(44, Math.min(80, innerHeight * 0.09));
+    let f = 0;
+    if (D.y < top + band && g.top < top) f = -Math.min(1, (top + band - D.y) / band);
+    else if (D.y > bottom - band && g.bottom > bottom) f = Math.min(1, (D.y - bottom + band) / band);
+    if (!f) { G.edgeAt = 0; G.armed = true; return 0; }
+    const dir = Math.sign(f);
+    if (!G.armed) { if (dir < 0 ? D.y < G.y0 - 16 : D.y > G.y0 + 16) G.armed = true; else return 0; }   // (picked up near an edge: still till it heads that way)
+    if (!G.edgeAt || dir !== G.edgeDir) { G.edgeAt = t; G.edgeDir = dir; }
+    const held = Math.min(1, (t - G.edgeAt) / 2000);
+    return dir * (0.2 + 1.4 * f * f) * (1 + 5 * held);   // (px a millisecond: .2 to 1.6 at first, up to 9.6 held two seconds)
+  }
+  function galAim() {   // (where it'd land: on the tools bar, the first place; on the Submit bar, the last; elsewhere the place under the pointer, the gap moved there)
+    const A = gal.arr, G = A.drag, D = A.down;
+    const hit = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.height > 0 && D.x >= r.left && D.x <= r.right && D.y >= r.top && D.y <= r.bottom; };
+    const tools = gal.root.querySelector('.bnp-gal-tools'), bar = gal.root.querySelector('.bnp-gal-actbar'), over = hit(tools) ? 'top' : hit(bar) ? 'end' : '';
+    if (over !== G.over) {
+      G.over = over;
+      if (tools) tools.classList.toggle('is-dropon', over === 'top');
+      if (bar) bar.classList.toggle('is-dropon', over === 'end');
+      G.P.classList.toggle('is-away', !!over);
+      G.ghost.classList.toggle('is-over', !!over);
+      if (over) { G.cox = G.ghost.offsetWidth / 2; G.coy = G.ghost.offsetHeight + 8; }
+      G.ghost.style.transformOrigin = over ? '50% 100%' : `${Math.round(G.ox)}px ${Math.round(G.oy)}px`;
+      G.at = -1;
+    }
+    if (!over) {
+      const V = galCards(), k = galSlotAt(D.x, D.y, V), T = V[k];
+      if (T && T !== G.P) { const p = V.indexOf(G.P); galFlip(() => { if (k > p) T.after(G.P); else T.before(G.P); }); G.at = -1; }
+    }
+    if (G.at !== -1) return;
+    let n = 1;
+    if (over === 'end') n = gal.r.items.length - G.C.length + 1;
+    else if (!over) for (const c of gal.grid.children) { if (c === G.P) break; if (c.classList.contains('bnp-gal-card') && !G.set.has(gal.r.items[Number(c.dataset.galI)])) n++; }
+    G.at = n;
+    const s = `#${n.toLocaleString()}`;
+    G.to.textContent = over === 'top' ? `${s}, first` : over === 'end' ? `${s}, last` : s;
+    G.P.dataset.to = over ? '' : s;   // (over a bar, the gap isn't where it'll land: it says nothing)
+  }
+  function galDrop() {   // (let go: what's carried to where the gap is, or to the first or last place from the bars)
+    const A = gal.arr, G = A.drag;
+    if (!G) return;
+    const L = G.C, over = G.over, snap = A.before;
+    let k = 0;
+    if (over === 'end') k = Infinity;
+    else if (!over) for (const c of gal.grid.children) { if (c === G.P) break; if (c.classList.contains('bnp-gal-card') && !G.set.has(gal.r.items[Number(c.dataset.galI)])) k++; }
+    galDragEnd(false);
+    galMoveTo(L, k, { snap });
+  }
+  function galDragEnd(back) {   // (the drag over: the gap a card again; back (Esc): every card where it was)
+    const A = gal.arr, G = A.drag, D = A.down;
+    if (!G) return;
+    cancelAnimationFrame(G.raf);
+    A.drag = null;
+    if (D) try { gal.grid.releasePointerCapture(D.id); } catch (_) { /* */ }
+    G.ghost.remove();
+    G.P.classList.remove('is-lifted', 'is-away');
+    delete G.P.dataset.to;
+    for (const y of G.C) y.card.classList.remove('is-carried');
+    document.documentElement.classList.remove('bnp-gal-dragging');
+    gal.root.classList.remove('is-dragging');
+    for (const el of gal.root.querySelectorAll('.is-dropon')) el.classList.remove('is-dropon');
+    if (back && A.before) galFlip(() => galPutOrder(A.before.order));
+    if (A.later.size && gal.seen) { for (const c of A.later) { gal.seen.unobserve(c); gal.seen.observe(c); } A.later.clear(); }   // (prices for what's near now, that scrolled past mid-drag)
+  }
+  function galMoveTo(L, k, o = {}) {   // (these items, in their order, to place k+1 among the rest (0: the top; past the last: the end); then every item ranked as the cards stand. False if nothing changed)
+    const snap = o.snap || galSnap(), moving = new Set(L), rest = galOrder().filter((x) => !moving.has(x));
+    k = Math.max(0, Math.min(rest.length, k));
+    galFlip(() => { const frag = document.createDocumentFragment(); for (const x of L) frag.append(x.card); gal.grid.insertBefore(frag, rest[k] ? rest[k].card : null); });
+    if (!o.force && galOrder().every((x, n) => x.i === snap.order[n])) return false;   // (where it was already)
+    const sorted = gal.sort !== 'own' ? galSortName() : '';
+    galPush(snap);
+    galRenumber();
+    galSortSet('own');
+    galSay();
+    galLanded(L);
+    galToast(`${L.length > 1 ? `${L.length.toLocaleString()} items` : L[0].n} → #${(k + 1).toLocaleString()}${k === 0 ? ', first' : k === rest.length ? ', last' : ''}${sorted ? ` (all ranked as sorted: ${sorted})` : ''}: Submit keeps it`);
+    return true;
+  }
+  function galLanded(L) {   // (where they landed, lit a moment)
+    for (const x of L) x.card.classList.remove('is-landed');
+    void gal.grid.offsetWidth;
+    for (const x of L) x.card.classList.add('is-landed');
+    clearTimeout(galLanded.t);
+    galLanded.t = setTimeout(() => { for (const c of gal.grid.querySelectorAll('.is-landed')) c.classList.remove('is-landed'); }, 1800);
+  }
+  function galMoveBtn(b) {   // (⤒ ⤓: on a card, it (or everything chosen, if it's chosen); in the Submit bar, everything chosen)
+    const A = gal.arr, card = b.closest('.bnp-gal-card'), x = card ? gal.r.items[Number(card.dataset.galI)] : null;
+    const L = x && !A.sel.has(x.i) ? [x] : galOrder().filter((y) => A.sel.has(y.i));
+    if (!L.length) return;
+    if (!galMoveTo(L, b.dataset.galMove === 'top' ? 0 : Infinity)) galToast(L.length > 1 ? 'They’re there already' : 'It’s there already');
+  }
+  function galTyped(c) {   // (a place typed in an item's box (then Enter, or out of the box): it moves to that place)
+    const A = gal.arr, x = gal.r.items.find((y) => y.ctl === c);
+    if (!x) return;
+    const all = gal.r.items.length, v = String(c.value).replace(/,/g, '').trim(), n = Math.floor(Number(v)), snap = galSnap();
+    if (A.was && A.was.c === c) snap.vals[x.i] = A.was.v;
+    A.was = { c, v: c.value };
+    if (!(n >= 1)) {   // (0, nothing or not a number: as it was, once they're arranged; before, Neopets' own 0 (unranked) is kept)
+      if (A.arranged || !(v !== '' && Number(v) === 0)) { c.value = snap.vals[x.i]; A.was.v = c.value; galPlace(x); if (A.arranged) galToast(`Places go from 1 to ${all.toLocaleString()}`); }
+      galSay();
+      return;
+    }
+    galMoveTo([x], Math.min(n, all) - 1, { snap, force: true });
+  }
+  function galUndo() {   // (the last change taken back: the order and every rank as they were)
+    const A = gal.arr, s = A.undo.pop();
+    if (!s) return;
+    galFlip(() => galPutOrder(s.order));
+    gal.r.items.forEach((x, k) => { if (x.ctl) x.ctl.value = s.vals[k]; x.o = s.o[k]; galPlace(x); });
+    A.arranged = s.arranged;
+    galSortSet(s.sort);
+    galSay();
+    galToast(A.undo.length ? 'Undone' : 'Undone: as the page came');
   }
   function galFill(x) {   // (an item's price or NC value under its name; NE's item buttons for it on hover)
     if (!x || x.filled) return;
@@ -24199,8 +24824,8 @@
     root.className = 'bnp-gal is-sub';
     root.setAttribute('data-bnp', 'gal');
     root.dataset.page = key;
-    root.append(galTabs(nav));
-    root.insertAdjacentHTML('beforeend', `<header class="bnp-gal-subhead"><h2 class="bnp-gal-title">${esc(title)}</h2><p>${esc(line)}</p></header>`);
+    root.append(galTabs(nav, key));
+    if (key !== 'gallery_desc_edit' && key !== 'gallery_world') root.append(galBand());   // (your gallery's band; Edit Description makes its own, as you write; Galleries by World is other people's)
     gal = { sub: key, root, r: null };
     content.prepend(root);
     document.documentElement.classList.add(`bnp-gal-p-${key}`);
@@ -24208,13 +24833,16 @@
     for (const el of content.querySelectorAll(':scope > br, :scope > p > br[clear]')) el.classList.add('bnp-gal-old');
     for (const p of content.querySelectorAll('p')) if (/link to your gallery/i.test(p.textContent) && !p.closest('.bnp-gal')) p.classList.add('bnp-gal-old');   // (said on your gallery's own page)
     for (const t of content.querySelectorAll(':scope > b, :scope > p > b:first-child')) if (/^(?:galleries by setting|quick remove|quick categor\w*|gallery description edit|categories)$/i.test(t.textContent.trim())) t.classList.add('bnp-gal-old');   // (Neopets' own title: the heading says it)
-    for (const p of content.querySelectorAll(':scope > p')) if (!p.closest('.bnp-gal') && !p.innerText.replace(/[|\s]+/g, '')) p.classList.add('bnp-gal-old');   // (what's left of a paragraph once its parts are moved or out of sight: the links' bars)
+    const words = (el) => { let t = ''; const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); for (let n = w.nextNode(); n; n = w.nextNode()) if (!n.parentElement.closest('.bnp-gal-old, script, style')) t += n.textContent; return t; };   // (its own words, NE's put-away parts left out: not innerText, which is empty while the page is hidden till it's laid out)
+    for (const p of content.querySelectorAll(':scope > p')) if (!p.closest('.bnp-gal') && !p.classList.contains('bnp-gal-card2') && !words(p).replace(/[|\s]+/g, '')) p.classList.add('bnp-gal-old');   // (what's left of a paragraph once its parts are moved or out of sight: the links' bars)
     if (S.features.hidePinAd !== false) for (const tb of content.querySelectorAll('table')) if (tb.querySelector('img[src*="bank_pin_mgr"]') && !tb.querySelector('form')) tb.classList.add('bnp-gal-old');
+    galPageBg(root);
     const head = $('.nav-top__2020, #navtop__2020');
     if (head && getComputedStyle(head).position === 'fixed') root.style.setProperty('--bnp-gal-top', `${Math.round(head.getBoundingClientRect().height) + 6}px`);
     const foot = [...document.querySelectorAll('#superfooter, #navbottom__2020, .nav-bottom__2020')].find((x) => getComputedStyle(x).position === 'fixed' && x.getBoundingClientRect().height > 0);
     root.style.setProperty('--bnp-gal-bottom', `${foot ? Math.max(0, Math.round(innerHeight - foot.getBoundingClientRect().top)) + 8 : 8}px`);
     document.documentElement.classList.add('bnp-gal-on');
+    galTopFit();
   }
   function galQuickRemove(content, root) {   // (Quick remove: each row a card with its picture (from the page's own list of them); find, tick all shown, amounts with − and +; Neopets' own Remove Checked in the bar)
     const form = $('#quickremove_form');
@@ -24295,35 +24923,122 @@
     const sub = f && f.querySelector('input[type="submit"]');
     if (sub) sub.classList.add('bnp-gal-submit');
   }
-  function galCats(content) {   // (Categories: Neopets' words and picture as a card, its form as another)
+  function galCats(content) {   // (Categories: Neopets' words and picture as a card, its forms as cards; your categories' table and the links section dressed (2026-10-31))
     const intro = [...content.querySelectorAll('table')].find((t) => t.querySelector('img[src*="gallery_images"]'));
     if (intro) intro.classList.add('bnp-gal-card2', 'is-intro');
+    const links = [...content.querySelectorAll('table.table_box')].find((t) => !t.closest('form') && /Category Links Display/i.test(t.textContent || ''));
+    if (links) {   // (the links section: one card, its own two forms parts of it)
+      links.classList.add('bnp-gal-card2', 'bnp-gal-linktab');
+      const head = links.querySelector('td.header_cell');
+      if (head) { for (const n of [...head.childNodes]) if (n.nodeType === 3 && n.textContent.includes('|')) n.textContent = ' '; const go = head.querySelector('a'); if (go) go.classList.add('bnp-gal-headgo'); }
+      for (const r of links.querySelectorAll('input[name="links_placement"]')) {   // (each placement a row you can click anywhere on)
+        const li = r.closest('li');
+        if (!li || li.querySelector('.bnp-gal-opt')) continue;
+        const lab = document.createElement('label');
+        lab.className = 'bnp-gal-opt';
+        lab.append(...li.childNodes);
+        li.append(lab);
+      }
+      for (const b of links.querySelectorAll('input[type="button"]')) b.classList.add('bnp-gal-hl');
+    }
     for (const f of content.querySelectorAll('form')) {
       if (f.closest('.bnp-gal')) continue;
-      f.classList.add('bnp-gal-card2', 'is-form');
       for (const b of f.querySelectorAll('input[type="submit"]')) b.classList.add('bnp-gal-submit');
+      if (links && links.contains(f)) { f.classList.add('bnp-gal-catsec'); continue; }   // (inside the links card: a part of it, not a card in a card)
+      f.classList.add('bnp-gal-card2', 'is-form');
+      const t = f.querySelector('table.table_box');
+      if (t && f.querySelector('[name^="del_arr"]')) {   // (your categories' table: its theme links as pills, Neopets' » left off them)
+        t.classList.add('bnp-gal-cattab');
+        for (const a of t.querySelectorAll('li > a')) a.textContent = a.textContent.replace(/\s*»\s*$/, '');
+      }
     }
   }
-  function galDescEdit(content) {   // (Edit description: Neopets' form, dressed; what your keeper says shown as you type it)
+  function galDescEdit(content) {   // (Edit Description, as your shop's Edit is: Neopets' own fields moved into cards — your gallery, its words, its keeper — the band showing them as you write, and Neopets' own Update Gallery in a bar that says what's changed. Neopets' form is the one that's sent)
     const f = document.forms.galleryform;
     if (!f) return;
-    f.classList.add('bnp-gal-descform');
-    const nm = f.elements.gallerykeeper_name, gr = f.elements.gallerykeeper_greeting, pic = f.querySelector('#shopkeeper_image');
-    if (pic && (nm || gr)) {
-      const say = document.createElement('div');
-      say.className = 'bnp-gal-say is-live';
-      say.setAttribute('aria-live', 'polite');
-      const paint = () => { say.innerHTML = `<b>${esc((nm && nm.value.trim()) || 'Your keeper')}</b><span>${esc((gr && gr.value.trim()) || '…')}</span>`; };
-      paint();
-      pic.after(say);
-      for (const x of [nm, gr]) if (x) x.addEventListener('input', paint);
+    const el = f.elements, name = el.gallery_name, world = el.gallery_world, words = el.description, rem = el.remLen, kname = el.gallerykeeper_name, greet = el.gallerykeeper_greeting, hide = el.show_keeper, trans = el.transparent;
+    const img = f.querySelector('#shopkeeper_image, img[name="shopkeeper_image"]'), pick = f.querySelector('a[href*="select_shopkeeper"]'), reset = f.querySelector('a[href*="resetdesc"]'), save = f.querySelector('input[type="submit"]'), table = f.querySelector(':scope > table');
+    if (!name || !words || !save || !table) return;   // (not the form as NE knows it: Neopets' own, as it is)
+    const worldName = () => (world && world.selectedIndex >= 0 ? reClean(world.options[world.selectedIndex].text).trim() : '');
+    if (img) galInfoPut({ ...galInfo(), name: name.value.trim(), keeper: img.src.replace(/^http:/, 'https:'), who: kname ? kname.value.trim() : '', say: greet ? greet.value.trim() : '' });
+    const band = galBand({ title: name.value.trim() || 'Your gallery', keeper: img && img.src, say: [kname ? kname.value.trim() : '', greet ? greet.value.trim() : ''], sub: worldName() ? `Set in ${worldName()}` : '', figures: false });
+    const box = document.createElement('div');
+    box.className = 'bnp-gal-edit';
+    box.setAttribute('data-bnp', 'galedit');
+    box.innerHTML = `<section class="bnp-gal-sec"><h3>Your gallery</h3><div class="bnp-gal-secgrid" data-sec="gal"></div></section>
+      <section class="bnp-gal-sec"><h3>Its words</h3><p class="bnp-gal-seclead">What your gallery’s front says, under your keeper. Its styles (HTML and CSS) go here too.</p><div class="bnp-gal-secwords" data-sec="words"></div><div class="bnp-gal-sectools" data-sec="tools"><span class="bnp-gal-letters" data-gal-letters></span><span class="bnp-gal-sp"></span></div><div class="bnp-gal-secnote" data-sec="note"></div></section>
+      <section class="bnp-gal-sec"><h3>Your keeper</h3><div class="bnp-gal-keep"><figure class="bnp-gal-keeppic" data-sec="pic"></figure><div class="bnp-gal-keepside"><div class="bnp-gal-keepacts" data-sec="keepacts"></div><div class="bnp-gal-secgrid" data-sec="keepwords"></div></div></div></section>
+      <div class="bnp-gal-actbar" data-gal-editbar><span class="bnp-gal-pending" data-gal-pending></span></div>`;
+    const sec = (k) => box.querySelector(`[data-sec="${k}"]`);
+    const field = (label, ctl, hint) => { const l = document.createElement('label'); l.className = 'bnp-gal-field'; l.innerHTML = `<span>${esc(label)}</span>`; l.append(ctl); if (hint) l.insertAdjacentHTML('beforeend', `<small>${esc(hint)}</small>`); return l; };
+    sec('gal').append(field('Gallery name', name, `Up to ${name.maxLength > 0 ? name.maxLength : 60} letters`));
+    if (world) sec('gal').append(field('Setting', world, 'The land it’s listed under in Galleries by World'));
+    sec('words').append(words);
+    words.removeAttribute('cols');
+    if (rem) { const keep = document.createElement('span'); keep.hidden = true; keep.append(rem); sec('tools').append(keep); }   // (Neopets' own count: its script writes in it)
+    if (reset) { reset.className = 'bnp-gal-pill is-quiet is-small'; reset.textContent = 'Clear the words'; reset.title = 'Neopets’ own Clear Description: it empties your description at once (only the description)'; sec('tools').append(reset); }
+    const filterTd = [...table.querySelectorAll('td')].find((td) => /cleaner code/i.test(td.textContent) && !td.querySelector('input, textarea, select'));
+    if (filterTd) { const note = document.createElement('p'); for (const n of [...filterTd.childNodes]) if (!(n.nodeType === 1 && n.tagName === 'IMG')) note.append(n); sec('note').append(note); }   // (Neopets' own words on what code its filter lets through, under the words)
+    if (img) { img.removeAttribute('align'); img.removeAttribute('border'); sec('pic').append(img); }
+    if (pick) { pick.className = 'button-default__2020 button-yellow__2020 bnp-gal-pickbtn'; pick.textContent = 'Choose another keeper'; sec('keepacts').append(pick); }
+    if (hide) {   // (Neopets' box is "Do NOT display gallery Keeper to visitors": kept, out of sight, set the other way round by a plain switch)
+      const t = document.createElement('label');
+      t.className = 'bnp-gal-toggle';
+      t.innerHTML = '<input type="checkbox" data-gal-showkeeper> Show your keeper to visitors';
+      const sw = t.querySelector('input');
+      sw.checked = !hide.checked;
+      sw.addEventListener('change', () => { hide.checked = !sw.checked; hide.dispatchEvent(new Event('change', { bubbles: true })); });
+      const keep = document.createElement('span'); keep.hidden = true; keep.append(hide);
+      sec('keepacts').append(t, keep);
     }
-    for (const a of f.querySelectorAll('a[href*="resetdesc"]')) { a.className = 'bnp-gal-pill is-quiet is-small'; a.title = 'Neopets empties your description at once (only the description)'; }
-    for (const a of f.querySelectorAll('a[href*="select_shopkeeper"]')) a.className = 'bnp-gal-pill';
-    for (const b of f.querySelectorAll('input[type="submit"]')) b.classList.add('bnp-gal-submit');
-    for (const t of content.querySelectorAll('table')) if (!t.closest('form') && /gallery size/i.test(t.textContent)) { t.classList.add('bnp-gal-card2', 'is-size'); for (const b of t.querySelectorAll('input[type="submit"]')) b.classList.add('bnp-gal-pillsub'); }
+    if (trans) { const t = document.createElement('label'); t.className = 'bnp-gal-toggle'; t.append(trans, document.createTextNode(' Transparent background')); sec('keepacts').append(t); }
+    if (kname) sec('keepwords').append(field('Their name', kname, `Up to ${kname.maxLength > 0 ? kname.maxLength : 30} letters`));
+    if (greet) sec('keepwords').append(field('What they say', greet, `Up to ${greet.maxLength > 0 ? greet.maxLength : 95} letters`));
+    save.classList.add('bnp-gal-submit');
+    box.querySelector('[data-gal-editbar]').append(save);
+    table.before(box);
+    table.classList.add('bnp-gal-old');
+    gal.root.append(band);
+    const sizeT = [...content.querySelectorAll('table')].find((t) => t !== table && !t.contains(f) && /gallery size/i.test(t.textContent));
+    if (sizeT) {   // (Neopets' "Gallery Size" box: its size and room along the band's foot, its own upgrade form beside them)
+      const st = reClean(sizeT.textContent).replace(/\s+/g, ' '), size = (/currently size\s*([\d,]+)/i.exec(st) || [])[1] || '', holds = (/hold\s*([\d,]+)\s*items/i.exec(st) || [])[1] || '', up = sizeT.querySelector('form');
+      const stats = band.querySelector('[data-gal-stats]');
+      if (size) stats.insertAdjacentHTML('beforeend', `<div class="bnp-gal-count"><b>${esc(size)}</b><span>gallery size${holds ? `<small>room for ${esc((Number(holds.replace(/,/g, '')) || 0).toLocaleString())} items</small>` : ''}</span></div>`);
+      if (up) {
+        const btn = up.querySelector('input[type="submit"], button'), n = btn ? Number(((/([\d,]+)\s*NP/i.exec(btn.value || btn.textContent || '') || [])[1] || '').replace(/,/g, '')) : 0;
+        if (btn) { btn.classList.add('button-default__2020', 'button-yellow__2020', 'bnp-gal-upbtn'); if (n) { if (btn.tagName === 'BUTTON') btn.textContent = `Upgrade · ${n.toLocaleString()} NP`; else btn.value = `Upgrade · ${n.toLocaleString()} NP`; } btn.title = 'More room in your gallery, for this many NP (Neopets asks you first)'; }
+        const card = document.createElement('div');
+        card.className = 'bnp-gal-up';
+        card.innerHTML = '<span>Need more room?</span>';
+        card.append(up);
+        stats.append(card);
+      }
+      sizeT.classList.add('bnp-gal-old');
+    }
     const intro = [...content.querySelectorAll(':scope > p, :scope > p > p')].find((p) => /customi[sz]e the appearance/i.test(p.textContent));
     if (intro) intro.classList.add('bnp-gal-old');   // (said in the heading)
+    // (as you write: the band, the letters left, what Update Gallery will change)
+    const bTitle = band.querySelector('[data-gal-title]'), bSub = band.querySelector('[data-gal-sub]'), bImg = band.querySelector('.bnp-gal-keepic img'), bName = band.querySelector('[data-gal-sayname]'), bGreet = band.querySelector('[data-gal-saygreet]');
+    const letters = box.querySelector('[data-gal-letters]'), pend = box.querySelector('[data-gal-pending]'), bar = box.querySelector('[data-gal-editbar]');
+    const max = Number((/,\s*(\d+)\s*\)/.exec(words.getAttribute('onkeyup') || '') || [])[1]) || 4000;
+    const vals = () => ({ name: name.value, world: world ? world.value : '', words: words.value, kname: kname ? kname.value : '', greet: greet ? greet.value : '', hide: hide ? hide.checked : false, trans: trans ? trans.checked : false });
+    const was = vals();
+    const paint = () => {
+      if (bTitle) bTitle.textContent = name.value.trim() || 'Your gallery';
+      if (bSub) bSub.textContent = worldName() ? `Set in ${worldName()}` : '';
+      if (bName) bName.textContent = (kname && kname.value.trim()) || 'Your keeper';
+      if (bGreet) bGreet.textContent = (greet && greet.value.trim()) || '…';
+      const left = max - words.value.length;
+      letters.innerHTML = `<b>${Math.max(0, left).toLocaleString()}</b> of ${max.toLocaleString()} letters left`;
+      letters.classList.toggle('is-low', left < 200);
+      const now = vals(), n = Object.keys(was).filter((k) => was[k] !== now[k]).length;
+      pend.innerHTML = n ? `<b>${n}</b> change${n === 1 ? '' : 's'} not saved yet` : 'Nothing changed yet';
+      bar.classList.toggle('is-pending', !!n);
+    };
+    f.addEventListener('input', paint);
+    f.addEventListener('change', () => setTimeout(paint, 0));
+    if (img && bImg) new MutationObserver(() => { const u = img.src.replace(/^http:/, 'https:'); if (bImg.src !== u) bImg.src = u; }).observe(img, { attributes: true, attributeFilter: ['src'] });   // (Transparent: the band's picture too)
+    paint();
   }
   function galWorld(content, root) {   // (Galleries by world: the lands as chips with their pictures, the galleries as cards)
     const box = content.querySelector('td.table_box');
@@ -24345,7 +25060,7 @@
     if (left) {
       const list = document.createElement('section');
       list.className = 'bnp-gal-wlist';
-      list.innerHTML = `<h3>${esc(now || 'Galleries')}</h3><div class="bnp-gal-wgrid"></div>`;
+      list.innerHTML = `<h3>${esc(now || 'Galleries')}<small data-gal-wcount></small></h3><div class="bnp-gal-wgrid"></div>`;
       const g = list.querySelector('.bnp-gal-wgrid');
       for (const a of left.querySelectorAll('a[href*="gu="]')) {
         const td = a.closest('td'), d = td && td.nextElementSibling ? td.nextElementSibling.textContent.trim() : '';
@@ -24357,6 +25072,8 @@
         if (d) card.insertAdjacentHTML('beforeend', `<p>${esc(d)}</p>`);
         g.append(card);
       }
+      const wc = list.querySelector('[data-gal-wcount]'), wn = g.children.length;   // (how many galleries in this land)
+      if (wc) wc.textContent = wn ? `${wn.toLocaleString()} galler${wn === 1 ? 'y' : 'ies'}` : '';
       if (!g.children.length) g.outerHTML = '<p class="bnp-gal-empty">No galleries here just now.</p>';
       root.append(list);
     }
@@ -24384,12 +25101,12 @@
     html.bnp-gal-page .bnp-gal .bnp-gal-tab { display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border: 2px solid var(--nb-frame); border-radius: 12px; background: #fff; color: #262626; box-shadow: 0 2px 0 var(--nb-frame); font: 14px var(--nb-ui); white-space: nowrap; transition: border-color .15s, box-shadow .15s, transform .15s; }
     html.bnp-gal-page .bnp-gal .bnp-gal-tab:hover, html.bnp-gal-page .bnp-gal .bnp-gal-tab:focus-visible { border-color: var(--nb-bar-edge); box-shadow: 0 2px 0 var(--nb-bar-edge); transform: translateY(-1px); outline: none; }
     html.bnp-gal-page .bnp-gal .bnp-gal-tab[aria-current="page"] { border-color: var(--nb-bar-edge); background: var(--nb-bar); color: var(--nb-bar-ink); box-shadow: 0 2px 0 var(--nb-bar-edge); }
-    html.bnp-gal-page .bnp-gal .bnp-gal-pill { display: inline-flex; align-items: center; gap: 6px; height: 32px; margin: 0; padding: 0 12px; border: 2px solid var(--nb-frame); border-radius: 11px; background: #fff; color: #262626; box-shadow: 0 2px 0 var(--nb-frame); font: 13px var(--nb-ui); white-space: nowrap; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
-    html.bnp-gal-page .bnp-gal .bnp-gal-pill:hover, html.bnp-gal-page .bnp-gal .bnp-gal-pill:focus-visible { border-color: var(--nb-bar-edge); box-shadow: 0 2px 0 var(--nb-bar-edge); outline: none; }
-    html.bnp-gal-page .bnp-gal .bnp-gal-pill.is-small { height: 28px; padding: 0 10px; box-shadow: none; border-color: var(--nb-line); font-size: 12.5px; }
-    html.bnp-gal-page .bnp-gal .bnp-gal-pill.is-small:hover { border-color: var(--nb-frame); }
-    html.bnp-gal-page .bnp-gal .bnp-gal-pill.is-go, html.bnp-gal-page .bnp-gal .bnp-gal-pill.is-on { border-color: var(--nb-bar-edge); background: var(--nb-bar); color: var(--nb-bar-ink); box-shadow: 0 2px 0 var(--nb-bar-edge); }
-    html.bnp-gal-page .bnp-gal .bnp-gal-pill.is-quiet { border-color: var(--nb-line); box-shadow: none; color: var(--nb-muted); }
+    html.bnp-gal-page :is(.bnp-gal, .bnp-gal-edit) .bnp-gal-pill { display: inline-flex; align-items: center; gap: 6px; height: 32px; margin: 0; padding: 0 12px; border: 2px solid var(--nb-frame); border-radius: 11px; background: #fff; color: #262626; box-shadow: 0 2px 0 var(--nb-frame); font: 13px var(--nb-ui); white-space: nowrap; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+    html.bnp-gal-page :is(.bnp-gal, .bnp-gal-edit) .bnp-gal-pill:hover, html.bnp-gal-page :is(.bnp-gal, .bnp-gal-edit) .bnp-gal-pill:focus-visible { border-color: var(--nb-bar-edge); box-shadow: 0 2px 0 var(--nb-bar-edge); outline: none; }
+    html.bnp-gal-page :is(.bnp-gal, .bnp-gal-edit) .bnp-gal-pill.is-small { height: 28px; padding: 0 10px; box-shadow: none; border-color: var(--nb-line); font-size: 12.5px; }
+    html.bnp-gal-page :is(.bnp-gal, .bnp-gal-edit) .bnp-gal-pill.is-small:hover { border-color: var(--nb-frame); }
+    html.bnp-gal-page :is(.bnp-gal, .bnp-gal-edit) .bnp-gal-pill.is-go, html.bnp-gal-page :is(.bnp-gal, .bnp-gal-edit) .bnp-gal-pill.is-on { border-color: var(--nb-bar-edge); background: var(--nb-bar); color: var(--nb-bar-ink); box-shadow: 0 2px 0 var(--nb-bar-edge); }
+    html.bnp-gal-page :is(.bnp-gal, .bnp-gal-edit) .bnp-gal-pill.is-quiet { border-color: var(--nb-line); box-shadow: none; color: var(--nb-muted); }
     /* the band: the gallery's name, keeper and words; how full it is and what it's worth */
     html.bnp-gal-page .bnp-gal-band { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 14px 18px; padding: 14px 16px; border: 2px solid var(--nb-frame); border-radius: 18px; background: var(--nb-band); box-shadow: 0 3px 0 var(--nb-frame); }
     html.bnp-gal-page .bnp-gal-keeper { display: grid; justify-items: center; gap: 8px; margin: 0; }
@@ -24432,16 +25149,16 @@
     html.bnp-gal-page .bnp-gal .bnp-gal-chip:hover { border-color: var(--nb-frame); }
     html.bnp-gal-page .bnp-gal .bnp-gal-chip[aria-current="page"] { border-color: var(--nb-bar-edge); background: var(--nb-bar); color: var(--nb-bar-ink); }
     /* the tools */
-    html.bnp-gal-page .bnp-gal-tools { position: sticky; top: var(--bnp-gal-top, 0px); z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 12px; border: 2px solid var(--nb-frame); border-radius: 15px; background: #fff; box-shadow: 0 3px 0 var(--nb-frame); }
+    html.bnp-gal-page .bnp-gal-tools { position: sticky; top: var(--bnp-gal-top, 0px); z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 12px; border: 2px solid var(--nb-frame); border-radius: 15px; background: color-mix(in srgb, var(--nb-frame) 9%, #fff); box-shadow: 0 3px 0 var(--nb-frame), 0 -10px 0 0 var(--gal-page-bg, #fff); }   /* (a light tint of the frame: its white boxes stand apart; the strip over it the page's colour where it's stuck) */
     html.bnp-gal-page .bnp-gal-find { flex: 1 1 200px; display: flex; align-items: center; gap: 8px; min-width: 160px; height: 36px; padding: 0 10px; border: 2px solid var(--nb-line); border-radius: 11px; background: #fff; color: var(--nb-muted); box-sizing: border-box; }
     html.bnp-gal-page .bnp-gal-find:focus-within { border-color: var(--nb-bar); }
     html.bnp-gal-page .bnp-gal-find input { flex: 1; min-width: 0; height: 100%; margin: 0; padding: 0; border: 0; outline: 0; background: none; color: #262626; font: 14px var(--nb-txt); }
     html.bnp-gal-page .bnp-gal-sel { display: inline-flex; align-items: center; gap: 6px; color: var(--nb-muted); font: 13px var(--nb-ui); }
     html.bnp-gal-page .bnp-gal-sel select { height: 34px; max-width: 220px; margin: 0; padding: 0 8px; border: 2px solid var(--nb-line); border-radius: 10px; background: #fff; color: #262626; font: 13.5px var(--nb-txt); cursor: pointer; }
-    html.bnp-gal-page .bnp-gal-segv { display: inline-flex; padding: 2px; border: 2px solid var(--nb-line); border-radius: 11px; background: var(--nb-by); }
+    html.bnp-gal-page .bnp-gal-segv { display: inline-flex; padding: 2px; border: 2px solid var(--nb-line); border-radius: 11px; background: #fff; }
     html.bnp-gal-page .bnp-gal-segv button { display: grid; place-items: center; width: 34px; height: 30px; margin: 0; padding: 0; border: 0; border-radius: 8px; background: none; color: #555; cursor: pointer; }
     html.bnp-gal-page .bnp-gal-segv button[aria-pressed="true"] { background: var(--nb-bar); color: var(--nb-bar-ink); box-shadow: 0 1px 0 var(--nb-bar-edge); }
-    html.bnp-gal-page .bnp-gal-shown { margin-left: auto; color: var(--nb-muted); font: 13px var(--nb-ui); white-space: nowrap; }
+    html.bnp-gal-page .bnp-gal-shown { margin-left: auto; color: var(--nb-text); font: 15px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; white-space: nowrap; }
     /* the items */
     html.bnp-gal-page .bnp-gal form { display: grid; gap: 12px; margin: 0; }
     html.bnp-gal-page .bnp-gal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); gap: 10px; }
@@ -24455,7 +25172,7 @@
     html.bnp-gal-page .is-small .bnp-gal-pic img { width: 50px; height: 50px; }
     html.bnp-gal-page .bnp-gal-name { display: -webkit-box; max-width: 100%; overflow: hidden; color: var(--nb-text); font: 13px/1.25 var(--nb-ui); -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
     html.bnp-gal-page .is-small .bnp-gal-name { font-size: 11.5px; }
-    html.bnp-gal-page .bnp-gal-q { position: absolute; top: 6px; right: 6px; z-index: 1; padding: 0 7px; border-radius: 99px; background: var(--nb-text); color: #fff; font: normal 11px/1.7 var(--nb-ui); }
+    html.bnp-gal-page .bnp-gal-q { position: absolute; top: 6px; right: 6px; z-index: 1; padding: 0 7px; border-radius: 99px; background: var(--nb-text); color: #fff; font: normal 12.5px/1.6 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
     html.bnp-gal-page .bnp-gal-worth { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; min-height: 18px; }
     html.bnp-gal-page .bnp-gal-worth:empty { min-height: 0; }
     html.bnp-gal-page .bnp-gal-worth .bnp-it, html.bnp-gal-page .bnp-gal-worth .dti-np-nc-host { margin: 0 !important; }
@@ -24477,31 +25194,278 @@
     html.bnp-gal-page .bnp-gal-take button { display: grid; place-items: center; min-width: 25px; height: 25px; margin: 0; padding: 0 5px; border: 2px solid var(--nb-line); border-radius: 9px; background: #fff; color: #262626; font: 15px/1 var(--nb-ui); cursor: pointer; }
     html.bnp-gal-page .bnp-gal-take button:hover { border-color: var(--nb-frame); }
     html.bnp-gal-page .bnp-gal-take button.is-all { font-size: 11.5px; }
+    html.bnp-gal-page .is-small .bnp-gal-take { flex-wrap: wrap; justify-content: center; gap: 4px 3px; }   /* (a small card: All under the − 0/2 + line, never cut off (user, 2026-10-31: "on the smaller grid view the 'all' button is cut out")) */
+    html.bnp-gal-page .is-small .bnp-gal-take button.is-all { height: 22px; padding: 0 10px; border-radius: 8px; }
     html.bnp-gal-page .bnp-gal-take b { min-width: 12px; color: var(--nb-text); font: 15px var(--nb-ui); text-align: center; }
     html.bnp-gal-page .bnp-gal-card.is-taking { border-color: #d0574a; background: #fff6f4; }
     html.bnp-gal-page .bnp-gal-card.is-taking .bnp-gal-take b { color: #b03a2e; }
     html.bnp-gal-page .bnp-gal-catpick { max-width: 100%; height: 28px; margin: 0; padding: 0 6px; border: 2px solid var(--nb-line); border-radius: 9px; background: #fff; color: #262626; font: 12.5px var(--nb-txt); }
     html.bnp-gal-page .bnp-gal-card.is-moving { border-color: var(--nb-bar); background: var(--nb-alt); }
     /* Neopets' own Submit, in a bar that stays in sight */
-    html.bnp-gal-page .bnp-gal-actbar { position: sticky; bottom: var(--bnp-gal-bottom, 8px); z-index: 6; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 12px 10px 16px; border: 2px solid var(--nb-frame); border-radius: 15px; background: #fff; box-shadow: 0 3px 0 var(--nb-frame), 0 8px 22px rgba(0, 0, 0, .14); }
+    html.bnp-gal-page .bnp-gal-actbar { position: sticky; bottom: var(--bnp-gal-bottom, 8px); z-index: 6; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 12px 10px 16px; border: 2px solid var(--nb-frame); border-radius: 15px; background: #fff; box-shadow: 0 3px 0 var(--nb-frame), 0 11px 0 0 var(--gal-page-bg, #fff), 0 8px 22px rgba(0, 0, 0, .14); }   /* (the strip under it the page's colour too) */
     html.bnp-gal-page .bnp-gal-actsay { color: var(--nb-muted); font: 13.5px var(--nb-ui); }
     html.bnp-gal-page .bnp-gal-actsay b { color: var(--nb-text); }
-    html.bnp-gal-page .bnp-gal.is-taking .bnp-gal-actbar { border-color: #d0574a; box-shadow: 0 3px 0 #d0574a, 0 8px 22px rgba(0, 0, 0, .14); }
+    html.bnp-gal-page .bnp-gal.is-taking .bnp-gal-actbar { border-color: #d0574a; box-shadow: 0 3px 0 #d0574a, 0 11px 0 0 var(--gal-page-bg, #fff), 0 8px 22px rgba(0, 0, 0, .14); }
     html.bnp-gal-page .bnp-gal-sp { flex: 1; }
     html.bnp-gal-page .bnp-gal-pin { display: inline-flex; align-items: center; gap: 6px; color: var(--nb-muted); font: 13px var(--nb-ui); }
     html.bnp-gal-page .bnp-gal-pin input { width: 72px; height: 32px; margin: 0; padding: 0 8px; border: 2px solid var(--nb-line); border-radius: 9px; font: 14px var(--nb-ui); box-sizing: border-box; }
-    html.bnp-gal-page .bnp-gal .bnp-gal-submit { display: inline-block; width: auto !important; min-width: 120px; height: 38px !important; margin: 0 !important; padding: 0 24px !important; border: 2px solid #000 !important; border-radius: 12px !important; background: linear-gradient(180deg, #ffe46b, #f6c21c) !important; color: #2b2400 !important; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .14), 0 2px 0 rgba(0, 0, 0, .25) !important; font: 18px/1 "Cafeteria", "Arial Bold", sans-serif !important; letter-spacing: .4pt; cursor: pointer; }
-    html.bnp-gal-page .bnp-gal .bnp-gal-submit:hover { filter: brightness(1.05); }
+    html.bnp-gal-page :is(.bnp-gal, .bnp-gal-edit) .bnp-gal-submit { display: inline-block; width: auto !important; min-width: 120px; height: 38px !important; margin: 0 !important; padding: 0 24px !important; border: 2px solid #000 !important; border-radius: 12px !important; background: linear-gradient(180deg, #ffe46b, #f6c21c) !important; color: #2b2400 !important; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .14), 0 2px 0 rgba(0, 0, 0, .25) !important; font: 18px/1 "Cafeteria", "Arial Bold", sans-serif !important; letter-spacing: .4pt; cursor: pointer; }
+    html.bnp-gal-page :is(.bnp-gal, .bnp-gal-edit) .bnp-gal-submit:hover { filter: brightness(1.05); }
     html.bnp-gal-page .bnp-gal-toast { position: fixed; z-index: 2147483000; left: 50%; bottom: 24px; padding: 9px 18px; border-radius: 12px; background: #2b2b2b; color: #fff; box-shadow: 0 6px 18px rgba(0, 0, 0, .3); font: 13.5px var(--nb-ui); opacity: 0; pointer-events: none; transform: translate(-50%, 10px); transition: opacity .2s, transform .2s; }
     html.bnp-gal-page .bnp-gal-toast.is-in { opacity: 1; transform: translate(-50%, 0); }
+    /* The band as Shop Stock's (2026-10-31): the keeper, then one panel as tall as them, the gallery's name with how full it is at its top
+       right, its words and pills, its figures along its foot; every box outlined in a deeper shade of the theme's frame */
+    html.bnp-gal-page { --gal-edge: color-mix(in srgb, var(--nb-frame) 74%, #000); }
+    html.bnp-gal-page .bnp-gal-band { grid-template-columns: auto minmax(0, 1fr); align-items: stretch; padding: 16px 18px; }
+    html.bnp-gal-page .bnp-gal-keeper { align-self: start; }
+    html.bnp-gal-page .bnp-gal-keepic { border-color: var(--gal-edge); box-shadow: 0 2px 0 var(--gal-edge); overflow: hidden; }
+    html.bnp-gal-page .bnp-gal-keepic img { border-radius: 12px; }
+    html.bnp-gal-page .bnp-gal-band .bnp-gal-say { border-color: var(--gal-edge); box-shadow: 0 2px 0 var(--gal-edge); }
+    html.bnp-gal-page .bnp-gal-band .bnp-gal-say::before { border-color: var(--gal-edge); }
+    html.bnp-gal-page .bnp-gal-say b { color: var(--nb-text); font: 14px/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-gal-page .bnp-gal-band .bnp-gal-about { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 14px; border: 2px solid var(--gal-edge); background: rgba(255, 255, 255, .95); box-shadow: 0 2px 0 var(--gal-edge); }
+    html.bnp-gal-page .bnp-gal-head { display: grid; align-content: start; gap: 8px; min-width: 0; }
+    html.bnp-gal-page .bnp-gal-titlerow { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 18px; }
+    html.bnp-gal-page .bnp-gal-band .bnp-gal-title { font-size: 34px; }
+    html.bnp-gal-page .bnp-gal-titlerow .bnp-gal-space { display: grid; gap: 5px; width: 250px; max-width: 100%; margin-left: auto; padding: 0; border-radius: 0; background: none; color: var(--nb-muted); font: 12.5px var(--nb-ui); }
+    html.bnp-gal-page .bnp-gal-titlerow .bnp-gal-space > .bnp-gal-spacewords { display: block; font: 12.5px var(--nb-ui); }   /* (one line: the older rule stacked it) */
+    html.bnp-gal-page .bnp-gal-spacewords b { color: var(--nb-text); font: 17px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-gal-page .bnp-gal-titlerow .bnp-gal-bar { height: 12px; border: 2px solid var(--gal-edge); box-sizing: border-box; box-shadow: none; }
+    html.bnp-gal-page .bnp-gal-titlerow .bnp-gal-space small { font: 12px var(--nb-txt); }
+    html.bnp-gal-page .bnp-gal-about > .bnp-gal-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 0; min-width: 0; margin-top: auto; padding-top: 13px; border-top: 2px solid var(--nb-line); }
+    html.bnp-gal-page .bnp-gal-about .bnp-gal-count { flex: 1 1 170px; grid-template-columns: minmax(0, 1fr); gap: 3px; padding: 0 18px 0 2px; border-radius: 0; background: none; }
+    html.bnp-gal-page .bnp-gal-about .bnp-gal-count > b { font-size: 30px; }
+    html.bnp-gal-page .bnp-gal-about .bnp-gal-wt { flex: 1 1 170px; justify-content: flex-start; align-self: stretch; align-items: center; padding: 0 18px; border-left: 2px solid var(--nb-line); }
+    /* Every gallery page's top (2026-10-31): a big title as Neopets' own big titles, a line saying what the page is for, then one bar of the
+       gallery's pages as chips with pictures (as your shop's "Jump to"), the one you're on lit, the pages beside it as small pills at its end */
+    html.bnp-gal-page .bnp-gal-top { display: grid; justify-items: center; gap: 4px; margin: 0 0 14px; }
+    html.bnp-gal-page .bnp-gal-pagehead { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 2px 0 0; }
+    html.bnp-gal-page .bnp-gal-pagehead img { display: block; flex: none; width: 56px; height: 56px; }
+    html.bnp-gal-page .bnp-gal-pagehead h1 { margin: 0; padding: 0; border: 0; background: none; color: var(--nb-text); font: 38px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .5pt; }
+    html.bnp-gal-page .bnp-gal-pageline { margin: 0 0 6px; color: var(--nb-muted); font: 13.5px var(--nb-txt); text-align: center; }
+    html.bnp-gal-page .bnp-gal-jump { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 7px 6px; width: 100%; margin: 6px 0 0; padding: 9px 12px; border: 2px solid var(--gal-edge); border-radius: 18px; background: var(--nb-frame); box-shadow: 0 3px 0 var(--gal-edge); box-sizing: border-box; }
+    html.bnp-gal-page .bnp-gal .bnp-gal-chip { display: inline-flex; align-items: center; gap: 7px; height: 38px; margin: 0; padding: 0 15px 0 8px; border: 2px solid var(--gal-edge); border-radius: 999px; background: #fff; box-shadow: 0 2px 0 var(--gal-edge); color: var(--nb-text) !important; font: 15.5px "Cafeteria", "Arial Bold", sans-serif !important; letter-spacing: .3pt; text-decoration: none !important; white-space: nowrap; transition: transform .12s; }
+    html.bnp-gal-page .bnp-gal .bnp-gal-chip img { display: block; flex: none; width: 26px; height: 26px; }
+    html.bnp-gal-page .bnp-gal .bnp-gal-chip:hover, html.bnp-gal-page .bnp-gal .bnp-gal-chip:focus-visible { transform: translateY(-1px); outline: none; }
+    html.bnp-gal-page .bnp-gal .bnp-gal-chip.is-on { background: var(--gal-edge); color: #fff !important; }
+    html.bnp-gal-page .bnp-gal-jump .bnp-gal-also { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-left: 6px; padding-left: 12px; border-left: 2px solid color-mix(in srgb, var(--gal-edge) 45%, transparent); }
+    html.bnp-gal-page .bnp-gal-jump .bnp-gal-also .bnp-gal-pill { height: 28px; background: rgba(255, 255, 255, .92); }
+    /* The band on the gallery's other pages; Edit Description made over as your shop's Edit (2026-10-31) */
+    html.bnp-gal-page .bnp-gal-band.no-keeper { grid-template-columns: minmax(0, 1fr); }
+    html.bnp-gal-page .bnp-gal-about > .bnp-gal-stats:empty, html.bnp-gal-page .bnp-gal-words:empty { display: none; }
+    html.bnp-gal-page .bnp-gal.is-sub > .bnp-gal-band { margin: 0 0 14px; }
+    html.bnp-gal-page .bnp-gal-about .bnp-gal-up { flex: 1 1 200px; display: grid; align-content: center; gap: 6px; padding: 0 18px; border-left: 2px solid var(--nb-line); color: var(--nb-muted); font: 13px var(--nb-ui); }
+    html.bnp-gal-page .bnp-gal-up form { margin: 0; }
+    html.bnp-gal-page td.content .bnp-gal-upbtn { display: block; width: 100% !important; max-width: 300px; height: 42px !important; margin: 0 !important; padding: 0 14px !important; font: 17.5px/1 "Cafeteria", "Arial Bold", sans-serif !important; letter-spacing: .3pt; }   /* (its words a good size: as your shop's Upgrade) */
+    html.bnp-gal-page .bnp-gal-edit { display: grid; gap: 14px; margin: 0 0 14px; text-align: left; }
+    html.bnp-gal-page .bnp-gal-sec { display: grid; gap: 10px; padding: 14px 16px 16px; border: 2px solid var(--gal-edge); border-radius: 15px; background: #fff; box-shadow: 0 3px 0 var(--gal-edge); color: var(--nb-text); }
+    html.bnp-gal-page .bnp-gal-sec h3 { margin: 0; padding: 0; border: 0; background: none; color: var(--nb-text); font: 22px/1.15 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-align: left; }
+    html.bnp-gal-page .bnp-gal-seclead { margin: -4px 0 0 !important; color: var(--nb-muted); font: 13px/1.4 var(--nb-txt); }
+    html.bnp-gal-page .bnp-gal-secnote { color: var(--nb-muted); font: 12.5px/1.45 var(--nb-txt); }
+    html.bnp-gal-page .bnp-gal-secnote p { margin: 0 !important; }
+    html.bnp-gal-page .bnp-gal-secnote b { font-weight: normal; color: var(--nb-text); }
+    html.bnp-gal-page .bnp-gal-secnote a { color: inherit; }
+    html.bnp-gal-page .bnp-gal-secnote:empty { display: none; }
+    html.bnp-gal-page .bnp-gal-secgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px 16px; }
+    html.bnp-gal-page .bnp-gal-field { display: grid; gap: 5px; min-width: 0; }
+    html.bnp-gal-page .bnp-gal-field > span { color: var(--nb-text); font: 13.5px var(--nb-ui); }
+    html.bnp-gal-page .bnp-gal-field > small { color: var(--nb-muted); font: 12px var(--nb-txt); }
+    html.bnp-gal-page td.content :is(.bnp-gal-field, .bnp-gal-secwords) :is(input[type="text"], select, textarea) { box-sizing: border-box; width: 100% !important; max-width: none; margin: 0; padding: 0 12px; border: 2px solid var(--nb-line); border-radius: 11px; background: #fff; color: #262626; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06); font: 14px var(--nb-ui); }
+    html.bnp-gal-page td.content .bnp-gal-field :is(input[type="text"], select) { height: 40px; }
+    html.bnp-gal-page td.content .bnp-gal-secwords textarea { display: block; min-height: 240px; padding: 10px 12px; line-height: 1.5; resize: vertical; font-family: Verdana, Arial, sans-serif; font-size: 13.5px; }
+    html.bnp-gal-page td.content :is(.bnp-gal-field, .bnp-gal-secwords) :is(input, select, textarea):focus { border-color: var(--gal-edge); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--nb-frame) 25%, transparent); }
+    html.bnp-gal-page .bnp-gal-sectools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+    html.bnp-gal-page .bnp-gal-sp { flex: 1; }
+    html.bnp-gal-page .bnp-gal-letters { color: var(--nb-muted); font: 13px var(--nb-ui); }
+    html.bnp-gal-page .bnp-gal-letters b { color: var(--nb-text); }
+    html.bnp-gal-page .bnp-gal-letters.is-low b { color: #b0471b; }
+    html.bnp-gal-page .bnp-gal-keep { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px 22px; align-items: start; }
+    html.bnp-gal-page .bnp-gal-keeppic { display: grid; place-items: center; width: 166px; height: 166px; margin: 0; border: 2px solid var(--gal-edge); border-radius: 16px; background: #fff; box-shadow: 0 2px 0 var(--gal-edge); box-sizing: border-box; overflow: hidden; }
+    html.bnp-gal-page .bnp-gal-keeppic img { display: block; width: 150px; height: 150px; margin: 0; border-radius: 10px; }
+    html.bnp-gal-page .bnp-gal-keepside { display: grid; gap: 14px; min-width: 0; }
+    html.bnp-gal-page .bnp-gal-keepacts { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+    html.bnp-gal-page td.content .bnp-gal-pickbtn { display: inline-flex; align-items: center; width: auto !important; height: 38px; margin: 0 !important; padding: 0 18px !important; color: #000 !important; font: 15.5px/1 "Cafeteria", "Arial Bold", sans-serif !important; letter-spacing: .3pt; text-decoration: none !important; }   /* (dark words, as Neopets' own yellow buttons: a link's colour lost) */
+    html.bnp-gal-page .bnp-gal-toggle { display: inline-flex; align-items: center; gap: 8px; color: var(--nb-text); font: 13.5px var(--nb-ui); cursor: pointer; white-space: nowrap; }
+    html.bnp-gal-page .bnp-gal-toggle input { width: 18px; height: 18px; margin: 0; accent-color: var(--gal-edge); cursor: pointer; }
+    html.bnp-gal-page .bnp-gal-edit .bnp-gal-actbar { justify-content: flex-end; }
+    html.bnp-gal-page .bnp-gal-pending { margin-right: auto; color: var(--nb-muted); font: 13.5px var(--nb-ui); }
+    html.bnp-gal-page .bnp-gal-pending b { color: var(--nb-text); }
+    @media (max-width: 760px) { html.bnp-gal-page .bnp-gal-keep { grid-template-columns: minmax(0, 1fr); justify-items: center; } }
     @media (max-width: 760px) { html.bnp-gal-page .bnp-gal-band { grid-template-columns: minmax(0, 1fr); justify-items: center; } html.bnp-gal-page .bnp-gal-stats { width: 100%; } }
     @media (prefers-reduced-motion: reduce) { html.bnp-gal-page :is(.bnp-gal-card, .bnp-gal-itacts, .bnp-gal-tab, .bnp-gal-toast) { transition: none; } }
+    /* Arranging, in Rank (2026-10-31): a card picked up lifts off under the pointer saying where it's going, its place a numbered gap the
+       others slide aside for; the tools bar and the Submit bar, dropped on, the first and the last place; several chosen at once, lit with
+       a tick; a third size, pictures only, so a long gallery is short to cross */
+    html.bnp-gal-page .bnp-gal[data-mode="rank"] .bnp-gal-grid { position: relative; }
+    html.bnp-gal-page .bnp-gal[data-mode="rank"] .bnp-gal-card { cursor: grab; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+    html.bnp-gal-page .bnp-gal[data-mode="rank"] .bnp-gal-card img { -webkit-user-drag: none; }
+    html.bnp-gal-page .bnp-gal[data-mode="rank"] .bnp-gal-grid.is-small { grid-template-columns: repeat(auto-fill, minmax(106px, 1fr)); }
+    html.bnp-gal-page .bnp-gal-place { display: inline-flex; align-items: center; gap: 4px; }
+    html.bnp-gal-page .bnp-gal-place .bnp-gal-rank > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    html.bnp-gal-page .bnp-gal-place .bnp-gal-rank input { width: 54px; cursor: text; }
+    html.bnp-gal-page .bnp-gal .bnp-gal-mv { display: grid; place-items: center; flex: none; width: 26px; height: 28px; margin: 0; padding: 0; border: 2px solid var(--nb-line); border-radius: 9px; background: #fff; color: #4a4a4a; cursor: pointer; box-sizing: border-box; }
+    html.bnp-gal-page .bnp-gal .bnp-gal-mv:hover, html.bnp-gal-page .bnp-gal .bnp-gal-mv:focus-visible { border-color: var(--gal-edge); background: var(--nb-by); color: var(--nb-text); outline: none; }
+    html.bnp-gal-page .is-small .bnp-gal-place { gap: 2px; }
+    html.bnp-gal-page .is-small .bnp-gal-mv { width: 22px; height: 26px; border-radius: 8px; }
+    html.bnp-gal-page .is-small .bnp-gal-place .bnp-gal-rank input { width: 42px; height: 26px; padding: 0 2px; font-size: 13px; }
+    html.bnp-gal-page .bnp-gal-card.is-pressed { transform: scale(.97); }
+    html.bnp-gal-page .bnp-gal-card.is-held { border-color: var(--nb-bar-edge); box-shadow: 0 0 0 3px color-mix(in srgb, var(--nb-bar) 40%, transparent); }
+    html.bnp-gal-page .bnp-gal-card.is-chosen { border-color: var(--nb-bar-edge); background: color-mix(in srgb, var(--nb-bar) 12%, #fff); box-shadow: 0 0 0 3px color-mix(in srgb, var(--nb-bar) 50%, transparent); }
+    html.bnp-gal-page .bnp-gal-card.is-chosen::before { content: "✓"; position: absolute; top: 5px; left: 5px; z-index: 2; width: 21px; height: 21px; border-radius: 50%; background: var(--nb-bar); box-shadow: 0 1px 0 var(--nb-bar-edge); color: var(--nb-bar-ink); font: bold 13px/21px Arial, sans-serif; text-align: center; }
+    /* the one picked up: its place a dashed gap with the place it'd take; what's carried with it, faded where it was */
+    html.bnp-gal-page .bnp-gal-card.is-lifted, html.bnp-gal-page .bnp-gal-card.is-lifted:hover { border: 2px dashed var(--gal-edge); background: color-mix(in srgb, var(--nb-frame) 18%, #fff); box-shadow: inset 0 0 0 4px rgba(255, 255, 255, .7); transform: none; }
+    html.bnp-gal-page .bnp-gal-card.is-lifted > * { visibility: hidden; }
+    html.bnp-gal-page .bnp-gal-card.is-lifted::before { display: none; }
+    html.bnp-gal-page .bnp-gal-card.is-lifted::after { content: attr(data-to); position: absolute; inset: 0; display: grid; place-items: center; color: var(--gal-edge); font: 32px/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .5pt; }
+    html.bnp-gal-page .bnp-gal-card.is-lifted.is-away::after { opacity: .3; }
+    html.bnp-gal-page .is-small .bnp-gal-card.is-lifted::after { font-size: 24px; }
+    html.bnp-gal-page .is-tiny .bnp-gal-card.is-lifted::after { font-size: 16px; }
+    html.bnp-gal-page .bnp-gal-card.is-carried { opacity: .35; filter: grayscale(.6); }
+    html.bnp-gal-page.bnp-gal-dragging, html.bnp-gal-page.bnp-gal-dragging * { cursor: grabbing !important; }
+    html.bnp-gal-page.bnp-gal-dragging body { -webkit-user-select: none; user-select: none; }
+    html.bnp-gal-page.bnp-gal-dragging .bnp-gal-card { transition: none; }
+    html.bnp-gal-page.bnp-gal-dragging .bnp-gal-card:hover { box-shadow: none; transform: none; }
+    html.bnp-gal-page.bnp-gal-dragging .bnp-gal-card:not(.is-lifted, .is-chosen):hover { border-color: var(--nb-line); }
+    html.bnp-gal-page.bnp-gal-dragging .bnp-gal-itacts { display: none; }
+    /* the ghost under the pointer: the item, tilted and lifted, and where it's going (several: a stack, and how many) */
+    html.bnp-gal-page .bnp-gal-ghost { position: fixed; top: 0; left: 0; z-index: 2147483001; display: grid; justify-items: center; gap: 7px; padding: 12px 9px 9px; border: 2px solid var(--gal-edge); border-radius: 14px; background: #fff; box-shadow: 0 3px 0 var(--gal-edge), 0 18px 36px rgba(0, 0, 0, .3); box-sizing: border-box; pointer-events: none; will-change: transform; }
+    html.bnp-gal-page .bnp-gal-ghostcard { display: grid; justify-items: center; gap: 4px; max-width: 100%; animation: bnp-gal-pop .16s ease-out; }
+    html.bnp-gal-page .bnp-gal-ghostcard img { display: block; width: 80px; height: 80px; border-radius: 8px; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .22)); }
+    html.bnp-gal-page .bnp-gal-ghostcard b { overflow: hidden; color: var(--nb-text); font: 13px/1.25 var(--nb-ui); text-overflow: ellipsis; white-space: nowrap; }
+    html.bnp-gal-page .bnp-gal-ghostto { display: inline-flex; align-items: baseline; gap: 5px; padding: 3px 11px 2px; border-radius: 999px; background: var(--gal-edge); color: #fff; font: 13px/1.3 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; white-space: nowrap; }
+    html.bnp-gal-page .bnp-gal-ghostto small { font: inherit; opacity: .85; }
+    html.bnp-gal-page .bnp-gal-ghostto b { font: 19px/1.1 "Cafeteria", "Arial Bold", sans-serif; }
+    html.bnp-gal-page .bnp-gal-ghost.is-many { box-shadow: 7px 7px 0 -2px #fff, 7px 7px 0 0 var(--gal-edge), 14px 14px 0 -2px #fff, 14px 14px 0 0 var(--gal-edge), 0 18px 36px rgba(0, 0, 0, .3); }
+    html.bnp-gal-page .bnp-gal-ghostn { position: absolute; top: -11px; right: -11px; min-width: 28px; height: 28px; padding: 0 7px; border: 2px solid #fff; border-radius: 99px; background: var(--nb-bar); box-shadow: 0 2px 0 var(--nb-bar-edge); color: var(--nb-bar-ink); font: 16px/24px "Cafeteria", "Arial Bold", sans-serif; text-align: center; box-sizing: border-box; }
+    html.bnp-gal-page .bnp-gal-ghost.is-small .bnp-gal-ghostcard img, html.bnp-gal-page .bnp-gal-ghost.is-tiny .bnp-gal-ghostcard img { width: 50px; height: 50px; }
+    html.bnp-gal-page .bnp-gal-ghost.is-tiny { gap: 5px; padding: 6px; }
+    html.bnp-gal-page .bnp-gal-ghost.is-tiny .bnp-gal-ghostcard b { display: none; }
+    html.bnp-gal-page .bnp-gal-ghost.is-over { min-width: 0 !important; padding: 4px; border-radius: 999px; box-shadow: 0 3px 0 var(--gal-edge), 0 10px 22px rgba(0, 0, 0, .28); }   /* (over a bar: just its pill) */
+    html.bnp-gal-page .bnp-gal-ghost.is-over .bnp-gal-ghostcard, html.bnp-gal-page .bnp-gal-ghost.is-over .bnp-gal-ghostn { display: none; }
+    @keyframes bnp-gal-pop { from { opacity: .7; transform: scale(.92); } }
+    /* the bars, mid-drag: the first and the last place, lit when it's over them */
+    html.bnp-gal-page .bnp-gal-drop { position: absolute; inset: -2px; z-index: 4; display: none; align-items: center; justify-content: flex-start; gap: 9px; padding: 0 22px; border: 2px dashed var(--gal-edge); border-radius: 15px; background: color-mix(in srgb, var(--nb-frame) 20%, #fff); color: var(--nb-text); font: 17px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; pointer-events: none; }
+    html.bnp-gal-page .bnp-gal.is-dragging .bnp-gal-drop { display: flex; }
+    html.bnp-gal-page .is-dropon > .bnp-gal-drop { border-style: solid; background: var(--nb-bar); color: var(--nb-bar-ink); box-shadow: 0 0 0 4px color-mix(in srgb, var(--nb-bar) 35%, transparent); }
+    html.bnp-gal-page .bnp-gal-drop svg { width: 18px; height: 18px; }
+    @keyframes bnp-gal-land { 0%, 35% { border-color: var(--nb-bar-edge); box-shadow: 0 0 0 5px color-mix(in srgb, var(--nb-bar) 65%, transparent); } }
+    html.bnp-gal-page .bnp-gal-card.is-landed { animation: bnp-gal-land 1.6s ease-out; }
+    /* Pictures only: each item its picture, its rank at its foot */
+    html.bnp-gal-page .bnp-gal-grid.is-tiny { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+    html.bnp-gal-page .is-tiny .bnp-gal-card { gap: 0; padding: 5px 4px; border-radius: 11px; contain-intrinsic-size: 64px 64px; }
+    html.bnp-gal-page .is-tiny :is(.bnp-gal-name, .bnp-gal-worth, .bnp-gal-ctl, .bnp-gal-itacts) { display: none; }
+    html.bnp-gal-page .is-tiny .bnp-gal-pic { width: 50px; height: 50px; }
+    html.bnp-gal-page .is-tiny .bnp-gal-pic img { width: 50px; height: 50px; border-radius: 6px; }
+    html.bnp-gal-page .is-tiny .bnp-gal-q { top: 2px; right: 2px; padding: 0 5px; font-size: 10px; line-height: 1.6; }
+    html.bnp-gal-page .bnp-gal-placeno { display: none; }
+    html.bnp-gal-page .is-tiny .bnp-gal-placeno:not(:empty) { position: absolute; bottom: 3px; left: 3px; z-index: 1; display: block; min-width: 12px; padding: 0 4px; border-radius: 99px; background: rgba(255, 255, 255, .94); box-shadow: 0 0 0 1px var(--nb-line); color: var(--nb-text); font: normal 10.5px/1.55 var(--nb-ui); text-align: center; }
+    html.bnp-gal-page .is-tiny .bnp-gal-card.is-chosen::before { top: 2px; left: 2px; width: 17px; height: 17px; font-size: 11px; line-height: 17px; }
+    /* the Submit bar in Rank: what's chosen and what to do with it, Undo; the find box's "Choose these" */
+    html.bnp-gal-page .bnp-gal-chosen { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--nb-muted); font: 13.5px var(--nb-ui); }
+    html.bnp-gal-page .bnp-gal-chosen > span { margin-right: 4px; }
+    html.bnp-gal-page .bnp-gal-chosen b { color: var(--nb-text); }
+    html.bnp-gal-page :is(.bnp-gal-chosen, .bnp-gal-actsay, .bnp-gal-pill)[hidden] { display: none; }
+    html.bnp-gal-page :is(.bnp-gal, .bnp-gal-edit) .bnp-gal-pill:disabled { border-color: var(--nb-line); box-shadow: none; opacity: .45; cursor: default; }
+    html.bnp-gal-page .bnp-gal .bnp-gal-toast { bottom: calc(var(--bnp-gal-bottom, 8px) + 74px); }   /* (over the Submit bar, not on it) */
+    @media (prefers-reduced-motion: reduce) { html.bnp-gal-page :is(.bnp-gal-card.is-landed, .bnp-gal-ghostcard) { animation: none; } }
+    /* Final touches (2026-10-31): a mode's tip a caption, not a box; the band's Worth pill as big as its figures; Categories' own line */
+    html.bnp-gal-page .bnp-gal-note:not(.is-cats) { padding: 0 14px; border-color: transparent; background: none; color: var(--nb-muted); }
+    html.bnp-gal-page .bnp-gal-about .bnp-gal-wt { font: 15px var(--nb-ui); }
+    html.bnp-gal-page .bnp-gal-about .bnp-gal-wt .bnp-wt-pill { gap: 9px; min-height: 40px; padding: 4px 17px 4px 13px; font-size: 14px; }   /* (a size up beside the band's figures: 2026-10-31) */
+    html.bnp-gal-page .bnp-gal-about .bnp-gal-wt .bnp-wt-pill .bnp-wt-fv { gap: 5px; }
+    html.bnp-gal-page .bnp-gal-about .bnp-gal-wt .bnp-wt-pill .bnp-wt-fv b { font-size: 19.5px; }
+    html.bnp-gal-page .bnp-gal-about .bnp-gal-wt .bnp-wt-pill .bnp-wt-coin { width: 22px; height: 22px; }
+    html.bnp-gal-page .bnp-gal-about .bnp-gal-wt .bnp-wt-pill .bnp-wt-div { height: 20px; margin: 0 3px; }
+    html.bnp-gal-page.bnp-gal-p-gallery_user_cats td.content > p:not(.bnp-gal-old):not(.bnp-gal-card2) { max-width: 760px; margin: 2px auto 14px; color: var(--nb-muted); font: 13.5px var(--nb-ui); text-align: center; }
+    html.bnp-gal-page .is-tiny .bnp-gal-q { font-size: 10.5px; }
+    html.bnp-gal-page .bnp-gal-q > span { margin-right: 1px; font: bold 10.5px var(--nb-ui); }   /* (the × in the plain font: Cafeteria draws something else there) */
+    /* "Buttons on hover" (2026-10-31): NE's item buttons over a picture, on or off for this page */
+    html.bnp-gal-page .bnp-gal-hovsw { display: inline-flex; align-items: center; gap: 7px; margin: 0; color: var(--nb-text); font: 13px var(--nb-ui); white-space: nowrap; cursor: pointer; }
+    html.bnp-gal-page .bnp-gal-hovsw input { position: relative; flex: none; width: 36px; height: 21px; margin: 0; border: 2px solid var(--nb-line); border-radius: 999px; background: #fff; cursor: pointer; transition: background .15s, border-color .15s; -webkit-appearance: none; appearance: none; }
+    html.bnp-gal-page .bnp-gal-hovsw input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #9a9a9a; transition: transform .15s, background .15s; }
+    html.bnp-gal-page .bnp-gal-hovsw input:checked { border-color: var(--nb-bar-edge); background: var(--nb-bar); }
+    html.bnp-gal-page .bnp-gal-hovsw input:checked::after { background: #fff; transform: translateX(15px); }
+    html.bnp-gal-page .bnp-gal-hovsw input:focus-visible { outline: 2px solid var(--nb-bar); outline-offset: 2px; }
+    html.bnp-gal-page .bnp-gal.no-hovacts .bnp-gal-itacts { display: none !important; }
+    /* NC or Neopoints (2026-10-31): under the count, two small solid tags */
+    html.bnp-gal-page .bnp-gal-ncnp { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+    html.bnp-gal-page .bnp-gal-ncnp[hidden] { display: none; }
+    html.bnp-gal-page .bnp-gal-ncnp i { display: inline-flex; align-items: baseline; gap: 4px; padding: 1px 9px 2px; border-radius: 999px; color: #fff; font: normal 12px/1.5 var(--nb-ui); white-space: nowrap; }
+    html.bnp-gal-page .bnp-gal-ncnp i b { font: 14px/1.3 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-gal-page .bnp-gal-ncnp .is-nc { background: #7b4fc9; }
+    html.bnp-gal-page .bnp-gal-ncnp .is-np { background: #c98a12; }
+    /* A light sheen (2026-10-31), as the Mall's own pills: white easing to a hint of the frame, a white keyline inside, a soft shade at the
+       foot — the big bar's chips most of all, the pills beside them and the gallery's other pills more softly */
+    html.bnp-gal-page .bnp-gal-jump .bnp-gal-chip { background: linear-gradient(#fff 40%, color-mix(in srgb, var(--gal-edge) 14%, #fff)); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), inset 0 -3px 2px color-mix(in srgb, var(--gal-edge) 22%, transparent), 0 2px 0 var(--gal-edge); }
+    html.bnp-gal-page .bnp-gal-jump .bnp-gal-chip:hover, html.bnp-gal-page .bnp-gal-jump .bnp-gal-chip:focus-visible { background: linear-gradient(#fff 25%, color-mix(in srgb, var(--gal-edge) 20%, #fff)); }
+    html.bnp-gal-page .bnp-gal-jump .bnp-gal-chip.is-on { background: linear-gradient(color-mix(in srgb, var(--gal-edge) 70%, #fff), var(--gal-edge) 65%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -3px 2px rgba(0, 0, 0, .2), 0 2px 0 color-mix(in srgb, var(--gal-edge) 68%, #000); text-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
+    html.bnp-gal-page .bnp-gal-jump .bnp-gal-also .bnp-gal-pill { background: linear-gradient(#fff 45%, color-mix(in srgb, var(--gal-edge) 11%, #fff)); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), inset 0 -2px 2px color-mix(in srgb, var(--gal-edge) 16%, transparent); }
+    html.bnp-gal-page :is(.bnp-gal, .bnp-gal-edit) .bnp-gal-pill:not(.is-go):not(.is-on):not(.is-quiet):not(.is-small) { background: linear-gradient(#fff 50%, color-mix(in srgb, var(--nb-frame) 12%, #fff)); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), inset 0 -2px 2px color-mix(in srgb, var(--nb-frame) 18%, transparent), 0 2px 0 var(--nb-frame); }
+    html.bnp-gal-page :is(.bnp-gal, .bnp-gal-edit) .bnp-gal-pill.is-go, html.bnp-gal-page :is(.bnp-gal, .bnp-gal-edit) .bnp-gal-pill.is-on { background-image: linear-gradient(rgba(255, 255, 255, .22), rgba(255, 255, 255, 0) 55%); }
+    /* The mode switch (2026-10-31): bigger, a white well with the bar's light sheen, a fine line between the modes you're not in, the one
+       you're in raised in your theme's bar colour; Uncategorised only beside it the same height */
+    html.bnp-gal-page .bnp-gal-modes { gap: 10px 12px; }
+    html.bnp-gal-page .bnp-gal-seg { gap: 0; padding: 4px; border-radius: 17px; background: linear-gradient(#fff 45%, color-mix(in srgb, var(--gal-edge) 9%, #fff)); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), 0 3px 0 var(--nb-frame); }
+    html.bnp-gal-page .bnp-gal .bnp-gal-segb { position: relative; height: 42px; padding: 0 28px; border-radius: 13px; font-size: 19px; letter-spacing: .4pt; transition: background-color .15s, box-shadow .15s; }
+    html.bnp-gal-page .bnp-gal .bnp-gal-segb + .bnp-gal-segb::before { content: ""; position: absolute; left: -1px; top: 11px; bottom: 11px; width: 2px; border-radius: 2px; background: color-mix(in srgb, var(--gal-edge) 24%, #fff); transition: opacity .15s; }
+    html.bnp-gal-page .bnp-gal .bnp-gal-segb:is([aria-current="page"], :hover, :focus-visible)::before, html.bnp-gal-page .bnp-gal .bnp-gal-segb:is([aria-current="page"], :hover, :focus-visible) + .bnp-gal-segb::before { opacity: 0; }
+    html.bnp-gal-page .bnp-gal .bnp-gal-segb:not([aria-current="page"]):is(:hover, :focus-visible) { background: linear-gradient(#fff 20%, color-mix(in srgb, var(--gal-edge) 15%, #fff)); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--gal-edge) 26%, #fff); }
+    html.bnp-gal-page .bnp-gal .bnp-gal-segb[aria-current="page"] { background: linear-gradient(color-mix(in srgb, var(--nb-bar) 68%, #fff), var(--nb-bar) 64%); color: var(--nb-bar-ink); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), inset 0 -3px 2px rgba(0, 0, 0, .22), 0 2px 0 var(--nb-bar-edge); text-shadow: 0 1px 0 rgba(0, 0, 0, .3); }
+    html.bnp-gal-page .bnp-gal-modes > .bnp-gal-pill { height: 44px; padding: 0 18px; border-radius: 14px; font-size: 14.5px; }
+    /* The big bar's page buttons with a border line that shows (2026-10-31): a deep outline, as the band's buttons have, its foot as deep;
+       the page you're on ringed light, so it stands apart from the bar too */
+    html.bnp-gal-page .bnp-gal-jump .bnp-gal-chip { border-color: color-mix(in srgb, var(--gal-edge) 62%, #000); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), inset 0 -3px 2px color-mix(in srgb, var(--gal-edge) 22%, transparent), 0 2px 0 color-mix(in srgb, var(--gal-edge) 62%, #000); }
+    html.bnp-gal-page .bnp-gal-jump .bnp-gal-chip.is-on { border-color: color-mix(in srgb, var(--gal-edge) 30%, #fff); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -3px 2px rgba(0, 0, 0, .2), 0 2px 0 color-mix(in srgb, var(--gal-edge) 62%, #000); }
+    html.bnp-gal-page .bnp-gal-jump .bnp-gal-also .bnp-gal-pill { border-color: color-mix(in srgb, var(--gal-edge) 62%, #000); }
+    html.bnp-gal-page .bnp-gal-jump .bnp-gal-chip:not(.is-on):is(:hover, :focus-visible), html.bnp-gal-page .bnp-gal-jump .bnp-gal-also .bnp-gal-pill:is(:hover, :focus-visible) { border-color: color-mix(in srgb, var(--gal-edge) 62%, #000); }   /* (the outline kept on hover: an older hover rule turned it the bar's own colour) */
+    html.bnp-gal-page .bnp-gal-jump .bnp-gal-chip.is-on:is(:hover, :focus-visible) { border-color: color-mix(in srgb, var(--gal-edge) 30%, #fff); }
+    /* Categories (2026-10-31: "upgrade the style of these a bit more… the other parts upgraded as well"): your categories' table with a full
+       colour bar for its heading, each category a row with a line under it, Delete in red (a row that's going tinted and struck through), the
+       main theme in your colour (its row tinted), the theme links as pills; the links section one card, its placements rows to click,
+       Highlight All a pill, the code in a box */
+    html.bnp-gal-page td.content table.bnp-gal-cattab { width: 100%; margin: 0; border: 0 !important; border-collapse: separate; border-spacing: 0; background: none; }
+    html.bnp-gal-page td.content .bnp-gal-cattab td { padding: 9px 12px; border: 0; background: none; color: var(--nb-text); font: 13.5px var(--nb-ui); vertical-align: middle; }
+    html.bnp-gal-page td.content :is(.bnp-gal-cattab, .bnp-gal-linktab) td.header_cell { padding: 10px 14px; background: linear-gradient(color-mix(in srgb, var(--gal-edge) 80%, #fff), var(--gal-edge) 70%) !important; color: #fff !important; font: 15.5px "Cafeteria", "Arial Bold", sans-serif !important; letter-spacing: .4pt; text-shadow: 0 1px 0 rgba(0, 0, 0, .3); }
+    html.bnp-gal-page td.content :is(.bnp-gal-cattab, .bnp-gal-linktab) td.header_cell b { font: inherit; }
+    html.bnp-gal-page td.content .bnp-gal-cattab tr:first-child td:first-child { border-radius: 12px 0 0 12px; }
+    html.bnp-gal-page td.content .bnp-gal-cattab tr:first-child td:last-child { border-radius: 0 12px 12px 0; }
+    html.bnp-gal-page td.content .bnp-gal-cattab tr:has(input[name^="del_arr"]) td { border-bottom: 2px solid var(--nb-line); transition: background-color .15s; }
+    html.bnp-gal-page td.content .bnp-gal-cattab tr:has(input[name="default"]:checked):has(input[name^="del_arr"]) td { background: color-mix(in srgb, var(--gal-edge) 8%, #fff); }
+    html.bnp-gal-page td.content .bnp-gal-cattab tr:has(input[name^="del_arr"]:checked) td { background: #fdeceb; }
+    html.bnp-gal-page td.content .bnp-gal-cattab tr:has(input[name^="del_arr"]:checked) input[type="text"] { color: #a3271b; text-decoration: line-through; }
+    html.bnp-gal-page td.content .bnp-gal-cattab input[type="text"] { width: 100%; max-width: 230px; }
+    html.bnp-gal-page td.content :is(.bnp-gal-cattab, .bnp-gal-linktab) :is(input[type="checkbox"], input[type="radio"]) { width: 19px; height: 19px; margin: 0; vertical-align: middle; cursor: pointer; accent-color: var(--gal-edge); }
+    html.bnp-gal-page td.content .bnp-gal-cattab input[name^="del_arr"] { accent-color: #c0392b; }
+    html.bnp-gal-page td.content .bnp-gal-cattab ul { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    html.bnp-gal-page td.content .bnp-gal-cattab li { margin: 0; padding: 0; list-style: none; }
+    html.bnp-gal-page td.content :is(.bnp-gal-cattab li a, .bnp-gal-linktab .bnp-gal-headgo, .bnp-gal-linktab .bnp-gal-hl) { display: inline-flex; align-items: center; height: 30px; margin: 0; padding: 0 13px; border: 2px solid var(--gal-edge); border-radius: 999px; background: linear-gradient(#fff 45%, color-mix(in srgb, var(--gal-edge) 10%, #fff)); color: var(--nb-text) !important; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), 0 2px 0 var(--gal-edge); font: 12.5px var(--nb-ui) !important; letter-spacing: 0; text-decoration: none !important; text-shadow: none; white-space: nowrap; cursor: pointer; transition: transform .15s; }
+    html.bnp-gal-page td.content :is(.bnp-gal-cattab li a, .bnp-gal-linktab .bnp-gal-headgo, .bnp-gal-linktab .bnp-gal-hl):is(:hover, :focus-visible) { background: linear-gradient(#fff 25%, color-mix(in srgb, var(--gal-edge) 18%, #fff)); transform: translateY(-1px); outline: none; }
+    html.bnp-gal-page td.content .bnp-gal-cattab tr:has(.bnp-gal-submit) td { padding-top: 14px; color: var(--nb-muted); font-size: 12.5px; }
+    html.bnp-gal-page td.content .bnp-gal-cattab tr:last-child td { padding: 12px 6px 2px; color: var(--nb-muted); font: 12.5px/1.5 var(--nb-txt); }
+    html.bnp-gal-page td.content table.bnp-gal-linktab { width: 100%; }
+    html.bnp-gal-page td.content .bnp-gal-linktab > tbody > tr > td { padding: 10px 4px; color: var(--nb-text); font: 13.5px/1.45 var(--nb-txt); }   /* (its long sentences in the lighter text face) */
+    html.bnp-gal-page td.content .bnp-gal-linktab > tbody > tr > td.header_cell { padding: 9px 14px; border-radius: 12px; text-align: center; }
+    html.bnp-gal-page td.content .bnp-gal-linktab .bnp-gal-headgo { height: 28px; margin-left: 10px; vertical-align: middle; border-color: color-mix(in srgb, var(--gal-edge) 60%, #000); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), 0 2px 0 color-mix(in srgb, var(--gal-edge) 60%, #000); }
+    html.bnp-gal-page td.content .bnp-gal-linktab .bnp-gal-headgo b { font: inherit; }
+    html.bnp-gal-page td.content .bnp-gal-linktab td.tablestyle { padding: 12px 16px; border: 2px dashed var(--nb-line); border-radius: 12px; background: color-mix(in srgb, var(--gal-edge) 3%, #fff); }   /* (the preview: framed apart) */
+    html.bnp-gal-page td.content .bnp-gal-catsec { margin: 0; padding: 14px 0 0; border-top: 2px solid var(--nb-line); }
+    html.bnp-gal-page td.content .bnp-gal-catsec ul { display: grid; gap: 6px; margin: 10px 0 12px; padding: 0; list-style: none; }
+    html.bnp-gal-page td.content .bnp-gal-catsec li { margin: 0; padding: 0; list-style: none; }
+    html.bnp-gal-page td.content .bnp-gal-opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 14px; border: 2px solid var(--nb-line); border-radius: 12px; background: #fff; font: 13.5px var(--nb-txt); cursor: pointer; transition: border-color .15s, background-color .15s; }
+    html.bnp-gal-page td.content .bnp-gal-opt:hover { border-color: color-mix(in srgb, var(--gal-edge) 45%, #fff); }
+    html.bnp-gal-page td.content .bnp-gal-opt:has(input:checked) { font-family: var(--nb-ui); border-color: var(--gal-edge); background: color-mix(in srgb, var(--gal-edge) 7%, #fff); box-shadow: 0 2px 0 var(--gal-edge); }
+    html.bnp-gal-page td.content .bnp-gal-catsec center { margin-top: 2px; }
+    html.bnp-gal-page td.content .bnp-gal-catsec p { display: grid; justify-items: center; gap: 10px; margin: 0; }
+    html.bnp-gal-page td.content .bnp-gal-linktab .bnp-gal-hl { height: 34px; padding: 0 18px; font-size: 13px !important; }
+    html.bnp-gal-page td.content .bnp-gal-catsec textarea { display: block; width: 100%; height: 130px; margin: 0; padding: 10px 12px; box-sizing: border-box; border: 2px solid var(--nb-line); border-radius: 12px; background: #fff; color: var(--nb-text); font: 12px/1.5 ui-monospace, Consolas, monospace; resize: vertical; }
+    html.bnp-gal-page td.content .bnp-gal-catsec textarea:focus { border-color: var(--gal-edge); outline: none; }
+    html.bnp-gal-page td.content .bnp-gal-linktab > tbody > tr > td > p { margin: 12px 0; color: var(--nb-muted); font: 13px/1.5 var(--nb-txt); }
     /* the gallery's other pages: a heading over each */
     html.bnp-gal-page .bnp-gal-subhead { display: grid; gap: 3px; padding: 12px 16px; border: 2px solid var(--nb-frame); border-radius: 16px; background: var(--nb-band); box-shadow: 0 3px 0 var(--nb-frame); }
     html.bnp-gal-page .bnp-gal-subhead .bnp-gal-title { font-size: 26px; }
     html.bnp-gal-page .bnp-gal-subhead p { justify-self: start; margin: 0; padding: 3px 10px; border-radius: 9px; background: rgba(255, 255, 255, .93); color: var(--nb-muted); font: 13px var(--nb-ui); }
     html.bnp-gal-page .bnp-gal-subhead .bnp-gal-title { justify-self: start; padding: 2px 12px; border-radius: 10px; background: rgba(255, 255, 255, .93); }
-    html.bnp-gal-page .bnp-gal .bnp-gal-pill.is-danger { color: #a3271b; }
+    html.bnp-gal-page :is(.bnp-gal, .bnp-gal-edit) .bnp-gal-pill.is-danger { color: #a3271b; }
     /* Quick remove */
     html.bnp-gal-page .bnp-gal-qrgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
     html.bnp-gal-page .bnp-gal-qr { display: grid; grid-template-columns: auto 52px minmax(0, 1fr); align-items: center; gap: 8px; min-width: 0; padding: 6px 10px 6px 8px; border: 2px solid var(--nb-line); border-radius: 12px; background: #fff; cursor: pointer; content-visibility: auto; contain-intrinsic-size: 250px 66px; transition: border-color .15s, background-color .15s; }
@@ -24521,7 +25485,7 @@
     html.bnp-gal-page .bnp-gal-qrqty input { width: 38px; height: 26px; margin: 0; padding: 0 4px; border: 2px solid var(--nb-line); border-radius: 8px; background: #fff; color: #262626; font: 13px var(--nb-ui); text-align: center; box-sizing: border-box; }
     html.bnp-gal-page .bnp-gal-qrqty input[readonly] { border-color: transparent; background: none; }
     html.bnp-gal-page .bnp-gal-qr.is-on .bnp-gal-qrqty input:not([readonly]) { border-color: #e2a39c; }
-    html.bnp-gal-page .bnp-gal.is-sub.is-taking .bnp-gal-actbar { border-color: #d0574a; box-shadow: 0 3px 0 #d0574a, 0 8px 22px rgba(0, 0, 0, .14); }
+    html.bnp-gal-page .bnp-gal.is-sub.is-taking .bnp-gal-actbar { border-color: #d0574a; box-shadow: 0 3px 0 #d0574a, 0 11px 0 0 var(--gal-page-bg, #fff), 0 8px 22px rgba(0, 0, 0, .14); }
     /* Neopets' own parts on the other pages, as cards */
     html.bnp-gal-page td.content .bnp-gal-card2 { display: block; box-sizing: border-box; width: auto; max-width: 760px; margin: 12px auto; padding: 14px 18px; border: 2px solid var(--nb-line); border-radius: 16px; background: #fff; color: var(--nb-text); font: 14px/1.45 var(--nb-txt); }
     html.bnp-gal-page td.content table.bnp-gal-card2 { display: table; border-collapse: separate; }
@@ -24553,11 +25517,15 @@
     html.bnp-gal-page .bnp-gal .bnp-gal-land:hover { border-color: var(--nb-frame); }
     html.bnp-gal-page .bnp-gal .bnp-gal-land[aria-current="page"] { border-color: var(--nb-bar-edge); background: var(--nb-bar); color: var(--nb-bar-ink); }
     html.bnp-gal-page .bnp-gal-wlist { display: grid; gap: 10px; }
-    html.bnp-gal-page .bnp-gal-wlist h3 { margin: 4px 2px 0; padding: 0; border: 0; background: none; color: var(--nb-text); font: 20px/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-gal-page .bnp-gal-wlist h3 { display: grid; justify-items: center; gap: 2px; margin: 6px 2px 2px; padding: 0; border: 0; background: none; color: var(--nb-text); font: 24px/1.15 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; text-align: center; }
+    html.bnp-gal-page .bnp-gal-wlist h3 small { color: var(--nb-muted); font: 13px var(--nb-ui); letter-spacing: 0; }
+    html.bnp-gal-page .bnp-gal-wlist h3 small:empty { display: none; }
     html.bnp-gal-page .bnp-gal-wgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
-    html.bnp-gal-page .bnp-gal-wcard { display: grid; gap: 3px; padding: 10px 14px; border: 2px solid var(--nb-line); border-radius: 13px; background: #fff; }
-    html.bnp-gal-page .bnp-gal-wcard:hover { border-color: var(--nb-frame); }
-    html.bnp-gal-page .bnp-gal .bnp-gal-wname { color: var(--nb-blink); font: 15px var(--nb-ui); }
+    html.bnp-gal-page .bnp-gal-wcard { position: relative; display: grid; align-content: start; gap: 4px; padding: 11px 15px 12px; border: 2px solid var(--nb-line); border-radius: 13px; background: #fff; transition: transform .12s, border-color .12s, box-shadow .12s; }
+    html.bnp-gal-page .bnp-gal-wcard:hover, html.bnp-gal-page .bnp-gal-wcard:focus-within { z-index: 1; border-color: var(--gal-edge); box-shadow: 0 3px 0 var(--gal-edge); transform: translateY(-2px); }
+    html.bnp-gal-page .bnp-gal .bnp-gal-wname { color: var(--nb-text) !important; font: 17px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-decoration: none !important; overflow-wrap: anywhere; }
+    html.bnp-gal-page .bnp-gal .bnp-gal-wname::after { content: ""; position: absolute; inset: 0; border-radius: 11px; }   /* (the whole card its link) */
+    html.bnp-gal-page .bnp-gal .bnp-gal-wname:focus-visible { outline: none; }
     html.bnp-gal-page .bnp-gal-wcard p { margin: 0; color: var(--nb-muted); font: 13px/1.35 var(--nb-txt); }
   `;
   // ---- end of My Gallery ----
@@ -24591,13 +25559,27 @@
   const shopNum = (v) => Number(String(v == null ? '' : v).replace(/\D/g, '')) || 0;
   function shopPage() {
     const kind = shopKind();
+    shopHead(kind);
     if (kind && kind !== 'your') { try { ({ till: shopTill, sales: shopSales, edit: shopEdit, keeper: shopKeepers })[kind](); } catch (e) { report(e); } return; }
     if (!shopOn() || shop) return;
     const top = $('#mkt-page-top'), form = $('#market-your-form'), app = $('#market-your-app');
+    if (top && !app && /There are no items in your shop/i.test(top.textContent || '')) { try { nbTheme(); shopEmpty(top); } catch (e) { report(e); } return; }   // (nothing in stock: Neopets' plainer page, dressed the same way)
     if (!top || !form || !app) { document.documentElement.classList.remove('bnp-shop-page'); return; }
     try { nbTheme(); } catch (e) { report(e); }
     shop = { form, app, top };
-    // (the band: the shop's name and size, its keeper and their words, what it's worth; Neopets' own notes folded under it)
+    shopStockBand(top);
+    // (the Update row: in reach as you scroll, saying what it will change)
+    const row = form.querySelector('.market-your-submit-row');
+    if (row) { row.classList.add('bnp-shop-bar'); row.insertAdjacentHTML('afterbegin', '<span class="bnp-shop-pending" data-shop-pending></span>'); }
+    shopBottom();
+    shopWire();
+    shopMarks();
+    shopSay();
+    shopTable();
+    new MutationObserver(() => { clearTimeout(shopMarks.t); shopMarks.t = setTimeout(() => { shopMarks(); shopTableRefresh(); shopSay(); }, 60); }).observe(app, { childList: true, subtree: true });   // (Neopets' app draws its rows again after an Update: NE's bits back on them)
+    document.documentElement.classList.add('bnp-shop-on');
+  }
+  function shopStockBand(top) {   // (Shop Stock's band, full or empty: the shop's name and size, its keeper and their words, what it's worth; Neopets' own notes folded under it)
     const nameB = top.querySelector(':scope > b'), size = (/size\s+([\d,]+)/i.exec((nameB && nameB.nextSibling && nameB.nextSibling.textContent) || '') || [])[1] || '';
     const keeper = top.querySelector('img[name="keeperimage"]'), center = keeper && keeper.closest('center'), greet = center && center.querySelector('b');
     const gm = /^(.*?)\s+says\s+['‘"“](.*)['’"”]\s*$/s.exec(greet ? greet.textContent.trim() : '');
@@ -24606,24 +25588,28 @@
     band.className = 'bnp-shop-band';
     band.setAttribute('data-bnp', 'shopband');
     band.innerHTML = `${keeper ? `<figure class="bnp-shop-keeper"><span class="bnp-shop-keepic"></span>${gm ? `<figcaption class="bnp-shop-say"><b>${esc(gm[1])}</b><span>${esc(gm[2])}</span></figcaption>` : ''}</figure>` : ''}
-      <div class="bnp-shop-about"><h2 class="bnp-shop-title">${esc(nameB ? nameB.textContent.trim() : 'Your shop')}</h2>${size ? `<p class="bnp-shop-size">Size ${esc(size)}</p>` : ''}<details class="bnp-shop-how"><summary>How your shop works</summary><div data-shop-notes></div></details></div>
-      <div class="bnp-shop-stats" data-shop-stats></div>`;
+      <div class="bnp-shop-about"><div class="bnp-shop-head"><div class="bnp-shop-titlerow"><h2 class="bnp-shop-title">${esc(nameB ? nameB.textContent.trim() : 'Your shop')}</h2><span class="bnp-shop-room" data-shop-room data-size="${esc(size)}" hidden></span></div>${size ? `<span class="bnp-shop-sizepill" title="Your shop’s size: each size holds 5 more items">Size<b>${esc((Number(size.replace(/,/g, '')) || 0).toLocaleString() || size)}</b></span>` : ''}<details class="bnp-shop-how"><summary>How your shop works</summary><div data-shop-notes></div></details></div><div class="bnp-shop-stats" data-shop-stats></div></div>`;   // (the figures along the panel's foot)
     if (keeper) { keeper.removeAttribute('width'); keeper.removeAttribute('height'); band.querySelector('.bnp-shop-keepic').append(keeper); }
     const notes = band.querySelector('[data-shop-notes]');
-    for (const p of top.querySelectorAll(':scope > p')) { if (p.querySelector('script') || !p.textContent.trim()) continue; notes.append(p); }   // (Neopets' own words: priced 0 isn't on display, taking out goes to your inventory, sales to your till, galleries for showing)
+    for (const p of top.querySelectorAll(':scope > p')) { if (p.querySelector('script, table, form') || !p.textContent.trim()) continue; notes.append(p); }   // (Neopets' own words: priced 0 isn't on display, taking out goes to your inventory, sales to your till, galleries for showing)
     if (nameB) { const t = nameB.nextSibling; nameB.classList.add('bnp-shop-old'); if (t && t.nodeType === 3) t.textContent = ''; }
     if (center) center.classList.add('bnp-shop-old');
     top.prepend(band);
     shopBandPic(band);   // (your theme's sky behind it, as the other pages' band)
-    // (the Update row: in reach as you scroll, saying what it will change)
-    const row = form.querySelector('.market-your-submit-row');
-    if (row) { row.classList.add('bnp-shop-bar'); row.insertAdjacentHTML('afterbegin', '<span class="bnp-shop-pending" data-shop-pending></span>'); }
-    shopBottom();
-    shopWire();
-    shopMarks();
-    shopSay();
-    new MutationObserver(() => { clearTimeout(shopMarks.t); shopMarks.t = setTimeout(() => { shopMarks(); shopSay(); }, 60); }).observe(app, { childList: true, subtree: true });   // (Neopets' app draws its rows again after an Update: NE's bits back on them)
+    return band;
+  }
+  function shopEmpty(top) {   // (Shop Stock with nothing in it (user, 2026-10-31): the band, and a card saying so with the ways to stock it; Neopets' keeper box, with its own "no items" words, put away)
+    const band = shopStockBand(top);
+    band.insertAdjacentHTML('afterend', `<section class="bnp-shop-empty" data-bnp="shopempty"><h3>Your shop is empty</h3><p>Put items in from your inventory: click one and choose Move to Shop, or move several at once with Quick Stock.</p><div class="bnp-shop-emptygo"><a class="bnp-shop-btn is-go" href="/inventory.phtml">Your items</a><a class="bnp-shop-btn" href="/quickstock.phtml">Quick Stock</a></div></section>`);
     document.documentElement.classList.add('bnp-shop-on');
+  }
+  const SHOP_HEADS = { your: 'My Shop', till: 'Shop Till', edit: 'Edit Shop', sales: 'Sales History' };
+  function shopHead(kind) {   // (Neopets' heading over the market's banner: this page's own name, not "The Marketplace" (user, 2026-10-31))
+    const h1 = $('.qs-title-container > h1'), t = SHOP_HEADS[kind];
+    if (!h1 || !t) return;
+    const node = [...h1.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
+    if (node) node.textContent = t; else h1.append(t);
+    try { ptFit(); } catch (e) { report(e); }   // (its width changed: the big title fitted again)
   }
   function shopBottom() {   // (a bar kept in reach at the foot: clear of Neopets' own fixed bar there, on a small screen)
     const foot = [...document.querySelectorAll('#navbottom__2020, .nav-bottom__2020, #superfooter')].find((x) => getComputedStyle(x).position === 'fixed' && x.getBoundingClientRect().height > 0);
@@ -24646,8 +25632,20 @@
       if (c && c.r && c.r.p > 0) { idb += c.r.p * n; priced += 1; }
     }
     if (stats) stats.innerHTML = `<div class="bnp-shop-stat"><b>${stock.toLocaleString()}</b><span>item${stock === 1 ? '' : 's'} in stock<small>${rows.length.toLocaleString()} different</small></span></div>
-      <div class="bnp-shop-stat is-np"><span>At your prices<b>${mine.toLocaleString()} NP</b></span>${priced ? `<span>At itemdb’s<b>≈ ${idb.toLocaleString()} NP</b>${priced < rows.length ? `<small>${priced} of ${rows.length} priced</small>` : ''}</span>` : ''}</div>
+      <div class="bnp-shop-stat"><b>${mine.toLocaleString()}<i>NP</i></b><span>at your prices</span></div>
+      ${priced ? `<div class="bnp-shop-stat"><b>≈ ${idb.toLocaleString()}<i>NP</i></b><span>at itemdb’s${priced < rows.length ? `<small>${priced} of ${rows.length} priced</small>` : ''}</span></div>` : ''}
       ${off ? `<div class="bnp-shop-stat is-off" title="Neopets doesn’t put an item priced 0 on show in your shop"><b>${off}</b><span>not on display<small>priced 0</small></span></div>` : ''}`;
+    const room = $('[data-shop-room]');
+    if (room) {   // (how full the shop is: Neopets' own count over the table, and the room its size gives)
+      const hb = reClean(($('.market-your-headerbar') || {}).textContent || ''), fr = /Free\s*Space\s*:\s*([\d,]+)/i.exec(hb), st = /Items\s*Stocked\s*:\s*([\d,]+)/i.exec(hb);
+      const free = fr ? shopNum(fr[1]) : null, size = shopNum(room.getAttribute('data-size')), all = size ? size * 5 : free != null && st ? shopNum(st[1]) + free : 0, used = free != null && all ? Math.max(0, all - free) : 0;
+      room.hidden = !(all && free != null);
+      if (!room.hidden) {
+        const pct = Math.min(100, (used / all) * 100), html = `<span class="bnp-shop-roomwords"><b>${used.toLocaleString()}</b> of ${all.toLocaleString()} spaces used</span><span class="bnp-shop-roombar" role="progressbar" aria-label="Space used" aria-valuemin="0" aria-valuemax="${all}" aria-valuenow="${used}"><i style="width:${pct.toFixed(2)}%"></i></span><small>${free.toLocaleString()} free · ${pct < 1 && used ? '&lt;1' : Math.round(pct)}% full</small>`;
+        if (room.dataset.v !== html) { room.dataset.v = html; room.innerHTML = html; }
+        room.classList.toggle('is-full', pct >= 90);
+      }
+    }
     const pend = $('[data-shop-pending]');
     if (pend) {
       let prices = 0, out = 0;
@@ -24659,9 +25657,586 @@
     }
   }
   function shopWire() {   // (as prices are typed and items taken out: the marks and what Update will change, kept up)
-    shop.form.addEventListener('input', () => { clearTimeout(shopWire.t); shopWire.t = setTimeout(() => { shopMarks(); shopSay(); }, 80); });
-    shop.form.addEventListener('change', () => setTimeout(() => { shopMarks(); shopSay(); }, 0));
-    shop.form.addEventListener('click', (e) => { if (e.target instanceof Element && e.target.closest('.mkt-stepper__btn')) setTimeout(shopSay, 0); });
+    shop.form.addEventListener('input', () => { clearTimeout(shopWire.t); shopWire.t = setTimeout(() => { shopMarks(); shopTableRefresh(); shopSay(); }, 80); });
+    shop.form.addEventListener('change', () => setTimeout(() => { shopMarks(); shopTableRefresh(); shopSay(); }, 0));
+    shop.form.addEventListener('click', (e) => { if (e.target instanceof Element && e.target.closest('.mkt-stepper__btn')) setTimeout(() => { shopTableRefresh(); shopSay(); }, 0); });
+  }
+  // ── Shop Stock's table (user, 2026-10-30: "upgrade the aesthetics/organization/function of this area"): Neopets' own rows, fields
+  // and Update kept (its code still groups the prices, keeps each stepper within its stock and lights Update); NE lays each row out anew
+  // in your theme and says what its price will do. Show (on display, not on display, changed) and Sort, for this page; Search narrows
+  // this page as you type (Enter still asks Neopets for the whole shop); Enter in a price box goes on to the next one you can see,
+  // Shift+Enter back; a changed price put back; a stack taken out whole. A row out of sight is still in the form: Update sends it ──
+  const SHOP_SORTS = [['mall', 'Neopets’ order'], ['name', 'Name: A to Z'], ['hi', 'Price: highest first'], ['lo', 'Price: lowest first'], ['stock', 'Most in stock first'], ['type', 'Type'], ['off', 'Not on display first']];
+  const SHOP_SHOWS = [['all', 'All'], ['on', 'On display'], ['off', 'Not on display'], ['chg', 'Changed']];
+  const SHOP_UNDO = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h11a5 5 0 0 1 0 10h-4"/><path d="m8 5-4 4 4 4"/></svg>';
+  const shopCoin = () => { const own = tabIconOf(['el:.navsub-np-icon__2020']); return /\.svg(?:[?#]|$)/i.test(own || '') ? own : `${NPI}themes/h5/basic/images/np-icon.svg`; };   // (Neopets' NP coin: your theme's own when it's drawn sharp, else the basic one; never a small picture made big)
+  const shopTrs = () => [...shop.app.querySelectorAll('tbody tr')].filter((tr) => tr.querySelector('input[data-money]'));
+  const shopSeen = () => shopTrs().filter((tr) => !tr.classList.contains('bnp-shop-hide')).sort((a, b) => (Number(a.style.order) || 0) - (Number(b.style.order) || 0));   // (the rows you can see, in the order you see them)
+  function shopTable() {
+    shop.show = 'all';
+    const tools = document.createElement('div');
+    tools.className = 'bnp-shop-tools';
+    tools.id = 'bnp-shop-tools';   // (an id: Neopets' market sheet styles buttons by one, so NE's own need one to keep their colours)
+    tools.setAttribute('data-bnp', 'shoptools');
+    const sort = shopP().sort || 'mall';
+    tools.innerHTML = `<span class="bnp-shop-chips" role="group" aria-label="Show">${SHOP_SHOWS.map(([k, l]) => `<button type="button" class="bnp-shop-chip${k === 'all' ? ' is-on' : ''}" data-shop-show="${k}" aria-pressed="${k === 'all'}">${esc(l)}<i data-shop-n="${k}">0</i></button>`).join('')}</span>
+      <label class="bnp-shop-sortby"><span>Sort</span><select data-shop-sort>${SHOP_SORTS.map(([k, l]) => `<option value="${k}"${sort === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
+    const filters = $('.market-your-toolbar .market-your-filters');
+    if (filters) filters.after(tools); else shop.app.before(tools);
+    const all = /of\s+([\d,]+)/i.exec(($('.market-your-toolbar .shop-feed-meta') || {}).textContent || '');   // (Neopets' own "Showing 1–30 of N": more than this page?)
+    if (all && shopNum(all[1]) > shopTrs().length) tools.querySelector('.bnp-shop-sortby span').textContent = 'Sort this page';
+    else { const sel = $('.market-your-toolbar .market-your-select'); if (sel) sel.classList.add('bnp-shop-old'); }   // (Neopets' own order, by ID or cost, is for every page: one page needs only Sort)
+    tools.addEventListener('click', (e) => {
+      const b = e.target instanceof Element && e.target.closest('[data-shop-show]');
+      if (!b) return;
+      shop.show = b.getAttribute('data-shop-show');
+      for (const x of tools.querySelectorAll('[data-shop-show]')) { const on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', String(on)); }
+      shopFilter();
+    });
+    tools.querySelector('[data-shop-sort]').addEventListener('change', (e) => { shopPSet('sort', e.target.value); shopOrder(); shopFilter(); });
+    const find = $('.market-your-search__input'), clear = $('.market-your-search__clear');
+    if (find) { find.addEventListener('input', shopFilter); find.title = 'Narrows this page as you type; Enter looks through your whole shop'; }
+    if (clear) clear.addEventListener('click', () => setTimeout(shopFilter, 0));
+    shop.form.addEventListener('click', shopTableClick);
+    shop.form.addEventListener('click', (e) => {   // (Remove 1, before Neopets' own handler takes it: not while changes wait; the page's last item noted, so the items left open after)
+      const a = e.target instanceof Element ? e.target.closest('[data-shop-rm1]') : null;
+      if (!a) return;
+      if (a.getAttribute('aria-disabled') === 'true') { e.preventDefault(); e.stopPropagation(); return; }
+      const tr = a.closest('tr');
+      shop.sent = { at: Date.now(), gone: (Number(tr && tr.dataset.stock) || 1) <= 1 ? 1 : 0, rows: shopTrs().length, pg: shopPmPages() };
+      shop.rm1At = Date.now();
+    }, true);
+    shop.form.addEventListener('keydown', shopTableKey);
+    if (all && shopNum(all[1]) > shopTrs().length) shopPagesBar();
+    shopTableRefresh();
+    shopPmInit();
+    shopAfterOut();
+  }
+  function shopAfterOut() {   // (an Update that took every item on this page out (user, 2026-10-31: "removing all items from a page should take you to the next set of remaining items automatically instead of an empty stock page"): the items left opened, a moment after Neopets' Success!; none left, Neopets' own empty shop)
+    const root = document.getElementById('mkt-popup-root'), title = document.getElementById('mkt-popup-title');
+    if (!root || !title || !shop.form) return;
+    shop.form.addEventListener('submit', () => {   // (what this Update takes out, noted as it's sent)
+      const trs = shopTrs(), every = shop.form.querySelector('[name="remove_all"]');
+      const gone = every && every.checked ? trs.length : trs.filter((t) => { const rm = t.querySelector('input[data-rm]'); return rm && shopNum(rm.value) >= (Number(t.dataset.stock) || 1); }).length;
+      shop.sent = { at: Date.now(), gone, rows: trs.length, pg: shopPmPages() };
+    }, true);
+    let seen = '';
+    new MutationObserver(() => {
+      const t = root.classList.contains('is-open') ? reClean(title.textContent || '').trim() : '';
+      if (t === seen) return;
+      seen = t;
+      if (!/success/i.test(t)) return;
+      if (shop.rm1At && Date.now() - shop.rm1At < 15000) { shop.rm1At = 0; setTimeout(() => { const ok = root.querySelector('.mkt-popup-ok'); if (ok && root.classList.contains('is-open') && /success/i.test(title.textContent || '')) ok.click(); }, 900); }   // (Remove 1's "Item removed.": closed a moment after; an error stays)
+      const s = shop.sent;
+      shop.sent = null;
+      if (!s || Date.now() - s.at > 60000 || !s.gone || s.gone < s.rows) return;
+      const left = s.pg.total - s.gone;
+      if (left <= 0) return;
+      const q = new URLSearchParams({ type: 'your', order_by: s.pg.order || 'id', lim: String(Math.min(s.pg.page, Math.ceil(left / SHOP_PM_PER)) * SHOP_PM_PER) });   // (this page again, refilled from the next; past the end now, the last page there is)
+      if (s.pg.find) q.set('obj_name', s.pg.find);
+      setTimeout(() => location.assign(`/market.phtml?${q}`), 1400);   // (Success! a moment in sight first)
+    }).observe(root, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true, characterData: true });
+  }
+  function shopPagesBar() {   // (more than one page (user, 2026-10-31): Search and Show on the first line; Sort this page, Neopets' own order for every page, "Showing 1–30 of 48" and the page buttons on the second)
+    const bar = $('.market-your-toolbar:not(.market-your-toolbar--foot)'), row = bar && bar.querySelector('.market-your-metarow'), sort = $('#bnp-shop-tools .bnp-shop-sortby'), sel = bar && bar.querySelector('.market-your-select');
+    if (!row || !sort) return;
+    bar.classList.add('bnp-shop-pages');
+    row.prepend(sort);
+    if (sel) { const lab = document.createElement('label'); lab.className = 'bnp-shop-sortby bnp-shop-pagesby'; lab.title = 'Neopets’ own order, for every page of your shop'; lab.innerHTML = '<span>Every page</span>'; lab.append(sel); sort.after(lab); }
+  }
+  function shopTableRefresh() {   // (each row laid out and saying what its price will do; then Sort, Show and Find)
+    if (!shop || !shop.app) return;
+    for (const tr of shopTrs()) { shopDeco(tr); shopRowState(tr); }
+    shopRm1Paint();
+    shopOrder();
+    shopFilter();
+    if (shop.pm) shopPmPaint();   // (Price mode's switch and lines, again after Neopets' app draws the table anew)
+  }
+  function shopDeco(tr) {   // (a row's own bits from NE, once each, again after Neopets' app draws it anew: the NP coin in its price box, its put-back, the line under its price, its All; its facts kept on it for Sort and Show)
+    const box = tr.querySelector('input[data-money]'), field = box.closest('.market-your__cost-field'), rm = tr.querySelector('.mkt-stepper'), idx = (box.name || '').replace('cost_', '');
+    const name = tr.querySelector('.market-your-item__name'), meta = tr.querySelector('.market-your-item__meta'), old = shop.form.querySelector(`[name="oldcost_${idx}"]`), desc = tr.querySelector('td:nth-child(2) i');
+    tr.dataset.name = reClean((name && name.textContent) || '').trim();
+    tr.dataset.type = reClean((meta && meta.textContent) || '').replace(/^\s*Type:\s*/i, '').trim();
+    tr.dataset.stock = String(Number(rm && rm.getAttribute('data-max')) || shopNum((tr.querySelector('td:nth-child(3) b') || {}).textContent) || 1);
+    tr.dataset.was = String(shopNum(old && old.value));
+    if (desc && !desc.title) desc.title = reClean(desc.textContent).trim();   // (all of it, when its three lines cut it short)
+    if (!field) return;
+    if (!field.querySelector('.bnp-shop-coin')) field.insertAdjacentHTML('afterbegin', `<i class="bnp-shop-coin" style="background-image:url('${esc(cssUrl(shopCoin()))}')" aria-hidden="true"></i>`);
+    if (!field.querySelector('[data-shop-reset]')) field.insertAdjacentHTML('beforeend', `<button type="button" class="bnp-shop-undo" data-shop-reset hidden>${SHOP_UNDO}</button>`);
+    if (!(field.nextElementSibling && field.nextElementSibling.matches('[data-shop-state]'))) field.insertAdjacentHTML('afterend', '<span class="bnp-shop-state" data-shop-state></span>');
+    if (rm && Number(tr.dataset.stock) > 1 && !(rm.nextElementSibling && rm.nextElementSibling.matches('[data-shop-all]'))) rm.insertAdjacentHTML('afterend', '<button type="button" class="bnp-shop-allout" data-shop-all>All</button>');
+    const rmIn = rm && rm.querySelector('input[data-rm]'), oi = rmIn ? (/\[(\d+)\]/.exec(rmIn.name || '') || [])[1] : '';
+    if (oi && !tr.querySelector('[data-shop-rm1]')) (tr.querySelector('[data-shop-all]') || rm).insertAdjacentHTML('afterend', `<span class="bnp-shop-rm1line"><a class="bnp-shop-rm1" data-shop-rm1 href="process_market.phtml?remove_one_object=${oi}">Remove 1</a></span>`);   // (Neopets' own Rm One: its page takes it in place)
+  }
+  function shopRm1Paint() {   // (Remove 1 waits while the page has changes: Neopets redraws its rows after taking one out, and they'd be lost)
+    const dirty = shopTrs().some((t) => t.classList.contains('is-chg') || t.classList.contains('is-out'));
+    for (const a of shop.form.querySelectorAll('[data-shop-rm1]')) { a.setAttribute('aria-disabled', String(dirty)); a.title = dirty ? 'Update or undo the changes on this page first: taking one out redraws the list' : 'Take one out now, back to your inventory'; }
+  }
+  function shopRowState(tr) {   // (what this row's price will do once you Update: not on display, the stack's worth at it, or what it was; items going back marked)
+    const box = tr.querySelector('input[data-money]'), rm = tr.querySelector('input[data-rm]'), say = tr.querySelector('[data-shop-state]'), undo = tr.querySelector('[data-shop-reset]'), all = tr.querySelector('[data-shop-all]');
+    const cur = shopNum(box.value), was = Number(tr.dataset.was) || 0, n = Number(tr.dataset.stock) || 1, out = shopNum(rm && rm.value), chg = cur !== was;
+    tr.classList.toggle('bnp-shop-off', !cur);
+    tr.classList.toggle('is-chg', chg);
+    tr.classList.toggle('is-out', out > 0);
+    const html = chg ? (cur ? `was ${was ? `${was.toLocaleString()} NP` : 'not on display'}` : `<b>Off display</b> · was ${was.toLocaleString()} NP`) : !cur ? 'Not on display' : n > 1 ? `× ${n} = ${(cur * n).toLocaleString()} NP` : '';
+    if (say && say.dataset.v !== html) { say.dataset.v = html; say.innerHTML = html; }   // (only when it changes: Neopets' app is watched for new rows)
+    if (undo) { undo.hidden = !chg; undo.title = `Put it back: ${was ? `${was.toLocaleString()} NP` : '0, not on display'}`; undo.setAttribute('aria-label', undo.title); }
+    if (all) { const full = out >= n; all.textContent = full ? 'None' : 'All'; all.title = full ? 'Keep them all in your shop' : `Take out all ${n}`; }
+  }
+  function shopOrder() {   // (Sort, for this page: by each row's order, so Neopets' own rows stay where its app keeps them; by the prices they have now, not as they're typed)
+    const s = shopP().sort || 'mall', was = (t) => Number(t.dataset.was) || 0, nm = (a, b) => (a.dataset.name || '').localeCompare(b.dataset.name || '');
+    const cmp = { name: nm, hi: (a, b) => was(b) - was(a) || nm(a, b), lo: (a, b) => (was(a) || Infinity) - (was(b) || Infinity) || nm(a, b), stock: (a, b) => (Number(b.dataset.stock) || 0) - (Number(a.dataset.stock) || 0) || nm(a, b), type: (a, b) => (a.dataset.type || '').localeCompare(b.dataset.type || '') || nm(a, b), off: (a, b) => (was(a) ? 1 : 0) - (was(b) ? 1 : 0) }[s];
+    const trs = shopTrs();
+    (cmp ? trs.slice().sort(cmp) : trs).forEach((t, i) => { t.style.order = cmp ? String(i) : ''; });
+  }
+  function shopFilter() {   // (Show and Find: rows out of sight, never out of the form; each chip's count; stripes in the order you see)
+    if (!shop || !shop.app) return;
+    const trs = shopTrs(), q = reClean((($('.market-your-search__input') || {}).value || '')).trim().toLowerCase(), show = shop.show || 'all', n = { all: 0, on: 0, off: 0, chg: 0 };
+    for (const t of trs) {
+      const on = Number(t.dataset.was) > 0, chg = t.classList.contains('is-chg') || t.classList.contains('is-out');
+      const hit = !q || (t.dataset.name || '').toLowerCase().includes(q) || (t.dataset.type || '').toLowerCase().includes(q);
+      if (hit) { n.all += 1; n[on ? 'on' : 'off'] += 1; if (chg) n.chg += 1; }
+      t.classList.toggle('bnp-shop-hide', !(hit && (show === 'all' || (show === 'on' && on) || (show === 'off' && !on) || (show === 'chg' && chg))));
+    }
+    const seen = shopSeen();
+    seen.forEach((t, i) => t.classList.toggle('is-alt', i % 2 === 1));
+    for (const [k, v] of Object.entries(n)) { const el = $(`[data-shop-n="${k}"]`); if (el) el.textContent = String(v); }
+    let none = $('[data-shop-none]');
+    if (!seen.length && trs.length) {
+      if (!none) { shop.app.insertAdjacentHTML('afterend', '<p class="bnp-shop-none" data-shop-none></p>'); none = $('[data-shop-none]'); }
+      none.textContent = q ? `Nothing here is called “${q}”. Press Enter to look through your whole shop.` : show === 'chg' ? 'Nothing changed yet.' : 'Nothing like that here.';
+    } else if (none) none.remove();
+    if (shop.pm) shopPmSay();   // (Price all shown: how many are shown)
+  }
+  function shopTableClick(e) {   // (↺: the price it has now, back in its box; All: every one of the stack to take out, or None again. Through Neopets' own field and its own input, so its code keeps Update right)
+    const t = e.target instanceof Element ? e.target : null, undo = t && t.closest('[data-shop-reset]'), all = t && t.closest('[data-shop-all]');
+    if (!undo && !all) return;
+    const tr = (undo || all).closest('tr');
+    if (undo) { const box = tr.querySelector('input[data-money]'); box.value = String(Number(tr.dataset.was) || 0); box.dispatchEvent(new Event('input', { bubbles: true })); box.focus(); }
+    if (all) { const rm = tr.querySelector('input[data-rm]'), n = Number(tr.dataset.stock) || 1; if (rm) { rm.value = String(shopNum(rm.value) >= n ? 0 : n); rm.dispatchEvent(new Event('input', { bubbles: true })); } }
+    setTimeout(() => { shopMarks(); shopTableRefresh(); shopSay(); }, 0);
+  }
+  function shopTableKey(e) {   // (Enter in a price box: on to the next one you can see, Shift+Enter back. Neopets' own Enter only left the box)
+    if (e.key !== 'Enter' || e.ctrlKey || e.metaKey || e.altKey) return;
+    const box = e.target instanceof Element && e.target.closest('input[data-money]');
+    if (!box) return;
+    const list = shopSeen().map((t) => t.querySelector('input[data-money]')), next = list[list.indexOf(box) + (e.shiftKey ? -1 : 1)];
+    if (!next) return;
+    e.preventDefault();
+    setTimeout(() => {
+      next.focus();
+      next.select();
+      const r = next.closest('tr').getBoundingClientRect(), bar = $('.bnp-shop-bar'), foot = bar ? bar.getBoundingClientRect().top : innerHeight;
+      if (r.top < 60 || r.bottom > foot - 8) next.closest('tr').scrollIntoView({ block: 'center' });   // (never left under the Update bar)
+    }, 0);
+  }
+  // ── Price mode (user, 2026-10-30: "a feature for shop prices that allows the user to look up prices and have them auto put into the box at
+  // the lowest found with a price difference (somewhat similar to trading post) but I'd really like to avoid the feature adding too much
+  // clutter, maybe it could be a 'price mode' option specifically for pricing your shop, and can work with both SSW and regular wizard").
+  // Off: only its switch, in the price column's heading. On: a strip over the table and a Look up under each price. A look-up asks the
+  // wizard as its own Search does, takes the lowest price in another's shop (yours left out) and puts the price just under it in Neopets'
+  // own box, as the Trading Post's "Just under by" does; Update sends it, as ever. Price all: one at a time, a person's moment apart, on
+  // only while this tab is in sight; a price you've typed yourself is left as it is. Prices only ever from the wizards, never itemdb.
+  // Then (user, 2026-10-31): "it should support multiple shop pages of items and should continue if shop wizard banned which resets on the
+  // top of every hour maybe allow user to set those options (this page only/whole shop/continue if banned from searching)", the wait ending
+  // "at a random time within the top of the hour and 5 minutes after, rather than always on :00:00". Whole shop: from page 1, in Neopets'
+  // own order by ID (nothing changes page as its price changes), each page's new prices sent with Neopets' own Update (it saves in place,
+  // its popup saying Success!) before the next page opens; kept in this tab, so it carries on across pages, and from where it stopped.
+  // Settings › Your shop turns Price mode off altogether ──
+  const SHOP_PM_SRC = [['sw', 'Shop Wizard'], ['ssw', 'Super Shop Wizard']];
+  const SHOP_PM_SCOPES = [['page', 'This page'], ['shop', 'Whole shop']];
+  const SHOP_PM_ICON = '<svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.6" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m13 13 4.5 4.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
+  const SHOP_PM_AGAIN = '<svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path d="M15.5 8.5A6 6 0 1 0 14 13.6M15.5 3.5v5h-5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const SHOP_PM_RUN = 'bnp-shop-pmrun', SHOP_PM_PER = 30;   // (a whole-shop run, kept in this tab; Neopets shows 30 items a page)
+  const shopPmAllowed = () => S.features.shopPm !== false;   // (Settings › Your shop › Price mode on Shop Stock)
+  function shopPmSrc() { const s = shopP().pmSrc || (itPremium() ? 'ssw' : 'sw'); return s === 'ssw' && itPremium() ? 'ssw' : 'sw'; }   // (the Super Shop Wizard only with Premium: then the one used unless you choose otherwise, as it sees every shop)
+  function shopPmTimes() { const n = Number(shopP().pmTimes); return [1, 3, 5].includes(n) ? n : 3; }   // (the Shop Wizard shows one section of shops a search: asked this many times an item)
+  function shopPmUnder() { const u = String(shopP().pmUnder || '1'); return TP_UNDERS.some(([v]) => v === u) ? u : '1'; }
+  const shopPmWaits = () => shopP().pmWait !== false;   // (wait out a wizard's "come back later": on unless you turn it off)
+  const shopPmWiz = (src) => (src === 'ssw' ? 'The Super Shop Wizard' : 'The Shop Wizard');
+  const shopPmSleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
+  const shopPmHalt = () => { const pm = shop.pm; return pm.stop || pm.forget || !pm.on || !shopPmAllowed(); };   // (Stop, Forget it, Price mode switched off here or in Settings)
+  function shopPmRunGet() { try { const r = JSON.parse(sessionStorage.getItem(SHOP_PM_RUN) || 'null'); if (r && Date.now() - (r.at || 0) > 864e5) { sessionStorage.removeItem(SHOP_PM_RUN); return null; } return r && r.v === 1 && r.done ? r : null; } catch (_) { return null; } }   // (a run left a day: forgotten)
+  function shopPmRunSet(r) { try { if (r) { r.at = Date.now(); sessionStorage.setItem(SHOP_PM_RUN, JSON.stringify(r)); } else sessionStorage.removeItem(SHOP_PM_RUN); } catch (_) { /* (storage full or blocked: this page's part still runs) */ } }
+  function shopPmPages() {   // (Neopets' own "Showing 1–30 of 48 items" and its form: how many items in all, how many pages, which page this is, in what order, any search)
+    const m = /([\d,]+)\s*[–-]\s*([\d,]+)\s+of\s+([\d,]+)/.exec(reClean(($('.market-your-toolbar .shop-feed-meta') || {}).textContent || ''));
+    const f = (n) => String((shop.form.querySelector(`input[name="${n}"]`) || {}).value || '').trim();
+    const total = m ? shopNum(m[3]) : shopTrs().length, lim = shopNum(f('lim')) || (m ? shopNum(m[2]) : SHOP_PM_PER);
+    return { total, pages: Math.max(1, Math.ceil(total / SHOP_PM_PER)), page: Math.max(1, Math.ceil(lim / SHOP_PM_PER)), order: f('order_by') || 'id', find: f('obj_name') };
+  }
+  const shopPmScope = () => (shopP().pmScope === 'shop' && shopPmPages().pages > 1 ? 'shop' : 'page');
+  const shopPmTodo = (rows) => rows.filter((t) => { const r = shop.pm.res.get(t.dataset.name); return r ? !!r.err : !t.classList.contains('is-chg'); });   // (not looked up yet, and not a price you've typed yourself)
+  const shopPmMine = (rows) => rows.filter((t) => t.classList.contains('is-chg') && !shop.pm.res.get(t.dataset.name)).length;
+  const shopPmClock = (ms) => { const n = nstOf(ms); return `${n.h % 12 || 12}:${String(n.mi).padStart(2, '0')}:${String(n.s).padStart(2, '0')} ${n.h < 12 ? 'am' : 'pm'}`; };   // (Neopian time to the second: 4:00:53 am)
+  const shopPmTally = (run) => { const n = Object.values(run.done).filter((r) => r.low).length; return n ? ` · ${n.toLocaleString()} priced so far` : ''; };
+  function shopPmInit() {
+    shop.pm = { on: !!shopP().pm, res: new Map(), busy: null, one: '', stop: false, forget: false, msg: '', why: '', ask: false, run: null, waitUntil: 0, waitTop: 0, waitSrc: '', watch: null };
+    shop.form.addEventListener('click', shopPmClick, true);   // (before the table's own heading hears it)
+    const run = shopPmRunGet();
+    if (run && shopPmAllowed()) shopPmResume(run);
+    shopPmPaint();
+  }
+  function shopPmFeature() {   // (Settings › Your shop › Price mode, at once: off, its switch, strip and lines go and a run stops where it is; on, its switch is back)
+    if (!shop || !shop.pm) return;
+    if (!shopPmAllowed()) shop.pm.stop = true;
+    shopPmPaint();
+  }
+  function shopPmPaint() {   // (its switch in the price column's heading; while it's on, the strip and each row's line)
+    if (!shop || !shop.pm || !shop.app) return;
+    const pm = shop.pm, ok = shopPmAllowed(), th = shop.app.querySelector('th.market-your__col-cost');
+    let tog = th && th.querySelector('[data-shop-pm="toggle"]');
+    if (!ok && tog) { tog.remove(); tog = null; }
+    if (ok && th && !tog) { th.insertAdjacentHTML('beforeend', `<button type="button" class="bnp-shop-pmtog" data-shop-pm="toggle" title="Look up prices with the Shop Wizard or the Super Shop Wizard, and put each just under the lowest">${SHOP_PM_ICON}Price mode</button>`); tog = th.querySelector('[data-shop-pm="toggle"]'); }
+    if (tog) { tog.classList.toggle('is-on', pm.on); tog.setAttribute('aria-pressed', String(pm.on)); }
+    let strip = document.getElementById('bnp-shop-pm');
+    if (ok && pm.on && !strip) strip = shopPmStrip();
+    if (strip) strip.hidden = !(ok && pm.on);
+    shopPmSay();
+    for (const tr of shopTrs()) shopPmRow(tr);
+  }
+  function shopPmStrip() {   // (over the table: how it looks up on the first line (which wizard, how far under, waiting out a ban); what's happening, This page or Whole shop, Stop and the go button on the second)
+    const s = document.createElement('div'), src = shopPmSrc(), under = shopPmUnder(), prem = itPremium();
+    s.id = 'bnp-shop-pm';
+    s.className = 'bnp-shop-pm';
+    s.setAttribute('data-bnp', 'shoppm');
+    s.innerHTML = `<div class="bnp-shop-pmhow"><b class="bnp-shop-pmname">Price mode</b><span class="bnp-shop-pmsrc" role="group" aria-label="Look up with">${SHOP_PM_SRC.map(([k, l]) => `<button type="button" data-shop-pmsrc="${k}" aria-pressed="${src === k}"${k === 'ssw' && !prem ? ' disabled title="The Super Shop Wizard comes with Premium"' : ''}>${esc(l)}</button>`).join('')}</span>
+      <label class="bnp-shop-pmtimes" title="The Shop Wizard shows one section of shops a search: the lowest of this many searches is taken"${src === 'ssw' ? ' hidden' : ''}><span>Searches each</span><select data-shop-pmtimes aria-label="Shop Wizard searches for each item">${[1, 3, 5].map((n) => `<option value="${n}"${shopPmTimes() === n ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+      <label class="bnp-shop-pmunder"><span>Just under by</span><select data-shop-pmunder aria-label="Just under the lowest by">${TP_UNDERS.map(([v, , l]) => `<option value="${v}"${under === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
+      <label class="bnp-shop-pmwait" title="When the wizard says to come back later: wait till just after the top of the hour, when it lets you search again, and carry on (at a moment in that hour’s first five minutes)"><input type="checkbox" data-shop-pmwait${shopPmWaits() ? ' checked' : ''}><span>Wait out a ban</span></label></div>
+      <div class="bnp-shop-pmact"><span class="bnp-shop-pmsay" data-shop-pmsay aria-live="polite"></span>
+      <span class="bnp-shop-pmscope" role="group" aria-label="Price" hidden>${SHOP_PM_SCOPES.map(([k, l]) => `<button type="button" data-shop-pmscope="${k}" aria-pressed="false">${l}</button>`).join('')}</span>
+      <button type="button" class="bnp-shop-pmstop" data-shop-pm="stop" hidden>Stop</button>
+      <button type="button" class="bnp-shop-pmno" data-shop-pm="no" hidden></button>
+      <button type="button" class="button-default__2020 button-yellow__2020 bnp-shop-pmall" data-shop-pm="all"></button></div>`;
+    const bar = $('.market-your-headerbar');
+    if (bar) bar.after(s); else shop.app.before(s);
+    s.addEventListener('click', shopPmClick);
+    s.addEventListener('change', (e) => {
+      const t = e.target instanceof Element ? e.target : null;
+      if (!t) return;
+      if (t.matches('[data-shop-pmunder]')) shopPSet('pmUnder', t.value);
+      if (t.matches('[data-shop-pmtimes]')) shopPSet('pmTimes', Number(t.value));
+      if (t.matches('[data-shop-pmwait]')) { shopPSet('pmWait', t.checked); if (shop.pm.run) { shop.pm.run.wait = t.checked; shopPmRunSet(shop.pm.run); } }   // (a run under way goes by it from now)
+    });
+    return s;
+  }
+  function shopPmSay() {   // (the strip's words and its buttons, as things stand)
+    const s = document.getElementById('bnp-shop-pm'), pm = shop && shop.pm;
+    if (!s || !pm || s.hidden) return;
+    const pg = shopPmPages(), run = pm.run, scope = run ? 'shop' : shopPmScope(), seen = shopSeen(), todo = shopPmTodo(seen);
+    const all = s.querySelector('[data-shop-pm="all"]'), stop = s.querySelector('[data-shop-pm="stop"]'), no = s.querySelector('[data-shop-pm="no"]'), say = s.querySelector('[data-shop-pmsay]'), sc = s.querySelector('.bnp-shop-pmscope');
+    const going = !!(pm.busy || pm.waitUntil || (run && !run.paused));   // (looking up, waiting out a ban, or on its way to the next page)
+    sc.hidden = pg.pages < 2 && !run;
+    for (const b of sc.querySelectorAll('[data-shop-pmscope]')) { b.setAttribute('aria-pressed', String(b.getAttribute('data-shop-pmscope') === scope)); b.disabled = going || !!run || !!pm.one; }
+    stop.hidden = !going;
+    let go, nope = '', words = pm.msg;
+    if (pm.waitUntil) go = 'Waiting…';
+    else if (pm.busy) go = `Looking up ${pm.busy.n + 1} of ${pm.busy.of}…`;
+    else if (run && !run.paused) go = 'On its way…';
+    else if (pm.ask) { go = 'Start'; nope = 'Cancel'; }
+    else if (run) { go = `Carry on · page ${run.page} of ${run.pages}`; nope = 'Forget it'; }
+    else go = scope === 'shop' ? `Price whole shop (${pg.total.toLocaleString()})` : `Price all shown (${todo.length})`;
+    all.textContent = go;
+    all.disabled = going || !!pm.one || (!run && !pm.ask && scope === 'page' && !seen.length);
+    no.hidden = !nope;
+    no.textContent = nope;
+    if (!words && pm.waitUntil) words = `${shopPmWiz(pm.waitSrc)} said to come back later: carrying on just after ${fmtNst(pm.waitTop)} NST, at ${shopPmClock(pm.waitUntil)} (in ${fmtLeft(pm.waitUntil - Date.now())})`;
+    if (!words && pm.ask) words = `Price every item${shop.show === 'on' ? ' on display' : shop.show === 'off' ? ' not on display' : ''} in your shop, page by page from page 1 (${pg.pages} pages, ${pg.total.toLocaleString()} items in all)? Each page’s new prices go with Neopets’ own Update before the next page opens.`;
+    if (!words && run) words = run.paused ? shopPmWhy(run) : `Whole shop · page ${run.page} of ${run.pages}${shopPmTally(run)}`;
+    if (!words) {
+      const res = seen.map((t) => pm.res.get(t.dataset.name)).filter(Boolean), got = res.filter((r) => r.low).length, none = res.filter((r) => r.none).length, mine = shopPmMine(seen);
+      words = res.length ? `${got} priced just under the lowest${none ? ` · ${none} in no other shop` : ''}` : scope === 'shop' ? 'Every item on every page, a page at a time: each page’s new prices go with Update before the next opens' : 'Look up one item under its price, or every item shown';
+      if (mine) words += ` · ${mine} you’ve changed yourself left as ${mine === 1 ? 'it is' : 'they are'}`;
+    }
+    say.textContent = words;
+  }
+  function shopPmWhy(run) {   // (why a whole-shop run waits for Carry on)
+    const at = `page ${run.page} of ${run.pages}`;
+    if (run.why === 'ban') return `${shopPmWiz(run.src)} said to come back later: stopped on ${at}. Update keeps the prices found here; Carry on after the top of the hour`;
+    if (run.why === 'pin') return 'Type your PIN by Update and press it: the pricing carries on once it’s saved';
+    if (run.why === 'error') return `Update didn’t go through on ${at}${run.msg ? ` (${run.msg})` : ''}: press Update again, or Carry on`;
+    if (run.why === 'away') return `Your whole-shop pricing stopped on ${at}: Carry on goes back to it`;
+    return `Stopped on ${at}: Update keeps the prices found here; Carry on goes on from there`;
+  }
+  function shopPmRow(tr) {   // (under a row's price: Look up; then the lowest found, or none, with Look again)
+    const pm = shop.pm, state = tr.querySelector('[data-shop-state]');
+    let line = tr.querySelector('[data-shop-pmrow]');
+    if (!pm.on || !shopPmAllowed()) { if (line) line.hidden = true; return; }
+    if (!state) return;
+    if (!line) { state.insertAdjacentHTML('afterend', '<span class="bnp-shop-pmrow" data-shop-pmrow></span>'); line = state.nextElementSibling; }
+    line.hidden = false;
+    const name = tr.dataset.name || '', r = pm.res.get(name), now = pm.one === name || (pm.busy && pm.busy.name === name);
+    const again = `<button type="button" class="bnp-shop-pmagain" data-shop-pm="one" title="Look again" aria-label="${esc(`Look up ${name} again`)}">${SHOP_PM_AGAIN}</button>`;
+    const html = now ? '<span class="bnp-shop-pmwait">Looking…</span>'
+      : !r ? `<button type="button" class="bnp-shop-pmgo" data-shop-pm="one" title="${esc(`The lowest price for ${name} in other shops, and yours just under it`)}">${SHOP_PM_ICON}Look up</button>`
+      : r.err ? `<span class="bnp-shop-pmerr">${esc(r.err)}</span>${again}`
+      : r.none ? `<span>In no other shop</span>${again}`
+      : `<span title="${esc(`From ${r.src === 'ssw' ? 'the Super Shop Wizard' : `${r.times > 1 ? `${r.times} Shop Wizard searches` : 'a Shop Wizard search'}`}, your own shop left out`)}">Lowest <b>${r.low.toLocaleString()} NP</b> · ${r.n.toLocaleString()} shop${r.n === 1 ? '' : 's'}</span>${again}`;
+    if (line.dataset.v !== html) { line.dataset.v = html; line.innerHTML = html; }
+  }
+  function shopPmClick(e) {
+    const t = e.target instanceof Element ? e.target : null, b = t && t.closest('[data-shop-pm], [data-shop-pmsrc], [data-shop-pmscope]');
+    if (!b || !shop || !shop.pm) return;
+    e.preventDefault();
+    e.stopPropagation();   // (the table's own heading doesn't sort on the switch)
+    const pm = shop.pm;
+    if (b.matches('[data-shop-pmsrc]')) { if (b.disabled) return; shopPSet('pmSrc', b.getAttribute('data-shop-pmsrc')); for (const x of b.parentElement.children) x.setAttribute('aria-pressed', String(x === b)); const tm = document.querySelector('#bnp-shop-pm .bnp-shop-pmtimes'); if (tm) tm.hidden = b.getAttribute('data-shop-pmsrc') === 'ssw'; return; }
+    if (b.matches('[data-shop-pmscope]')) { if (b.disabled) return; shopPSet('pmScope', b.getAttribute('data-shop-pmscope')); pm.ask = false; pm.msg = ''; shopPmSay(); return; }
+    const k = b.getAttribute('data-shop-pm');
+    if (k === 'toggle') {   // (off: anything under way stops, and a whole-shop run is forgotten)
+      pm.on = !pm.on;
+      shopPSet('pm', pm.on);
+      if (!pm.on) { pm.stop = true; pm.ask = false; if (pm.run) { pm.forget = true; if (pm.run.paused) shopPmForget(); } }
+      else { pm.stop = false; pm.forget = false; }
+      shopPmPaint();
+      return;
+    }
+    if (k === 'stop') { pm.stop = true; pm.msg = pm.waitUntil ? '' : 'Stopping after this one…'; shopPmSay(); return; }
+    if (k === 'no') { if (pm.ask) pm.ask = false; else if (pm.run && pm.run.paused) shopPmForget(); pm.msg = ''; shopPmSay(); return; }
+    if (k === 'all') {
+      if (b.disabled) return;
+      if (pm.ask) shopPmShopStart();
+      else if (pm.run && pm.run.paused) shopPmCarryOn();
+      else if (shopPmScope() === 'shop') { pm.ask = true; pm.msg = ''; shopPmSay(); }   // (the whole shop: asked first, as it sends each page's prices)
+      else shopPmAll();
+      return;
+    }
+    if (k === 'one') { const tr = b.closest('tr'); if (tr && !pm.busy && !pm.one && !pm.waitUntil && !(pm.run && !pm.run.paused)) shopPmOne(tr); }
+  }
+  async function shopPmAsk(name, src) {   // (one search, as the wizard's own page asks it: [{ owner, price }] for every shop in its answer; throws when the wizard says no)
+    const me = String(nclMe() || '').toLowerCase(), offers = [];
+    const fromLinks = (html) => {   // (each shop in shown results links to it, its price in the link: the row's own words run name, stock and price together)
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      for (const a of doc.querySelectorAll('a[href*="browseshop.phtml"]')) {
+        let u = null;
+        try { u = new URL(a.getAttribute('href'), location.origin); } catch (_) { continue; }
+        offers.push({ owner: (u.searchParams.get('owner') || '').toLowerCase(), price: shopNum(u.searchParams.get('buy_cost_neopoints')) });
+      }
+      return doc;
+    };
+    let doc = null, says = '';
+    if (src === 'ssw') {   // (the Super Shop Wizard: every shop in its answer's lists, sorted by price)
+      const ask = wizParam({ q: name, caller: 'h5', priceOnly: '0', context: '0', partial: '0', min_price: '', max_price: '', lang: 'en', json: '1', cb: sswCb() });   // (as the page's own Super Shop Wizard asks: its fields in its order, its cb, jQuery's way of writing them)
+      const r = await fetch(`/np-templates/views/shops/ssw/ssw_query.php?${ask}`, { credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: SSW_ACCEPT } });
+      if (!r.ok) throw new Error(`The Super Shop Wizard didn’t answer just now (${r.status})`);
+      const j = await r.json().catch(() => null);
+      if (!j || typeof j !== 'object') throw new Error('The Super Shop Wizard gave an answer NE couldn’t read');
+      const d = j.data || {};
+      says = String(d.error || '');
+      if (Array.isArray(d.prices) && Array.isArray(d.owners)) d.prices.forEach((p, k) => offers.push({ owner: String(d.owners[k] || '').toLowerCase(), price: shopNum(p) }));
+      else doc = fromLinks(String(j.html || ''));
+    } else {   // (the Shop Wizard: one section of shops a search)
+      const o = { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' }, body: wizParam({ type: 'process_wizard', feedset: '0', shopwizard: name, table: 'shop', criteria: 'exact', min_price: '0', max_price: '999999' }) };
+      let r;
+      try { r = await fromPage('/shops/wizard.phtml', '/np-templates/ajax/wizard.php', o); } catch (e) { if (!/page didn.t open/i.test(String(e && e.message))) throw e; r = await fetch('/np-templates/ajax/wizard.php', o); }   // (from the Wizard's own page, as a person's search comes; that page not opening: from here, as before)
+      if (!r.ok) throw new Error(`The Shop Wizard didn’t answer just now (${r.status})`);
+      doc = fromLinks(await r.text());
+    }
+    const mine = offers.filter((o) => o.owner && o.owner !== me && o.price > 0);
+    if (mine.length || offers.length) return mine;
+    const words = reClean(`${says} ${doc && doc.body ? doc.body.textContent : ''}`).replace(/\s+/g, ' ');
+    const none = /did\s*n[o’']?t find|no (?:results|items|shops)|nothing (?:found|like)|could\s*n[o’']?t find|not find anything/i.test(words);
+    if (!none && (says || /too (?:many|busy)|come back|try again (?:later|in)|limit|slow down|take a break|exceeded|wait (?:a|an|for|till|until)\b/i.test(words))) {   // (anything else the Super Shop Wizard says counts as no too: never searched on through it)
+      throw Object.assign(new Error(says ? `The Super Shop Wizard says: ${says.slice(0, 120)}` : src === 'ssw' ? 'The Super Shop Wizard says to wait a while: try again later' : 'The Shop Wizard says it’s busy: try again in a while'), { busy: true });
+    }
+    return [];
+  }
+  async function shopPmLook(name, src, times0) {   // ({ low, n, times }: the lowest price in another's shop, how many shops, from how many searches; { none: true } when it's in no other shop; busy: the wizard said to come back later after some answers, those kept)
+    const times = src === 'ssw' ? 1 : times0 || shopPmTimes(), all = [];
+    let done = 0, busy = false;
+    for (let k = 0; k < times; k++) {
+      if (k) { await untilShown(); await shopPmSleep(2200 + Math.random() * 1400); }   // (searching again: a person's moment)
+      try { all.push(...await shopPmAsk(name, src)); done += 1; } catch (e) { if (!all.length) throw e; busy = !!e.busy; break; }
+      if (shopPmHalt() && k < times - 1) break;
+    }
+    const r = all.length ? { low: Math.min(...all.map((o) => o.price)), n: new Set(all.map((o) => o.owner)).size, times: done } : { none: true, times: done };
+    return busy ? { ...r, busy } : r;
+  }
+  async function shopPmOne(tr, o = {}) {   // (one item looked up; found, the price just under the lowest put in its box: { r, busy })
+    const pm = shop.pm, name = tr.dataset.name || '', src = o.src || shopPmSrc();
+    if (!name) return { r: { none: true } };
+    if (!o.inAll) { pm.one = name; pm.msg = ''; shopPmSay(); }
+    shopPmRow(tr);
+    let r, busy = false;
+    try { const got = await shopPmLook(name, src, o.times); busy = !!got.busy; delete got.busy; r = { ...got, src, at: Date.now() }; } catch (e) { busy = !!e.busy; r = { err: busy ? 'Wizard busy' : 'Couldn’t look', src }; if (!o.inAll) pm.msg = String(e.message || e); }
+    pm.res.set(name, r);
+    if (!o.inAll) pm.one = '';
+    if (r.low) shopPmPut(tr, tpUnder(r.low, o.under || shopPmUnder()));
+    shopPmRow(tr);
+    shopPmSay();
+    return { r, busy };
+  }
+  function shopPmPut(tr, price) {   // (into Neopets' own box, through its own input, so its code keeps Update right)
+    const box = tr.querySelector('input[data-money]'), n = Math.max(1, Math.min(999999, Math.floor(price)));
+    if (!box || shopNum(box.value) === n) return;
+    box.value = String(n);
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    setTimeout(() => { shopMarks(); shopTableRefresh(); shopSay(); }, 0);
+  }
+  function shopPmGap(src) {   // (between two items, a person's pace (user, 2026-10-31: "a bit more of a delay between pricing each item… with SSW… with a small bit of random jitter"): the Super Shop Wizard about 6–9 seconds, the Shop Wizard 3–6; now and then a longer breath)
+    const gap = src === 'ssw' ? 6000 + Math.random() * 3000 : 3000 + Math.random() * 3000;
+    return gap + (Math.random() < 0.2 ? 1500 + Math.random() * 3500 : 0);
+  }
+  async function shopPmWaitOut(src, run) {   // (the wizards let you search again at the top of the hour: wait till a moment in its first five minutes, never always :00:00 (user, 2026-10-31), then carry on. false: stopped while waiting)
+    const pm = shop.pm, H = 3600000, top = Math.ceil((Date.now() + 1000) / H) * H, until = top + 5000 + Math.random() * (5 * 60000 - 5000);   // (Neopian time's hours start with UTC's)
+    Object.assign(pm, { busy: null, waitUntil: until, waitTop: top, waitSrc: src, msg: '' });
+    if (run) { run.waitUntil = until; shopPmRunSet(run); }
+    while (Date.now() < until && !shopPmHalt()) { shopPmSay(); await shopPmSleep(Math.min(1000, Math.max(50, until - Date.now()))); }
+    pm.waitUntil = 0;
+    if (run) { delete run.waitUntil; shopPmRunSet(run); }
+    shopPmSay();
+    return !shopPmHalt();
+  }
+  async function shopPmLoop(rows, run) {   // (one at a time, a person's moment apart, only while this tab is in sight; told to come back later, waited out when that's on (three times in a row at most). true: every row done)
+    const pm = shop.pm, src = run ? run.src : shopPmSrc(), o = { inAll: true, src, under: run ? run.under : shopPmUnder(), times: run ? run.times : shopPmTimes() };
+    let waits = 0;
+    Object.assign(pm, { stop: false, why: '', msg: '' });
+    for (let i = 0; i < rows.length; i++) {
+      if (document.hidden) { pm.msg = 'Carrying on when this tab is in sight…'; shopPmSay(); }
+      await untilShown();
+      pm.msg = '';
+      if (shopPmHalt()) { pm.why = 'stop'; break; }
+      const name = rows[i].dataset.name || '';
+      pm.busy = { n: i, of: rows.length, name };
+      shopPmSay();
+      const got = await shopPmOne(rows[i], o);
+      if (run) { run.done[name] = got.r; shopPmRunSet(run); }
+      if (got.busy) {
+        if (!(run ? run.wait : shopPmWaits()) || waits >= 3) { pm.why = 'ban'; break; }
+        waits += 1;
+        if (!await shopPmWaitOut(src, run)) { pm.why = 'stop'; break; }
+        if (got.r.err) i -= 1;   // (the same item again, now the wizard answers)
+        continue;
+      }
+      waits = 0;
+      if (i < rows.length - 1) await shopPmSleep(shopPmGap(src));
+    }
+    pm.busy = null;
+    return !pm.why;
+  }
+  async function shopPmAll() {   // (Price all shown: every item shown that isn't looked up yet, and isn't a price you've typed yourself)
+    const pm = shop.pm;
+    if (pm.busy || pm.one || pm.waitUntil) return;
+    const rows = shopPmTodo(shopSeen());
+    if (!rows.length) { pm.msg = 'Every item shown is looked up: Look again on one to ask once more'; shopPmSay(); return; }
+    if (!await shopPmLoop(rows, null)) pm.msg = pm.why === 'ban' ? `${shopPmWiz(shopPmSrc())} said to come back later: Price all goes on from where it stopped, after the top of the hour` : 'Stopped: Price all again goes on from where it stopped';
+    shopPmSay();
+    for (const tr of shopTrs()) shopPmRow(tr);
+  }
+  // (the whole shop, a page at a time)
+  function shopPmShopStart() {   // (Start, after its question: from page 1, in Neopets' own order by ID, so nothing changes page as its price changes)
+    const pm = shop.pm, pg = shopPmPages(), trs = shopTrs(), every = shop.form.querySelector('[name="remove_all"]');
+    pm.ask = false;
+    if (trs.some((t) => t.classList.contains('is-out')) || (every && every.checked)) { pm.msg = 'Some items here are set to go back to your inventory: Update or undo that first'; shopPmSay(); return; }
+    const here = pg.page === 1 && pg.order === 'id' && !pg.find;
+    if (!here && trs.some((t) => t.classList.contains('is-chg'))) { pm.msg = 'Update or undo your changes on this page first: the pricing starts on page 1'; shopPmSay(); return; }
+    const run = { v: 1, src: shopPmSrc(), under: shopPmUnder(), times: shopPmTimes(), wait: shopPmWaits(), show: ['on', 'off'].includes(shop.show) ? shop.show : 'all', page: 1, pages: pg.pages, total: pg.total, step: 'price', done: {} };
+    Object.assign(pm, { run, stop: false, forget: false, msg: '' });
+    shopPmRunSet(run);
+    if (here) shopPmRunPage(run); else shopPmGoTo(1);
+  }
+  function shopPmCarryOn() {   // (a stopped whole-shop run, on from its page: here, or that page opened; as the strip is set now)
+    const pm = shop.pm, run = pm.run, pg = shopPmPages();
+    if (!run) return;
+    Object.assign(run, { src: shopPmSrc(), under: shopPmUnder(), times: shopPmTimes(), wait: shopPmWaits(), why: '', msg: '' });
+    Object.assign(pm, { stop: false, forget: false, msg: '' });
+    if (pg.page === run.page && pg.order === 'id' && !pg.find) { delete run.paused; shopPmRunSet(run); shopPmRunPage(run); return; }
+    if (shopTrs().some((t) => t.classList.contains('is-chg') || t.classList.contains('is-out'))) { pm.msg = `Update or undo your changes on this page first: Carry on opens page ${run.page}`; shopPmSay(); return; }
+    delete run.paused;
+    shopPmGoTo(run.page);
+  }
+  function shopPmForget() { const pm = shop.pm; shopPmRunSet(null); Object.assign(pm, { run: null, forget: false, ask: false }); }
+  function shopPmPause(run, why, msg = '') {   // (a whole-shop run stopped where it is, kept for Carry on)
+    const pm = shop.pm;
+    Object.assign(pm, { busy: null, waitUntil: 0, msg: '' });
+    if (pm.forget) { shopPmForget(); shopPmSay(); return; }
+    Object.assign(run, { paused: true, why, msg, step: 'price' });
+    delete run.go;
+    pm.run = run;
+    shopPmRunSet(run);
+    shopPmSay();
+  }
+  function shopPmResume(run) {   // (a whole-shop run kept in this tab: carried on when this is the page it opened a moment ago; else it waits for Carry on)
+    const pm = shop.pm, pg = shopPmPages(), here = pg.page === run.page && pg.order === 'id' && !pg.find;
+    pm.run = run;
+    pm.on = true;   // (the strip in sight while a run is kept)
+    if (run.paused) return;
+    if (!(run.go && Date.now() - run.go < 120000) || !here) { shopPmPause(run, 'away'); return; }
+    Object.assign(run, { pages: pg.pages, total: pg.total });
+    delete run.go;
+    shopPmRunSet(run);
+    setTimeout(() => shopPmRunPage(run), 400 + Math.random() * 600);   // (Neopets' table drawn, a moment after)
+  }
+  async function shopPmRunPage(run) {   // (a page of the whole shop: what an earlier page (or the time before a stop) found put in again unasked, the rest looked up; then Update, then the next page)
+    const pm = shop.pm, rows = shopTrs().filter((t) => run.show === 'all' || (run.show === 'on' ? Number(t.dataset.was) > 0 : !(Number(t.dataset.was) > 0)));
+    Object.assign(pm, { run, ask: false, msg: '' });
+    const chip = run.show !== 'all' && shop.show !== run.show && document.querySelector(`#bnp-shop-tools [data-shop-show="${run.show}"]`);
+    if (chip) chip.click();   // (the run's own Show choice on this page too, so the rows it prices are the ones in sight)
+    for (const t of rows) { const d = run.done[t.dataset.name]; if (d && !d.err) { pm.res.set(t.dataset.name, d); if (d.low) shopPmPut(t, tpUnder(d.low, run.under)); } }
+    shopPmPaint();
+    if (!await shopPmLoop(shopPmTodo(rows), run)) { shopPmPause(run, pm.why || 'stop'); return; }
+    await shopPmSend(run);
+  }
+  async function shopPmSend(run) {   // (this page's new prices sent with Neopets' own Update (it saves in place: its popup says Success!), then the next page; nothing to send: straight on)
+    const pm = shop.pm, upd = document.getElementById('market-your-update');
+    await shopPmSleep(300);   // (Neopets' own check of the form, after the last price went in)
+    if (!upd || upd.disabled) { await shopPmNext(run); return; }
+    const pin = shop.form.querySelector('input[name="pin"]');
+    if (pin && !pin.value.trim()) { shopPmPause(run, 'pin'); shopPmWatch(run); try { pin.focus(); } catch (_) { /* */ } return; }   // (your PIN is yours to type: the run goes on once your own Update saves)
+    pm.msg = `Page ${run.page} of ${run.pages}: sending its new prices with Update…`;
+    shopPmSay();
+    await shopPmSleep(1000 + Math.random() * 1500);
+    await untilShown();
+    if (shopPmHalt()) { shopPmPause(run, 'stop'); return; }
+    Object.assign(run, { step: 'sent', go: Date.now() });   // (Neopets' old way, a page of its own, comes back here and carries on)
+    shopPmRunSet(run);
+    shopPmWatch(run);
+    upd.click();
+  }
+  function shopPmWatch(run) {   // (Neopets' own popup after Update: Success! → the next page; Sorry! → stopped with its words, still watching for your own Update)
+    const pm = shop.pm, root = document.getElementById('mkt-popup-root'), title = document.getElementById('mkt-popup-title'), msg = document.getElementById('mkt-popup-msg');
+    if (!root || !title) return;
+    if (pm.watch) pm.watch.disconnect();
+    let seen = '';
+    const mo = new MutationObserver(() => {
+      const t = root.classList.contains('is-open') ? reClean(title.textContent || '').trim() : '';
+      if (t === seen) return;
+      seen = t;
+      if (/success/i.test(t)) { mo.disconnect(); pm.watch = null; shopPmNext(run); }
+      else if (/sorry/i.test(t)) shopPmPause(run, run.why === 'pin' ? 'pin' : 'error', reClean((msg && msg.textContent) || '').trim().slice(0, 140));
+    });
+    mo.observe(root, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true, characterData: true });
+    pm.watch = mo;
+    if (run.step === 'sent') { const at = run.go; setTimeout(() => { if (pm.watch === mo && run.step === 'sent' && run.go === at && !run.paused) shopPmPause(run, 'error', 'Neopets didn’t answer'); }, 60000); }   // (no answer in a minute: stopped, still watching for a late Success!)
+  }
+  async function shopPmNext(run) {   // (this page done: the next one, or the whole shop done)
+    const pm = shop.pm;
+    Object.assign(run, { why: '', msg: '' });
+    delete run.paused;
+    pm.run = run;
+    if (run.page >= run.pages) { shopPmDone(run); return; }
+    await shopPmSleep(800 + Math.random() * 1200);   // (Neopets' Success! a moment in sight)
+    await shopPmGoTo(run.page + 1);
+  }
+  async function shopPmGoTo(page) {   // (a page of the whole shop opened, a person's moment after, at Neopets' own address for it)
+    const pm = shop.pm, run = pm.run;
+    Object.assign(run, { page, step: 'price' });
+    pm.msg = `On to page ${page} of ${run.pages}…`;
+    shopPmRunSet(run);
+    shopPmSay();
+    await shopPmSleep(1200 + Math.random() * 1800);
+    await untilShown();
+    if (shopPmHalt()) { shopPmPause(run, 'stop'); return; }
+    run.go = Date.now();
+    shopPmRunSet(run);
+    location.assign(`/market.phtml?type=your&order_by=id&lim=${page * SHOP_PM_PER}`);
+  }
+  function shopPmDone(run) {   // (the last page done: what came of it, and the run forgotten)
+    const pm = shop.pm, rs = Object.values(run.done), got = rs.filter((r) => r.low).length, none = rs.filter((r) => r.none).length, err = rs.filter((r) => r.err).length;
+    shopPmRunSet(null);
+    pm.run = null;
+    pm.msg = `Whole shop priced: ${got.toLocaleString()} just under the lowest${none ? ` · ${none} in no other shop` : ''}${err ? ` · ${err} couldn’t be looked up` : ''}, over ${run.pages} page${run.pages === 1 ? '' : 's'}`;
+    shopPmSay();
   }
   // ── The Till and Sales History: the same band (your shop's keeper and name, kept from Shop Stock, which shows them; the page's own figures) ──
   function shopBand(kind, title, o = {}) {   // (o.keeper: their picture, when the page has it; o.say: [their name, their words], as your front shows them; o.sub: the line under the title)
@@ -24671,8 +26246,7 @@
     band.setAttribute('data-bnp', 'shopband');
     const sub = o.sub != null ? o.sub : info.shop || '';
     band.innerHTML = `${keeper ? `<figure class="bnp-shop-keeper"><span class="bnp-shop-keepic"><img src="${esc(keeper)}" alt=""></span>${o.say ? `<figcaption class="bnp-shop-say"><b data-shop-sayname>${esc(o.say[0] || 'Your shopkeeper')}</b>${o.say[1] == null ? '' : `<span data-shop-saygreet>${esc(o.say[1] || '…')}</span>`}</figcaption>` : ''}</figure>` : ''}
-      <div class="bnp-shop-about"><h2 class="bnp-shop-title">${esc(title)}</h2>${sub ? `<p class="bnp-shop-size">${esc(sub)}</p>` : ''}<div class="bnp-shop-words" data-shop-about></div></div>
-      <div class="bnp-shop-stats" data-shop-stats></div>`;
+      <div class="bnp-shop-about"><div class="bnp-shop-head"><h2 class="bnp-shop-title">${esc(title)}</h2>${sub ? `<p class="bnp-shop-size">${esc(sub)}</p>` : ''}<div class="bnp-shop-words" data-shop-about></div></div><div class="bnp-shop-stats" data-shop-stats></div></div>`;
     setTimeout(() => shopBandPic(band), 0);   // (once it's on the page: your theme's picture behind it)
     return band;
   }
@@ -24702,7 +26276,7 @@
     if (!page || !form || !bal) { document.documentElement.classList.remove('bnp-shop-page'); return; }
     if (page.querySelector('[data-bnp="shopband"]')) return;
     try { nbTheme(); } catch (e) { report(e); }
-    const band = shopBand('till', 'Shop Till'), about = band.querySelector('[data-shop-about]'), stats = band.querySelector('[data-shop-stats]');
+    const band = shopBand('till', shopInfo().shop || 'Your shop', { sub: '' }), about = band.querySelector('[data-shop-about]'), stats = band.querySelector('[data-shop-stats]');
     form.classList.add('bnp-till-form');
     const go = form.querySelector('input[type="submit"]');
     if (go) go.classList.add('button-default__2020', 'button-yellow__2020', 'bnp-till-go');
@@ -24718,7 +26292,7 @@
     const title = page.querySelector(':scope > b'), line = bal.closest('p');
     if (title) title.classList.add('bnp-shop-old');
     if (line) line.classList.add('bnp-shop-old');   // (the balance stays in it, hidden: Neopets' own code writes the new one there after a withdrawal)
-    const own = tabIconOf(['el:.navsub-np-icon__2020']), coin = /\.svg(?:[?#]|$)/i.test(own || '') ? own : `${NPI}themes/h5/basic/images/np-icon.svg`;   // (Neopets' NP coin: your theme's own when it's drawn sharp, else the basic one; never a small picture made big)
+    const coin = shopCoin();   // (Neopets' NP coin: your theme's own when it's drawn sharp, else the basic one; never a small picture made big)
     const paint = () => { stats.innerHTML = `<div class="bnp-shop-stat is-till"><span>In your till</span><b><i class="bnp-till-coin" style="background-image:url('${esc(cssUrl(coin))}')" aria-hidden="true"></i>${esc(reClean(bal.textContent) || '0')} NP</b></div>`; };
     paint();
     new MutationObserver(paint).observe(bal, { childList: true, characterData: true, subtree: true });
@@ -24740,9 +26314,10 @@
     const sizeT = $('#mkt-shop-size-text'), up = $('#mkt-upgrade-form'), st = sizeT ? reClean(sizeT.textContent) : '';
     const size = (/size\s*([\d,]+)/i.exec(st) || [])[1] || '', holds = (/hold\s*([\d,]+)/i.exec(st) || [])[1] || '';
     if (!opening) shopInfoPut({ ...shopInfo(), shop: name.value.trim(), keeper: img.src.replace(/^http:/, 'https:'), who: kname.value.trim(), at: Date.now() });   // (for the other pages' band)
-    const band = shopBand('edit', name.value.trim() || 'Your shop', { keeper: img.src, say: [kname.value.trim(), greet.value.trim()], sub: opening ? 'Not open yet' : size ? `Size ${size}` : '' });
+    const band = shopBand('edit', name.value.trim() || 'Your shop', { keeper: img.src, say: [kname.value.trim(), greet.value.trim()], sub: opening ? 'Not open yet' : '' });   // (its size at the foot, by Upgrade: not said twice)
     const stats = band.querySelector('[data-shop-stats]');
-    if (size) stats.insertAdjacentHTML('beforeend', `<div class="bnp-shop-stat"><b>${esc(size)}</b><span>shop size${holds ? `<small>room for ${esc(holds)} items</small>` : ''}</span></div>`);
+    const commas = (v) => { const n = Number(String(v).replace(/,/g, '')); return n ? n.toLocaleString() : v; };   // (1006 as 1,006)
+    if (size) stats.insertAdjacentHTML('beforeend', `<div class="bnp-shop-stat"><b>${esc(commas(size))}</b><span>shop size${holds ? `<small>room for ${esc(commas(holds))} items</small>` : ''}</span></div>`);
     if (up) {   // (Neopets' own Upgrade, in the band: its cost said plainly)
       const b = up.querySelector('button, input[type="submit"]'), n = b ? smNum(b.textContent || b.value) : 0;
       if (b && n) { if (b.tagName === 'BUTTON') b.textContent = `Upgrade · ${n.toLocaleString()} NP`; else b.value = `Upgrade · ${n.toLocaleString()} NP`; b.title = 'More room in your shop, for this many NP (Neopets asks you first)'; }
@@ -24942,15 +26517,28 @@
   // (Sales History: Neopets lists each sale of 1,000 NP or more till you clear it, as it asks you to. NE keeps a copy in this browser, so
   // clearing loses nothing here: each sale once, however often the page is opened; totals, and each sale or by item)
   const shopSalesKey = () => acctKey('bnp-shopsales');
-  const shopSalesGet = () => { try { const v = JSON.parse(localStorage.getItem(shopSalesKey()) || 'null'); return v && Array.isArray(v.rows) ? v : { rows: [], since: 0 }; } catch (_) { return { rows: [], since: 0 }; } };
+  const shopSalesGet = () => { try { const v = JSON.parse(localStorage.getItem(shopSalesKey()) || 'null'); if (!v || !Array.isArray(v.rows)) return { rows: [], since: 0 }; for (const r of v.rows) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(r.d || ''); if (m && Number(m[2]) > 12 && Number(m[3]) <= 12) r.d = `${m[1]}-${m[3]}-${m[2]}`; } return v; } catch (_) { return { rows: [], since: 0 }; } };   // (a sale kept with its day and month the wrong way round (a month over 12): put right)
   const shopSalesPut = (v) => { try { localStorage.setItem(shopSalesKey(), JSON.stringify(v)); } catch (_) { /* */ } };
-  const shopDay = (s) => {   // (Neopets' date as a day: 10/29/2026 is 2026-10-29)
+  const SHOP_DMY = 'bnp-shop-dmy';   // (whether this account's Neopets writes the day first: '1' / '0', once its dates have shown it)
+  function shopDateOrder(texts) {   // (which way round a list's dates go: 'dmy' (31/10/2026) or 'mdy' (10/31/2026), from the dates themselves)
+    const parts = texts.map((s) => /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s || '')).filter(Boolean).map((m) => [Number(m[1]), Number(m[2]), m[3]]);
+    const keep = (o) => { try { localStorage.setItem(acctKey(SHOP_DMY), o === 'dmy' ? '1' : '0'); } catch (_) { /* */ } return o; };
+    if (parts.some(([a]) => a > 12)) return keep('dmy');
+    if (parts.some(([, b]) => b > 12)) return keep('mdy');
+    let kept = null;
+    try { kept = localStorage.getItem(acctKey(SHOP_DMY)); } catch (_) { /* */ }
+    if (kept === '1' || kept === '0') return kept === '1' ? 'dmy' : 'mdy';
+    const today = nstOf(Date.now()).day, day = (y, mo, d) => `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    if (parts.some(([a, b, y]) => day(y, a, b) > today) && !parts.some(([a, b, y]) => day(y, b, a) > today)) return 'dmy';   // (read month-first, a sale would be after today)
+    return 'mdy';
+  }
+  const shopDay = (s, order = 'mdy') => {   // (Neopets' date as a day: 10/29/2026, or 29/10/2026 written day-first, is 2026-10-29)
     const m = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s);
-    if (m) return `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
+    if (m) { const [mo, d] = order === 'dmy' ? [m[2], m[1]] : [m[1], m[2]]; return `${m[3]}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`; }
     const t = Date.parse(s), d = new Date(t);
     return Number.isNaN(t) ? String(s || '') : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
-  const shopFmtDay = (d) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ''); return m ? `${MONTH_NAMES[Number(m[2]) - 1].slice(0, 3)} ${Number(m[3])}${m[1] === nstOf(Date.now()).day.slice(0, 4) ? '' : `, ${m[1]}`}` : String(d || ''); };
+  const shopFmtDay = (d) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ''); return m && MONTH_NAMES[Number(m[2]) - 1] ? `${MONTH_NAMES[Number(m[2]) - 1].slice(0, 3)} ${Number(m[3])}${m[1] === nstOf(Date.now()).day.slice(0, 4) ? '' : `, ${m[1]}`}` : String(d || ''); };
   function shopSalesRead(page) {   // (Neopets' own list, found by its heading row's words (Date, Item, Buyer, Price); null when there's none)
     for (const t of page.querySelectorAll('table')) {
       const words = (r) => [...r.cells].map((c) => c.textContent).join(' ');   // (cells' words apart: a row's own text runs them together)
@@ -24959,13 +26547,14 @@
       const col = {};
       [...head.cells].forEach((c, i) => { const w = reClean(c.textContent).toLowerCase(); for (const k of ['date', 'item', 'buyer', 'price']) if (col[k] == null && w.includes(k)) col[k] = i; });
       if (col.date == null || col.item == null || col.price == null) continue;
-      const rows = [];
+      const got = [];
       for (const r of t.rows) {
         if (r === head || r.cells.length < head.cells.length || r.querySelector('form, input')) continue;
         const cell = (k) => (col[k] == null ? '' : reClean(r.cells[col[k]].textContent)), p = smNum(cell('price')), i = cell('item');
-        if (p > 0 && i) rows.push({ d: shopDay(cell('date')), i, b: cell('buyer'), p });
+        if (p > 0 && i) got.push({ d: cell('date'), i, b: cell('buyer'), p });
       }
-      return { table: t, rows };
+      const order = shopDateOrder(got.map((r) => r.d));   // (day-first or month-first, from the list's own dates)
+      return { table: t, rows: got.map((r) => ({ ...r, d: shopDay(r.d, order) })) };
     }
     return null;
   }
@@ -25000,8 +26589,8 @@
     try { nbTheme(); } catch (e) { report(e); }
     const read = shopSalesRead(page), listed = read ? read.rows.length : 0;
     let v = shopSalesKeep(read ? read.rows : []);
-    const band = shopBand('sales', 'Sales History'), about = band.querySelector('[data-shop-about]'), stats = band.querySelector('[data-shop-stats]');
-    for (const p of page.querySelectorAll(':scope > p')) { if (p.querySelector('script') || !p.textContent.trim()) continue; about.append(p); }   // (Neopets' own words: clear it now and then; only sales of 1,000 NP or more are listed)
+    const band = shopBand('sales', shopInfo().shop || 'Your shop', { sub: '' }), about = band.querySelector('[data-shop-about]'), stats = band.querySelector('[data-shop-stats]');
+    for (const p of page.querySelectorAll(':scope > p')) { if (p.querySelector('script, table, form') || !p.textContent.trim()) continue; about.append(p); }   // (never one holding a table or a form: on this old page the sales list and its Clear sit inside a <p>)   // (Neopets' own words: clear it now and then; only sales of 1,000 NP or more are listed)
     const title = page.querySelector(':scope > b'), empty = page.querySelector(':scope > center');
     if (title) title.classList.add('bnp-shop-old');
     const card = document.createElement('section');
@@ -25018,7 +26607,7 @@
       const by = shopP().salesBy === 'item' ? 'item' : 'each', rows = v.rows.map((r, n) => ({ ...r, n })).sort((a, b) => (a.d === b.d ? b.n - a.n : a.d < b.d ? 1 : -1));
       const n = rows.length, sum = rows.reduce((a, r) => a + r.p, 0), month = nstOf(Date.now()).day.slice(0, 7), inMonth = rows.filter((r) => r.d.slice(0, 7) === month).reduce((a, r) => a + r.p, 0), first = n ? rows[n - 1].d : '';
       stats.innerHTML = `<div class="bnp-shop-stat"><b>${n.toLocaleString()}</b><span>sale${n === 1 ? '' : 's'}<small>${n && listed !== n ? `${listed.toLocaleString()} on Neopets’ list` : first ? `since ${esc(shopFmtDay(first))}` : 'of 1,000 NP or more'}</small></span></div>
-        <div class="bnp-shop-stat is-np"><span>Together<b>${sum.toLocaleString()} NP</b></span>${inMonth ? `<span>This month<b>${inMonth.toLocaleString()} NP</b></span>` : ''}</div>`;
+        <div class="bnp-shop-stat"><b>${sum.toLocaleString()}<i>NP</i></b><span>together</span></div>${inMonth ? `<div class="bnp-shop-stat"><b>${inMonth.toLocaleString()}<i>NP</i></b><span>this month</span></div>` : ''}`;   // (each figure a part of the band's strip, as Shop Stock's are)
       card.hidden = !n;
       if (empty) empty.classList.toggle('bnp-shop-old', !!n);   // ("Nobody has bought anything from your shop!": Neopets' own, while there's nothing to show)
       if (!n) return;
@@ -25087,8 +26676,74 @@
     html.bnp-shop-page .bnp-shop-stat.is-off > b { color: #b0471b; }
     /* NE's own buttons on the shop's pages */
     html.bnp-shop-page .bnp-shop-btn { display: inline-flex; align-items: center; height: 32px; margin: 0; padding: 0 14px; border: 2px solid var(--nb-frame); border-radius: 11px; background: #fff; color: #262626; box-shadow: 0 2px 0 var(--nb-frame); font: 13px var(--nb-ui); cursor: pointer; }
-    html.bnp-shop-page tr.bnp-shop-off .market-your__cost-field input { border-color: #e7a37e !important; background: #fff6f0 !important; }
-    html.bnp-shop-page tr.bnp-shop-off .market-your__cost-field::after { content: "Not on display"; display: block; margin-top: 3px; color: #b0471b; font: 11.5px var(--nb-ui); }
+    /* Shop Stock's table: Neopets' own rows and fields, each row a line of its own in your theme; Show, Sort; what each price will do */
+    html.bnp-shop-on .bnp-shop-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; margin: 10px 0 12px; }
+    html.bnp-shop-on #bnp-shop-tools .bnp-shop-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    html.bnp-shop-on #bnp-shop-tools .bnp-shop-chip { display: inline-flex; align-items: center; gap: 7px; height: 32px; margin: 0; padding: 0 6px 0 13px !important; border: 2px solid var(--nb-line) !important; border-radius: 999px !important; background: #fff !important; color: var(--nb-muted) !important; font: 13px var(--nb-ui) !important; text-shadow: none !important; cursor: pointer; transition: border-color .15s, color .15s; }   /* (Neopets' market style paints buttons black: NE's own, here and below) */
+    html.bnp-shop-on #bnp-shop-tools .bnp-shop-chip i { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: var(--nb-by); color: var(--nb-muted); font: 11.5px/1 var(--nb-ui); font-style: normal; }
+    html.bnp-shop-on #bnp-shop-tools .bnp-shop-chip:hover { border-color: var(--shop-edge) !important; color: var(--nb-text) !important; }
+    html.bnp-shop-on #bnp-shop-tools .bnp-shop-chip.is-on { border-color: var(--shop-edge) !important; color: var(--nb-text) !important; box-shadow: 0 2px 0 var(--shop-edge) !important; }
+    html.bnp-shop-on #bnp-shop-tools .bnp-shop-chip.is-on i { background: var(--shop-edge); color: #fff; }
+    html.bnp-shop-on .bnp-shop-sortby { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: var(--nb-muted); font: 13px var(--nb-ui); }
+    html.bnp-shop-on .bnp-shop-sortby select { height: 34px; margin: 0; padding: 0 10px; border: 2px solid var(--nb-line); border-radius: 10px; background: #fff; color: var(--nb-text); font: 13.5px var(--nb-ui); cursor: pointer; }
+    html.bnp-shop-on .bnp-shop-none { margin: 0; padding: 22px 16px; border: 2px solid var(--nb-frame); border-top: 0; border-radius: 0 0 14px 14px; background: #fff; color: var(--nb-muted); font: 14px var(--nb-ui); text-align: center; }
+    html.bnp-shop-on .market-your-headerbar { margin-bottom: 0 !important; border: 2px solid var(--nb-frame); border-bottom: 0; border-radius: 14px 14px 0 0 !important; background: var(--nb-bar) !important; color: var(--nb-bar-ink) !important; font-family: var(--nb-ui) !important; }
+    html.bnp-shop-on .market-your-headerbar * { color: inherit !important; }
+    html.bnp-shop-on .market-your__cost-field { position: relative; display: flex !important; align-items: center; width: 190px; max-width: 100%; }
+    html.bnp-shop-on .market-your__cost-field input[data-money] { width: 100% !important; height: 36px; margin: 0; padding: 0 32px 0 35px !important; box-sizing: border-box; border: 2px solid var(--nb-line) !important; border-radius: 10px !important; background: #fff !important; color: var(--nb-text) !important; font: 15.5px var(--nb-ui) !important; }
+    html.bnp-shop-on .market-your__cost-field input[data-money]:focus { border-color: var(--shop-edge) !important; outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--nb-frame) 28%, transparent); }
+    html.bnp-shop-on .market-your__price-hint { display: none !important; }
+    html.bnp-shop-on .bnp-shop-coin { position: absolute; left: 10px; top: 50%; width: 18px; height: 18px; background: center / contain no-repeat; transform: translateY(-50%); pointer-events: none; }
+    html.bnp-shop-on #market-your-form .bnp-shop-undo { position: absolute; right: 6px; top: 50%; display: grid; place-items: center; width: 24px; height: 24px; margin: 0; padding: 0 !important; border: 0 !important; border-radius: 7px !important; background: #e6f0fc !important; color: #2b6cb0 !important; box-shadow: none !important; transform: translateY(-50%); cursor: pointer; }
+    html.bnp-shop-on #market-your-form .bnp-shop-undo:hover { background: #2b6cb0 !important; color: #fff !important; }
+    html.bnp-shop-on #market-your-form .bnp-shop-undo[hidden] { display: none; }
+    html.bnp-shop-on .bnp-shop-state { display: block; min-height: 16px; margin-top: 4px; color: var(--nb-muted); font: 12px/1.3 var(--nb-ui); }
+    html.bnp-shop-on .bnp-shop-state b { font-weight: normal; }
+    html.bnp-shop-on tr.bnp-shop-off .bnp-shop-state { color: #b0471b; }
+    html.bnp-shop-on tr.is-chg .bnp-shop-state { color: #2b6cb0; }
+    html.bnp-shop-on tr.is-chg.bnp-shop-off .bnp-shop-state { color: #b0471b; }
+    html.bnp-shop-on tr.is-chg .market-your__cost-field input[data-money] { border-color: #79aee6 !important; background: #f4f8fe !important; }
+    html.bnp-shop-on tr.bnp-shop-off .market-your__cost-field input[data-money] { border-color: #e7a37e !important; background: #fff6f0 !important; }
+    html.bnp-shop-on .mkt-stepper { display: inline-flex !important; align-items: center; height: 32px; box-sizing: border-box; border: 2px solid var(--nb-line); border-radius: 999px; background: #fff; overflow: hidden; }
+    html.bnp-shop-on .mkt-stepper .mkt-stepper__btn { display: grid !important; place-items: center; width: 30px !important; height: 28px !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: none !important; color: var(--nb-text) !important; font: 17px/1 var(--nb-ui) !important; cursor: pointer; }
+    html.bnp-shop-on .mkt-stepper .mkt-stepper__btn:hover:not(:disabled) { background: var(--nb-by) !important; }
+    html.bnp-shop-on .mkt-stepper .mkt-stepper__btn:disabled { color: #c3c3c3 !important; cursor: default; }
+    html.bnp-shop-on .mkt-stepper .mkt-stepper__input { width: 38px !important; height: 28px !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-inline: 1px solid var(--nb-line) !important; border-radius: 0 !important; background: none !important; color: var(--nb-text) !important; font: 14px var(--nb-ui) !important; text-align: center; }
+    html.bnp-shop-on tr.is-out .mkt-stepper { border-color: #e3958e; background: #fff4f3; }
+    html.bnp-shop-on tr.is-out .mkt-stepper .mkt-stepper__input { color: #c0392b !important; }
+    html.bnp-shop-on #market-your-form .bnp-shop-allout { height: 32px; margin: 0 0 0 8px; padding: 0 12px !important; border: 2px solid var(--nb-line) !important; border-radius: 999px !important; background: #fff !important; color: var(--nb-text) !important; font: 12.5px var(--nb-ui) !important; text-shadow: none !important; box-shadow: none !important; cursor: pointer; vertical-align: middle; }
+    html.bnp-shop-on #market-your-form .bnp-shop-allout:hover { border-color: var(--shop-edge) !important; }
+    html.bnp-shop-on #market-your-form .market-your__col-rm > span, html.bnp-shop-on #market-your-form td:has(> span > .mkt-stepper) > span { flex-wrap: wrap; align-items: center; }
+    html.bnp-shop-on #market-your-form .bnp-shop-rm1line { display: flex; flex: 0 0 100%; margin-top: 5px; }   /* (Remove 1: a small pill under the stepper (user, 2026-10-31)) */
+    html.bnp-shop-on #market-your-form .bnp-shop-rm1 { display: inline-flex; align-items: center; height: 22px; padding: 0 10px; border: 2px solid var(--nb-line); border-radius: 999px; background: #fff; color: var(--nb-muted) !important; font: 11.5px var(--nb-ui); text-decoration: none !important; white-space: nowrap; cursor: pointer; transition: border-color .15s, color .15s; }
+    html.bnp-shop-on #market-your-form .bnp-shop-rm1:hover { border-color: #e3958e; color: #b03a2e !important; }
+    html.bnp-shop-on #market-your-form .bnp-shop-rm1[aria-disabled="true"] { opacity: .45; cursor: default; }
+    @media (min-width: 980px) {   /* (a wide enough window: the rows laid out anew; a narrow one keeps Neopets' own cards) */
+      html.bnp-shop-on #market-your-app .np-table-container { overflow: clip; border: 2px solid var(--nb-frame); border-top: 0; border-radius: 0 0 14px 14px; background: #fff; }
+      html.bnp-shop-on .market-your-table { display: block !important; width: 100%; min-width: 0 !important; margin: 0; border: 0; }
+      html.bnp-shop-on .market-your-table :is(thead, tbody) { display: flex !important; flex-direction: column; }
+      html.bnp-shop-on .market-your-table tr { display: grid !important; grid-template-columns: minmax(250px, 1.5fr) minmax(150px, 1.15fr) 64px 196px 172px; align-items: center; column-gap: 16px; padding: 0 16px; }
+      html.bnp-shop-on .market-your-table :is(th, td) { display: block; min-width: 0; padding: 0 !important; border: 0 !important; background: none !important; text-align: left !important; }
+      html.bnp-shop-on .market-your-table :is(th, td):nth-child(3) { text-align: center !important; }
+      html.bnp-shop-on .market-your-table thead tr { padding-top: 9px; padding-bottom: 9px; border-bottom: 2px solid var(--nb-line); background: var(--nb-by) !important; }
+      html.bnp-shop-on .market-your-table th { color: var(--nb-muted) !important; font: 12.5px var(--nb-ui) !important; letter-spacing: .2pt; }
+      html.bnp-shop-on .market-your-table tbody tr { padding-top: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--nb-line); background: #fff !important; transition: background-color .12s; }
+      html.bnp-shop-on .market-your-table tbody tr.is-alt { background: color-mix(in srgb, var(--nb-alt) 75%, #fff) !important; }
+      html.bnp-shop-on .market-your-table tbody tr:hover { background: color-mix(in srgb, var(--nb-acc) 13%, #fff) !important; }
+      html.bnp-shop-on .market-your-table tbody tr.bnp-shop-hide { display: none !important; }
+      html.bnp-shop-on .market-your-table tbody tr.bnp-shop-off { box-shadow: inset 4px 0 0 #e7a37e; }
+      html.bnp-shop-on .market-your-table tbody tr.is-chg { box-shadow: inset 4px 0 0 #79aee6; }
+      html.bnp-shop-on .market-your-table tbody tr.is-out { box-shadow: inset 4px 0 0 #df7b72; }
+      html.bnp-shop-on .market-your-item { display: grid !important; grid-template-columns: 80px minmax(0, 1fr); align-items: center; gap: 13px; }
+      html.bnp-shop-on .market-your-item__imgwrap { display: grid !important; place-items: center; width: 80px !important; height: 80px !important; margin: 0 !important; padding: 0 !important; border: 1px solid var(--nb-line) !important; border-radius: 12px !important; background: #fff !important; box-sizing: border-box; overflow: hidden; }
+      html.bnp-shop-on .market-your-item__img { display: block; width: 72px !important; height: 72px !important; max-width: none !important; object-fit: contain; }
+      html.bnp-shop-on .market-your-item__info { display: grid !important; align-content: center; gap: 3px; min-width: 0; }
+      html.bnp-shop-on .market-your-item__name { color: var(--nb-text) !important; font: 15px/1.25 var(--nb-ui) !important; overflow-wrap: anywhere; }
+      html.bnp-shop-on .market-your-item__meta { color: var(--nb-muted) !important; font: 12px/1.3 var(--nb-txt) !important; }
+      html.bnp-shop-on .market-your-table td:nth-child(2) i { display: -webkit-box; overflow: hidden; color: var(--nb-muted); font: italic 12.5px/1.45 var(--nb-txt); -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+      html.bnp-shop-on .market-your-table td:nth-child(3) b { display: inline-grid; place-items: center; min-width: 36px; height: 28px; padding: 0 9px; box-sizing: border-box; border: 2px solid var(--nb-line); border-radius: 999px; background: #fff; color: var(--nb-text); font: 15px/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+      html.bnp-shop-on .market-your-table td:nth-child(5) > span { display: flex; align-items: center; }
+    }
     /* Neopets' Update, in reach */
     html.bnp-shop-page .bnp-shop-bar { position: sticky; bottom: var(--bnp-shop-bottom, 8px); z-index: 6; display: flex !important; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 14px; margin-top: 10px; padding: 10px 14px; border: 2px solid var(--nb-frame); border-radius: 15px; background: #fff; box-shadow: 0 3px 0 var(--nb-frame), 0 8px 22px rgba(0, 0, 0, .14); }
     html.bnp-shop-page .bnp-shop-bar.is-pending { border-color: var(--nb-bar-edge); box-shadow: 0 3px 0 var(--nb-bar-edge), 0 8px 22px rgba(0, 0, 0, .14); }
@@ -25129,8 +26784,9 @@
     html.bnp-shop-page .bnp-sales[hidden] { display: none; }
     html.bnp-shop-page .bnp-sales-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 0 0 8px; }
     html.bnp-shop-page .bnp-sales-by { display: inline-flex; gap: 3px; padding: 3px; border: 2px solid var(--nb-line); border-radius: 999px; background: #fff; }
-    html.bnp-shop-page .bnp-sales-by button { height: 28px; margin: 0; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--nb-muted); font: 13px var(--nb-ui); cursor: pointer; }
-    html.bnp-shop-page .bnp-sales-by button.is-on { background: var(--nb-bar); color: var(--nb-bar-ink); }
+    html.bnp-shop-page .bnp-sales-by button { height: 28px; margin: 0; padding: 0 14px; border: 0 !important; border-radius: 999px !important; background: transparent !important; color: var(--nb-muted) !important; box-shadow: none !important; font: 13px var(--nb-ui) !important; text-shadow: none !important; cursor: pointer; }   /* (held: Neopets' market sheet dresses every button on its pages, and By item read pale on white) */
+    html.bnp-shop-page .bnp-sales-by button:not(.is-on):hover { background: var(--nb-by) !important; color: var(--nb-text) !important; }
+    html.bnp-shop-page .bnp-sales-by button.is-on { background: var(--nb-bar) !important; color: var(--nb-bar-ink) !important; }
     html.bnp-shop-page .bnp-sales-count { color: var(--nb-muted); font: 12.5px var(--nb-ui); }
     html.bnp-shop-page .bnp-sales-scroll { overflow-x: auto; }
     html.bnp-shop-page table.bnp-sales-t { width: 100%; margin: 0; border-collapse: collapse; font: 13.5px var(--nb-txt); }
@@ -25175,6 +26831,13 @@
     html.bnp-shop-page .bnp-sec-tools :is(a, button) { text-decoration: none !important; }
     html.bnp-shop-page .bnp-sec-tools .button-default__2020 { display: inline-flex; align-items: center; width: auto !important; height: 32px; margin: 0 !important; padding: 0 14px !important; font-size: 13px; line-height: 1; }
     html.bnp-shop-page a.bnp-shop-btn { color: #262626 !important; }
+    /* Shop Stock with nothing in it (2026-10-31): the band as ever, then a card saying so, with the ways to stock it */
+    html.bnp-shop-page .bnp-shop-empty { display: grid; justify-items: center; gap: 10px; max-width: 560px; margin: 18px auto 10px; padding: 22px 24px 20px; border: 2px solid var(--shop-edge); border-radius: 16px; background: var(--shop-card); box-shadow: 0 2px 0 var(--shop-edge); text-align: center; }
+    html.bnp-shop-page .bnp-shop-empty h3 { margin: 0; color: var(--nb-text); font: 22px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; }
+    html.bnp-shop-page .bnp-shop-empty p { margin: 0; color: var(--nb-muted); font: 13.5px/1.5 var(--nb-txt); }
+    html.bnp-shop-page .bnp-shop-emptygo { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 4px; }
+    html.bnp-shop-page .bnp-shop-emptygo .bnp-shop-btn { height: 36px; padding: 0 18px; border-color: var(--shop-edge); border-radius: 999px; background: linear-gradient(#fff 45%, color-mix(in srgb, var(--shop-edge) 10%, #fff)); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), 0 2px 0 var(--shop-edge); font-size: 13.5px; text-decoration: none; }
+    html.bnp-shop-page .bnp-shop-emptygo .bnp-shop-btn.is-go { background: linear-gradient(color-mix(in srgb, var(--shop-edge) 70%, #fff), var(--shop-edge) 65%); color: #fff !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), inset 0 -3px 2px rgba(0, 0, 0, .18), 0 2px 0 color-mix(in srgb, var(--shop-edge) 66%, #000); text-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
     html.bnp-shop-page .bnp-keep { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px 22px; align-items: start; }
     html.bnp-shop-page .bnp-keep-pic { display: grid; place-items: center; width: 166px; height: 166px; margin: 0; border: 2px solid var(--shop-edge); border-radius: 16px; background: #fff; box-shadow: 0 2px 0 var(--shop-edge); box-sizing: border-box; }
     html.bnp-shop-page .bnp-keep-pic img { display: block; width: 150px; height: 150px; margin: 0; border-radius: 10px; }
@@ -25185,7 +26848,7 @@
     html.bnp-shop-page :is(.bnp-keep-trans, .bnp-sk-trans) input { width: 18px; height: 18px; margin: 0; accent-color: var(--nb-bar); cursor: pointer; }
     html.bnp-shop-page .bnp-shop-stat.is-up { grid-template-columns: 1fr; gap: 6px; }
     html.bnp-shop-page .bnp-shop-stat.is-up form { margin: 0; }
-    html.bnp-shop-page .bnp-shop-stat.is-up .button-default__2020 { width: 100% !important; height: 34px; margin: 0 !important; padding: 0 12px !important; font-size: 13.5px; }
+    html.bnp-shop-page .bnp-shop-stat.is-up .button-default__2020 { width: 100% !important; height: 42px !important; margin: 0 !important; padding: 0 14px !important; font-size: 17.5px !important; line-height: 1 !important; }   /* (its words a good size bigger (user, 2026-10-31)) */
     html.bnp-shop-page .bnp-shopedit .bnp-shop-bar { margin-top: 0; }
     html.bnp-shop-page .bnp-shopedit .bnp-shop-bar .button-default__2020 { width: auto !important; min-width: 150px; height: 40px; margin: 0 !important; padding: 0 22px !important; font-size: 15px; }
     /* Choose your shopkeeper */
@@ -25228,6 +26891,94 @@
     html.bnp-shop-page .bnp-sk-use { width: auto !important; min-width: 190px; height: 40px; margin: 0 !important; padding: 0 22px !important; font-size: 15px; }
     html.bnp-shop-page .bnp-sk-use:disabled { opacity: .5; cursor: default; filter: grayscale(.4); }
     html.bnp-shop-page .bnp-shop-band.is-keeper .bnp-shop-words p { margin: 0 !important; }
+    /* The band, made over again: the keeper and their words, then one panel as tall as them, the shop's name and words at its top and its
+       figures along its foot, equal parts with a line between each (user, 2026-10-31: "still feel like it can be better aesthetically") */
+    html.bnp-shop-page .bnp-shop-band { grid-template-columns: auto minmax(0, 1fr); align-items: stretch; padding: 16px 18px; }
+    html.bnp-shop-page .bnp-shop-band.no-keeper { grid-template-columns: minmax(0, 1fr); }
+    html.bnp-shop-page .bnp-shop-band .bnp-shop-about { display: flex; flex-direction: column; gap: 14px; padding: 16px 20px 14px; }
+    html.bnp-shop-page .bnp-shop-head { display: grid; align-content: start; gap: 6px; min-width: 0; }
+    html.bnp-shop-page .bnp-shop-band .bnp-shop-title { font-size: 34px; }
+    html.bnp-shop-page .bnp-shop-titlerow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+    html.bnp-shop-page .bnp-shop-sizepill { justify-self: start; display: inline-flex; align-items: baseline; gap: 7px; padding: 4px 14px 5px; border: 2px solid var(--shop-edge); border-radius: 999px; background: var(--nb-by); color: var(--nb-muted); box-shadow: 0 2px 0 var(--shop-edge); font: 13.5px var(--nb-ui); white-space: nowrap; }   /* (the shop's size, under its name (user, 2026-10-31: "a little more relevant than that", then "it can go back to below")) */
+    html.bnp-shop-page .bnp-shop-sizepill b { color: var(--nb-text); font: 19px/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; }   /* (a tad smaller than 21: user, 2026-10-31) */
+    html.bnp-shop-page .bnp-shop-room { display: grid; gap: 5px; width: 250px; max-width: 100%; margin-left: auto; color: var(--nb-muted); font: 12.5px var(--nb-ui); }   /* (how full the shop is, at the panel's top right) */
+    html.bnp-shop-page .bnp-shop-room[hidden] { display: none; }
+    html.bnp-shop-page .bnp-shop-roomwords b { color: var(--nb-text); font: 17px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-shop-page .bnp-shop-roombar { display: block; height: 12px; overflow: hidden; border: 2px solid var(--shop-edge); border-radius: 999px; background: var(--nb-by); box-sizing: border-box; }
+    html.bnp-shop-page .bnp-shop-roombar i { display: block; min-width: 4px; height: 100%; border-radius: 999px; background: linear-gradient(180deg, color-mix(in srgb, var(--nb-frame) 70%, #fff), var(--nb-frame)); }
+    html.bnp-shop-page .bnp-shop-room.is-full .bnp-shop-roombar i { background: linear-gradient(180deg, #f08a7e, #c0392b); }
+    html.bnp-shop-page .bnp-shop-room small { font: 12px var(--nb-txt); }
+    html.bnp-shop-page .bnp-shop-about > .bnp-shop-stats { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px 0; min-width: 0; margin-top: auto; padding-top: 13px; border-top: 2px solid var(--nb-line); }
+    html.bnp-shop-page .bnp-shop-about > .bnp-shop-stats:empty { display: none; }
+    html.bnp-shop-page .bnp-shop-about .bnp-shop-stat { flex: 1 1 0; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 3px; min-width: max-content; height: auto; margin: 0; padding: 0 18px; border: 0; border-left: 2px solid var(--nb-line); border-radius: 0; background: none; box-shadow: none; }
+    html.bnp-shop-page .bnp-shop-about .bnp-shop-stat:first-child { padding-left: 2px; border-left: 0; }   /* (equal parts, but none narrower than its own figure, so a long one (≈ 3,999,098 NP) never runs over the line beside it: user, 2026-10-31) */
+    html.bnp-shop-page .bnp-shop-about .bnp-shop-stat > b { display: flex; align-items: baseline; gap: 5px; font: 30px/1.05 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; white-space: nowrap; }
+    html.bnp-shop-page .bnp-shop-about .bnp-shop-stat > b i { color: var(--nb-muted); font: 15px "Cafeteria", "Arial Bold", sans-serif; font-style: normal; letter-spacing: .3pt; }
+    html.bnp-shop-page .bnp-shop-about .bnp-shop-stat span { color: var(--nb-muted); font: 13px/1.3 var(--nb-ui); }
+    html.bnp-shop-page .bnp-shop-about .bnp-shop-stat small { display: block; font: 12px/1.3 var(--nb-txt); }
+    html.bnp-shop-page .bnp-shop-about .bnp-shop-stat.is-till { padding-top: 2px; }
+    html.bnp-shop-page .bnp-shop-about .bnp-shop-stat.is-till > b { align-items: center; font-size: 34px; }
+    html.bnp-shop-page .bnp-shop-about .bnp-shop-stat.is-up { align-content: center; }
+    html.bnp-shop-page .bnp-shop-keeper { align-self: start; }
+    html.bnp-shop-page .bnp-shop-say b { color: var(--nb-text); font: 14px/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-shop-page .bnp-shop-say span { font: 13.5px/1.35 var(--nb-txt); }
+    /* Price mode (2026-10-31): its switch in the price column's heading; on, a strip over the table and a Look up under each price */
+    html.bnp-shop-on #market-your-form .bnp-shop-pmtog { display: flex; width: max-content; align-items: center; gap: 5px; height: 24px; margin: 5px 0 0; padding: 0 10px !important; border: 2px solid var(--nb-line) !important; border-radius: 999px !important; background: #fff !important; color: var(--nb-text) !important; box-shadow: none !important; font: 12px var(--nb-ui) !important; text-shadow: none !important; text-transform: none !important; white-space: nowrap; cursor: pointer; }   /* (on its own line under the heading: the column is narrow) */
+    html.bnp-shop-on #market-your-form .bnp-shop-pmtog:hover { border-color: var(--shop-edge) !important; }
+    html.bnp-shop-on #market-your-form .bnp-shop-pmtog.is-on { border-color: var(--nb-bar-edge) !important; background: var(--nb-bar) !important; color: var(--nb-bar-ink) !important; }
+    html.bnp-shop-on #bnp-shop-pm { display: grid; gap: 10px; margin: 0 0 10px; padding: 10px 14px; border: 2px solid var(--shop-edge); border-radius: 14px; background: var(--shop-card); box-shadow: 0 2px 0 var(--shop-edge); }
+    html.bnp-shop-on #bnp-shop-pm[hidden], html.bnp-shop-on #bnp-shop-pm [hidden] { display: none !important; }
+    html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmname { color: var(--nb-text); font: 17px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmsrc, .bnp-shop-pmscope) { display: inline-flex; gap: 2px; padding: 2px; border: 2px solid var(--nb-line); border-radius: 999px; background: #fff; }
+    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmsrc, .bnp-shop-pmscope) button { height: 28px; margin: 0; padding: 0 12px !important; border: 0 !important; border-radius: 999px !important; background: transparent !important; color: var(--nb-muted) !important; box-shadow: none !important; font: 13px var(--nb-ui) !important; text-shadow: none !important; cursor: pointer; }
+    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmsrc, .bnp-shop-pmscope) button:not([aria-pressed="true"]):not(:disabled):hover { background: var(--nb-by) !important; color: var(--nb-text) !important; }
+    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmsrc, .bnp-shop-pmscope) button[aria-pressed="true"] { background: var(--nb-bar) !important; color: var(--nb-bar-ink) !important; }
+    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmsrc, .bnp-shop-pmscope) button:disabled { opacity: .45; cursor: default; }
+    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmunder, .bnp-shop-pmtimes) { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: var(--nb-muted); font: 13px var(--nb-ui); }
+    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmunder, .bnp-shop-pmtimes) select { height: 32px; margin: 0; padding: 0 8px; border: 2px solid var(--nb-line); border-radius: 10px; background: #fff; color: var(--nb-text); font: 13px var(--nb-ui); }
+    html.bnp-shop-on #bnp-shop-pm :is(.bnp-shop-pmhow, .bnp-shop-pmact) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; min-width: 0; }   /* (how it looks up on the first line; what's happening and its buttons on the second) */
+    html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmact { padding-top: 10px; border-top: 2px solid var(--nb-line); }
+    html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmwait { display: inline-flex; align-items: center; gap: 7px; margin: 0; color: var(--nb-muted); font: 13px var(--nb-ui); cursor: pointer; }
+    html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmwait input { width: 16px; height: 16px; margin: 0; accent-color: var(--shop-edge); cursor: pointer; }
+    html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmno { height: 32px; margin: 0; padding: 0 14px !important; border: 2px solid var(--nb-line) !important; border-radius: 999px !important; background: #fff !important; color: var(--nb-text) !important; box-shadow: 0 2px 0 var(--nb-line) !important; font: 13px var(--nb-ui) !important; text-shadow: none !important; cursor: pointer; }
+    html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmno:hover { border-color: var(--shop-edge) !important; box-shadow: 0 2px 0 var(--shop-edge) !important; }
+    html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmall:disabled { opacity: .7; cursor: default; }
+    html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmsay { flex: 1 1 200px; color: var(--nb-muted); font: 13px var(--nb-ui); }
+    html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmall { width: auto !important; height: 34px !important; margin: 0 !important; padding: 0 16px !important; font-size: 14px !important; line-height: 30px !important; white-space: nowrap; }
+    html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmstop { height: 32px; margin: 0; padding: 0 14px !important; border: 2px solid #c0392b !important; border-radius: 999px !important; background: #fff !important; color: #a3271b !important; box-shadow: none !important; font: 13px var(--nb-ui) !important; text-shadow: none !important; cursor: pointer; }
+    html.bnp-shop-on #market-your-form .bnp-shop-pmrow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 4px; color: var(--nb-muted); font: 12px var(--nb-ui); }
+    html.bnp-shop-on #market-your-form .bnp-shop-pmrow[hidden] { display: none; }
+    html.bnp-shop-on #market-your-form .bnp-shop-pmrow b { color: var(--nb-text); font-weight: bold; }
+    html.bnp-shop-on #market-your-form .bnp-shop-pmgo { display: inline-flex; align-items: center; gap: 5px; height: 24px; margin: 0; padding: 0 10px !important; border: 2px solid var(--nb-line) !important; border-radius: 999px !important; background: #fff !important; color: var(--nb-text) !important; box-shadow: none !important; font: 12px var(--nb-ui) !important; text-shadow: none !important; cursor: pointer; }
+    html.bnp-shop-on #market-your-form .bnp-shop-pmgo:hover { border-color: var(--shop-edge) !important; }
+    html.bnp-shop-on #market-your-form .bnp-shop-pmagain { display: inline-grid; place-items: center; width: 22px; height: 22px; margin: 0; padding: 0 !important; border: 0 !important; border-radius: 7px !important; background: var(--nb-by) !important; color: var(--nb-text) !important; box-shadow: none !important; cursor: pointer; }
+    html.bnp-shop-on #market-your-form .bnp-shop-pmagain:hover { background: var(--nb-bar) !important; color: var(--nb-bar-ink) !important; }
+    html.bnp-shop-on #market-your-form .bnp-shop-pmwait { color: var(--nb-text); font-style: italic; }
+    html.bnp-shop-on #market-your-form .bnp-shop-pmerr { color: #a3271b; }
+    /* Shop Stock's Search, Show and Sort in one line, over Neopets' "Showing 1–N of N" */
+    /* More than one page (user, 2026-10-31: "improve the style of these buttons to match theme and their design overall"): Search and Show on
+       the first line; Sort this page, Neopets' own order for every page, "Showing 1–30 of 48" and the page buttons on the second. The page
+       buttons as the shop's own pills, a light sheen on each, the page you're on filled in your theme's colour; the same at the table's foot */
+    html.bnp-shop-on .market-your-toolbar .market-your-metarow { display: flex !important; flex-wrap: wrap; align-items: center; justify-content: flex-start !important; gap: 8px 12px; }
+    html.bnp-shop-on .market-your-toolbar .shop-feed-meta { margin: 0 !important; color: var(--nb-muted) !important; font: 13px var(--nb-ui) !important; }
+    html.bnp-shop-on .market-your-toolbar.bnp-shop-pages .shop-feed-meta { margin-left: auto !important; }
+    html.bnp-shop-on .market-your-toolbar .mkt-pagination { display: inline-flex !important; align-items: center; gap: 8px; margin: 0 0 0 auto !important; }
+    html.bnp-shop-on .market-your-toolbar.bnp-shop-pages .mkt-pagination { margin-left: 6px !important; }
+    html.bnp-shop-on .mkt-pagination .mkt-pagination-label { color: var(--nb-muted) !important; font: 13px var(--nb-ui) !important; }
+    html.bnp-shop-on .mkt-pagination .mkt-pagination-buttons { display: inline-flex !important; align-items: center; gap: 6px !important; }
+    html.bnp-shop-on .mkt-pagination .mkt-pagination-btn { display: inline-flex !important; align-items: center; justify-content: center; min-width: 34px; height: 32px !important; box-sizing: border-box; margin: 0 !important; padding: 0 12px !important; border: 2px solid var(--nb-line) !important; border-radius: 999px !important; background: linear-gradient(#fff 45%, color-mix(in srgb, var(--shop-edge) 9%, #fff)) !important; color: var(--nb-text) !important; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), 0 2px 0 var(--nb-line) !important; font: 13px/1 var(--nb-ui) !important; letter-spacing: 0 !important; text-decoration: none !important; text-shadow: none !important; transition: border-color .15s, box-shadow .15s; }
+    html.bnp-shop-on .mkt-pagination a.mkt-pagination-btn:hover, html.bnp-shop-on .mkt-pagination a.mkt-pagination-btn:focus-visible { border-color: var(--shop-edge) !important; background: linear-gradient(#fff 30%, color-mix(in srgb, var(--shop-edge) 15%, #fff)) !important; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), 0 2px 0 var(--shop-edge) !important; outline: none; }
+    html.bnp-shop-on .mkt-pagination .mkt-pagination-btn.active { border-color: var(--shop-edge) !important; background: linear-gradient(color-mix(in srgb, var(--shop-edge) 72%, #fff), var(--shop-edge) 70%) !important; color: #fff !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -3px 2px rgba(0, 0, 0, .18), 0 2px 0 color-mix(in srgb, var(--shop-edge) 66%, #000) !important; text-shadow: 0 1px 0 rgba(0, 0, 0, .25) !important; }
+    html.bnp-shop-on .mkt-pagination .mkt-pagination-btn.is-disabled { background: #fff !important; box-shadow: none !important; opacity: .45; cursor: default; }
+    html.bnp-shop-on .bnp-shop-pagesby select { width: auto !important; height: 34px !important; margin: 0 !important; padding: 0 10px !important; border: 2px solid var(--nb-line) !important; border-radius: 10px !important; background-color: #fff !important; color: var(--nb-text) !important; box-shadow: none !important; font: 13.5px var(--nb-ui) !important; cursor: pointer; }
+    html.bnp-shop-on .bnp-shop-pagesby select:hover, html.bnp-shop-on .bnp-shop-pagesby select:focus { border-color: var(--shop-edge) !important; outline: none; }
+    html.bnp-shop-on .market-your-toolbar:not(.market-your-toolbar--foot) { display: flex !important; flex-direction: row !important; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 10px; }   /* (Neopets' own runs top to bottom) */
+    html.bnp-shop-on .market-your-toolbar .market-your-filters { flex: 0 1 320px; min-width: 230px; margin: 0; }
+    html.bnp-shop-on .market-your-toolbar > .bnp-shop-tools { flex: 1 1 420px; margin: 0; }
+    html.bnp-shop-on .market-your-toolbar .market-your-metarow { flex: 1 0 100%; margin: 0; }
+    html.bnp-shop-on .market-your-search { width: 100%; }
+    html.bnp-shop-on .market-your-search__input { height: 36px !important; box-sizing: border-box; border: 2px solid var(--nb-line) !important; border-radius: 12px !important; background: #fff !important; color: var(--nb-text) !important; font: 14px var(--nb-ui) !important; box-shadow: none !important; }
+    html.bnp-shop-on .market-your-search__input:focus { border-color: var(--shop-edge) !important; outline: none; }
     @media (max-width: 760px) { html.bnp-shop-page .bnp-shop-band, html.bnp-shop-page .bnp-shop-band.no-keeper { grid-template-columns: minmax(0, 1fr); justify-items: center; } html.bnp-shop-page .bnp-shop-stats { width: 100%; } html.bnp-shop-page .bnp-keep { grid-template-columns: minmax(0, 1fr); justify-items: center; } }
   `;
   // ---- end of Your Shop Stock ----
@@ -26742,11 +28493,106 @@
     };
     go();
   }
+  // ── Food Club's possible winnings, worked out (user, 2026-10-31: "neopets own potential winnings calculator, it's technically incorrect,
+  // since it's impossible for one bet to be won if another has a different selection… expand upon it with better mathematics") ──
+  const fcArenaKey = (t) => String(t || '').toLowerCase().replace(/[^a-z]/g, '');
+  const FC_KEYS = FC_ARENAS.map(fcArenaKey);
+  function fcOddsKeep(round, arenas) {   // (this round's pirates and odds, as Place a Bet or the Overview shows them: kept for Current Bets' chances)
+    if (!round || arenas.length !== 5 || arenas.some((ps) => ps.length !== 4 || ps.some((p) => !p.name || !(p.odds > 0)))) return;
+    fcKeepSet({ odds: { round, at: Date.now(), arenas: arenas.map((ps) => ps.map((p) => ({ name: p.name, odds: p.odds }))) } });
+  }
+  function fcOddsFromOverview(box) {   // (the Overview's arenas: each pirate's name and odds)
+    const round = Number((/Round\s+(\d+)/i.exec((document.querySelector('.fc-round__status') || {}).textContent || '') || [])[1]) || 0, arenas = [[], [], [], [], []];
+    for (const ar of box.querySelectorAll('.fc-arena')) {
+      const a = FC_KEYS.indexOf(fcArenaKey((ar.querySelector('.fc-arena__banner span') || {}).textContent));
+      if (a < 0) continue;
+      arenas[a] = [...ar.querySelectorAll('.fc-arena__pirate')].map((p) => ({ name: reClean((p.querySelector('.fc-arena__pirate-name') || {}).textContent || '').trim(), odds: Number((/(\d+)\s*:\s*1/.exec((p.querySelector('.fc-arena__odds') || {}).textContent || '') || [])[1]) || 0 }));
+    }
+    fcOddsKeep(round, arenas);
+  }
+  function fcMath(bets, roster) {   // (every way the round can end, weighed. bets: [{ picks: [name or '' × 5], pay, amt }]; roster: [arena] → [{ name, odds }] when this round's odds are known)
+    const fromPicks = (a) => { const named = [...new Set(bets.map((b) => b.picks[a]).filter(Boolean))]; return [...named.map((name) => ({ name, p: null })), ...(named.length < 4 ? [{ name: '', p: null }] : [])]; };   // (unknown: the pirates bet on, and "another")
+    let cand = [0, 1, 2, 3, 4].map((a) => {
+      const ps = roster && roster[a];
+      if (!ps || ps.length !== 4) return fromPicks(a);
+      const inv = ps.map((p) => 1 / p.odds), sum = inv.reduce((t, x) => t + x, 0);
+      return ps.map((p, i) => ({ name: p.name, p: inv[i] / sum }));
+    });
+    if (bets.some((b) => b.picks.some((n, a) => n && !cand[a].some((c) => c.name === n)))) cand = [0, 1, 2, 3, 4].map(fromPicks);   // (a pick the kept odds don't know: those odds aren't this list's)
+    const known = cand.every((c) => c.every((x) => x.p != null)), stake = bets.reduce((t, b) => t + b.amt, 0), at = [0, 0, 0, 0, 0];
+    const idx = bets.map((b) => b.picks.map((n, a) => (n ? cand[a].findIndex((c) => c.name === n) : -1)));
+    let best = { won: -1, n: 0, at: null }, mostN = 0, pAny = 0, pAhead = 0, ev = 0;
+    const sets = new Map();   // (which bets win together: what that pays, its chance, the winners it needs)
+    for (;;) {
+      let won = 0, n = 0, p = 1;
+      const wi = [];
+      for (let i = 0; i < bets.length; i++) if (idx[i].every((w, a) => w < 0 || w === at[a])) { won += bets[i].pay; n += 1; wi.push(i); }
+      if (known) { for (let a = 0; a < 5; a++) p *= cand[a][at[a]].p; if (n) pAny += p; if (won > stake) pAhead += p; ev += p * won; }
+      const key = wi.join(',');
+      const g = sets.get(key) || { wi, won, p: 0, need: [0, 1, 2, 3, 4].filter((a) => wi.some((i) => bets[i].picks[a])).map((a) => [FC_ARENAS[a], cand[a][at[a]].name]) };
+      g.p += known ? p : 0;
+      sets.set(key, g);
+      if (won > best.won || (won === best.won && n > best.n)) best = { won, n, at: at.slice() };
+      if (n > mostN) mostN = n;
+      let a = 0;
+      while (a < 5 && ++at[a] >= cand[a].length) at[a++] = 0;   // (the next way it can end)
+      if (a === 5) break;
+    }
+    const wins = bets.filter((b, i) => idx[i].every((w, a) => w < 0 || w === best.at[a]));
+    const line = [0, 1, 2, 3, 4].filter((a) => wins.some((b) => b.picks[a])).map((a) => [FC_ARENAS[a], cand[a][best.at[a]].name]);   // (only the arenas the winning bets need)
+    return { n: bets.length, stake, most: best.won, mostBets: best.n, mostN, line, known, pAny, pAhead, ev, sets: [...sets.values()].sort((x, y) => y.won - x.won || y.p - x.p) };
+  }
+  function fcMathRows() {   // (the bets Neopets' own calculator counts: each one ticked in its list; its picks by arena, its payoff as Neopets shows it)
+    return [...document.querySelectorAll('#fc-cb-table .fc-cb-row')].map((r, k) => [r, k + 1]).filter(([r]) => { const c = r.querySelector('.fc-cb-row-check'); return !c || c.checked; }).map(([r, no]) => {
+      const picks = ['', '', '', '', ''];
+      for (const l of r.querySelectorAll('.fc-cb-leg')) { const a = FC_KEYS.indexOf(fcArenaKey((l.querySelector('.fc-cb-leg__arena') || {}).textContent)); if (a >= 0) picks[a] = reClean((l.querySelector('.fc-cb-leg__pirate') || {}).textContent || '').trim(); }
+      return { picks, no, amt: Number(r.dataset.amount) || 0, pay: Number(r.dataset.payoff) || 0 };
+    }).filter((b) => b.picks.some(Boolean));
+  }
+  function fcMathPaint() {   // (the box under Neopets' calculator, worked out again: as it opens, and as bets are ticked in or out of it)
+    const box = document.querySelector('[data-bnp="fcmath"]');
+    if (!box) return;
+    const bets = fcMathRows(), round = Number(((document.querySelector('[data-tab-panel="current"] .fc-round-pill') || {}).textContent || '').replace(/\D/g, '')) || 0, k = fcKeep();
+    box.hidden = !bets.length;
+    if (!bets.length) return;
+    const m = fcMath(bets, k.odds && k.odds.round === round ? k.odds.arenas : null);
+    const np = (x) => `${Math.round(x).toLocaleString()} NP`, pct = (x) => (x >= 0.9995 ? '100%' : x < 0.0005 ? 'under 0.1%' : `${(x * 100).toFixed(1)}%`);
+    const stat = (label, value, small, cls = '') => `<div class="fc-totals__stat${cls}"><span>${label}</span><b>${value}</b>${small ? `<small>${small}</small>` : ''}</div>`;
+    const open = !!box.querySelector('details.bnp-fcm-all[open]');   // (the list as it was, open or shut, after a bet's ticked in or out)
+    const ways = m.sets.map((g) => `<tr${g.wi.length ? '' : ' class="is-none"'}><td>${g.wi.length ? g.wi.map((i) => `<b class="bnp-fcm-no">${bets[i].no}</b>`).join('') : 'No bet wins'}${g.need.length ? `<small>${g.need.map(([ar, who]) => `${esc(ar)}: ${esc(who)}`).join(' · ')}</small>` : ''}</td><td class="is-np">${g.won ? np(g.won) : '—'}</td>${m.known ? `<td class="is-np">${pct(g.p)}</td>` : ''}</tr>`).join('');
+    box.innerHTML = `<div class="bnp-fcm-title">What these bets can really win</div>
+      <div class="fc-totals__body"><div class="fc-totals__grid">
+        ${stat('Most at once', np(m.most), `${m.mostBets} of ${m.n} bet${m.n === 1 ? '' : 's'} win`, ' fc-totals__return')}
+        ${stat('Bets that can win together', `${m.mostN} of ${m.n}`, m.mostN < m.n ? 'never all at once' : 'all of them')}
+        ${stat('Chance of a win', m.known ? pct(m.pAny) : '—', m.known ? 'any bet at all' : '')}
+        ${stat('Chance to come out ahead', m.known ? pct(m.pAhead) : '—', m.known ? `more than ${np(m.stake)} back` : '')}
+        ${stat('Expected back', m.known ? np(m.ev) : '—', m.known ? `on average, of ${np(m.stake)} bet` : '')}
+      </div></div>
+      ${m.line.length ? `<p class="bnp-fcm-line"><span>The most needs</span>${m.line.map(([ar, who]) => `<i>${esc(ar)}:</i><b>${esc(who)}</b>`).join('<span class="bnp-fcm-dot" aria-hidden="true">·</span>')}</p>` : ''}
+      <details class="bnp-fcm-all"${open ? ' open' : ''}><summary>Every way they can pay <span>(${m.sets.length})</span></summary><div class="bnp-fcm-scroll"><table class="bnp-fcm-t"><thead><tr><th scope="col">Bets that win together</th><th scope="col" class="is-np">Pays</th>${m.known ? '<th scope="col" class="is-np">Chance</th>' : ''}</tr></thead><tbody>${ways}</tbody></table></div></details>
+      <p class="bnp-fcm-note">Neopets’ Total Payoff adds up every bet as if they could all win, but bets that pick different pirates in the same arena never can. These weigh every way the round can end${m.known ? ', each pirate’s chance taken from this round’s odds' : '. The chances come once NE has seen this round’s odds, on Place a Bet or the Overview'}.</p>`;
+  }
+  function fcMathMount(totals) {   // (under Neopets' own calculator, which is left as it is)
+    const box = document.createElement('div');
+    box.className = 'fc-totals bnp-fcm';
+    box.setAttribute('data-bnp', 'fcmath');
+    totals.after(box);
+    fcMathPaint();
+  }
   function fcPage() {
     if (!fcOn()) return;
-    const go = () => { try { fcWinsRead(); } catch (e) { report(e); } const form = document.getElementById('fc-bet-form'); if (form && !form.hasAttribute('data-bnp-fc')) { form.setAttribute('data-bnp-fc', ''); fcMount(form); } };
+    const go = () => {
+      try { fcWinsRead(); } catch (e) { report(e); }
+      const form = document.getElementById('fc-bet-form');
+      if (form && !form.hasAttribute('data-bnp-fc')) { form.setAttribute('data-bnp-fc', ''); fcMount(form); }
+      const ov = document.querySelector('.fc-round .fc-arenas');
+      if (ov && !ov.hasAttribute('data-bnp-fco')) { ov.setAttribute('data-bnp-fco', ''); try { fcOddsFromOverview(ov); } catch (e) { report(e); } }   // (the round's odds, kept for Current Bets)
+      const tot = document.getElementById('fc-cb-totals');
+      if (tot && !(tot.nextElementSibling && tot.nextElementSibling.matches('[data-bnp="fcmath"]'))) { styles(); try { fcMathMount(tot); } catch (e) { report(e); } }   // (Current Bets: the box under Neopets' calculator)
+    };
     go();
     new MutationObserver(go).observe(document.getElementById('fc-app') || document.body, { childList: true, subtree: true });   // (Neopets changes its tabs in place: the list comes back with the slip)
+    document.addEventListener('change', (e) => { if (e.target instanceof Element && e.target.closest('#fc-cb-table')) setTimeout(fcMathPaint, 0); }, true);   // (a bet ticked in or out of Neopets' calculator: the box follows, after Neopets' own ticks)
     document.addEventListener('click', (e) => { if (fc && e.target instanceof Element && e.target.closest('#fc-bet-submit')) { fc.sent = fcFormSig(); fc.sentAmt = (document.getElementById('fc-bet-amount') || {}).value || ''; } }, true);   // (what's in the slip as you place it: that bet, once Neopets takes it)
   }
   const fcLog = () => { try { const v = JSON.parse(localStorage.getItem(acctKey('bnp-fclog')) || 'null'); return { bets: v && Array.isArray(v.bets) ? v.bets : [], wins: v && v.wins && typeof v.wins === 'object' ? v.wins : {} }; } catch (_) { return { bets: [], wins: {} }; } };   // ({ bets: [{ round, picks, odds, amt, cap, src, at }], wins: { round: [five names] } })
@@ -26883,6 +28729,7 @@
       return { r, odds: Number(r.dataset.odds) || 0, name: reClean((l && (l.querySelector('.fc-bet-pirate__name') || {}).textContent) || (img && img.alt) || ''), img: img ? img.getAttribute('src') : '' };
     }));
     if (!round || arenas.some((a) => a.length !== 4 || a.some((p) => !p.odds))) return;   // (not the slip as we know it: Neopets' own, untouched)
+    fcOddsKeep(round, arenas);   // (the round's odds, kept for Current Bets' chances)
     styles();
     const root = document.createElement('section');
     root.className = 'bnp-fc';
@@ -26979,7 +28826,7 @@
     const cur = sets[fc.set] || {};
     const say = fc.busy ? `<p class="bnp-fc-say">Reading ~${esc(fc.who)}’s page…</p>`
       : fc.err ? `<p class="bnp-fc-say is-err">${esc(fc.err)}${fc.who && !fc.errPlace ? ' <button type="button" class="bnp-fc-pill" data-fc-again>Try again</button>' : ''}</p>`
-      : bets.length ? `<p class="bnp-fc-say">${fc.said ? `<b class="bnp-fc-said">${FC_TICK}${esc(fc.said)}</b>` : ''}<span>${fc.who ? `From ~${esc(fc.who)}${cur.label ? `’s ${esc(cur.label)} list` : ''}, read ${colAgo(fc.at || Date.now())}` : 'From your string'} · ${left.length ? `${left.length} of ${bets.length} to place: ${cost.toLocaleString()} NP${have && cost > have ? ` <span class="bnp-fc-warn">(you have ${have.toLocaleString()} NP on hand)</span>` : ''}` : `all ${bets.length} placed`}</span>${fc.who ? `<button type="button" class="bnp-fc-pill" data-fc-again title="Their page read again, for any change since">Read again</button><a class="bnp-fc-pill" href="/~${encodeURIComponent(fc.who)}" target="_blank" rel="noopener">Their page</a>` : ''}</p>`
+      : bets.length ? `<p class="bnp-fc-say">${fc.said ? `<b class="bnp-fc-said">${FC_TICK}${esc(fc.said)}</b>` : ''}<span>${fc.who ? `From ~${esc(fc.who)}${cur.label ? `’s ${esc(cur.label)} list` : ''}, read ${colAgo(fc.at || Date.now())}` : 'From your string'} · ${left.length ? `${left.length} of ${bets.length} to place: ${cost.toLocaleString()} NP${have && cost > have ? ` <span class="bnp-fc-warn">(you have ${have.toLocaleString()} NP on hand)</span>` : ''}${maxN - placedN < left.length ? ` · <span class="bnp-fc-warn">${maxN > placedN ? `${maxN - placedN} more fit this round` : 'no more fit this round'} (Neopets takes ${maxN} a round; ${placedN} placed)</span>` : ''}` : `all ${bets.length} placed`}</span>${fc.who ? `<button type="button" class="bnp-fc-pill" data-fc-again title="Their page read again, for any change since">Read again</button><a class="bnp-fc-pill" href="/~${encodeURIComponent(fc.who)}" target="_blank" rel="noopener">Their page</a>` : ''}</p>`
       : !fc.who && !fc.paste ? '<p class="bnp-fc-say">Choose whose bets to copy: today’s are read from their petpage.</p>' : '';
     const nextBtn = bets.length && next >= 0 && fc.filled !== next && placedN < maxN && !fc.busy ? `<button type="button" class="button-default__2020 button-yellow__2020 bnp-fc-next" data-fc-fill="${next}">Fill bet ${next + 1}</button>` : '';
     const running = !!((fc.queue && fc.queue.length) || fc.placing >= 0), allIs = left.map((bet) => bets.indexOf(bet)).filter((i) => i !== fc.placing && !(fc.queue || []).includes(i)).slice(0, Math.max(0, maxN - placedN - (fc.queue || []).length - (running ? 1 : 0)));
@@ -27211,6 +29058,15 @@
   const wtPartKey = () => `wt-part-${wt.key}:${nclMe() || '-'}`;   // (a count itemdb paused: what was read, to carry on from)
   const wtPauseEnd = () => { try { const raw = localStorage.getItem(IT_401) || '', t = parseInt(raw, 10) || 0; return /\|429/.test(raw) && Date.now() - t < 10 * 60000 ? t + 10 * 60000 : 0; } catch (_) { return 0; } };   // (itemdb's pause: when it's over)
   const wtFig = (d) => `${d.np > 0 || !d.nc.valued ? `≈ ${npShort(d.np)} NP` : ''}${d.np > 0 && d.nc.valued ? ' · ' : ''}${d.nc.valued ? `${d.np > 0 ? '' : '≈ '}${wtCapsText(d.nc)}` : ''}`;   // (Neopoints and caps, as much as there is of each)
+  const WT_K = '<span class="bnp-wt-k">Worth</span> ';   // (spaces between the parts: the flex layout ignores them, a screen reader hears "Worth ≈ 537k NP")
+  const wtSay = (t) => `${WT_K}<b class="bnp-wt-say">${t}</b>`;   // (Worth, then what's happening: counting, paused, itemdb busy…)
+  const wtFigHtml = (d) => {   // (the pill's figures: Neopets' own coin beside each (NP's; the NC one for caps), the number in Cafeteria, its unit small, a line between)
+    const out = [];
+    const ap = (t) => `<i class="bnp-wt-ap">${t}</i>`;   // (≈ and a range's dash in the pill's own font: Cafeteria draws ≈ as a star)
+    if (d.np > 0 || !d.nc.valued) out.push(`<span class="bnp-wt-fv">${wtCoin('np')}${ap('≈')} <b>${npShort(d.np)}</b> <small>NP</small></span>`);
+    if (d.nc.valued) { const n = d.nc, plus = n.plus ? '+' : ''; out.push(`<span class="bnp-wt-fv">${wtCoin('nc')}${out.length ? '' : `${ap('≈')} `}${n.lo === n.hi ? `<b>${n.lo.toLocaleString()}${plus}</b>` : `<b>${n.lo.toLocaleString()}</b>${ap('–')}<b>${n.hi.toLocaleString()}${plus}</b>`} <small>caps</small></span>`); }
+    return WT_K + out.join(' <i class="bnp-wt-div" aria-hidden="true"></i> ');
+  };
   function wtKeepGallery(slot, v) {   // (someone else's gallery: kept under its name, the 8 looked at last)
     wtKeepSet(slot, v);
     const k = wtKeep(), others = Object.keys(k).filter((x) => x.startsWith('gallery@')).sort((a, b) => (k[b].at || 0) - (k[a].at || 0));
@@ -27300,25 +29156,25 @@
     if (!wt || !wt.pill) return;
     const s = wt.sum, c = wt.count, paged = WT_PAGED.has(wt.key), live = wtLive(wt.key), k = live ? null : wtKeep()[wtSlot()], part = paged && !c ? wt.part : null;
     let html = '', title = '';
-    if (c) { html = `Worth: <b>${c.phase === 'price' ? `pricing ${c.priced.toLocaleString()} of ${c.toPrice.toLocaleString()}` : `counting ${c.read}${c.pages ? ` of ${c.pages}` : ''}`}…</b>`; title = 'Counting it all, a page at a time: click to see how far'; }
-    else if (!live && wt.pricing) { html = 'Worth: <b>counting…</b>'; title = 'Asking itemdb for its prices'; }
-    else if (part) { html = `Worth <b>≈ ${npShort((part.shape || {}).np || 0)} NP</b> so far · <b>paused</b>`; title = 'itemdb asked for a pause partway: click to see what’s counted so far, and to carry on'; }
+    if (c) { html = wtSay(`${c.phase === 'price' ? `pricing ${c.priced.toLocaleString()} of ${c.toPrice.toLocaleString()}` : `counting ${c.read}${c.pages ? ` of ${c.pages}` : ''}`}…`); title = 'Counting it all, a page at a time: click to see how far'; }
+    else if (!live && wt.pricing) { html = wtSay('counting…'); title = 'Asking itemdb for its prices'; }
+    else if (part) { html = `${WT_K}<span class="bnp-wt-fv">${wtCoin('np')}<i class="bnp-wt-ap">≈</i> <b>${npShort((part.shape || {}).np || 0)}</b> <small>NP so far</small></span> <i class="bnp-wt-div" aria-hidden="true"></i> <b class="bnp-wt-say">paused</b>`; title = 'itemdb asked for a pause partway: click to see what’s counted so far, and to carry on'; }
     else if (!paged && !live && k && k.whole) {   // (the Gallery: its last count)
       const stale = wtStale(k);
-      html = `Worth <b>${esc(wtFig(k))}</b>${stale ? '<i class="bnp-wt-stale" aria-hidden="true">•</i>' : ''}`;
+      html = `${wtFigHtml(k)}${stale ? '<i class="bnp-wt-stale" aria-hidden="true">•</i>' : ''}`;
       title = `${wt.own ? 'Your Gallery' : 'This gallery'} at itemdb’s prices, counted ${colAgo(k.at)}${stale ? ': it has changed since (click to count again)' : ''}. Click for the most valuable.`;
-    } else if (!paged && !live) { html = 'Worth: <b>count it</b>'; title = `What ${wt.own ? 'your' : 'this'} gallery is worth at itemdb’s prices: click to count it (kept till you count again)`; }
+    } else if (!paged && !live) { html = wtSay('count it'); title = `What ${wt.own ? 'your' : 'this'} gallery is worth at itemdb’s prices: click to count it (kept till you count again)`; }
     else if (paged && k && k.whole) {
       const stale = wtStale(k), ncv = wt.key === 'safetydeposit' && wtPool() === 'nc', kn = k.nc || {};   // (the SDB showing its NC items: what they come to in caps)
-      html = `${ncv ? (kn.valued ? `Worth <b>≈ ${esc(wtCapsText(kn))}</b>` : `Worth: <b>${kn.n ? 'no NC values yet' : 'no NC items'}</b>`) : `Worth <b>≈ ${npShort(k.np)} NP</b>`}${stale ? '<i class="bnp-wt-stale" aria-hidden="true">•</i>' : ''}`;
+      html = `${ncv ? (kn.valued ? wtFigHtml({ np: 0, nc: kn }) : wtSay(kn.n ? 'no NC values yet' : 'no NC items')) : wtFigHtml({ np: k.np, nc: { valued: false } })}${stale ? '<i class="bnp-wt-stale" aria-hidden="true">•</i>' : ''}`;
       title = `${ncv ? 'Your SDB’s NC items at the value guides’ caps' : `Your ${WT_NAME[wt.key]} at itemdb’s prices`}, counted ${colAgo(k.at)}${stale ? ': it has changed since (click to count again)' : k.upd ? ' and kept up to date as items went in and out' : ''}. Click for the most valuable.`;
-    } else if (paged) { html = 'Worth: <b>count it</b>'; title = `What your whole ${WT_NAME[wt.key]} is worth at itemdb’s prices: click to count it all (kept till you count again)`; }
-    else if (!s) html = wt.pricing ? 'Worth <b>…</b>' : '';
-    else if (s.visit) { html = 'Worth: <b>open itemdb</b>'; title = 'itemdb gives its prices once you’ve opened itemdb.com.br today: click for more'; }
-    else if (s.busy) { html = 'Worth: <b>itemdb is busy</b>'; title = 'itemdb asked for a pause: its prices come again in a few minutes'; }
-    else if (s.fail && !s.priced && !s.nc.valued) { html = 'Worth: <b>itemdb didn’t answer</b>'; title = 'itemdb didn’t answer just now: click to try again'; }
+    } else if (paged) { html = wtSay('count it'); title = `What your whole ${WT_NAME[wt.key]} is worth at itemdb’s prices: click to count it all (kept till you count again)`; }
+    else if (!s) html = wt.pricing ? wtSay('…') : '';
+    else if (s.visit) { html = wtSay('open itemdb'); title = 'itemdb gives its prices once you’ve opened itemdb.com.br today: click for more'; }
+    else if (s.busy) { html = wtSay('itemdb is busy'); title = 'itemdb asked for a pause: its prices come again in a few minutes'; }
+    else if (s.fail && !s.priced && !s.nc.valued) { html = wtSay('itemdb didn’t answer'); title = 'itemdb didn’t answer just now: click to try again'; }
     else {
-      html = `Worth <b>${s.np > 0 || !s.nc.valued ? `≈ ${npShort(s.np)} NP` : ''}${s.np > 0 && s.nc.valued ? ' · ' : ''}${s.nc.valued ? `${s.np > 0 ? '' : '≈ '}${esc(wtCapsText(s.nc))}` : ''}</b>`;
+      html = wtFigHtml(s);
       title = `${wt.own ? `Your ${WT_NAME[wt.key]}` : 'This gallery'} at itemdb’s prices: ${Math.round(s.np).toLocaleString()} NP. Click for the most valuable.`;
     }
     if (html !== wt.pillHtml) { wt.pill.innerHTML = html; wt.pillHtml = html; }
@@ -37489,7 +39345,7 @@
         <label class="bnp-switch"><input type="checkbox" data-itx="noReload"${set.noReload ? ' checked' : ''}><span>Inventory without reloading<small>After you use, send or move an item, the page stays: when you close Neopets’ pop-up, only what changed changes (what’s gone fades out, a stack’s count follows, anything new fades in) and every other picture stays put.</small></span></label>
         <label class="bnp-switch"><input type="checkbox" data-itx="autoClose"${set.autoClose ? ' checked' : ''}${set.noReload ? '' : ' disabled'}><span>…and close Neopets’ result pop-up on its own<small>A moment after it shows.</small></span></label>
         <label class="bnp-switch"><input type="checkbox" data-feat="barIcons"${f.barIcons !== false ? ' checked' : ''}><span>Pictures in the item pages’ links bar<small>The bar over your Inventory, Quick Stock, SDB and the rest (Closet, Equipment, Shed, Gallery, Stamps, TCG…): each link with its picture, in your theme.</small></span></label>
-        <label class="bnp-switch"><input type="checkbox" data-feat="bigTitles"${f.bigTitles !== false ? ' checked' : ''}><span>Bigger page titles<small>Your Inventory’s banner, and Quick Stock’s, the Safety Deposit Box’s and your Closet’s names with their pictures: bigger and still sharp, in the middle of the room over their links bar. Nothing on the page moves.</small></span></label>
+        <label class="bnp-switch"><input type="checkbox" data-feat="bigTitles"${f.bigTitles !== false ? ' checked' : ''}><span>Bigger page titles<small>Your Inventory’s banner, and Quick Stock’s, the Safety Deposit Box’s, your Closet’s, your shop’s and your gallery’s names with their pictures: bigger and still sharp, in the middle of the room over their links bar. Nothing on the page moves.</small></span></label>
         <label class="bnp-switch"><input type="checkbox" data-feat="qsLook"${f.qsLook !== false ? ' checked' : ''}><span>Quick Stock made over<small>A bigger title with its picture, Check All at the top as well as the foot, each choice’s whole cell to click with what’s chosen tinted in its column’s colour, and over the table what you’ve chosen, with Submit pointing at Neopets’ own.</small></span></label>
         <div class="bnp-f"><span>Quick Stock pictures</span><span class="bnp-seg" role="group" aria-label="Quick Stock pictures">${[[0, 'None'], [40, '40 px'], [60, '60 px'], [80, '80 px']].map(([v, l]) => `<button type="button" data-qspics="${v}" aria-pressed="${qsPx() === v}">${l}</button>`).join('')}</span><span class="bnp-note">each item’s picture beside its name, from itemdb; Quick Stock has the same choice over its table</span></div>
         <div class="bnp-f"><span>Quick Stock’s columns</span><span class="bnp-seg" role="group" aria-label="Quick Stock’s column headings">${[['line', 'Lines'], ['fill', 'Coloured tabs'], ['column', 'Full colour']].map(([v, l]) => `<button type="button" data-featv="qsHeads:${v}" aria-pressed="${(f.qsHeads || 'line') === v}">${l}</button>`).join('')}</span></div>
@@ -39198,10 +41054,11 @@
       </div>`],
       ['otherpages', `<div class="bnp-card"><h4>Your shop</h4>
         ${sw('shop2', 'Your shop’s pages made over', 'Shop Stock, Shop Till, Sales History and Edit your shop in one look, with a band for your shop in your theme: its keeper, its name and the page’s own figures. Shop Stock: what’s in stock, what it’s worth at your prices and at itemdb’s, how many items are priced 0 and so not on display, and Neopets’ own Update kept in reach, saying what it will change. Shop Till: what’s in it, and the amount, All and Withdraw in one line. Sales History: its totals, and each sale or by item, with pictures. Edit your shop: its fields in cards, your keeper saying your greeting as you type it, and Update Shop saying what’s changed. Choose your shopkeeper: Neopets or Colours, a species or colour, or a word to find; each one a card, the one you pick sent only when you press Use this shopkeeper.')}
+        ${sw('shopPm', 'Price mode on Shop Stock', 'A switch in Shop Stock’s price column. On, each item gets a Look up: the Shop Wizard (or, with Premium, the Super Shop Wizard) finds the lowest price in another shop, and yours goes just under it, in Neopets’ own box. Price all does every item shown, or your whole shop a page at a time (each page’s prices sent with Neopets’ own Update before the next page opens), one item at a time, a person’s moment apart, while the tab is in sight. Told to come back later, it can wait for the top of the hour and carry on a few minutes after. Prices only ever come from the wizards.')}
         ${sw('shopSales', 'Keep a copy of your Sales History', 'Each sale Neopets lists (those of 1,000 NP or more) is kept in this browser, so clearing Neopets’ list, as it asks you to, loses nothing here. The earlier ones can be forgotten on the page.')}
       </div>`],
       ...(GAL_SHIP ? [['otherpages', `<div class="bnp-card"><h4>My Gallery</h4>
-        ${sw('gal2', 'My Gallery, made over', 'Its pages as tabs; its name, keeper and words in a band with how full it is and what it’s worth; every item as a card with its price, to find, sort (name, copies, price) and size. Rank, Take out and Categorise put Neopets’ own boxes on the cards, with Number them as shown, All and Clear, and Neopets’ own Submit in a bar that stays in sight. Neopets’ own form is the one that’s sent.')}
+        ${sw('gal2', 'My Gallery, made over', 'A gallery as everyone sees it (yours too, as a guest) is never touched: its owner’s own layout stays. Your own gallery and its other pages: a big title and its pages as chips with pictures; its name, keeper and words in a band with how full it is and what it’s worth; every item as a card with its price, to find, sort (name, copies, price) and size. Rank, Take out and Categorise put Neopets’ own boxes on the cards, with Number them as shown, All and Clear, and Neopets’ own Submit in a bar that stays in sight. In Rank, drag items into place (the page scrolls by itself near its edges; several move together with Ctrl- or Shift-click), or ⤒ ⤓, or type a place; Undo, and a Pictures only size. Neopets’ own form is the one that’s sent.')}
       </div>`]] : []),   // (My Gallery's makeover: not in this release yet)
       ['otherpages', `<div class="bnp-card"><h4>NC Mall</h4>
         ${sw('ncMall', 'NC Mall 2', 'NE’s own NC Mall, a little wider than Neopets’ middle: what’s out now turning on its front, New, Popular, Leaving Soon and On Sale in boxes of their own, every item’s time left and its sale or bundle saving in plain sight, each item’s window with your pet wearing it or everything a capsule or pack can hold, your cart and the Pet Preview at its sides, and its checkout dressed to match. Add to cart is the Mall’s own request; nothing is bought until you press Confirm Payment at checkout. More › Neopets’ own Mall swaps back for that tab.')}
@@ -39242,6 +41099,7 @@
       if (k === 'dailyRun') { if (S.features.dailyRun && !runHere) dailyRunBar(); else paintRunBar(); } if (k === 'questDot') document.documentElement.classList.toggle('bnp-noqdot', !!S.features.questDot);
       if (k === 'shopDock') { if (S.features.shopDock) dockMark(); else if (document.documentElement) document.documentElement.removeAttribute('data-bnp-dock'); paintDock(); }
       if (k === 'shopMin') { shopMin(); paintDock(); }
+      if (k === 'shopPm') shopPmFeature();   // (Shop Stock open here: Price mode's switch, strip and lines come or go at once)
       if (k === 'fquest') paintFq();
       if (k === 'scView') { if (S.features.scView) scPage(); else scOff(); }
       if (k === 'ssAvail') { if (S.features.ssAvail) ssPage(); else ssOff(); }
@@ -39253,7 +41111,7 @@
       if (k === 'nmPopup' && !S.features.nmPopup) nmwClose();
       if (k === 'nmSent') { nmSentLink(); if (ncl) nclPaint(); }
       if (k === 'nmMini') nmMiniPaint();
-      if (k === 'bigTitles') { invBanner(); ptFit(); }
+      if (k === 'bigTitles') { invBanner(); ptFit(); galTopFit(); }
       if (/^qs/.test(k)) {   // (Quick Stock open here: as you've set it, at once)
         document.documentElement.classList.toggle('bnp-qs', S.features.qsLook !== false);
         if (k === 'qsAll') qsAllEar();
@@ -39688,7 +41546,13 @@
   const CHROME_V = 5;   // (3: whose bar it is; 4: its box as your theme draws it, never a page's own colour; 5: Neopets' links moved into a folder or the Profile menu kept in their own menus)
   const isLookup = () => /^\/(userlookup|petlookup)\.phtml$/i.test(location.pathname);
   const isGuildPage = () => /^\/guilds\/guild(_[a-z_]+)?\.phtml$/i.test(location.pathname);   // (a guild's own pages, which its makers lay out)
-  const isGalleryPage = () => /^\/gallery\/(index\.phtml)?$/i.test(location.pathname);   // (a gallery: its owner's description, often coded for the old layout, its own CSS and all)
+  const isGalleryPage = () => {   // (a gallery as everyone sees it: its owner's description, often coded for the old layout, its own CSS and all. Your own, in its working modes, isn't that: it has the beta look like the gallery's other pages)
+    if (!/^\/gallery\/(index\.phtml)?$/i.test(location.pathname)) return false;
+    const q = new URLSearchParams(location.search), gu = (q.get('gu') || '').toLowerCase();
+    let me = '';
+    try { me = (localStorage.getItem('bnp-ncl-me') || '').toLowerCase(); } catch (_) { /* */ }
+    return q.get('is_owner') === 'no' || (!!gu && gu !== me);
+  };
   const isShopFront = () => location.pathname === '/browseshop.phtml';   // (a shop's front: its owner's description, the same)
   const ownerPage = () => isLookup() || isGuildPage() || isGalleryPage() || isShopFront();   // (pages their owners coded for the old layout)
   const ownerBeta = () => (/^\/userlookup\.phtml$/i.test(location.pathname) ? !!S.features.oldUserLookups : /^\/petlookup\.phtml$/i.test(location.pathname) ? !!S.features.oldPetLookups : isGuildPage() ? !!S.features.oldGuilds : isGalleryPage() ? !!S.features.oldGalleries : isShopFront() ? !!S.features.oldShops : false);
@@ -41797,10 +43661,28 @@
     .bnp-wt-pill { display: inline-flex; align-items: center; gap: 5px; margin: 0; padding: 1px 11px 2px; border: 0; border-radius: 999px; font: inherit; line-height: 1.45; letter-spacing: inherit; cursor: pointer; white-space: nowrap; vertical-align: baseline; }
     .bnp-wt-pill[hidden] { display: none; }
     .bnp-wt-pill b, .bnp-wt-pill strong { font-weight: inherit; }
-    .bnp-wt-pill.is-safetydeposit, .bnp-wt-pill.is-closet { background: rgba(255, 255, 255, .2); color: inherit; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .6); text-shadow: inherit; }
-    .bnp-wt-pill.is-safetydeposit:hover, .bnp-wt-pill.is-closet:hover { background: rgba(255, 255, 255, .34); }
-    .bnp-wt-pill.is-inventory, .bnp-wt-pill.is-gallery { background: #fff6d2; color: #5d4a1e; box-shadow: inset 0 0 0 1.5px #e6c45c; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
-    .bnp-wt-pill.is-inventory:hover, .bnp-wt-pill.is-gallery:hover { background: #ffeda6; }
+    /* (its parts (user, 2026-10-31: "improve the styling of these 'worth' pills aesthetically"): Worth, then each figure with Neopets' own
+       coin, its number in Cafeteria and its unit small, a fine line between) */
+    @font-face { font-family: "BNP Cafeteria"; src: url("https://images.neopets.com/js/fonts/cafeteria-black.otf") format("opentype"); font-display: swap; }   /* (a name of NE's own: some pages declare a "Cafeteria" that doesn't load) */
+    .bnp-wt-pill .bnp-wt-k { opacity: .78; }
+    .bnp-wt-pill .bnp-wt-fv { display: inline-flex; align-items: center; gap: 4px; }
+    .bnp-wt-pill .bnp-wt-fv b { font: 15.5px/1 "BNP Cafeteria", "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; color: inherit !important; }
+    .bnp-wt-pill :is(.bnp-wt-k, .bnp-wt-fv, .bnp-wt-fv small, .bnp-wt-ap, .bnp-wt-say) { color: inherit !important; }   /* (Neopets' own bars colour b and small green: the pill's own colour held) */
+    .bnp-wt-pill .bnp-wt-fv small { font-size: .88em; opacity: .8; }
+    .bnp-wt-pill .bnp-wt-ap { font-style: normal; opacity: .8; }
+    .bnp-wt-pill .bnp-wt-coin { width: 17px; height: 17px; }
+    .bnp-wt-pill .bnp-wt-div { flex: none; width: 2px; height: 15px; margin: 0 2px; border-radius: 2px; background: currentColor; opacity: .3; }
+    .bnp-wt-pill.is-safetydeposit, .bnp-wt-pill.is-closet { gap: 7px; padding: 1px 12px 2px 10px; background: linear-gradient(rgba(255, 255, 255, .3), rgba(255, 255, 255, .14)); color: inherit; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .7), 0 2px 0 rgba(0, 0, 0, .18); text-shadow: inherit; }   /* (on Neopets' own coloured bar: see-through, a white border line) */
+    .bnp-wt-pill.is-safetydeposit:hover, .bnp-wt-pill.is-closet:hover { background: linear-gradient(rgba(255, 255, 255, .42), rgba(255, 255, 255, .24)); }
+    .bnp-wt-pill.is-inventory, .bnp-wt-pill.is-gallery { gap: 7px; min-height: 30px; box-sizing: border-box; padding: 2px 13px 2px 10px; border: 2px solid #c08d17; background: linear-gradient(#fffdf5 35%, #ffeebb); color: #5b4513; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .9), 0 2px 0 #c08d17; font: 13px "MuseoSansRounded700", Arial, sans-serif; transition: transform .15s, box-shadow .15s; }   /* (NP's gold, framed and lifted as Neopets' 2020 buttons are: no pastel bubble) */
+    .bnp-wt-pill.is-inventory:hover, .bnp-wt-pill.is-gallery:hover { background: linear-gradient(#fffbea 25%, #ffe69c); transform: translateY(-1px); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .9), 0 3px 0 #c08d17; }
+    .bnp-wt-pill:is(.is-inventory, .is-gallery) .bnp-wt-fv b { color: #3a2a08 !important; }
+    .bnp-wt-pill:is(.is-inventory, .is-gallery) :is(.bnp-wt-fv small, .bnp-wt-ap) { color: #7a5c1c !important; opacity: 1; }
+    .bnp-wt-pill:is(.is-inventory, .is-gallery) .bnp-wt-div { background: #d8ad45; opacity: 1; }
+    .bnp-wt-pill.is-inventory { gap: 6px; min-height: 25px; padding: 1px 11px 1px 8px; }   /* (in the Inventory's thin count line: compact) */
+    .bnp-wt-pill.is-inventory .bnp-wt-coin { width: 15px; height: 15px; }
+    .bnp-wt-pill.is-inventory .bnp-wt-fv b { font-size: 14.5px; }
+    .bnp-wt-pill.is-inventory .bnp-wt-div { height: 13px; }
     .bnp-wt-pill:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
     .bnp-wt-sep { margin: 0 6px; opacity: .55; }
     .bnp-wt-sep[hidden], .sdb-header-divider[data-bnp="wtdiv"][hidden], .closet-stats-divider[data-bnp="wtdiv"][hidden] { display: none; }
@@ -41983,6 +43865,29 @@
     .bnp-fc-said { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px 2px 8px; border-radius: 999px; background: #e3f4e6; color: #1f7a35; font: 12.5px var(--fc-font-bold, "Museo Sans Rounded Bold"), "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-fc-say.is-err { padding: 7px 10px; border-radius: 10px; background: var(--fc-red-wash, #fdecea); color: var(--fc-red, #c0392b); }
     .bnp-fc-warn { color: var(--fc-red, #c0392b); }
+    .bnp-fcm { margin-top: 12px; }   /* (Food Club's winnings worked out: Neopets' own calculator's look, under it) */
+    .bnp-fcm[hidden] { display: none; }
+    .bnp-fcm-title { padding: 10px 14px 0; color: var(--fc-title, #7a4a00); font: 15.5px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-align: center; }
+    .bnp-fcm .fc-totals__stat small { display: block; margin-top: 2px; color: var(--fc-ink-soft, #6b6b6b); font: 11.5px/1.3 "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-fcm-line { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 4px 8px; margin: 0; padding: 4px 14px 2px; color: var(--fc-ink, #2c2c2c); font: 13px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-fcm-line > span:first-child { color: var(--fc-ink-soft, #6b6b6b); }
+    .bnp-fcm-line i { margin-right: -4px; color: var(--fc-ink-soft, #6b6b6b); font: 11.5px "MuseoSansRounded500", Arial, sans-serif; font-style: normal; }
+    .bnp-fcm-dot { color: var(--fc-ink-soft, #9a9a9a); }
+    .bnp-fcm-all { margin: 6px 14px 0; }
+    .bnp-fcm-all > summary { display: flex; align-items: center; justify-content: center; gap: 6px; width: max-content; margin: 0 auto; padding: 5px 14px; border: 2px solid var(--fc-arena-border, #e0b968); border-radius: 999px; background: #fff; color: var(--fc-ink, #2c2c2c); font: 13px "MuseoSansRounded700", Arial, sans-serif; list-style: none; cursor: pointer; }
+    .bnp-fcm-all > summary::-webkit-details-marker { display: none; }
+    .bnp-fcm-all > summary::before { content: ""; border: 5px solid transparent; border-left-color: currentColor; transition: transform .15s; }
+    .bnp-fcm-all[open] > summary::before { transform: rotate(90deg) translate(2px, 2px); }
+    .bnp-fcm-all > summary span { color: var(--fc-ink-soft, #6b6b6b); }
+    .bnp-fcm-scroll { max-height: 340px; margin-top: 8px; overflow: auto; border: 2px solid var(--fc-arena-border, #e0b968); border-radius: 12px; background: #fff; }
+    .bnp-fcm-t { width: 100%; border-collapse: collapse; font: 13px "MuseoSansRounded700", Arial, sans-serif; color: var(--fc-ink, #2c2c2c); }
+    .bnp-fcm-t th { position: sticky; top: 0; padding: 7px 12px; background: #fff8dc; color: var(--fc-ink-soft, #6b6b6b); font: 12px "MuseoSansRounded700", Arial, sans-serif; text-align: left; }
+    .bnp-fcm-t td { padding: 7px 12px; border-top: 1px solid #f1e3b6; vertical-align: top; }
+    .bnp-fcm-t .is-np { text-align: right; white-space: nowrap; }
+    .bnp-fcm-t td small { display: block; margin-top: 3px; color: var(--fc-ink-soft, #6b6b6b); font: 11.5px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-fcm-t tr.is-none td { color: var(--fc-ink-soft, #6b6b6b); }
+    .bnp-fcm-no { display: inline-grid; place-items: center; min-width: 22px; height: 22px; margin: 0 4px 0 0; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: var(--fc-title, #7a4a00); color: #fff; font: 12px/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    .bnp-fcm-note { margin: 0; padding: 6px 16px 12px; color: var(--fc-ink-soft, #6b6b6b); font: 12px/1.45 "MuseoSansRounded500", Arial, sans-serif; text-align: center; }
     .bnp-fc-grid { --fc-cols: 26px repeat(5, minmax(0, 1fr)) 58px 98px 92px; border: 1px solid var(--fc-arena-border, #ffd7b3); border-radius: 12px; overflow: hidden; }
     .bnp-fc-gh, .bnp-fc-bet { display: grid; grid-template-columns: var(--fc-cols); align-items: center; gap: 6px; padding: 5px 10px; }
     .bnp-fc-gh { padding-block: 7px; background: #f3f3f3; color: #444; font: 11.5px var(--fc-font-bold, "Museo Sans Rounded Bold"), "MuseoSansRounded700", Arial, sans-serif; }
@@ -42792,11 +44697,14 @@
     .bnp-droo-res b { font: 700 16px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-droo-res span { color: #4d4a3f; }
     .bnp-droo-old { display: none !important; }
-    .bnp-dd { max-width: 480px; margin: 6px auto 14px; padding: 14px 18px; border: 2px solid rgba(0, 0, 0, .12); border-radius: 16px; background: #fff; color: #2a2a2a; font: 14px "MuseoSansRounded500", Arial, sans-serif; text-align: center; }
+    .bnp-dd { max-width: 560px; margin: 6px auto 14px; padding: 14px 18px; border: 2px solid rgba(0, 0, 0, .12); border-radius: 16px; background: #fff; color: #2a2a2a; font: 14px "MuseoSansRounded500", Arial, sans-serif; text-align: center; }
     .bnp-dd.is-warn { max-width: 520px; padding: 10px 16px; border-color: #e8b800; background: #fffbea; }
     .bnp-dd.is-warn p { margin: 0 0 8px; }
     .bnp-dd-head { display: flex; align-items: center; justify-content: center; gap: 14px; text-align: left; }
-    .bnp-dd-head img { width: 96px; height: 96px; }
+    .bnp-dd-head { flex-wrap: wrap; gap: 6px 22px; }
+    .bnp-dd-head .bnp-dd-roo { flex: none; width: 200px; height: 200px; }   /* (Count von Roo at his own size (user, 2026-10-31: "dont make character images small like this")) */
+    .bnp-dd-side { display: grid; justify-items: start; gap: 8px; }
+    .bnp-dd-side .bnp-dd-dice { justify-content: flex-start; margin: 6px 0 0; }
     .bnp-dd-head h2 { margin: 0 0 4px; font: 28px "Cafeteria", "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .4pt; }
     .bnp-dd-verdict { display: inline-block; padding: 3px 14px; border-radius: 999px; font: 700 15px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-dd-verdict.is-lost { background: #fde2dc; color: #9b2a14; } .bnp-dd-verdict.is-won { background: #d9f2d0; color: #1f5a16; } .bnp-dd-verdict.is-draw { background: #eeeae0; color: #4d4a3f; }
@@ -42809,7 +44717,7 @@
     .bnp-dd-said { margin: 6px 0; }
     .bnp-dd-next { margin: 8px 0 6px; color: #6f6a58; font-size: 13px; }
     .bnp-dd form { margin: 6px 0 0; text-align: center; }
-    input.bnp-dd-back { width: auto !important; padding: 6px 20px !important; font-size: 15px !important; }
+    input.bnp-dd-back { display: block !important; margin: 4px auto 0 !important; width: fit-content !important; padding: 6px 20px !important; font-size: 15px !important; }
     .bnp-dd-old { display: none !important; }
     .bnp-bob-hide { display: none !important; }
     .bnp-bob { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; max-width: 880px; margin: 10px auto 14px; padding: 8px 16px; border: 2px solid rgba(0, 0, 0, .12); border-radius: 14px; background: #fff; color: #2a2a2a; font: 14px "MuseoSansRounded500", Arial, sans-serif; }
@@ -42824,7 +44732,9 @@
     .bnp-coco.is-front .bnp-coco-more { margin-top: 0; }
     input.bnp-coco-back { width: auto !important; padding: 6px 20px !important; font-size: 15px !important; }
     .bnp-bt { max-width: 520px; margin: 10px auto 16px; padding: 16px 20px 18px; border: 2px solid rgba(0, 0, 0, .12); border-radius: 16px; background: #fff; color: #2a2a2a; font: 14px "MuseoSansRounded500", Arial, sans-serif; text-align: center; }
-    .bnp-bt-head { display: flex; align-items: center; justify-content: center; gap: 16px; text-align: left; }
+    .bnp-bt-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 22px; text-align: left; }
+    .bnp-bt-head .bnp-bt-host { flex: none; width: 200px !important; height: 200px !important; }   /* (the pirate at his own size, never a thumbnail (user, 2026-10-31)) */
+    .bnp-bt-side { min-width: 0; max-width: 260px; }
     .bnp-bt-head > img { flex: none; width: 96px; height: 96px; border-radius: 14px; box-shadow: 0 0 0 2px rgba(0, 0, 0, .08); }
     .bnp-bt-head h2 { margin: 0 0 4px; font: 26px/1.1 "Cafeteria", "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .4pt; }
     .bnp-bt-who { margin: 0 0 8px; color: #5c5845; }
@@ -44106,6 +46016,18 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.6', '2026-10-31', [
+      'My Gallery made over: a big title, a band with your keeper, how full it is, what it’s worth and how many items are NC; every item a card to find, sort and size. Galleries as visitors see them stay as their owners made them',
+      'My Gallery: Rank by dragging items into place (several at once, the page scrolling at its edges), Take out and Categorise on the cards; Categories, Quick Remove and Quick Categorise dressed to match',
+      'Your shop: Shop Stock made over: each row says what its price will do, Show, Sort and Find in one line, the band with what your shop is worth and how full it is, each page with its own title, page buttons in your theme',
+      'Your shop: Remove 1 takes one out at once, the list updating in place; emptying a page opens the items left; an empty shop gets its band and a card with the ways to stock it',
+      'Your shop: Price mode looks up the Shop Wizard or Super Shop Wizard and puts each price just under the lowest, for a page or your whole shop, and can wait out a wizard ban (on and off in Settings › Your shop)',
+      'NC Mall 2: Limited Time! tags over items leaving soon (red on the last day, orange within three), Leaving Soon shows at once, and a cart button by your NC',
+      'NC Mall 2: the Dyeworks page shows its bases far faster, each item’s window shows its Dyeworks colours, and a Dyeworks tag',
+      'Food Club: under Neopets’ Possible Winnings Calculator, what your bets can really win together, every way they can pay with its chance, and the expected return; Place all says when the round has room for fewer',
+      'What it’s worth: the worth pills redone with Neopets’ own coins',
+      'Fixes: Sales History shows your sales where Neopets writes the day first (31/10/2026), Clear Sales History in its foot',
+    ]],
     ['4.5', '2026-10-30', [
       'Neomail: a Sent folder of what you’ve sent (from Neomail, NeoChat or NE’s little window), to read, write again, forward or delete',
       'NeoChat: a Sent view beside your chats, and a message box you can make bigger with its button or by dragging its corner',
@@ -44151,7 +46073,6 @@
       'Dailies: each counted only when Neopets’ own answer proves it, with Premium’s extra tries and quests under way',
       'Newest items in Settings: what Neopets just released, NP and NC, by day; and new stamps on your album’s front',
       'Your shop: Shop Stock, Till and Sales History made over, and your sales kept when you clear Neopets’ list',
-      ...(GAL_SHIP ? ['My Gallery made over: your items as cards with their prices, found, sorted and sized; ranking, taking out and categorising on the cards, with a Submit that stays in sight'] : []),
       'Inventory: All (NP and NC) and Most valuable first; a stack you just used from opens its next item',
       'Customise: Change Token. Food Club: Place bet on each bet of a list, and how your bets have done',
       'Lottery’s Buy all · Trudy finishes in a hidden tab · quiet wheels and Kiko Pop · Turmaculus wake times',
