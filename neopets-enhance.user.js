@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.8.1
+// @version      4.8.2
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -9477,7 +9477,7 @@
     const sec = Number(nbOpt().boardLive) || 0;
     if (sec && next === 1) {   // (never on the dot either; further apart while you're away, none after an hour away, back to your setting when you are)
       let t = 0;
-      const tick = () => { clearTimeout(t); const now = Number(nbOpt().boardLive) || 0; if (!now) return; t = setTimeout(() => { if (!document.hidden && nbHere.next === 1 && actIdle() < NB_STOP) nbBoardFresh(false); tick(); }, nbJitter(actGap(Math.max(30, now) * 1000) / 1000)); };   // (your setting read each time: off stops it)
+      const tick = () => { clearTimeout(t); const now = Number(nbOpt().boardLive) || 0; if (!now) return; t = setTimeout(() => { if (!document.hidden && nbHere.next === 1 && actIdle() < nbStop(now)) nbBoardFresh(false); tick(); }, nbJitter(actGap(Math.max(30, now) * 1000) / 1000)); };   // (your setting read each time: off stops it)
       tick();
       addEventListener('bnp-back', tick);
     }
@@ -10439,7 +10439,7 @@
   function nbLive() {   // (the last page of a topic, while you're looking: new posts come in under the others. Your setting read each time: off stops it)
     const every = () => Number(nbOpt().live) || 0;
     if (!every() || nbHere.liveT) return;
-    const tick = () => { clearTimeout(nbHere.liveT); const sec = every(); if (!sec) { nbHere.liveT = 0; return; } nbHere.liveT = setTimeout(() => { if (!document.hidden && nbHere.last && actIdle() < NB_STOP) nbCheck(false); tick(); }, nbJitter(actGap(Math.max(20, sec) * 1000) / 1000)); };   // (only while you're on its last page: another page, put in place, waits. Further apart while you're away; none after 4 hours away)
+    const tick = () => { clearTimeout(nbHere.liveT); const sec = every(); if (!sec) { nbHere.liveT = 0; return; } nbHere.liveT = setTimeout(() => { if (!document.hidden && nbHere.last && actIdle() < nbStop(sec)) nbCheck(false); tick(); }, nbJitter(actGap(Math.max(20, sec) * 1000) / 1000)); };   // (only while you're on its last page: another page, put in place, waits. Further apart while you're away; none after an hour away, or 30 minutes at every 30 seconds or minute)
     tick();
     if (nbLive.wired) return;
     nbLive.wired = true;
@@ -11257,12 +11257,12 @@
         <div class="bnp-f"><span>Topics on a page</span>${seg('per', [[40, '40 (Neopets’ own)'], [20, '20']])}</div>
         <p class="bnp-note">20: each of Neopets’ pages shows as two, the other half one click away (nothing more is fetched for it). Show more brings 20 at a time.</p>
         <div class="bnp-f"><span>A board’s topics</span>${seg('boardLive', [[0, 'As they load'], [120, '2 min'], [300, '5 min'], [600, '10 min'], [900, '15 min']])}</div>
-        <p class="bnp-note">Looking only shows a button with what’s new: nothing moves until you press it. While you’re away from Neopets it looks less and less often, and after an hour away it stops until you’re back.</p>
+        <p class="bnp-note">Looking only shows a button with what’s new: nothing moves until you press it. While you’re away from Neopets it looks less and less often, and after ${awayWords(NB_STOP)} away it stops until you’re back.</p>
       </div>
       <h5${hide}>Topics</h5>
       <div class="bnp-card"${hide}>
         <div class="bnp-f"><span>New posts</span>${seg('live', [[0, 'When you reload'], [30, '30 sec'], [60, '1 min'], [120, '2 min'], [300, '5 min'], [600, '10 min'], [900, '15 min'], [1800, '30 min']])}</div>
-        <p class="bnp-note">About how often a topic’s last page looks for new posts while you’re on it (never on the dot: each wait is a little longer or shorter). They come in under the others. Back on the tab after longer than that, it looks at once.</p>
+        <p class="bnp-note">About how often a topic’s last page looks for new posts while you’re on it (never on the dot: each wait is a little longer or shorter). They come in under the others. Back on the tab after longer than that, it looks at once. While you’re away from Neopets it looks less and less often, and after ${awayWords(nbStop(120))} away (${awayWords(nbStop(60))} at 30 sec or 1 min) it stops until you’re back.</p>
         ${sw('stick', 'The topic’s bar at the top as you scroll', 'Its name, its pages, the size of the words, Bookmark, New posts? and Reply, in a bar that stays at the top of the window. Off: they stay at the top of the topic, and scroll away with it.')}
         ${sw('acts', 'Things to do under each post', 'Quote, Reply (@their name), and the poster’s own buttons: Neomail, their trades, auctions, shop and gallery; ⋯ to follow, mute or tag them.')}
         <div class="bnp-f"><span>Poster’s buttons</span>${seg('who', [['all', 'Always'], ['hover', 'When you point at a post'], ['click', 'Behind their name']])}</div>
@@ -15490,7 +15490,7 @@
         ${seg('nclEvery', 'How often', NCL_EVERY, String(nclEvery()))}
         ${(() => { const m = nclEvery(); return `<div class="bnp-nclhow"><i class="bnp-bang" aria-hidden="true">!</i><ul aria-label="How it looks">${m ? `<li>About every ${nclEveryWords(m)}, a little sooner or later each time</li>
           <li>${f.nclAlways ? 'In every tab, from its round button in the corner' : 'Only in tabs where NeoChat is open or folded'}</li>
-          <li>Away from Neopets: less and less often, none after 4 hours, back to normal when you return</li>
+          <li>Away from Neopets: less and less often, none after ${awayWords(ACT_STOP)}, back to normal when you return</li>
           <li>With several tabs, only the one you’re on looks</li>` : '<li>Only when you press Look now</li>'}
           <li>A Neomail it reads is marked read, as on Neopets</li></ul></div>`; })()}
         ${sw('nclAlways', 'Round button in every tab', 'Every Neopets tab starts with NeoChat folded into a round button in the corner, so new Neomail is found wherever you are. Off: NeoChat only shows up, and only looks, in tabs where you open it. Its × hides it in that tab alone.')}
@@ -24077,13 +24077,17 @@
     const P = cloP(), root = document.createElement('div');
     root.className = 'bnp-clo';
     root.setAttribute('data-bnp', 'clo');
-    clo = { root, items: [], byId: new Map(), total: 0, qty: 0, at: 0, wear: null, view: P.view || 'big', sort: P.sort || 'new', show: 'all', zone: '', kind: '', q: reClean(new URLSearchParams(location.search).get('obj_name') || ''), picking: false, sel: new Map(), each: P.each || 'all', reading: { p: 0, of: 0 }, err: '', note: '', prices: new Map(), nc: new Map(), worth: P.worth !== false, nw: new Set() };
+    clo = { root, items: [], byId: new Map(), total: 0, qty: 0, at: 0, wear: null, view: P.view || 'big', sort: P.sort || 'new', show: 'all', zone: '', kind: '', q: reClean(new URLSearchParams(location.search).get('obj_name') || ''), picking: false, sel: new Map(), each: P.each || 'all', reading: { p: 0, of: 0 }, loading: true, err: '', stop: null, part: false, gen: 0, lim: CLO_STEP, note: '', prices: new Map(), nc: new Map(), worth: P.worth !== false, nw: new Set() };
     app.after(root);
     const head = $('.nav-top__2020, #navtop__2020');
     if (head && getComputedStyle(head).position === 'fixed') root.style.setProperty('--bnp-clo-top', `${Math.round(head.getBoundingClientRect().height) + 6}px`);   // (its tools in sight under the bar as you scroll)
     cloWire(root);
     cloPaint();
     idbGet(`clo-wear-${cloAcct()}`).then((w) => { if (clo && w && Array.isArray(w.worn)) { clo.wear = w; cloPaint(true); } }).catch(() => {});
+    Promise.all([idbGet(`clo-items-${cloAcct()}`), idbGet(`clo-part-${cloAcct()}`)]).then(([k, p]) => {   // (what was read before, at once: Neopets' own count says below whether it's still right)
+      const show = k && Array.isArray(k.items) ? k : p && Array.isArray(p.items) ? p : null;
+      if (clo && show && !clo.items.length) { cloUse(show, show === p); cloPaint(true); }
+    }).catch(() => {});
     let n = 0;
     const go = () => {   // (Neopets' own closet first: its count, to tell whether what's kept is still right)
       const vm = cloVm();
@@ -24093,55 +24097,159 @@
     go();
     setInterval(cloWatch, 800);
   }
-  async function cloRead(force) {   // (every page of it, 90 at a time, one at a time a moment apart, only while this tab's in front)
-    const key = `clo-items-${cloAcct()}`, vm = cloVm();
-    const nItems = vm ? Number(vm.totalItems) : NaN, nQty = vm ? Number(vm.totalQtyAll) : NaN, filtered = vm && (vm.searchQuery || vm.selectedCategory);
-    if (!force) {
-      const kept = await idbGet(key).catch(() => null);
-      if (kept && Array.isArray(kept.items) && Date.now() - kept.at < 12 * 3600e3 && !filtered && kept.total === nItems && kept.qty === nQty) return kept;   // (Neopets counts it the same: as it was)
-    }
-    const items = [];
-    let pages = 1, total = 0, qty = 0;
-    for (let p = 1; p <= pages; p++) {
-      while (document.hidden) { clo.reading.paused = true; await saSleep(800); }
-      clo.reading = { p, of: pages };
-      cloPaint(true);
-      const r = await fetch(`/np-templates/ajax/closet/get-items.php?${new URLSearchParams({ page: p, per_page: 90, search: '', category: '' })}`, { credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      const d = await r.json().catch(() => null);
-      if (!d || !d.success) throw new Error('Neopets didn’t give your closet’s items just now: try again in a moment.');
-      items.push(...(d.items || []));
-      pages = Math.max(1, Number(d.total_pages) || 1);
-      total = Number(d.total) || items.length;
-      qty = Number(d.total_qty) || items.reduce((s, x) => s + (Number(x.qty) || 1), 0);
-      if (p < pages) await saSleep(2800 + Math.random() * 1600);
-    }
-    const before = await idbGet(key).catch(() => null);
-    const had = before && Array.isArray(before.items) ? new Set(before.items.map((x) => Number(x.obj_info_id))) : null;
-    const nw = had ? items.map((x) => Number(x.obj_info_id)).filter((id) => !had.has(id)) : (before && before.nw) || [];
-    const kept = { at: Date.now(), total, qty, items, nw: nw.length > 60 ? [] : nw, prices: (before && before.prices) || {}, pricedAt: (before && before.pricedAt) || 0 };   // (a first read, or a closet much changed, marks nothing; its prices kept)
-    idbSet(key, kept).catch(() => {});
-    return kept;
+  // (reading it: 90 to a page, as Neopets' own page can ask, one page at a time a moment apart, only while this tab's in front. What's read
+  // so far shows as it comes and is kept as it comes, so a visit cut short goes on from there the next time, while Neopets counts the closet
+  // the same. A list kept from before shows at once, and stays shown while it's read again)
+  const CLO_PER = 90, CLO_STEP = 300;   // (CLO_STEP: cards drawn at a time, the next ones as you scroll near the end)
+  const CLO_GONE = new Error('clo-gone');   // (a newer read took over: this one stops where it is)
+  const cloPages = (n) => Math.max(1, Math.ceil((Number(n) || 0) / CLO_PER));
+  const cloKeepFor = (n) => (cloPages(n) > 5 ? 48 : 12) * 3600e3;   // (a list kept while Neopets counts the closet the same: a big closet's for longer, its read taking minutes)
+  async function cloCounts() {   // ({ n: kinds, q: every copy } for the whole closet, as Neopets counts it: its own page's, or its summary's while that page is searching. null: not known)
+    const vm = cloVm();
+    if (vm && !vm.loading && !vm.searchQuery && !vm.selectedCategory) return { n: Number(vm.totalItems) || 0, q: Number(vm.totalQtyAll) || 0 };
+    try {
+      const d = await (await fetch('/np-templates/ajax/closet/get-summary.php')).json();   // (as Neopets' own page asks for it)
+      if (d && d.success) return { n: Number(d.total_items) || 0, q: Number(d.total_qty) || 0 };
+    } catch (_) { /* */ }
+    return null;
   }
-  async function cloLoad(force, reprice) {   // (reprice: Read again — its prices asked for again too)
-    if (!clo || clo.loading) return;
-    clo.loading = true;
-    clo.err = '';
+  async function cloPageAsk(p, gen) {   // (one page of it, asked again twice a while apart if Neopets doesn't answer, or is too slow. → its answer, or null)
+    for (let n = 0; n < 3; n++) {
+      if (n) { await saSleep((n === 1 ? 6000 : 18000) * (0.85 + Math.random() * 0.4)); await untilShown(); }
+      if (!clo || clo.gen !== gen) throw CLO_GONE;
+      const ac = new AbortController(), cut = setTimeout(() => ac.abort(), 30000);
+      try {
+        const r = await fetch(`/np-templates/ajax/closet/get-items.php?${new URLSearchParams({ page: p, per_page: CLO_PER, search: '', category: '' })}`, { credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' }, signal: ac.signal });
+        const d = await r.json().catch(() => null);
+        if (d && d.success && Array.isArray(d.items)) return d;
+      } catch (_) { /* (no answer, or too slow) */ } finally { clearTimeout(cut); }
+    }
+    if (!clo || clo.gen !== gen) throw CLO_GONE;
+    return null;
+  }
+  async function cloRead(gen, from, onPage) {   // (from: a read cut short, gone on with. → { total, qty, items } once every page is in)
+    const pkey = `clo-part-${cloAcct()}`, live = () => { if (!clo || clo.gen !== gen) throw CLO_GONE; };
+    const say = () => (clo.items.length ? cloStripPaint() : cloPaint(true));   // (how far: the strip only, once something's shown)
+    const at = from ? from.at : Date.now();
+    let items = from ? from.items.slice() : [], p = from ? from.p + 1 : 1, of = from ? from.of : 1, total = from ? from.total : -1, qty = from ? from.qty : -1, again = 0;
+    while (p <= of) {
+      if (document.hidden) { clo.reading.paused = true; say(); await untilShown(); live(); }
+      clo.reading = { ...clo.reading, p, of, paused: false };
+      say();
+      const d = await cloPageAsk(p, gen);
+      live();
+      if (!d) { const e = new Error('Neopets didn’t answer just now.'); e.stop = { p, of }; throw e; }
+      const t = Number(d.total) || 0, q = Number(d.total_qty) || 0;
+      if (total >= 0 && (t !== total || q !== qty)) {   // (the closet changed while it was read — something moved, worn or put in — so its pages moved too: from the start again)
+        if (++again > 2) { const e = new Error('Your closet kept changing while it was read: try again in a moment.'); e.say = true; throw e; }
+        if (clo.items.length) clo.reading.bg = true;   // (what's shown stays till it's all read)
+        items = []; p = 1; of = cloPages(t); total = -1; qty = -1;
+        idbSet(pkey, null).catch(() => {});
+        await saSleep(2800 + Math.random() * 1600); live();
+        continue;
+      }
+      total = t; qty = q; of = Math.max(1, Number(d.total_pages) || cloPages(t));
+      const had = new Set(items.map((x) => Number(x.obj_info_id)));
+      for (const x of d.items) { const id = Number(x.obj_info_id); if (!had.has(id)) { had.add(id); items.push(x); } }
+      if (p < of) idbSet(pkey, { at, seen: Date.now(), total, qty, of, p, items: items.slice() }).catch(() => {});   // (so far: a visit cut short goes on from here)
+      if (onPage) onPage(items, total, qty);
+      if (++p <= of) { await saSleep(2800 + Math.random() * 1600); live(); }
+    }
+    idbSet(pkey, null).catch(() => {});
+    return { total, qty, items };
+  }
+  const cloItem = (x) => ({ raw: x, id: Number(x.obj_info_id), n: reClean(x.obj_name), d: reClean(x.obj_desc || ''), img: String(x.image_url || `${NPI}items/${x.obj_filename}.gif`), r: Number(x.obj_rarity) || 0, rt: reClean(x.rarity_text || x.rarity_label || ''), rc: String(x.rarity_color || ''), cat: reClean(x.category_name || ''), q: Math.max(1, Number(x.qty) || 1), pb: !!x.is_paintbrush, nc: !!x.is_nc });
+  function cloUse(d, part) {   // (a list into what's shown: a whole read, the one kept, or — part — what's read so far)
+    clo.items = d.items.map(cloItem);
+    clo.byId = new Map(clo.items.map((x) => [x.id, x]));
+    clo.nw = new Set((d.nw || []).filter((id) => clo.byId.has(id)));
+    clo.total = Number(d.total) || 0;
+    clo.qty = Number(d.qty) || 0;
+    clo.at = d.at || 0;
+    clo.part = !!part;
+    for (const [n, v] of Object.entries(d.prices || {})) if (!clo.prices.has(n)) clo.prices.set(n, v);
+    if (!part) for (const id of [...clo.sel.keys()]) if (!clo.byId.has(id)) clo.sel.delete(id);
+  }
+  async function cloLoad(force, reprice) {   // (force: Read again — every page, and its prices asked for again too)
+    if (!clo) return;
+    const gen = clo.gen = (clo.gen || 0) + 1;   // (one read at a time: a newer one takes over from one under way)
+    const acct = cloAcct(), key = `clo-items-${acct}`, pkey = `clo-part-${acct}`;
+    clo.loading = true; clo.err = ''; clo.stop = null;
+    clo.reading = { p: 0, of: 0 };
+    if (force) cloPaint(true);   // (Read again: said at once)
     let rec = null;
     try {
-      const d = rec = await cloRead(force);
-      clo.items = d.items.map((x) => ({ raw: x, id: Number(x.obj_info_id), n: reClean(x.obj_name), d: reClean(x.obj_desc || ''), img: String(x.image_url || `${NPI}items/${x.obj_filename}.gif`), r: Number(x.obj_rarity) || 0, rt: reClean(x.rarity_text || x.rarity_label || ''), rc: String(x.rarity_color || ''), cat: reClean(x.category_name || ''), q: Math.max(1, Number(x.qty) || 1), pb: !!x.is_paintbrush, nc: !!x.is_nc }));
-      clo.byId = new Map(clo.items.map((x) => [x.id, x]));
-      clo.nw = new Set((d.nw || []).filter((id) => clo.byId.has(id)));
-      clo.total = d.total;
-      clo.qty = d.qty;
-      clo.at = d.at;
-      for (const id of [...clo.sel.keys()]) if (!clo.byId.has(id)) clo.sel.delete(id);
-    } catch (e) { clo.err = (e && e.message) || 'Your closet didn’t load just now.'; }
+      const [kept, part, now] = await Promise.all([idbGet(key).catch(() => null), idbGet(pkey).catch(() => null), cloCounts()]);
+      if (!clo || clo.gen !== gen) return;
+      const has = !!(kept && Array.isArray(kept.items)), hasPart = !!(part && Array.isArray(part.items));
+      const same = (x) => !!(now && x && x.total === now.n && x.qty === now.q);   // (Neopets counts it the same as when it was read)
+      if (!clo.items.length && (has || hasPart)) cloUse(has ? kept : part, !has);   // (what was read before, at once)
+      if (!force && has && same(kept) && Date.now() - kept.at < cloKeepFor(kept.total)) rec = kept;   // (as it was: nothing read)
+      else {
+        const from = !force && hasPart && same(part) && part.p < part.of && Date.now() - (part.seen || 0) < 12 * 3600e3 ? part : null;
+        const bg = clo.items.length > 0 && !(from && clo.part && !has);   // (bg: what's shown stays as it is till it's all read; else what's read shows as it comes)
+        clo.reading = { p: from ? from.p + 1 : 1, of: from ? from.of : now ? cloPages(now.n) : 0, bg, on: !!from && !bg };
+        cloPaint(true);
+        const got = await cloRead(gen, from, (items, total, qty) => { if (!clo.reading.bg) { cloUse({ items, total, qty }, true); cloPaint(true); } });
+        const had = has ? new Set(kept.items.map((x) => Number(x.obj_info_id))) : null;
+        const nw = had ? got.items.map((x) => Number(x.obj_info_id)).filter((id) => !had.has(id)) : [];
+        rec = { at: Date.now(), total: got.total, qty: got.qty, items: got.items, nw: nw.length > 60 ? [] : nw, prices: (kept && kept.prices) || {}, pricedAt: (kept && kept.pricedAt) || 0 };   // (a first read, or a closet much changed, marks nothing new; its prices kept)
+        idbSet(key, rec).catch(() => {});
+      }
+      cloUse(rec);
+    } catch (e) {
+      if (e === CLO_GONE || !clo || clo.gen !== gen) return;   // (a newer read took over)
+      if (e && e.stop) clo.stop = e.stop;   // (Neopets stopped answering partway: what's read is kept, and Carry on goes on from that page)
+      else if (e && e.say) clo.err = e.message;
+      else { clo.err = 'Your closet didn’t load just now.'; report(e); }
+    }
     clo.loading = false;
     clo.reading = { p: 0, of: 0 };
     document.documentElement.classList.add('bnp-clo-ready');
-    cloPaint();
+    cloPaint(true);
     if (rec && !clo.err) cloPriceAll(rec, reprice).catch(report);
+  }
+  function cloStripHtml() {   // (a read under way, or stopped partway: how far it is, and what's shown meanwhile)
+    const r = clo.reading, n = clo.items.length;
+    const meter = (done, of, label) => `<span class="bnp-clo-bar" role="progressbar" aria-label="${label}" aria-valuemin="0" aria-valuemax="${of}" aria-valuenow="${done}"><i style="width:${Math.round((done / Math.max(1, of)) * 100)}%"></i></span>`;
+    if (clo.loading) {
+      if (!n || !(r.of > 1 || r.paused)) return '';   // (nothing shown yet: the space below says it; a one-page closet's read is over in a moment)
+      const meanwhile = r.paused ? 'Paused while this tab’s in the back.'
+        : r.bg ? (clo.part ? `Meanwhile, the ${n.toLocaleString()} items read before are shown.` : `Meanwhile, it’s shown as it was read ${clo.at ? colAgo(clo.at) : 'before'}.`)
+        : `${n.toLocaleString()} of ${(clo.total || n).toLocaleString()} items so far${r.on ? ', going on from where it stopped last time' : ''}.`;
+      return `<div class="bnp-clo-read${r.paused ? ' is-paused' : ''}"><p><b>${r.bg ? 'Reading your closet again' : 'Reading your closet'}: page ${r.p} of ${r.of}</b> ${meanwhile}</p>${meter(r.p - 1, r.of, 'Pages read')}</div>`;
+    }
+    if (!n) return '';
+    if (clo.stop) return `<div class="bnp-clo-read is-stop" role="status"><p><b>Neopets didn’t answer for page ${clo.stop.p} of ${clo.stop.of}.</b> ${clo.part ? `${n.toLocaleString()} of ${(clo.total || n).toLocaleString()} items are here so far; Carry on reads the rest.` : `Your closet is shown as it was read ${clo.at ? colAgo(clo.at) : 'before'}; Carry on brings it up to date.`}</p>${meter(clo.stop.p - 1, clo.stop.of, 'Pages read')}<button type="button" class="bnp-clo-btn is-small" data-clo-on>Carry on</button></div>`;
+    if (clo.err) return `<div class="bnp-clo-read is-stop" role="status"><p><b>${esc(clo.err)}</b> ${clo.part ? `${n.toLocaleString()} of ${(clo.total || n).toLocaleString()} items are here so far.` : `Your closet is shown as it was read ${clo.at ? colAgo(clo.at) : 'before'}.`}</p><button type="button" class="bnp-clo-btn is-small" data-clo-again>Try again</button></div>`;
+    return '';
+  }
+  function cloStripPaint() {   // (only the reading strip: what's shown under it stays as it is, nothing moving under the pointer)
+    if (!clo) return;
+    const html = cloStripHtml(), old = clo.root.querySelector(':scope > .bnp-clo-read');
+    if (old) { if (html) old.outerHTML = html; else old.remove(); return; }
+    const band = clo.root.querySelector(':scope > .bnp-clo-band');
+    if (html && band) band.insertAdjacentHTML('afterend', html);
+  }
+  const cloMoreHtml = (n, of) => `<div class="bnp-clo-more" data-clo-more><span>${n.toLocaleString()} of ${of.toLocaleString()} shown</span><button type="button" class="bnp-clo-btn is-small" data-clo-moreb>Show ${Math.min(CLO_STEP, of - n).toLocaleString()} more</button><button type="button" class="bnp-clo-btn is-small" data-clo-allb>Show all ${of.toLocaleString()}</button></div>`;
+  function cloMore(all) {   // (the next cards — or every one — under those drawn: added, not drawn again, while the order's the same)
+    if (!clo) return;
+    const shown = clo.show === 'worn' ? [] : cloList(), from = Math.max(CLO_STEP, clo.lim || 0), to = all ? shown.length : Math.min(shown.length, from + CLO_STEP);
+    if (to <= from) return;
+    clo.lim = to;
+    const grid = clo.root.querySelector('[data-clo-grid]'), bar = clo.root.querySelector('[data-clo-more]');
+    const same = !!clo.order && clo.order.length === shown.length && shown.every((x, i) => x.id === clo.order[i]);
+    if (!grid || !bar || !same) { cloPaint(true); return; }
+    grid.insertAdjacentHTML('beforeend', shown.slice(from, to).map(cloCardHtml).join(''));
+    if (to < shown.length) bar.outerHTML = cloMoreHtml(to, shown.length); else bar.remove();
+    cloMoreWatch();
+  }
+  function cloMoreWatch() {   // (the cards under those drawn come as you scroll near the end)
+    if (!clo || typeof IntersectionObserver !== 'function') return;
+    if (!clo.io) clo.io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) cloMore(false); }, { rootMargin: '0px 0px 1000px 0px' });
+    clo.io.disconnect();
+    const bar = clo.root.querySelector('[data-clo-more]');
+    if (bar) clo.io.observe(bar);
   }
   async function cloPriceAll(rec, reprice) {   // (its Neopoints items at itemdb's prices, asked for together and kept with it: only what isn't kept yet — or, read again, all of it)
     if (!clo || !clo.worth || clo.pricing) return;
@@ -24171,8 +24279,8 @@
     cloSoon();
   }
   let cloWas = { succ: false, n: -1, q: -1 };
-  function cloWatch() {   // (Neopets' own window moved or deleted something: read again, so what's shown is right)
-    if (!clo || clo.loading) return;
+  function cloWatch() {   // (Neopets' own window moved or deleted something: what's shown made right — while a read's under way too, which then stops)
+    if (!clo) return;
     const vm = cloVm();
     if (!vm) return;
     const succ = !!(vm.successModal && vm.successModal.show);
@@ -24180,6 +24288,7 @@
       if (clo.flow) clo.moved = { n: clo.flow.n, at: Date.now() };   // (what went: said, with where to go with it next)
       const take = clo.flow && clo.flow.take, lone = clo.one && Date.now() - clo.one.at < 30 * 60e3 ? clo.one : null;
       clo.flow = false; clo.one = null; clo.sel.clear(); clo.picking = false;
+      if (clo.loading) { clo.gen++; clo.loading = false; clo.reading = { p: 0, of: 0 }; }   // (Neopets' pages moved under the read: it stops, and cloAfterMove reads again if the list doesn't add up)
       cloAfterMove(take, lone).catch((e) => { report(e); cloLoad(true); });
     }
     if (clo.flow && !(vm.bulkRemoveConfirmModal && vm.bulkRemoveConfirmModal.show) && !succ) {   // (its window closed without moving anything: its choosing put away, its own page back)
@@ -24203,21 +24312,23 @@
     if (!plan && lone && Number.isFinite(vq) && qty0 - vq > 0) plan = new Map([[lone.id, qty0 - vq]]);   // (one item, from its own window: as many as Neopets' count went down)
     if (!plan || !cloTake(plan, vq, vt)) cloLoad(true);
   }
-  function cloTake(plan, vq, vt) {   // (plan: id → how many went. → true when the list then counts as Neopets does)
-    const vm = cloVm();
-    if (!vm || vm.searchQuery || vm.selectedCategory) return false;   // (its count is then only what it's showing)
+  function cloTake(plan, vq, vt) {   // (plan: id → how many went: off the list shown either way. → true when it then counts as Neopets does, and it's kept so)
+    const vm = cloVm(), whole = !!vm && !vm.searchQuery && !vm.selectedCategory;   // (Neopets' count is its whole closet's only while its own page isn't searching)
+    let fits = whole && !clo.part;   // (a list part read can't add up)
     const byId = new Map(clo.items.map((x) => [x.id, { ...x }]));
-    for (const [id, n] of plan) { const x = byId.get(id); if (!x || !(n > 0) || n > x.q) return false; x.q -= n; }
+    for (const [id, n] of plan) { const x = byId.get(id); if (!x || !(n > 0) || n > x.q) fits = false; if (x && n > 0) x.q = Math.max(0, x.q - n); }
     const left = [...byId.values()].filter((x) => x.q > 0), qty = left.reduce((a, x) => a + x.q, 0);
-    if (vq !== qty || (Number.isFinite(vt) && vt !== left.length)) return false;
+    if (vq !== qty || (Number.isFinite(vt) && vt !== left.length)) fits = false;
     clo.items = clo.items.filter((x) => byId.get(x.id).q > 0).map((x) => { const y = byId.get(x.id); return y.q === x.q ? x : { ...x, q: y.q, raw: { ...x.raw, qty: y.q } }; });
     clo.byId = new Map(clo.items.map((x) => [x.id, x]));
-    clo.total = clo.items.length; clo.qty = qty;
     for (const id of [...clo.sel.keys()]) if (!clo.byId.has(id)) clo.sel.delete(id);
-    const key = `clo-items-${cloAcct()}`;   // (kept so: the next visit counts the same as Neopets, and reads nothing)
-    idbGet(key).then((kept) => { if (kept && Array.isArray(kept.items)) idbSet(key, { ...kept, total: clo.total, qty: clo.qty, items: clo.items.map((x) => x.raw) }).catch(() => {}); }).catch(() => {});
-    cloPaint();
-    return true;
+    if (fits) {
+      clo.total = clo.items.length; clo.qty = qty;
+      const key = `clo-items-${cloAcct()}`;   // (kept so: the next visit counts the same as Neopets, and reads nothing)
+      idbGet(key).then((kept) => { if (kept && Array.isArray(kept.items)) idbSet(key, { ...kept, total: clo.total, qty: clo.qty, items: clo.items.map((x) => x.raw) }).catch(() => {}); }).catch(() => {});
+    } else if (whole && Number.isFinite(vq)) { clo.qty = vq; if (Number.isFinite(vt)) clo.total = vt; }   // (Neopets' own count meanwhile, till it's all read again)
+    cloPaint(true);
+    return fits;
   }
   // worth: itemdb's price for Neopoints items, the value guides' for NC ones
   function cloWorth(it) {   // ({ np } or { nc: caps } or null while it's coming)
@@ -24265,17 +24376,18 @@
     clo.root.innerHTML = cloHtml();
     if (fk) { const g = clo.root.querySelector(fk); if (g) { g.focus({ preventScroll: true }); if (at != null) try { g.setSelectionRange(at, at); } catch (_) { /* */ } } }
     if (soft && Math.abs(scrollY - y) > 2) scrollTo({ top: y });
+    cloMoreWatch();
   }
   function cloHtml() {
     const it = clo.items, wornN = clo.wear ? clo.wear.worn.length : 0;
     const vm = cloVm(), cap = (vm && Number(vm.capacity)) || 650;
     const counts = { all: it.length, np: it.filter((x) => !x.nc && !x.pb).length, nc: it.filter((x) => x.nc).length, pb: it.filter((x) => x.pb).length, dup: it.filter((x) => x.q > 1).length, worn: wornN };
     const shown = clo.show === 'worn' ? [] : cloList();
-    const qtyAll = clo.qty || it.reduce((s, x) => s + x.q, 0) || (vm && Number(vm.totalQtyAll)) || 0, pct = Math.min(100, Math.round((qtyAll / cap) * 100)), full = qtyAll >= cap * 0.9;
-    const kindsN = it.length || (vm && Number(vm.totalItems)) || 0;
+    const qtyAll = clo.qty || it.reduce((s, x) => s + x.q, 0) || (vm && Number(vm.totalQtyAll)) || 0, pct = Math.min(100, Math.round((qtyAll / cap) * 100)), full = qtyAll >= cap * 0.9, over = qtyAll > cap;
+    const kindsN = (clo.part && clo.total) || it.length || (vm && Number(vm.totalItems)) || 0;
     let npSum = 0, npN = 0, capsN = 0;
     const caps = { lo: 0, hi: 0, plus: false };
-    if (clo.worth) for (const x of it) { if (x.pb) continue; const w = x.nc ? clo.nc.get(x.n) : clo.prices.get(x.n); if (!w) continue; if (x.nc && w.g) { caps.lo += w.g.lo * x.q; caps.hi += w.g.hi * x.q; caps.plus = caps.plus || w.g.plus; capsN++; } else if (!x.nc && w.p > 0) { npSum += w.p * x.q; npN++; } }
+    if (clo.worth) for (const x of it) { if (x.pb) continue; const w = cloWorth(x); if (!w) continue; if (x.nc && w.g) { caps.lo += w.g.lo * x.q; caps.hi += w.g.hi * x.q; caps.plus = caps.plus || w.g.plus; capsN++; } else if (!x.nc && w.p > 0) { npSum += w.p * x.q; npN++; } }
     const zonesHere = new Map();
     if (clo.wear && clo.wear.zones) for (const x of it) for (const z of cloZones(x)) zonesHere.set(z, (zonesHere.get(z) || 0) + 1);
     const kinds = [...new Set(it.map((x) => x.cat).filter(Boolean))].sort();
@@ -24283,7 +24395,7 @@
     const chip = (k, l, n, tip) => `<button type="button" data-clo-show="${k}" aria-pressed="${clo.show === k}"${tip ? ` title="${esc(tip)}"` : ''}>${l}<b>${n.toLocaleString()}</b></button>`;
     const picked = [...clo.sel.keys()].map((id) => clo.byId.get(id)).filter(Boolean), pickedQty = picked.reduce((s, x) => s + cloEachQty(x), 0);
     const band = `<div class="bnp-clo-band">
-        <div class="bnp-clo-count${full ? ' is-full' : ''}" title="${esc(`Neopets’ limit: a closet holds ${cap.toLocaleString()} items, each copy counted, and the ones your pets are wearing too`)}"><b>${qtyAll.toLocaleString()}</b><span>of ${cap.toLocaleString()} spaces used<small>${kindsN.toLocaleString()} different item${kindsN === 1 ? '' : 's'}${full ? ` · <b>${Math.max(0, cap - qtyAll).toLocaleString()} space${cap - qtyAll === 1 ? '' : 's'} left</b>` : ''}${wornN ? ' · worn ones count too' : ''}</small></span>
+        <div class="bnp-clo-count${full ? ' is-full' : ''}" title="${esc(over ? `Neopets’ closet page says a closet holds at most ${cap.toLocaleString()} items, each copy counted, and the ones your pets are wearing too. Yours holds more than that.` : `Neopets’ limit: a closet holds ${cap.toLocaleString()} items, each copy counted, and the ones your pets are wearing too`)}"><b>${qtyAll.toLocaleString()}</b><span>${over ? `items, more than Neopets’ limit of ${cap.toLocaleString()}` : `of ${cap.toLocaleString()} spaces used`}<small>${kindsN.toLocaleString()} different item${kindsN === 1 ? '' : 's'}${full && !over ? ` · <b>${Math.max(0, cap - qtyAll).toLocaleString()} space${cap - qtyAll === 1 ? '' : 's'} left</b>` : ''}${wornN ? ' · worn ones count too' : ''}</small></span>
           <span class="bnp-clo-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${cap}" aria-valuenow="${qtyAll}"><i style="width:${pct}%"></i></span></div>
         <div class="bnp-clo-sums">${clo.worth && (npN || capsN || clo.pricing) ? `${capsN ? `<span title="${esc(`${capsN} of your NC items have a cap value in the guides (a note like Value check or Buyable isn’t counted), each times how many you have`)}">≈ <b>${wtCapsText(caps)}</b></span>` : ''}${clo.pricing ? `<span class="is-wait" title="Your Neopoints items at itemdb’s prices, a hundred at a time">Pricing ${clo.pricing.done.toLocaleString()} of ${clo.pricing.of.toLocaleString()}…</span>` : npN ? `<span title="${esc(`${npN} kinds with an itemdb price, each times how many you have: ${Math.round(npSum).toLocaleString()} NP`)}">≈ <b>${colNp(npSum)} NP</b></span>` : ''}` : ''}${clo.priceErr && !clo.pricing ? `<span class="is-wait" title="${esc(clo.priceErr === 'visit' ? 'itemdb gives its prices once you’ve opened itemdb.com.br today: open it, then Read again' : `itemdb asked for a pause partway: wait about 10 minutes, then Read again — what’s priced so far is kept`)}">${clo.priceErr === 'visit' ? 'Open itemdb for the rest' : 'Some prices wait: itemdb paused'}</span>` : ''}
           <button type="button" class="bnp-clo-btn is-small" data-clo-copy title="What’s shown, a line each (with how many you have): for a trade list, or DTI">Copy the list</button>
@@ -24300,16 +24412,19 @@
       </div>
       <div class="bnp-clo-chips" role="group" aria-label="Which items">${chip('all', 'All', counts.all)}${counts.np ? chip('np', 'Neopoints', counts.np) : ''}${counts.nc ? chip('nc', 'Neocash', counts.nc) : ''}${counts.pb ? chip('pb', 'Paint Brush sets', counts.pb, 'Clothes from a Paint Brush: kept here, they can only be deleted, not moved') : ''}${counts.dup ? chip('dup', 'Doubles', counts.dup, 'Items you have more than one of') : ''}${clo.nw.size ? chip('new', 'New', clo.nw.size, 'Not here the time before Neopets Enhance last read your closet') : ''}${chip('worn', 'Worn', counts.worn, clo.wear ? `Worn by your pets, as Customise showed them ${colAgo(clo.wear.at)}` : 'Open Customise once and what your pets wear shows here')}${clo.show === 'dup' && clo.picking ? '<button type="button" class="is-act" data-clo-extras title="Every double here, all but one of each, chosen to move">Choose the extras</button>' : ''}</div>`;
     let body;
-    if (clo.err) body = `<p class="bnp-clo-err">${esc(clo.err)} <button type="button" class="bnp-clo-btn is-small" data-clo-again>Try again</button></p>`;
-    else if (!it.length && (clo.loading || r.of)) body = `<p class="bnp-clo-empty">${r.of ? `Reading your closet: page ${r.p} of ${r.of}${r.paused ? ' (paused while this tab’s in the back)' : '…'}` : 'Opening your closet…'}</p>`;
+    const lim = Math.max(CLO_STEP, clo.lim || 0), cut = shown.length > lim ? shown.slice(0, lim) : shown, more = cut.length < shown.length ? cloMoreHtml(cut.length, shown.length) : '';   // (a big closet's cards a few hundred at a time: the rest as you scroll)
+    clo.order = shown.map((x) => x.id);
+    if (!it.length && (clo.err || clo.stop)) body = `<p class="bnp-clo-err">${esc(clo.err || 'Neopets didn’t give your closet’s items just now.')} <button type="button" class="bnp-clo-btn is-small" ${clo.err ? 'data-clo-again' : 'data-clo-on'}>Try again</button></p>`;
+    else if (!it.length && clo.loading) body = `<p class="bnp-clo-empty">${r.of ? `Reading your closet: page ${r.p} of ${r.of}${r.paused ? ' (paused while this tab’s in the back)' : '…'}` : 'Opening your closet…'}</p>`;
     else if (clo.show === 'worn') body = cloWornHtml();
-    else if (!shown.length) body = `<p class="bnp-clo-empty">${it.length ? 'Nothing here like that.' : 'Your closet is empty.'}</p>`;
+    else if (!shown.length) body = `<p class="bnp-clo-empty">${it.length ? (clo.part ? 'Nothing like that in what’s read so far.' : 'Nothing here like that.') : 'Your closet is empty.'}</p>`;
     else if (clo.sort === 'zone' && zonesHere.size && clo.view !== 'list') {   // (each zone under its own heading, front to back; the ones Customise hasn't shown, last)
-      const groups = new Map();
-      for (const x of shown) { const z = cloZones(x)[0] || ''; if (!groups.has(z)) groups.set(z, []); groups.get(z).push(x); }
-      body = [...groups.entries()].map(([z, l]) => `<section class="bnp-clo-zone"><h3>${esc(z || 'Zone not known yet')}<b>${l.length}</b></h3><div class="bnp-clo-grid is-${clo.view}${clo.picking ? ' is-picking' : ''}">${l.map(cloCardHtml).join('')}</div></section>`).join('');
+      const groups = new Map(), zn = new Map();
+      for (const x of shown) { const z = cloZones(x)[0] || ''; zn.set(z, (zn.get(z) || 0) + 1); }
+      for (const x of cut) { const z = cloZones(x)[0] || ''; if (!groups.has(z)) groups.set(z, []); groups.get(z).push(x); }
+      body = [...groups.entries()].map(([z, l]) => `<section class="bnp-clo-zone"><h3>${esc(z || 'Zone not known yet')}<b>${zn.get(z)}</b></h3><div class="bnp-clo-grid is-${clo.view}${clo.picking ? ' is-picking' : ''}">${l.map(cloCardHtml).join('')}</div></section>`).join('') + more;
     }
-    else body = `<div class="bnp-clo-grid is-${clo.view}${clo.picking ? ' is-picking' : ''}" data-clo-grid>${clo.view === 'list' ? '<div class="bnp-clo-lhead"><span></span><span>Item</span><span>Kind</span><span>Copies</span><span>Worth</span></div>' : ''}${shown.map(cloCardHtml).join('')}</div>`;
+    else body = `<div class="bnp-clo-grid is-${clo.view}${clo.picking ? ' is-picking' : ''}" data-clo-grid>${clo.view === 'list' ? '<div class="bnp-clo-lhead"><span></span><span>Item</span><span>Kind</span><span>Copies</span><span>Worth</span></div>' : ''}${cut.map(cloCardHtml).join('')}</div>${more}`;
     const bar = clo.picking ? `<div class="bnp-clo-pickbar" role="region" aria-label="Chosen items">
         <b>${picked.length.toLocaleString()} chosen</b><span>${pickedQty.toLocaleString()} item${pickedQty === 1 ? '' : 's'} to move</span>
         <label class="bnp-clo-sel"><span>Of each</span><select data-clo-each><option value="all"${clo.each === 'all' ? ' selected' : ''}>every copy</option><option value="one"${clo.each === 'one' ? ' selected' : ''}>one</option><option value="extra"${clo.each === 'extra' ? ' selected' : ''}>all but one</option></select></label>
@@ -24319,7 +24434,7 @@
         <button type="button" class="bnp-clo-btn is-go" data-clo-move${pickedQty ? '' : ' disabled'} title="Neopets’ own window opens to confirm (your PIN, if you’ve set one)">${CLO_IC.out}Move to your inventory…</button>
       </div>` : '';
     const moved = clo.moved && Date.now() - clo.moved.at < 10 * 60e3 ? `<p class="bnp-clo-note is-moved" role="status"><span>${clo.moved.n === 1 ? 'The item went' : `The ${clo.moved.n.toLocaleString()} items went`} to your inventory.</span><a class="bnp-clo-btn is-small" href="/quickstock.phtml">Quick Stock</a><a class="bnp-clo-btn is-small" href="/inventory.phtml">Your inventory</a><button type="button" class="bnp-clo-x" data-clo-moved aria-label="Close">×</button></p>` : '';
-    return `${band}${clo.note ? `<p class="bnp-clo-note" role="status">${esc(clo.note)}</p>` : ''}${moved}${tools}${body}${bar}
+    return `${band}${cloStripHtml()}${clo.note ? `<p class="bnp-clo-note" role="status">${esc(clo.note)}</p>` : ''}${moved}${tools}${body}${bar}
       <p class="bnp-clo-foot">${clo.at ? `Read from Neopets ${colAgo(clo.at)}.` : ''} Click an item for Neopets’ own window (move it out, or delete a Paint Brush set).${clo.worth ? ' Worth: itemdb’s prices and the NC value guides, approximate.' : ''}</p>`;
   }
   const cloEachQty = (x) => (x.pb ? 0 : clo.each === 'one' ? 1 : clo.each === 'extra' ? x.q - 1 : x.q);
@@ -24386,14 +24501,17 @@
       const b = t.closest('button');
       if (b && root.contains(b)) {
         const d = b.dataset;
-        if (d.cloShow) { clo.show = d.cloShow; cloPaint(); return; }
-        if (d.cloView) { clo.view = d.cloView; cloPSet('view', clo.view); cloPaint(); return; }
+        if (d.cloShow) { clo.show = d.cloShow; clo.lim = CLO_STEP; cloPaint(); return; }
+        if (d.cloView) { clo.view = d.cloView; clo.lim = CLO_STEP; cloPSet('view', clo.view); cloPaint(); return; }
         if ('cloPick' in d) { clo.picking = !clo.picking; if (!clo.picking) clo.sel.clear(); cloPaint(); return; }
         if ('cloAll' in d) { for (const x of cloList()) if (!x.pb) clo.sel.set(x.id, true); cloPaint(true); return; }
         if ('cloExtras' in d) { clo.each = 'extra'; cloPSet('each', 'extra'); for (const x of cloList()) if (!x.pb && x.q > 1) clo.sel.set(x.id, true); cloPaint(true); return; }
         if ('cloClear' in d) { clo.sel.clear(); cloPaint(true); return; }
         if ('cloMove' in d) { cloMove(); return; }
         if ('cloAgain' in d) { cloLoad(true, true); return; }   // (Read again: its prices asked for again too)
+        if ('cloOn' in d) { cloLoad(false); return; }   // (Carry on: from the page it stopped at)
+        if ('cloMoreb' in d) { cloMore(false); return; }
+        if ('cloAllb' in d) { cloMore(true); return; }
         if ('cloMoved' in d) { clo.moved = null; cloPaint(true); return; }
         if ('cloCopy' in d) {   // (what's shown, as plain lines)
           const lines = clo.show === 'worn' && clo.wear ? clo.wear.worn.map((x) => `${x.n} (on ${x.a})`) : cloList().map((x) => `${x.n}${x.q > 1 ? ` x${x.q}` : ''}`);
@@ -24420,7 +24538,7 @@
     root.addEventListener('keydown', (e) => {
       const t = e.target instanceof Element ? e.target : null, card = t && t.closest('[data-clo-id]');
       if (card && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); card.click(); return; }
-      if (e.key === 'Escape' && t && t.matches('[data-clo-q]') && t.value) { e.preventDefault(); t.value = ''; clo.q = ''; cloPaint(true); }
+      if (e.key === 'Escape' && t && t.matches('[data-clo-q]') && t.value) { e.preventDefault(); t.value = ''; clo.q = ''; clo.lim = CLO_STEP; cloPaint(true); }
     });
     document.addEventListener('keydown', (e) => {   // (/ finds; Esc stops choosing)
       if (!clo || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -24444,16 +24562,16 @@
     root.addEventListener('change', (e) => {
       const t = e.target;
       if (!(t instanceof Element) || !clo) return;
-      if (t.matches('[data-clo-sort]')) { clo.sort = t.value; cloPSet('sort', clo.sort); cloPaint(); }
-      else if (t.matches('[data-clo-zone]')) { clo.zone = t.value; cloPaint(); }
-      else if (t.matches('[data-clo-kind]')) { clo.kind = t.value; cloPaint(); }
+      if (t.matches('[data-clo-sort]')) { clo.sort = t.value; clo.lim = CLO_STEP; cloPSet('sort', clo.sort); cloPaint(); }
+      else if (t.matches('[data-clo-zone]')) { clo.zone = t.value; clo.lim = CLO_STEP; cloPaint(); }
+      else if (t.matches('[data-clo-kind]')) { clo.kind = t.value; clo.lim = CLO_STEP; cloPaint(); }
       else if (t.matches('[data-clo-each]')) { clo.each = t.value; cloPSet('each', clo.each); cloPaint(true); }
     });
     root.addEventListener('input', (e) => {
       const t = e.target;
       if (!(t instanceof Element) || !t.matches('[data-clo-q]') || !clo) return;
       clearTimeout(clo.qT);
-      clo.qT = setTimeout(() => { clo.q = t.value; cloPaint(true); }, 140);
+      clo.qT = setTimeout(() => { clo.q = t.value; clo.lim = CLO_STEP; cloPaint(true); }, 140);
     });
   }
   const CLO_CSS = `
@@ -24490,6 +24608,15 @@
     html.bnp-clo-page .bnp-clo-sums > span { padding: 5px 12px; border-radius: 11px; background: rgba(255, 255, 255, .93); color: var(--nb-muted); font: 13px var(--nb-ui); }
     html.bnp-clo-page .bnp-clo-sums > span b { color: var(--nb-text); }
     html.bnp-clo-page .bnp-clo-note { margin: 0; padding: 8px 14px; border: 2px solid var(--nb-line); border-radius: 12px; background: var(--nb-alt); font: 13px/1.4 var(--nb-ui); }
+    /* a read under way, or stopped partway: how far, and what's shown meanwhile */
+    html.bnp-clo-page .bnp-clo-read { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 0; padding: 9px 14px; border: 2px solid var(--nb-line); border-radius: 12px; background: var(--nb-alt); }
+    html.bnp-clo-page .bnp-clo-read > p { flex: 1 1 340px; margin: 0; color: var(--nb-muted); font: 13px/1.45 var(--nb-txt); }
+    html.bnp-clo-page .bnp-clo-read > p b { margin-right: 3px; color: var(--nb-text); font: 13.5px/1.45 var(--nb-ui); }
+    html.bnp-clo-page .bnp-clo-read > .bnp-clo-bar { flex: 0 1 220px; min-width: 120px; }
+    html.bnp-clo-page .bnp-clo-read.is-paused .bnp-clo-bar i { opacity: .45; }
+    html.bnp-clo-page .bnp-clo-read.is-stop { border-color: #e9b394; background: #fdf3ec; }
+    html.bnp-clo-page .bnp-clo-read.is-stop > p b { color: #8a3b14; }
+    html.bnp-clo-page .bnp-clo-read.is-stop .bnp-clo-bar i { background: linear-gradient(180deg, #f2a35c, #d9682a); }
     /* the tools */
     html.bnp-clo-page .bnp-clo-tools { position: sticky; top: var(--bnp-clo-top, 0px); z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 12px; border: 2px solid var(--nb-frame); border-radius: 15px; background: #fff; box-shadow: 0 3px 0 var(--nb-frame); }
     html.bnp-clo-page .bnp-clo-find { flex: 1 1 200px; display: flex; align-items: center; gap: 8px; min-width: 160px; height: 36px; padding: 0 10px; border: 2px solid var(--nb-line); border-radius: 11px; background: #fff; color: var(--nb-muted); box-sizing: border-box; }
@@ -24541,6 +24668,7 @@
     html.bnp-clo-page .bnp-clo-zone h3 { display: flex; align-items: center; gap: 8px; margin: 6px 2px 0; padding: 0; border: 0; background: none; color: var(--nb-text); font: 18px/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
     html.bnp-clo-page .bnp-clo-zone h3 b { padding: 0 9px; border-radius: 99px; background: var(--nb-by); color: var(--nb-muted); font: 12px/1.6 var(--nb-ui); letter-spacing: 0; }
     html.bnp-clo-page .bnp-clo-grid:not(.is-list) > .bnp-clo-card { content-visibility: auto; contain-intrinsic-size: 140px 190px; }
+    html.bnp-clo-page .bnp-clo-more { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; padding: 12px; border: 2px dashed var(--nb-line); border-radius: 14px; color: var(--nb-muted); font: 13px var(--nb-ui); }
     html.bnp-clo-page .bnp-clo-q { position: absolute; top: 6px; right: 6px; z-index: 1; padding: 0 7px; border-radius: 99px; background: var(--nb-text); color: #fff; font: normal 11px/1.7 var(--nb-ui); }
     html.bnp-clo-page .bnp-clo-tick { position: absolute; top: 6px; left: 6px; z-index: 1; display: none; place-items: center; width: 22px; height: 22px; border: 2px solid var(--nb-line); border-radius: 7px; background: #fff; color: transparent; box-sizing: border-box; }
     html.bnp-clo-page .is-picking .bnp-clo-tick { display: grid; }
@@ -39000,10 +39128,11 @@
   function oftenWarn(k, v) {   // (one of those, just picked: what it means)
     const how = (OFTEN[k] || {})[v];
     if (!how) return;
-    const what = k === 'nclEvery' ? `NeoChat reads your Inbox ${how} while it’s open or folded${S.features.nclAlways ? ' (in every tab, as you’ve set it)' : ''}`
+    const what = k === 'nclEvery' ? `NeoChat reads your Inbox ${how} while it’s open or folded. That’s once for all your tabs, not once each: only the one you’re on looks`   // (it said "in every tab" once, when NeoChat's in every tab, and read as every tab looking)
       : k === 'live' ? `the topic you’re on is loaded again ${how} while you’re looking at its last page`
       : `the board you’re on is loaded again ${how} while you’re looking at its first page`;
-    hubWarn(k === 'nclEvery' ? `[data-featv="nclEvery:${v}"]` : `[data-nbov="${k}:${v}"]`, `<b>That’s often:</b> ${what}. While you’re away from Neopets it looks less and less often (none after 4 hours away), and it’s back to this when you return.`);
+    const stop = awayWords(k === 'nclEvery' ? ACT_STOP : nbStop(Number(v)));   // (NeoChat: 4 hours; the boards: an hour, or 30 minutes at every 30 seconds or minute)
+    hubWarn(k === 'nclEvery' ? `[data-featv="nclEvery:${v}"]` : `[data-nbov="${k}:${v}"]`, `<b>That’s often:</b> ${what}. While you’re away from Neopets it looks less and less often (none after ${stop} away), and it’s back to this when you return.`);
   }
   function changed(msg, undo) {   // (every change: kept, the menus laid out again, and the page painted again)
     saveNow();
@@ -47184,6 +47313,12 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.8.2', '2026-11-01', [
+      'Closet: a big closet shows its items as they’re read, and your last list at once while it’s read again; a visit cut short goes on from where it stopped',
+      'Neoboards: a topic that looks for new posts every 30 seconds or every minute stops after 30 minutes away from Neopets (an hour otherwise); back on Neopets in any tab, every tab looks as often as you’ve set again',
+      'Fixes: the Closet no longer says it’s empty while it opens; a page Neopets doesn’t answer is asked again, with Carry on',
+      'Fixes: NeoChat’s “That’s often” note says it reads your Inbox once for all your tabs, not once in each',
+    ]],
     ['4.8.1', '2026-10-31', [
       'Food Club’s Bet History: your bets round by round under Neopets’ own summary, each round’s winners over its bets and what each paid, with totals for the last 7 or 30 rounds or all of them, by where the bets came from',
       'Food Club’s Bet History: a win still to collect and the day Neopets keeps it until; bets placed on another device come in from Current Bets; clear the history, or remove a round',
@@ -47675,11 +47810,14 @@
   }
   // You, about: when you last loaded a Neopets page or did anything on one (a click, a key, a scroll), in any tab, kept in this browser.
   // What looks at Neopets again and again by itself (NeoChat's Inbox, a topic's new posts, a board's topics) keeps to your setting while
-  // you're about; once you've been away a while, its looks get further apart (a quarter of how long you've been gone), and after 4 hours
-  // away it stops. Back on Neopets, it's back to your setting at once: you still hear of new Neomail while doing other things, without
+  // you're about; once you've been away a while, its looks get further apart (a quarter of how long you've been gone), and after a while
+  // away it stops: NeoChat after 4 hours, the boards after an hour (30 minutes when a topic looks every minute or more often). Back on
+  // Neopets, in this tab or another, it's back to your setting at once: you still hear of new Neomail while doing other things, without
   // looking busy all hours of the day
   const ACT_STOP = 4 * 3600e3;
   const NB_STOP = 3600e3;   // (the boards stop looking for new topics and posts after an hour away; NeoChat keeps its 4)
+  const nbStop = (sec) => (sec <= 60 ? NB_STOP / 2 : NB_STOP);   // (a topic's new posts every 30 seconds or every minute: after 30 minutes away)
+  const awayWords = (ms) => (ms % 3600e3 ? `${Math.round(ms / 60000)} minutes` : ms === 3600e3 ? 'an hour' : `${ms / 3600e3} hours`);   // (Settings says it from these numbers)
   const actAt = () => { let at = 0; try { at = Number(localStorage.getItem('bnp-active')) || 0; } catch (_) { /* */ } return Math.max(at, Number(get('active', 0)) || 0); };   // (the site's storage, or the script's own when the site's is full)
   function actNote() { const now = Date.now(), was = actAt(); if (now - was <= 20000) return; try { localStorage.setItem('bnp-active', String(now)); } catch (_) { set('active', now); } if (was && now - was > 5 * 60000) dispatchEvent(new Event('bnp-back')); }   // (bnp-back: back after a while away)
   const actIdle = () => { const at = actAt(); return at ? Math.max(0, Date.now() - at) : 0; };
@@ -47688,6 +47826,7 @@
     if (document.visibilityState === 'visible') actNote();   // (a tab loading by itself in the background isn't you)
     for (const ev of ['pointerdown', 'keydown', 'wheel']) addEventListener(ev, actNote, { capture: true, passive: true });
     document.addEventListener('visibilitychange', () => { if (!document.hidden) actNote(); });
+    addEventListener('storage', (e) => { if (e.key === 'bnp-active' && e.oldValue && Number(e.newValue) - Number(e.oldValue) > 5 * 60000) dispatchEvent(new Event('bnp-back')); });   // (back on Neopets in another tab: this one's looks are back to your setting too, not left at the long wait they had while you were away)
   }
   // When Neopets Enhance begins on a page. Tampermonkey can start it after the page has been drawn, and then Neopets' own look shows for
   // a moment before NE's (no script can start sooner than it's started: NE's own covers are in from its first moment). Kept for the

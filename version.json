@@ -1,9 +1,9 @@
 {
- "version": "4.8.1",
- "date": "2026-10-31",
+ "version": "4.8.2",
+ "date": "2026-11-01",
  "notes": [
-  "Food Club’s Bet History: your bets round by round, with totals",
-  "Clear the Bet History, or remove a round",
-  "Fishing’s “nothing” card shows Neopets’ own answer"
+  "Big closets show their items as they’re read, and your last list at once",
+  "A closet visit cut short goes on from where it stopped",
+  "Boards stop looking sooner while you’re away, and pick up in every tab when you’re back"
  ]
 }
