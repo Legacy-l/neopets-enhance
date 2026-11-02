@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.9.3
+// @version      4.9.4
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -1798,7 +1798,7 @@
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, tillLog: true, tpSales: true, auSales: true,
     scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: true, oldBtns: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldGalleries: false, oldShops: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
-    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trBuy: true, trSdb: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
+    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, tone: '', vol: 100, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,   // (tone: '' each its own, or one of the sounds for all; vol: how loud, 5 to 100)
@@ -8133,7 +8133,7 @@
           trLogPut(L);
           trPaint();
           trSetupPaint();
-          trPlan(L.edited > run.began ? 0 : 180000);   // (pets chosen or changed while it ran: the next round straight after, for them)
+          trPlan(L.edited > run.began ? 0 : 60000 + Math.random() * 90000);   // (pets chosen or changed while it ran: the next round straight after, for them. Else a minute or two on: a course that ended meanwhile is seen to within its five minutes)
         }
       }
     };
@@ -8329,17 +8329,18 @@
     const L = trLog(), G = trGoals(), now = Date.now();
     if (!Object.values(G).some(trHasGoal)) return false;   // (no pet chosen: nothing by itself, ever)
     if (stale && (now - L.last > 10 * 60000 || L.failed)) return true;
-    return trSeenPets().some((p) => trHasGoal(G[p.lc]) && (p.kind === 'done' || (p.kind === 'pay' && !L.note[p.lc]) || (p.kind === 'busy' && p.end && p.end <= now) || (p.kind === 'free' && !L.note[p.lc])));
+    return trSeenPets().some((p) => trHasGoal(G[p.lc]) && (p.kind === 'done' || (p.kind === 'pay' && !L.note[p.lc]) || (p.kind === 'busy' && p.end && p.end + trLag(p.end) <= now) || (p.kind === 'free' && !L.note[p.lc])));
   }
   const trRand = (x) => { const v = Math.sin(Number(x) / 997) * 43758.5453; return v - Math.floor(v); };   // (0 to 1, the same for the same moment: a wait drawn once, however often it's worked out again)
-  const trLag = (end) => (trRand(end) < 0.75 ? 40000 + trRand(end + 1) * 260000 : 300000 + trRand(end + 1) * 600000);   // (from a course's end till it's seen to, as you'd come back to it: mostly within a few minutes, now and then up to a quarter of an hour)
+  const trWaitMin = () => { const m = Number(S.features.trWait ?? 5); return [0, 5, 10, 15, 30].includes(m) ? m : 5; };   // (Settings › Training schools: no delay, or up to 5, 10, 15 or 30 minutes; 5 unless chosen)
+  const trLag = (end) => { const r = trRand(Math.round(end / 60000)), m = trWaitMin(); return m ? 15000 + r * (m * 60000 - 15000) : 6000 + r * 9000; };   // (from a course's end till it's seen to, as you'd come back to it: a random moment within the time chosen (the user, 2026-11-02), never before Neopets' own clock says it's done; no delay, a few seconds. Drawn once for that minute: Status read again a second off doesn't move it, and courses ending together are seen to together)
   function trPlan(gap = 180000, stale = false) {   // (the next round on this page: when there's something to do, but not sooner than gap after the last; else soon after a course of a pet with goals ends. Moved to your hours)
     clearTimeout(trTimer);
     trNextAt = 0;
     if (!trOn() || !trSchoolOf(location.pathname)) return;
     if (trLog().paused) { trPaint(); return; }   // (paused: no round of its own till you resume)
-    const G = trGoals(), now = Date.now(), ends = trSeenPets().filter((p) => trHasGoal(G[p.lc]) && p.kind === 'busy' && p.end > now).map((p) => p.end);
-    const L = trLog(), due = trDue(stale), first = ends.length ? Math.min(...ends) : 0, end = first ? first + trLag(first) : 0;
+    const G = trGoals(), now = Date.now(), ends = trSeenPets().filter((p) => trHasGoal(G[p.lc]) && p.kind === 'busy' && p.end && p.end + trLag(p.end) > now).map((p) => p.end + trLag(p.end));   // (each course's own moment: its end, and the wait drawn for it)
+    const L = trLog(), due = trDue(stale), end = ends.length ? Math.min(...ends) : 0;
     const wiz = L.wizUntil > now && trSeenPets().some((p) => trHasGoal(G[p.lc]) && p.kind === 'pay') ? L.wizUntil + 30000 + trRand(L.wizUntil) * 90000 : 0;   // (a course waiting on stones the Wizard wouldn't look for: when its break is over)
     let at = due ? Math.max(now + 2500 + Math.random() * 3500, L.last + gap) : Math.min(end || Infinity, wiz || Infinity);   // (a round that left something undone (a payment Neopets didn't take): the next a few minutes on, never straight after)
     if (at === Infinity) at = 0;
@@ -40683,6 +40684,12 @@
   // 360 in Neoboard Settings' chooser, 359 on the lookup, Comic Con 2018 the one); with them, the six the Avatar Collector's words say don't count
   const AV_NOCOUNT = new Set(['ncmall', 'dacardiayooyuball', 'lania_avie_islandbuild', 'premium', 'comiccon2018', 'landlba']);
   const AV_NC_TAG = /\s*\[\s*doesn['’]?t count[^\]]*\]\s*/i;
+  // The Altador Cup's team avatars ("Altador 2018 - Meridell", "Altador 2026 - Neopia Central"): the team you're on, one at a time (the
+  // user, 2026-11-02). Counted as one: yours once you have one (the others then can't be had as well, so they're not still to get),
+  // before that any one of them. The cup's other avatars (Altador Cup, Altador Cup Player…) are avatars like any other
+  const AV_AC_TEAM = /^Altador \d{4}\s*[-–]\s*(?=\S)/i;
+  const avTeamOf = (a) => String(a.n || '').replace(AV_AC_TEAM, '').trim();
+  const avHeldSay = (h) => `${h.map((t) => `${t}’s`).join(' and ')} ${h.length > 1 ? 'are' : 'is'} yours`;   // ("Meridell’s is yours")
   const avNoCount = (a) => AV_NOCOUNT.has(avKey(a.f)) || AV_NC_TAG.test(a.n || '')
     || /\b(?:this avatar|it)\b[^.!]{0,90}?\b(?:does not|doesn['’]t|will not|won['’]t)\s+(?:count\s+(?:towards?|in|to)\s+(?:your|the)\s+(?:secret avatar count|(?:avatar )?collection|avatar (?:count|total))|increase\s+your\s+count\s+on\s+the\s+high\s*score)/i.test(String(a.h || '').replace(/<[^>]+>/g, ' '));
   const avNcMemo = new WeakMap();   // (worked out once for each list)
@@ -41049,12 +41056,21 @@
     if (O) { for (const f of O.dl || []) mine.set(avKey(f), [f, '', '']); for (const x of O.list) mine.set(avKey(x[0]), x); }
     const nc = avNcOf(L);
     const list = L.list.map((a) => { const m = mine.get(avKey(a.f)), x = nc.has(a.i); return { ...a, n: x ? a.n.replace(AV_NC_TAG, ' ').trim() || a.n : a.n, m: avMain(a), have: !!m, code: (m && m[1]) || '', x }; });   // (x: one Neopets doesn't count)
+    const team = list.filter((a) => a.m !== 9 && !a.x && AV_AC_TEAM.test(a.n));
+    if (team.length > 1) {   // (the Altador Cup's team avatars: one slot. alt: not counted; held: another team's is yours, so this one can't be had as well)
+      const yours = team.filter((a) => a.have);
+      for (const a of team) {
+        a.team = true;
+        if (yours.length ? !a.have : a !== team[0]) a.alt = true;
+        if (yours.length && !a.have) a.held = yours.map(avTeamOf);
+      }
+    }
     const known = new Set(L.list.map((a) => avKey(a.f)));
     const extra = O ? O.list.filter((x) => !known.has(avKey(x[0]))) : [];   // (yours that SunnyNeo's list doesn't have)
     return { L, O, list, extra };
   }
   function avTally(D, ret) {   // (your count as Neopets keeps it, the ones it doesn't count left out and yours SunnyNeo doesn't list yet taken in; of how many, as the retired ones are shown)
-    const counted = D.list.filter((a) => !a.x), can = counted.filter((a) => a.m !== 9), old = counted.filter((a) => a.m === 9);
+    const counted = D.list.filter((a) => !a.x && !a.alt), can = counted.filter((a) => a.m !== 9), old = counted.filter((a) => a.m === 9);
     const haveCan = can.filter((a) => a.have).length, haveRet = old.filter((a) => a.have).length, extra = D.extra.length;
     return { can, old, haveCan, haveRet, have: haveCan + (ret === 'none' ? 0 : haveRet) + extra, of: can.length + (ret === 'none' ? 0 : ret === 'mine' ? haveRet : old.length) + extra, nc: D.list.filter((a) => a.x && a.have && avRetOkFor(a, ret)) };
   }
@@ -41198,7 +41214,7 @@
   }
   function avChips(D, nNew) {   // (a kind: yours of it / all of it, with a bar, and a tick once you have them all; one in several kinds counts under its main one, as its part of the page does)
     const v = avPrefs(), n = new Map(), h = new Map();
-    for (const a of D.list) { if (!avRetOk(a)) continue; n.set(a.m, (n.get(a.m) || 0) + 1); if (a.have) h.set(a.m, (h.get(a.m) || 0) + 1); }
+    for (const a of D.list) { if (!avRetOk(a) || a.alt) continue; n.set(a.m, (n.get(a.m) || 0) + 1); if (a.have) h.set(a.m, (h.get(a.m) || 0) + 1); }   // (the Altador Cup's team avatars: one)
     const chip = (k, label, count, tip, have, of) => { const done = !!of && have >= of; return `<button type="button" class="bnp-rechip bnp-avkind${done ? ' is-done' : ''}" data-avk="${k}" aria-pressed="${v.kind === k}"${tip ? ` title="${esc(tip)}"` : ''}${of ? ` style="--p:${Math.round((have / of) * 100)}%"` : ''}>${done ? '<i aria-hidden="true">✓</i>' : ''}${esc(label)}${count ? ` <em>${count}</em>` : ''}</button>`; };
     const nX = D.list.filter((a) => a.x && avRetOk(a)).length;
     return chip(0, 'All kinds', '') + (nNew ? chip(-1, 'New', nNew, 'New on SunnyNeo’s list since you last looked') : '') + (v.kind === -2 ? chip(-2, 'Not counted', nX, 'The ones Neopets doesn’t add to your avatar count') : '')
@@ -41208,7 +41224,7 @@
     const v = avPrefs(), q = goNorm(v.q || '');
     let rows = D.list.filter(avRetOk);
     if (v.show === 'have') rows = rows.filter((a) => a.have);
-    else if (v.show === 'need') rows = rows.filter((a) => !a.have && a.m !== 9);
+    else if (v.show === 'need') rows = rows.filter((a) => !a.have && a.m !== 9 && !a.held);   // (another Altador Cup team's when one's yours: not to get)
     if (v.kind === -1) rows = rows.filter((a) => avSeenBefore != null && a.i > avSeenBefore);
     else if (v.kind === -2) rows = rows.filter((a) => a.x);
     else if (v.kind) rows = rows.filter((a) => a.m === (v.kind === 16 ? 11 : v.kind));
@@ -41225,7 +41241,7 @@
       for (const [c, label, tip] of AV_KINDS) {
         const part = rows.filter((a) => a.m === c);
         if (!part.length) continue;
-        const all = D.list.filter((a) => a.m === c && avRetOk(a)), have = all.filter((a) => a.have).length;
+        const all = D.list.filter((a) => a.m === c && avRetOk(a) && !a.alt), have = all.filter((a) => a.have).length;   // (the Altador Cup's team avatars: one)
         const mineOnly = c === 9 && v.ret === 'mine', pct = all.length ? Math.round((have / all.length) * 100) : 0;
         html += `<h5 class="bnp-avsec${!mineOnly && have >= all.length ? ' is-done' : ''}"><span>${esc(label)}</span><span class="bnp-note">${esc(tip)}</span>${mineOnly ? '' : `<i class="bnp-avsec-bar" style="--p:${pct}%" aria-hidden="true"></i>`}<em>${mineOnly ? have : `${have} / ${all.length}`}</em></h5>${wrap(part)}`;
       }
@@ -41237,7 +41253,7 @@
   }
   function avTile(a) {
     const isNew = a.i && avSeenBefore != null && a.i > avSeenBefore;
-    return `<button type="button" class="bnp-avt${a.have ? ' is-have' : ''}${a.m === 9 ? ' is-ret' : ''}" data-av="${a.i || ''}" data-avf="${esc(a.f)}" aria-expanded="${!!a.i && avView.open === a.i}" title="${esc(a.n)}${a.have ? ' (yours)' : ''}${a.x ? ': Neopets doesn’t count it' : ''}"><span class="bnp-avt-pic"><img src="${esc(avPic(a.f))}" alt="" width="50" height="50" loading="lazy" decoding="async"></span><span class="bnp-avt-n">${esc(a.n)}</span>${a.have ? '<span class="bnp-avt-ok" aria-label="Yours">✓</span>' : ''}${isNew ? '<span class="bnp-avt-new">New</span>' : ''}</button>`;
+    return `<button type="button" class="bnp-avt${a.have ? ' is-have' : ''}${a.m === 9 ? ' is-ret' : ''}" data-av="${a.i || ''}" data-avf="${esc(a.f)}" aria-expanded="${!!a.i && avView.open === a.i}" title="${esc(a.n)}${a.have ? ' (yours)' : ''}${a.x ? ': Neopets doesn’t count it' : ''}${a.team ? `: ${a.held ? `${esc(avHeldSay(a.held))}, and it’s one Altador Cup team avatar at a time` : 'one Altador Cup team avatar at a time, your team’s'}` : ''}"><span class="bnp-avt-pic"><img src="${esc(avPic(a.f))}" alt="" width="50" height="50" loading="lazy" decoding="async"></span><span class="bnp-avt-n">${esc(a.n)}</span>${a.have ? '<span class="bnp-avt-ok" aria-label="Yours">✓</span>' : ''}${isNew ? '<span class="bnp-avt-new">New</span>' : ''}</button>`;
   }
   function avActs(a) {   // (what to do about one: go where it's given, its item on the Shop Wizard, wear it, SunnyNeo's page)
     const out = [], go = a.h && /<a href="(\/[^"]*)"/.exec(a.h), item = avItem(a);
@@ -41248,7 +41264,7 @@
     return out.join('');
   }
   const avKinds = (a) => [...new Set(a.c.map((c) => (AV_KIND.get(c) || [c, ''])[1]).filter(Boolean))].join(' · ');
-  const avState = (a) => `<span class="bnp-avst${a.have ? ' is-have' : ''}">${a.have ? '✓ Yours' : a.m === 9 ? 'Retired' : 'Not yet'}</span>${a.x ? '<span class="bnp-avst is-nc" title="Neopets doesn’t add it to your avatar count, so the count at the top leaves it out">Not counted</span>' : ''}`;
+  const avState = (a) => `<span class="bnp-avst${a.have ? ' is-have' : ''}">${a.have ? '✓ Yours' : a.m === 9 ? 'Retired' : 'Not yet'}</span>${a.x ? '<span class="bnp-avst is-nc" title="Neopets doesn’t add it to your avatar count, so the count at the top leaves it out">Not counted</span>' : ''}${a.team ? `<span class="bnp-avst is-nc" title="${esc(a.held ? `The Altador Cup gives the avatar of the team you’re on, one at a time. ${avHeldSay(a.held)}, so this one isn’t counted as still to get.` : a.have ? 'The Altador Cup gives the avatar of the team you’re on, one at a time: the team avatars count as one, this one.' : 'The Altador Cup gives the avatar of the team you join, one at a time: the team avatars count as one in your totals.')}">${a.held ? esc(avHeldSay(a.held)) : 'One team at a time'}</span>` : ''}`;
   function avCard(a) {   // (one, opened from its tile: how to get it)
     return `<div class="bnp-avcard" data-g="avcard" role="region" aria-label="${esc(a.n)}">
       <span class="bnp-avt-pic"><img src="${esc(avPic(a.f))}" alt="" width="50" height="50"></span>
@@ -43271,6 +43287,7 @@
             <label class="bnp-f"><span>To</span><input type="time" data-feat="trTo" value="${esc(f.trTo || '21:00')}"></label>
             <div class="bnp-f"><span>Days</span><span class="bnp-trdays">${[1, 2, 3, 4, 5, 6, 0].map((d) => `<label class="bnp-trday"><input type="checkbox" data-feat="trD${d}"${f[`trD${d}`] !== false ? ' checked' : ''}><span>${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]}</span></label>`).join('')}</span></div>
           </div>
+          <div class="bnp-f"><span>Delay before the next course</span><span class="bnp-seg" role="group" aria-label="Delay before the next course">${[['0', 'No delay'], ['5', '5 min'], ['10', '10 min'], ['15', '15 min'], ['30', '30 min']].map(([v, l]) => `<button type="button" data-featv="trWait:${v}" aria-pressed="${String(trWaitMin()) === v}">${l}</button>`).join('')}</span><span class="bnp-note">When a course ends, the next one starts at a random moment within the time chosen, as you’d come back to it yourself. Courses that end together are seen to together. No delay: within a few seconds.</span></div>
           ${sw('trSdb', 'Take codestones out of your SDB first', 'Before it buys any, the ones a course needs that are in your Safety Deposit Box come out to your inventory, as your SDB’s own Move to Inventory does it. If your SDB asks for your PIN to take things out, it leaves them to you and says so.')}
           ${sw('trBuy', 'Buy the codestones it needs', 'Only what your inventory (and your SDB) hasn’t got, from the cheapest shop the Shop Wizard finds (the Super Shop Wizard with Premium), never over the limits here. It stops buying when your inventory holds 50 items, you’re short of Neopoints, or the Wizard asks for a break, and says so. Off: it waits for you to bring them.')}
           <div class="bnp-trsub" data-needs="trBuy"${f.trBuy !== false ? '' : ' hidden'}>
@@ -43502,7 +43519,7 @@
     if (t.dataset.secfold) { secFold(t.dataset.secfold); const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; return; }   // (a section folded away, or shown again)
     if ('updnow' in t.dataset) { t.disabled = true; t.textContent = 'Looking…'; updCheck(true).then((u) => { toast(!u ? 'GitHub couldn’t be reached just now: try again' : verNewer(u.v, myVersion()) ? `${APP} ${u.v} is out` : 'You have the newest'); if (hub && hubPage === 'updates') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; } }).catch(report); return; }   // (Updates: looked for now)
     if (t.dataset.nclhb) { const k = t.dataset.nclhb, hide = new Set(nclHideList()); if (hide.has(k)) hide.delete(k); else hide.add(k); S.features.nclHide = [...hide]; changed(); nclHeadPaint(); return; }   // (NeoChat's header: that button shown, or hidden)
-    if (t.dataset.featv) { const [k, v] = t.dataset.featv.split(':'); S.features[k] = v; changed(); if (k === 'qsHeads') { const qt = $('#quickstock-table-container table.quickstock-table'); if (qt) qsCols(qt); } for (const h of $$('.bnp-hub-head')) { try { themeWin(h.parentElement); } catch (_) { /* */ } } if (/^ncl/.test(k)) nclSettingsChanged(k); if (/^tp/.test(k) && tpOn()) { try { tpApply(); tpPaint(); } catch (e) { report(e); } } oftenWarn(k, v); if (k === 'avPicksAt' && v === 'top') { const c = hub.main.querySelector('.bnp-avpicks'); hub.main.scrollTop = 0; if (c) { c.scrollIntoView({ block: 'nearest' }); c.classList.add('bnp-lit'); } } return; }   // (a choice of pills: this one. The avatars' menu-picture card moved to the top: you go with it)   // (a choice of pills: this one)
+    if (t.dataset.featv) { const [k, v] = t.dataset.featv.split(':'); S.features[k] = v; changed(); if (k === 'qsHeads') { const qt = $('#quickstock-table-container table.quickstock-table'); if (qt) qsCols(qt); } for (const h of $$('.bnp-hub-head')) { try { themeWin(h.parentElement); } catch (_) { /* */ } } if (/^ncl/.test(k)) nclSettingsChanged(k); if (/^tr[A-Z]/.test(k)) trainerFeature(); if (/^tp/.test(k) && tpOn()) { try { tpApply(); tpPaint(); } catch (e) { report(e); } } oftenWarn(k, v); if (k === 'avPicksAt' && v === 'top') { const c = hub.main.querySelector('.bnp-avpicks'); hub.main.scrollTop = 0; if (c) { c.scrollIntoView({ block: 'nearest' }); c.classList.add('bnp-lit'); } } return; }   // (a choice of pills: this one. The avatars' menu-picture card moved to the top: you go with it)   // (a choice of pills: this one)
     if (t.dataset.tablk) { S.features.tabLookup = t.dataset.tablk; lookupPick = null; changed(); tabsApply(true); return; }   // (a lookup's tab picture: this one, from now on)
     if (t.dataset.itk || t.dataset.itnc || t.dataset.itcol || 'ittest' in t.dataset || 'itsizes' in t.dataset) { itemsHubClick(t); return; }
     if (t.dataset.game) { const on = gameToggle(t.dataset.game); changed(`${gameName(t.dataset.game)} is ${on ? 'in My Games' : 'out of My Games'}`); return; }
@@ -48537,6 +48554,10 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.9.4', '2026-11-02', [
+      'Trainer: choose a delay before the next course in Settings (no delay, or up to 5, 10, 15 or 30 minutes; 5 to start with): the next one starts at a random moment within it, and courses that end together are seen to together',
+      'Avatars: the Altador Cup’s team avatars count as one in your totals, as you can have only one at a time; once yours is in, the other teams aren’t listed as still to get',
+    ]],
     ['4.9.3', '2026-11-02', [
       'Trainer: works in a hidden tab of its own, through Neopets’ own links and buttons, so each step goes just as your clicks would; it only looks at the schools your pets are at',
       'Trainer: counts your codestones from Quick Stock’s own list, takes them out of your SDB with one search, and comes back to a finished course more like a person would',
