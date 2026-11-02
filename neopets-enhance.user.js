@@ -36067,9 +36067,9 @@
     const sorts = [['active', 'Active first'], ['name', 'Name'], ['level', 'Level'], ['age', 'Oldest'], ['hunger', 'Hungriest'], ['custom', 'My order', 'Your own order: drag the cards, or the pets above']];
     return `<nav class="bq-tools" aria-label="How your pets are shown">
         <span class="bq-group is-sort" role="group" aria-label="Sort"><span class="bq-label">Sort</span>${sorts.map(([v, l, tip]) => chip('data-qs', v, l, P.sort === v, tip)).join('')}</span>
-        <span class="bq-group" role="group" aria-label="View"><span class="bq-label">View</span>${chip('data-qv', 'cards', 'Cards', P.view !== 'rows')}${chip('data-qv', 'rows', 'Rows', P.view === 'rows', 'Every pet in one table')}</span>
+        <div class="bq-toolrow"><span class="bq-group" role="group" aria-label="View"><span class="bq-label">View</span>${chip('data-qv', 'cards', 'Cards', P.view !== 'rows')}${chip('data-qv', 'rows', 'Rows', P.view === 'rows', 'Every pet in one table')}</span>
         ${P.view === 'rows' ? '' : `<span class="bq-group" role="group" aria-label="Pictures"><span class="bq-label">Pictures</span>${QR_PICS.map(([k, l]) => chip('data-qpic', k, l, qrPicKey() === k)).join('')}</span>`}
-        <span class="bq-group">${chip('data-qt', '1', 'Pet colours', !!P.tint, 'Each card in its pet’s own colour')}</span>
+        <span class="bq-group">${chip('data-qt', '1', 'Pet colours', !!P.tint, 'Each card in its pet’s own colour')}</span></div>
       </nav>`;
   }
   const QR_PENCIL = IM('themes/020_ppl_3c22d/events/battle_accept.png');   // (Neopets' own pencil, for writing about a pet: the one place to change it)
@@ -44834,9 +44834,9 @@
     .bq-tile.is-drag { opacity: .45; }
     .bq-tile.drop-before .bq-tbox { box-shadow: -6px 0 0 #2c5aa0; } .bq-tile.drop-after .bq-tbox { box-shadow: 6px 0 0 #2c5aa0; }
     /* how they're sorted and shown: Neopets' shop chips (a bar with raised pills, the chosen one dark), in your theme's colours (the user, 2026-11-02: "in the same style but theme colors") */
-    .bq-tools { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 7px 16px; margin: 0 0 16px; padding: 7px 10px; border-radius: 8px; background: linear-gradient(var(--bq-h), color-mix(in srgb, var(--bq-h) 80%, #000)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 2px 0 color-mix(in srgb, var(--bq-h) 62%, #000); color: var(--bq-hi); }
-    .bq-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 5px; }
-    .bq-group.is-sort { flex-basis: 100%; justify-content: center; }   /* (the sorts a line of their own; how they're shown under it: never one chip left alone on a line) */
+    .bq-tools { display: grid; justify-items: center; gap: 7px; width: fit-content; max-width: 100%; margin: 0 auto 16px; padding: 8px 20px; border-radius: 8px; background: linear-gradient(var(--bq-h), color-mix(in srgb, var(--bq-h) 80%, #000)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 2px 0 color-mix(in srgb, var(--bq-h) 62%, #000); color: var(--bq-hi); }
+    .bq-group { display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 5px; }
+    .bq-toolrow { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 7px 16px; }   /* (how they're shown: the line under the sorts) */
     .bq-label { margin-right: 3px; color: inherit; font: 9pt "MuseoSansRounded700", "Museo Sans Rounded Bold", Arial, sans-serif; letter-spacing: .1em; opacity: .9; text-transform: uppercase; white-space: nowrap; }
     .bq .bq-chip { margin: 0; padding: 4px 11px; border: 1px solid color-mix(in srgb, var(--bq-h) 55%, #000 45%); border-radius: 999px; background: linear-gradient(color-mix(in srgb, var(--bq-h) 68%, #fff), var(--bq-h)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), 0 2px 3px rgba(0, 0, 0, .25); color: var(--bq-hi); font: 10.5pt/1.2 "MuseoSansRounded700", "Museo Sans Rounded Bold", Arial, sans-serif; white-space: nowrap; cursor: pointer; }
     .bq .bq-chip:hover, .bq .bq-chip:focus-visible { background: linear-gradient(color-mix(in srgb, var(--bq-h) 52%, #fff), color-mix(in srgb, var(--bq-h) 84%, #fff)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 4px 7px rgba(0, 0, 0, .3); outline: none; transform: translateY(-1px); }
