@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.9.2
+// @version      4.9.3
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -39,6 +39,7 @@
   if (FRAME && location.hostname === 'www.neopets.com' && location.pathname === '/trudydaily/game.phtml') { trudyKeep(); return; }   // (Trudy's game: only its keeper, nothing else)
   if (FRAME && location.hostname === 'www.neopets.com' && location.pathname === '/games/play_flash.phtml') { frameEar(); return; }   // (a game's frame (the slots spin there): only its ear, telling the game's page)
   if (FRAME && location.hostname === 'www.neopets.com' && location.hash === '#bnp-relay' && (location.pathname === '/robots.txt' || fromPageOk(location.pathname))) { wwwRelay(); return; }   // (the NC Mall's frame of www, or one of Neopets' pages NE asks something from: only the relay)
+  if (FRAME && window.name === 'bnp-trtab') { try { const w = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window; w.alert = () => {}; w.confirm = () => false; w.prompt = () => null; } catch (_) { /* */ } return; }   // (the Trainer's unseen tab: Neopets' pages as they are, NE not in them; a page's own pop-up never shows from there)
   if (FRAME && window.name !== 'bnp-look') return;
   const NE_START = (() => { try { const p = performance.getEntriesByName('first-contentful-paint')[0]; return { at: performance.now(), drawn: p ? p.startTime : 0, body: !!document.body }; } catch (_) { return { at: 0, drawn: 0, body: false }; } })();   // (when Neopets Enhance began on this page, and whether the page was drawn by then: Tampermonkey can start it late)
   if (/(^|\.)itemdb\.com\.br$/i.test(location.hostname)) {   // (itemdb: only to notice that it has let this browser have its prices, by its own flag cookie, set a few seconds after a page opens; a Neopets page waiting on a visit then asks at once. Nothing else runs here)
@@ -125,7 +126,7 @@
   }
   let wwwSeq = 0;
   const wwwWait = new Map(), wwwFrames = new Map();   // (each frame NE asks from, by its page: { port, f, ch, down, n, bye })
-  function wwwOpen(path = '/robots.txt') {   // (the frame and its channel, made once, at the first request that needs it)
+  function wwwOpen(path = '/robots.txt', via = null) {   // (the frame and its channel, made once, at the first request that needs it. via: a frame of NE's already open, sent on to this page by a link on the page it's on)
     const page = path !== '/robots.txt', k = wwwFrames.get(path) || { port: null, f: null, ch: null, down: 0, n: 0, bye: 0 };
     wwwFrames.set(path, k);
     if (k.port) return k.port;
@@ -134,7 +135,7 @@
       let tok = '';
       try { const o = GM_getValue('bnp3:relaytok'); if (o && o.t && Date.now() - o.at < 12 * 3600000) tok = o.t; } catch (_) { /* */ }
       if (!tok) { tok = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join(''); try { GM_setValue('bnp3:relaytok', { t: tok, at: Date.now() }); } catch (_) { /* */ } }
-      const f = document.createElement('iframe'), ch = new MessageChannel();
+      const f = via || document.createElement('iframe'), ch = new MessageChannel();
       let ready = false;
       const no = () => { if (ready) return; k.port = null; k.f = null; k.ch = null; k.down = Date.now(); removeEventListener('message', up); f.remove(); fail(new TypeError(page ? 'Failed to fetch (Neopets’ page didn’t open)' : 'Failed to fetch (Neopets’ own pages, from the NC Mall)')); };
       const tm = setTimeout(no, page ? 30000 : 15000);   // (a whole page takes longer to come than robots.txt)
@@ -159,6 +160,10 @@
       };
       k.f = f;
       k.ch = ch;
+      if (via) {   // (a link on the page it's on, followed there: this page's referrer is that one, as a click's is)
+        try { const d = f.contentDocument, a = d.createElement('a'); a.href = `https://www.neopets.com${path}#bnp-relay`; a.hidden = true; (d.body || d.documentElement).append(a); a.click(); a.remove(); } catch (_) { clearTimeout(tm); no(); }
+        return;
+      }
       f.src = `https://www.neopets.com${path}#bnp-relay`;
       f.title = '';
       f.tabIndex = -1;
@@ -187,7 +192,7 @@
   // Requests Neopets takes only from one of its own pages (a theme saved in General Settings, a Neomail sent, a Neofriend request; it says
   // "directed to this page from the wrong place" otherwise): made from that page itself, opened unseen in a frame of NE's own with NE only
   // relaying there, so they carry that page as their referrer because they truly come from it. Already on that page: from here
-  function fromPageOk(p) { return /^\/(?:settings\/general\/|neomessages\.phtml|neofriend_requests\.phtml|shops\/wizard\.phtml|island\/(?:fight_)?training\.phtml|quickstock\.phtml|browseshop\.phtml|safetydeposit\.phtml)$/.test(p); }   // (the Shop Wizard's page: Price mode's searches come from it, as a person's do)
+  function fromPageOk(p) { return /^\/(?:settings\/general\/|settings\/neoboards\/|neomessages\.phtml|neofriend_requests\.phtml|shops\/wizard\.phtml|island\/(?:fight_)?training\.phtml|quickstock\.phtml|browseshop\.phtml|safetydeposit\.phtml)$/.test(p); }   // (the Shop Wizard's page: Price mode's searches come from it, as a person's do)
   const fromHere = (page) => !ON_MALL && !FRAME && location.pathname + location.search === page;
   const fromPage = (page, u, o) => (fromHere(page) ? fetch(u, o) : wwwFetch(u, o, page));
   const fromPageHtml = (page) => (fromHere(page) ? Promise.resolve(document.documentElement.outerHTML) : wwwFetch(page, { page: 1 }, page).then((r) => r.text()));   // (the page as it is there: nothing asked for again)
@@ -198,6 +203,24 @@
     if (k.ch) k.ch.port1.close();
     if (k.f) k.f.remove();
     k.port = null; k.f = null; k.ch = null;
+  }
+  function wwwGo(from, to) {   // (NE's frame of page from sent on to page to by a link there, as you'd click one: to's referrer is from. The frame is to's then, from's made afresh when it's next asked from; not open, to's opened as any)
+    const k = wwwFrames.get(from), t = wwwFrames.get(to);
+    if (t && t.port) return t.port;
+    let ok = false;
+    try { ok = !!(k && k.f && !k.n && k.f.contentDocument && k.f.contentDocument.body); } catch (_) { ok = false; }
+    if (!ok) return wwwOpen(to);
+    const f = k.f;
+    clearTimeout(k.bye);
+    if (k.ch) k.ch.port1.close();
+    k.port = null; k.f = null; k.ch = null;
+    return wwwOpen(to, f);
+  }
+  function wwwWarm(path, ms = 10 * 60000) {   // (a page NE will soon ask from (you've started writing): opened unseen now, so what it sends comes from a page that's been open a while, as yours would be. Put away unused after ms)
+    if (FRAME || fromHere(path)) return;
+    const k0 = wwwFrames.get(path);
+    if (k0 && (k0.port || k0.n)) return;
+    wwwOpen(path).then(() => { const k = wwwFrames.get(path); if (k && !k.n) { clearTimeout(k.bye); k.bye = setTimeout(() => wwwShut(path), ms); } }).catch(() => { const k = wwwFrames.get(path); if (k) k.down = 0; });   // (didn't open: opened again when it's asked from, as before)
   }
   function wwwRelay() {   // (a frame of www NE asks from: robots.txt on the Mall's page, or one of Neopets' own pages anywhere. NE here only asks for what NE in the page around it sends, once it has shown the secret)
     const MALL = 'https://ncmall.neopets.com', WWW = 'https://www.neopets.com', page = location.pathname !== '/robots.txt';   // (page: its requests carry it as their referrer, as the page's own do; robots.txt's, only Neopets' address)
@@ -7656,7 +7679,7 @@
     if (!tbl) return;
     const pets = trainRows(tbl);
     if (!pets.length) return;
-    if (trOn() && trSchoolOf(location.pathname)) { try { trSeen({ [trSchoolOf(location.pathname)]: trPets(document, trSchoolOf(location.pathname)) }); } catch (e) { report(e); } }   // (Trainer mode: your pets as this page has them, for its list, before the cards take the table apart)
+    if (trOn() && trSchoolOf(location.pathname)) { try { const s = trSchoolOf(location.pathname), pets = trPets(document, s); trSeen({ [s]: pets }); trHereSeen = { s, at: Date.now(), pets }; } catch (e) { report(e); } }   // (Trainer mode: your pets as this page has them, for its list, before the cards take the table apart)
     const order = { done: 0, pay: 1, busy: 2, free: 3 }, n = (k) => pets.filter((p) => p.kind === k).length;
     const box = document.createElement('div');
     box.className = 'bnp-train';
@@ -7741,8 +7764,8 @@
   // default with a warning in settings to use at your own risk"). Switched on, while you're looking at a page of the Mystery Island or
   // Ninja school in your hours, each pet you've given goals goes one step on: a finished course completed, the next course started toward
   // its goals, the codestones it asks for counted in your inventory and the missing ones bought from the cheapest shop under your
-  // limits, then paid. One step at a time with a person's moment between, each made as Neopets' own page makes it (its form or link,
-  // sent from that page opened unseen in NE's frame); the Status page is what it believes. It never cancels a course
+  // limits, then paid. One step at a time with a person's moment between, each the way you'd do it: in an unseen tab of its own, Neopets'
+  // own links followed and buttons pressed there, each from the page before; the Status page is what it believes. It never cancels a course
   const TR_SCHOOLS = {
     mi: { path: '/island/training.phtml', name: 'Mystery Island', long: 'the Mystery Island Training School', max: 'trMaxTan', def: 15000 },
     ninja: { path: '/island/fight_training.phtml', name: 'the Ninja school', long: 'the Secret Ninja Training School', max: 'trMaxRed', def: 75000 },
@@ -7818,43 +7841,93 @@
       return { name: p.name, lc: p.name.toLowerCase(), s, lv: Number(p.lv) || 0, str: st('Str'), def: st('Def'), mov: st('Mov'), hp: n(hp[1]), hpMax: n(hp[2]), kind: p.kind, study: p.study, stones, end: left ? Date.now() + left : 0, cells };
     });
   }
-  function trAct(p, type) {   // (Neopets' own way to do it for this pet, from its Status cell: its form's fields in their order, or its link; null when there's none)
-    const base = `https://www.neopets.com${TR_SCHOOLS[p.s].path}`, re = new RegExp(`[?&]type=${type}(?:&|$)`);
-    for (const td of p.cells) {
-      for (const f of td.querySelectorAll('form')) {
-        if (![...f.querySelectorAll('input[name="type"]')].some((i) => i.value === type)) continue;
-        const body = new URLSearchParams();
-        for (const i of f.querySelectorAll('input[name]')) if (!/^(?:submit|button|image)$/i.test(i.type)) body.append(i.name, i.value);
-        const u = new URL(f.getAttribute('action') || '', base);
-        return (f.getAttribute('method') || 'get').toLowerCase() === 'post' ? { url: u.pathname, method: 'POST', body } : { url: `${u.pathname}?${body}`, method: 'GET', body: null };
+  function trOut(url, doc) { if (/\/login\b/.test(new URL(url || location.href, location.href).pathname) || doc.querySelector('form[action*="login"] input[type="password"]')) throw new Error('Log in to Neopets, and it carries on'); }
+  let trLeaving = false, trHereSeen = null;   // (this page on its way out: a request cut short by that isn't a failure. trHereSeen: the Status page you're on as it came, for the first round on it: not asked for again)
+  // The trainer's own unseen tab: a frame it goes through Neopets' pages in as you would in a tab of your own. A page opened by its own link
+  // on the page it's on when there's one (else as one opened from your page), its forms filled in and sent with their own buttons and its
+  // links followed there: each request the browser's own, from the page before it, as a click's is. What it lands on is read as it is. NE
+  // doesn't run in it, and a page's own pop-up never shows from it
+  function trTabNew() {
+    let f = null;
+    const T = { url: '', doc: null };
+    const live = () => { try { return f ? f.contentDocument : null; } catch (_) { return null; } };
+    T.go = (move) => new Promise((done, fail) => {   // (moved on by move(): the page it lands on, once it's there)
+      const was = live(), t0 = Date.now();
+      const tick = () => {
+        if (!f || !f.isConnected) { fail(TR_STOP); return; }
+        const d = live();
+        if (!d) { if (Date.now() - t0 > 400) { T.doc = null; T.url = ''; fail(new TypeError('Failed to fetch (Neopets didn’t answer)')); return; } }   // (the browser's own page for a load that failed: not one of Neopets')
+        else if (d !== was && d.URL !== 'about:blank' && d.readyState !== 'loading') {
+          T.doc = d;
+          T.url = d.URL;
+          try { trOut(T.url, d); } catch (e) { fail(e); return; }
+          done(d);
+          return;
+        }
+        if (Date.now() - t0 > 30000) { fail(new TypeError('Failed to fetch (no answer)')); return; }
+        setTimeout(tick, 120);
+      };
+      try { move(); } catch (e) { fail(e); return; }
+      setTimeout(tick, 120);
+    });
+    T.at = (path) => {   // (is it on this page, as it last landed there?)
+      if (!T.doc || live() !== T.doc) return false;
+      try { const u = new URL(T.url), w = new URL(path, location.origin); return u.pathname === w.pathname && u.search === w.search; } catch (_) { return false; }
+    };
+    T.open = (path) => {   // (a page: by its link on the page it's on, as you'd click it; else as one opened from your page)
+      const w = new URL(path, location.origin), href = w.pathname + w.search, d = T.doc && live() === T.doc ? T.doc : null;
+      const a = d && [...d.querySelectorAll('a[href]')].find((x) => {
+        if (x.target && x.target !== '_self') return false;
+        try { const u = new URL(x.getAttribute('href'), d.baseURI); return u.origin === w.origin && u.pathname === w.pathname && u.search === w.search; } catch (_) { return false; }
+      });
+      if (a) {
+        return T.go(() => {
+          let moved = false;
+          try { f.contentWindow.addEventListener('beforeunload', () => { moved = true; }, { once: true }); } catch (_) { moved = true; }
+          a.click();
+          setTimeout(() => { if (!moved && f && live() === d) f.src = href; }, 4000);   // (a link its page keeps to itself: opened as from your page instead)
+        });
       }
-      for (const a of td.querySelectorAll('a[href]')) {
-        const h = (a.getAttribute('href') || '').replace(/&amp;/g, '&');
-        if (/^javascript:/i.test(h) || !re.test(h)) continue;
-        const u = new URL(h, base);
-        return { url: u.pathname + u.search, method: 'GET', body: null };
-      }
+      if (f) return T.go(() => { f.src = href; });
+      return T.go(() => {
+        f = document.createElement('iframe');
+        f.name = 'bnp-trtab';
+        f.setAttribute('allow', "autoplay 'none'");   // (no page's sound plays by itself in there)
+        f.title = '';
+        f.tabIndex = -1;
+        f.setAttribute('aria-hidden', 'true');
+        f.style.cssText = 'position:absolute!important;left:-9999px!important;top:0!important;width:800px!important;height:600px!important;border:0!important;visibility:hidden!important;pointer-events:none!important';
+        f.src = href;
+        (document.body || document.documentElement).append(f);
+      });
+    };
+    T.send = (form, by) => T.go(() => {   // (a form of its page sent with its own button, as you'd press it)
+      if (form.target && form.target !== '_self') throw new Error('Not a form the trainer sends');
+      if (by && by.form === form) by.click();
+      else if (form.requestSubmit) form.requestSubmit();
+      else form.submit();
+    });
+    T.follow = (a) => T.go(() => a.click());
+    T.shut = () => { if (f) f.remove(); f = null; T.doc = null; T.url = ''; };
+    return T;
+  }
+  function trLiveAct(doc, lc, type) {   // (a pet's own button for it on the Status page the trainer's tab is on: its form and the button that sends it, or its link; null when there's none)
+    const tbl = doc && trainTable(doc), p = tbl && trainRows(tbl).find((x) => x.name.toLowerCase() === lc);
+    if (!p) return null;
+    const re = new RegExp(`[?&]type=${type}(?:&|$)`);
+    for (const td of [p.cell, ...p.more.flatMap((tr) => [...tr.cells])].filter(Boolean)) {
+      for (const f of td.querySelectorAll('form')) if ([...f.querySelectorAll('input[name="type"]')].some((i) => i.value === type)) return { form: f, by: f.querySelector('input[type="submit"], button[type="submit"], button:not([type])') };
+      for (const a of td.querySelectorAll('a[href]')) { const h = (a.getAttribute('href') || '').replace(/&amp;/g, '&'); if (!/^javascript:/i.test(h) && re.test(h)) return { a }; }
     }
     return null;
   }
-  function trOut(url, doc) { if (/\/login\b/.test(new URL(url || location.href, location.href).pathname) || doc.querySelector('form[action*="login"] input[type="password"]')) throw new Error('Log in to Neopets, and it carries on'); }
-  let trLeaving = false;   // (this page on its way out: a request cut short by that isn't a failure)
-  async function trPage(path, again = true) {   // (one of Neopets' pages read as it is now; not answering, asked once more a moment later)
-    let r;
-    try { r = await fetch(path, { credentials: 'include' }); } catch (e) { if (!again || trLeaving) throw e; await wtSleep(2500 + Math.random() * 1500); return trPage(path, false); }
-    if (!r.ok) throw new Error(`Neopets didn’t answer just now (${r.status})`);
-    const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
-    trOut(r.url, doc);
-    return doc;
-  }
-  async function trSend(from, a) {   // (one of Neopets' own requests, sent from its page in NE's frame as that page sends it: { ok, url, doc })
-    const r = await fromPage(from, a.url, a.method === 'POST' ? { method: 'POST', credentials: 'include', body: a.body } : { method: 'GET', credentials: 'include' });
-    const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
-    trOut(r.url, doc);
-    return { ok: r.ok, url: r.url || '', doc };
-  }
-  async function trTry(from, a) {   // (one of the trainer's own steps, its answer lost on the way: not the round's end. Status, read after, says whether it happened; never sent twice)
-    try { return await trSend(from, a); } catch (e) { if (e === TR_STOP || trLeaving || /log in/i.test(String((e && e.message) || ''))) throw e; report(e); return { ok: false, url: '', doc: null, lost: true }; }
+  async function trDo(tab, act) {   // (its button pressed, or its link followed, in the trainer's tab: { lost } when no answer came back, the tab put away. Status, read after, says whether it happened; never sent twice)
+    try { await (act.a ? tab.follow(act.a) : tab.send(act.form, act.by)); return { lost: false }; } catch (e) {
+      if (e === TR_STOP || trLeaving || /log in/i.test(String((e && e.message) || ''))) throw e;
+      report(e);
+      tab.shut();
+      return { lost: true };
+    }
   }
   function trWords(doc) {   // (what Neopets' answer says, in a line: its own words, the school's name and links left out)
     const c = (doc.querySelector('td.content') || doc.body || doc.documentElement).cloneNode(true);
@@ -7885,34 +7958,70 @@
     if (!open.length && !(g.lv > 0 && lv < g.lv)) return { c: '', why: 'Every goal reached' };
     return { c: '', why: g.lv ? 'Neopets wouldn’t start the courses its goals need just now' : 'Its goals need a higher level, and Level is off in them' };
   }
-  async function trInv() {   // ({ have: name → how many, n: how many items }: your inventory's NP items, from Quick Stock's own list as its page asks for it)
-    const have = new Map();
-    let n = 0;
-    for (let pg = 1; pg <= 3; pg++) {
-      const r = await fromPage('/quickstock.phtml', `/np-templates/ajax/quickstock/get_items.php?page=${pg}&per_page=50&filter=np&sort=recent&stack=1`, { method: 'GET', credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+  async function trInv() {   // ({ have: name → how many, n: how many items }: your inventory's NP items as Quick Stock shows them: its page opened unseen and the list it asks for itself read there. A page more asked for as its own buttons ask, only when its first is full)
+    const page = '/quickstock.phtml', have = new Map();
+    let n = 0, rows = 0, next = 1;
+    const add = (name, c) => { const k = reClean(name).toLowerCase(); if (!k) return; have.set(k, (have.get(k) || 0) + c); n += c; rows++; };
+    try {
+      await wwwOpen(page);
+      const k = wwwFrames.get(page), t0 = Date.now();
+      let tbl = null;
+      while (!tbl && Date.now() - t0 < 12000) {   // (its list, once its page has it: the table is there only then)
+        try { tbl = k.f.contentDocument.querySelector('#quickstock-table-container table.quickstock-table'); } catch (_) { tbl = null; }
+        if (!tbl) await wtSleep(250);
+      }
+      if (tbl) {
+        for (const tr of tbl.querySelectorAll('tbody tr')) {
+          if (tr.querySelector('input[name="checkall"]') || !tr.querySelector('input[type="radio"]') || tr.querySelector('.qs-cash-marker')) continue;   // (Check All, a row between, an NC item)
+          const td = tr.querySelector('td');
+          if (!td) continue;
+          const c = td.cloneNode(true), b = c.querySelector('.qs-count-badge');
+          if (b) b.remove();
+          add(c.textContent, b ? Number(String(b.textContent).replace(/\D/g, '')) || 1 : 1);
+        }
+        next = rows >= 50 ? 2 : 0;   // (a full page: there may be more)
+      }
+    } catch (e) { if (e === TR_STOP) throw e; report(e); }
+    for (let pg = next; pg && pg <= 3; pg++) {   // (as its page asks for its list: its first when its own didn't show, else the next)
+      if (pg > 1) await wtSleep(1800 + Math.random() * 1400);
+      const r = await fromPage(page, `/np-templates/ajax/quickstock/get_items.php?page=${pg}&per_page=50&filter=np&sort=recent&stack=1`, { method: 'GET', credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
       const j = await r.json().catch(() => null);
-      if (!j || !j.success || !Array.isArray(j.items)) throw new Error('Your inventory couldn’t be read just now');
-      for (const it of j.items) { const k = reClean(it.name).toLowerCase(), c = Number(it.count) || 1; have.set(k, (have.get(k) || 0) + c); n += c; }
+      if (!j || !j.success || !Array.isArray(j.items)) { wwwShut(page); throw new Error('Your inventory couldn’t be read just now'); }
+      if (pg === 1) { have.clear(); n = 0; }
+      for (const it of j.items) add(it.name, Number(it.count) || 1);
       if (pg >= (Number(j.total_pages) || 1)) break;
-      await wtSleep(1800 + Math.random() * 1400);
     }
+    wwwShut(page);
     return { have, n };
   }
-  async function trFromSdb(run, short, room) {   // (the stones missing that are in your SDB, taken out to your inventory as its own page does: its search for each, then its Move to Inventory for them all at once. Your PIN asked for: left to you, and said. name → how many came out)
+  async function trFromSdb(run, short, room) {   // (the stones missing that are in your SDB, taken out to your inventory as its own page does: one search there for codestones, as you'd type it, then its Move to Inventory for them all at once, and its list asked for again after, as its page does. Your PIN asked for: left to you, and said. name → how many came out)
     const took = new Map(), page = '/safetydeposit.phtml', H = { 'Content-Type': 'application/json', 'x-requested-with': 'XMLHttpRequest' };
     await trStep(run, 'Looking in your SDB…');
     const html = await fromPageHtml(page), ck = (/"refCk"\s*:\s*"([^"]*)"/.exec(html) || [])[1] || '';
     if (!ck) { wwwShut(page); trSay('Your SDB couldn’t be read just now: it buys what’s missing instead', 'warn'); return took; }
     if (/"pinRequired"\s*:\s*true/.test(html)) { wwwShut(page); trNote({ lc: '_sdbpin', name: 'Your SDB' }, 'it asks for your PIN to take things out, so the trainer leaves it to you'); return took; }
     trNote({ lc: '_sdbpin', name: 'Your SDB' }, '');
+    let per = 30;
+    try { const v = Number(localStorage.getItem('sdb_per_page')); if ([30, 60, 90, 120, 150].includes(v)) per = v; } catch (_) { /* */ }   // (your own page size there: its page asks with it)
+    const ask = (search, pg) => fromPage(page, '/np-templates/ajax/safetydeposit/get-items.php', { method: 'POST', credentials: 'include', headers: H, body: JSON.stringify({ page: pg, per_page: per, search, category: '', sort: 'name_asc', rarity_min: null, rarity_max: null, view_filter: 'np', _ref_ck: ck }) }).then((r) => r.json()).catch(() => null);
+    const want = new Map(short.map((x) => [x.n.toLowerCase(), x])), found = new Map(), words = [...new Set(short.map((x) => (/codestone/i.test(x.n) ? 'codestone' : x.n.toLowerCase())))];   // (every codestone in one search; anything else by its own name)
+    let last = '';
+    for (const w of words) {
+      await trStep(run, `Searching your SDB for ${w === 'codestone' ? 'codestones' : w}…`);
+      last = w;
+      for (let pg = 1; pg <= 4; pg++) {
+        if (pg > 1) await wtSleep(1600 + Math.random() * 1600);   // (its next page, as you'd go on to it)
+        const j = await ask(w, pg), d = j && j.success && j.data;
+        if (!d || !Array.isArray(d.items)) break;
+        for (const it of d.items) { const k = reClean(it.obj_name).toLowerCase(); if (want.has(k) && !found.has(k)) found.set(k, it); }
+        if ([...want.keys()].every((k) => found.has(k)) || pg >= (Number(d.pagination && d.pagination.total_pages) || 1)) break;
+      }
+    }
     const moves = [];
     let left = room;
     for (const x of short) {
       if (left <= 0) break;
-      await trStep(run, `Looking for ${x.n} in your SDB…`);
-      const r = await fromPage(page, '/np-templates/ajax/safetydeposit/get-items.php', { method: 'POST', credentials: 'include', headers: H, body: JSON.stringify({ page: 1, per_page: 30, search: x.n, category: '', sort: 'name_asc', rarity_min: null, rarity_max: null, view_filter: 'np', _ref_ck: ck }) });
-      const j = await r.json().catch(() => null), it = j && j.success && j.data && Array.isArray(j.data.items) ? j.data.items.find((i) => reClean(i.obj_name).toLowerCase() === x.n.toLowerCase()) : null;
-      const q = it ? Math.min(Number(it.amount) || 0, x.miss, left) : 0;
+      const it = found.get(x.n.toLowerCase()), q = it ? Math.min(Number(it.amount) || 0, x.miss, left) : 0;
       if (q > 0) { moves.push({ obj_info_id: it.obj_info_id, quantity: q, n: x.n }); left -= q; }
     }
     if (moves.length) {
@@ -7924,6 +8033,7 @@
         for (const m of moves) { took.set(m.n.toLowerCase(), m.quantity); run.sdb[m.n.toLowerCase()] = (run.sdb[m.n.toLowerCase()] || 0) + m.quantity; }
         trSay(`Took ${list} out of your SDB`, 'ok');
         try { wtSdbChange(moves.map((m) => ({ n: m.n, dq: -m.quantity }))); } catch (e) { report(e); }   // (what your SDB's worth is counted at follows)
+        await ask(last, 1);   // (its list again after a move, as its page asks for it)
       } else if (j && /pin/i.test(String(j.error || ''))) trNote({ lc: '_sdbpin', name: 'Your SDB' }, 'it asks for your PIN to take things out, so the trainer leaves it to you');
       else trSay(`Your SDB didn’t move them${j && j.message ? `: “${reClean(String(j.message)).slice(0, 120)}”` : ''}`, 'warn');
     }
@@ -7952,6 +8062,7 @@
       if (u.pathname !== '/browseshop.phtml') continue;
       const shop = u.pathname + u.search, oii = u.searchParams.get('buy_obj_info_id') || '';
       await trStep(run, `Opening a shop with ${trA(name)} ${name} at ${trNp(o.price)}…`);
+      if (src === 'sw') { try { await wwwGo('/shops/wizard.phtml', shop); } catch (e) { report(e); const t = wwwFrames.get(shop); if (t) t.down = 0; } }   // (a Shop Wizard result's shop: opened from the Wizard's page, as its link is clicked there. The Super Shop Wizard's: from your page, where it opens)
       const doc = new DOMParser().parseFromString(await fromPageHtml(shop), 'text/html');
       const btn = [...doc.querySelectorAll('.bsp-item__buy[data-buy-url]')].find((b) => reClean(b.getAttribute('data-name')).toLowerCase() === name.toLowerCase() && (!oii || ((b.closest('[data-oii]') || { getAttribute: () => oii }).getAttribute('data-oii') === oii)));
       const price = btn ? shopNum(btn.getAttribute('data-price')) : 0, npa = doc.getElementById('npanchor');
@@ -7989,7 +8100,7 @@
   // A round, for every pet with goals. By itself on a school page in your hours, when there's something to do; or when you press Run now
   let trBusy = null, trElsewhere = false, trTimer = 0, trNextAt = 0, trNextWhy = '';
   async function trStep(run, doing) {   // (a person's moment before the next thing; only while this tab's in front, in your hours (unless you pressed Run now), and not stopped)
-    if (run.n++) { await untilShown(); await wtSleep(2600 + Math.random() * 2400); }
+    if (run.n++) { await untilShown(); await wtSleep(2400 + Math.random() * 2800 + (Math.random() < 0.15 ? 2500 + Math.random() * 6000 : 0)); }   // (mostly a few seconds, now and then longer)
     await untilShown();
     if (run.stop || !trOn() || (!run.manual && trLog().paused)) throw TR_STOP;   // (paused: nothing more, Check now's round apart)
     if (!run.manual && !trHoursOk()) { run.why = 'hours'; throw TR_STOP; }
@@ -8029,60 +8140,104 @@
     if (!(navigator.locks && navigator.locks.request)) return go();
     return navigator.locks.request('bnp-trainer', { ifAvailable: true }, async (lock) => { if (!lock) { trElsewhere = true; trPaint(); setTimeout(() => { trElsewhere = false; trPlan(180000); }, 90000); return; } await go(); });
   }
-  async function trRound(run) {
-    const G = trGoals(), mine = Object.entries(G).filter(([, x]) => trHasGoal(x)).map(([lc, x]) => ({ lc, ...x }));
-    run.mine = mine.map((m) => m.lc);
-    const st = {}, said = new Map();
-    const read = async (s) => { await trStep(run, `Reading ${TR_SCHOOLS[s].name}’s Status…`); st[s] = trPets(await trPage(`${TR_SCHOOLS[s].path}?type=status`), s); trSeen(st); };
-    const at = (lc) => { const all = Object.values(st).map((l) => (l || []).find((p) => p.lc === lc)).filter(Boolean); return all.find((p) => p.kind !== 'free') || all.find((p) => p.s === (p.lv >= 250 ? 'ninja' : 'mi')) || all[0] || null; };
-    if (!mine.length) return;   // (no pet chosen: nothing at all)
-    for (const s of Object.keys(TR_SCHOOLS)) await read(s);
-    const redo = new Set(), done = [];
-    for (const m of mine) {   // (finished courses: completed)
-      const p = at(m.lc), a = p && p.kind === 'done' ? trAct(p, 'complete') : null;
-      if (!a) continue;
-      await trStep(run, `Completing ${p.name}’s ${p.study || ''} course…`);
-      const r = await trTry(`${TR_SCHOOLS[p.s].path}?type=status`, a);
-      done.push({ p, gain: r.doc ? trGain(r.doc) : '', why: r.lost ? 'no answer came back just now' : /[?&]type=status\b/.test(r.url) ? '' : trWords(r.doc) });
-      redo.add(p.s);
+  function trNeed(mine) {   // (the schools to look at in a round: where each pet with goals was last seen on a course, and where its level trains; both for one not seen yet)
+    const L = trLog(), out = new Set();
+    for (const m of mine) {
+      const seen = Object.entries(L.seen).flatMap(([s, x]) => ((x && x.pets) || []).filter((p) => p.lc === m.lc).map((p) => ({ ...p, s })));
+      if (!seen.length) { for (const s of Object.keys(TR_SCHOOLS)) out.add(s); continue; }
+      for (const p of seen) if (p.kind !== 'free') out.add(p.s);
+      out.add(Math.max(...seen.map((p) => Number(p.lv) || 0)) >= 250 ? 'ninja' : 'mi');
     }
-    for (const s of redo) await read(s);
-    for (const d of done) {   // (what Status says now is what happened)
+    return Object.keys(TR_SCHOOLS).filter((s) => out.has(s));
+  }
+  async function trRound(run) {
+    const G = trGoals(), mine = Object.entries(G).filter(([, x]) => trHasGoal(x)).map(([lc, x]) => ({ lc, ...x })), hs = trHereSeen;
+    trHereSeen = null;   // (the Status page you're on, as it came: for the first round only)
+    run.mine = mine.map((m) => m.lc);
+    if (!mine.length) return;   // (no pet chosen: nothing at all)
+    const tab = trTabNew();
+    try { await trRoundIn(run, mine, tab, hs); } finally { tab.shut(); }
+  }
+  // A round, the way you'd go about it in a tab of your own: each school your pets are at looked at; then at each (the one the tab's at
+  // first) its finished courses completed from its Status, its free pets' next courses started from its Courses page (opened afresh for
+  // each), the stones the unpaid ones ask for found (your inventory, your SDB, then the shops), and those paid from its Status. The page
+  // Neopets lands each on is what it believes next: a page is asked for again only where you'd go back to it
+  async function trRoundIn(run, mine, tab, hs) {
+    const st = {}, said = new Map(), statusOf = (s) => `${TR_SCHOOLS[s].path}?type=status`, coursesOf = (s) => `${TR_SCHOOLS[s].path}?type=courses`;
+    const take = (s) => { if (!tab.doc || !trainTable(tab.doc)) return false; st[s] = trPets(tab.doc, s); trSeen(st); return true; };   // (the tab's page, its school's Status: what it believes now)
+    const onStatus = (s) => tab.at(statusOf(s));
+    const read = async (s) => {   // (its Status in the trainer's tab, as you'd go back to it; not answering, once more a moment later)
+      await trStep(run, `Reading ${TR_SCHOOLS[s].name}’s Status…`);
+      for (let k = 0; ; k++) {
+        try { await tab.open(statusOf(s)); if (take(s)) return; throw new Error('Neopets didn’t answer just now'); } catch (e) {
+          if (e === TR_STOP || trLeaving || k || /log in/i.test(String((e && e.message) || ''))) throw e;
+          report(e);
+          tab.shut();
+          await wtSleep(2500 + Math.random() * 1500);
+        }
+      }
+    };
+    const order = () => { const now = Object.keys(TR_SCHOOLS).find((s) => onStatus(s) || tab.at(coursesOf(s))); return now ? [now, ...Object.keys(TR_SCHOOLS).filter((s) => s !== now)] : Object.keys(TR_SCHOOLS); };   // (the school the tab's at first)
+    const at = (lc) => { const all = Object.values(st).map((l) => (l || []).find((p) => p.lc === lc)).filter(Boolean); return all.find((p) => p.kind !== 'free') || all.find((p) => p.s === (p.lv >= 250 ? 'ninja' : 'mi')) || all[0] || null; };
+    for (const s of trNeed(mine)) {   // (the Status page you're on as it came, when nothing of yours has ended since; else read)
+      const ended = hs && hs.pets.some((p) => run.mine.includes(p.lc) && p.kind === 'busy' && p.end && p.end <= Date.now() + 15000);
+      if (hs && hs.s === s && Date.now() - hs.at < 4 * 60e3 && !ended) { st[s] = hs.pets; continue; }
+      await read(s);
+    }
+    const done = [];
+    for (const s of order()) {   // (finished courses: completed, each by its own button on its Status)
+      for (const m of mine) {
+        let p = at(m.lc);
+        if (!p || p.kind !== 'done' || p.s !== s) continue;
+        if (!onStatus(s)) { await read(s); p = at(m.lc); if (!p || p.kind !== 'done' || p.s !== s) continue; }
+        const act = trLiveAct(tab.doc, m.lc, 'complete');
+        if (!act) continue;
+        await trStep(run, `Completing ${p.name}’s ${p.study || ''} course…`);
+        const r = await trDo(tab, act);
+        done.push({ p, gain: !r.lost && !onStatus(s) ? trGain(tab.doc) : '', why: r.lost ? 'no answer came back just now' : onStatus(s) ? '' : trWords(tab.doc) });
+        if (!r.lost) take(s);
+      }
+      if (done.some((d) => d.p.s === s) && !onStatus(s)) await read(s);   // (back to its Status, as you'd go: what it says now is what happened)
+    }
+    for (const d of done) {
       const q = at(d.p.lc);
       if (q && q.kind !== 'done') { const g = trGainOf(d.p, q); run.did++; run.hist.push({ k: 'done', at: Date.now(), lc: d.p.lc, n: d.p.name, s: d.p.s, c: d.p.study || '', g }); trSay(`${d.p.name}: ${d.p.study ? `${d.p.study} ` : ''}course completed${trGainWords(g) ? `: ${trGainWords(g)}` : d.gain ? `: ${d.gain}` : ''}`, 'ok'); }
       else trSay(`${d.p.name}: Neopets didn’t complete the course${d.why ? `: “${d.why}”` : ''}`, 'warn');
     }
-    redo.clear();
-    const forms = {}, tried = [];
-    for (const m of mine) {   // (pets on no course: the next course toward their goals, through the Courses page's own form)
+    const starts = [], tried = [];
+    for (const m of mine) {   // (pets on no course: the next course toward their goals)
       const p0 = at(m.lc);
       if (!p0 || p0.kind !== 'free') continue;
       const s = p0.lv >= 250 ? 'ninja' : 'mi', p = { ...((st[s] || []).find((x) => x.lc === m.lc) || p0), s }, nx = trNext(p, m.g, trBlocked(p));
       if (!nx.c) { trNote(p, nx.why); continue; }
-      const from = `${TR_SCHOOLS[s].path}?type=courses`;
-      if (forms[s] === false) continue;   // (its Courses page didn't open this round)
-      if (!forms[s]) {
-        await trStep(run, `Opening ${TR_SCHOOLS[s].name}’s Courses…`);
-        try { forms[s] = new DOMParser().parseFromString(await fromPageHtml(from), 'text/html'); } catch (e) {
-          if (e === TR_STOP || trLeaving) throw e;
-          report(e);
-          forms[s] = false;
-          trSay(`${TR_SCHOOLS[s].name}’s Courses page didn’t open just now: its courses start on the next round`, 'warn');
-          continue;
-        }
-      }
-      const f = [...forms[s].querySelectorAll('form')].find((x) => [...x.querySelectorAll('input[name="type"]')].some((i) => i.value === 'start'));
-      const opt = f && [...f.querySelectorAll('select[name="pet_name"] option')].find((o) => o.value.toLowerCase() === m.lc);
-      if (!f || !opt) { trNote(p, `not on ${TR_SCHOOLS[s].name}’s Courses list`); continue; }
-      if (/too advanced|too young|can(?:no|’|')t|not able/i.test(opt.textContent)) { trNote(p, reClean(opt.textContent.slice(opt.textContent.indexOf('-') + 1))); continue; }
-      const body = new URLSearchParams();
-      for (const el of f.querySelectorAll('input[name], select[name]')) if (!/^(?:submit|button|image)$/i.test(el.type)) body.append(el.name, el.name === 'course_type' ? nx.c : el.name === 'pet_name' ? opt.value : el.value);
-      await trStep(run, `Starting ${p.name}’s ${nx.c} course…`);
-      const r = await trTry(from, { url: new URL(f.getAttribute('action') || '', `https://www.neopets.com${TR_SCHOOLS[s].path}`).pathname, method: 'POST', body });
-      tried.push({ p, c: nx.c, lost: !!r.lost, why: r.lost || /[?&]type=status\b/.test(r.url) ? '' : trWords(r.doc) });   // (sent back to Status: its words aren't an answer)
-      redo.add(s);
+      starts.push({ m, p, nx, s });
     }
-    for (const s of redo) await read(s);
+    for (const s of order()) {   // (through its Courses page's own form, opened afresh for each pet as you would: chosen there, then its own Start Course)
+      for (const { m, p, nx } of starts.filter((x) => x.s === s)) {
+        if (!tab.at(coursesOf(s))) {
+          await trStep(run, `Opening ${TR_SCHOOLS[s].name}’s Courses…`);
+          try { await tab.open(coursesOf(s)); } catch (e) {
+            if (e === TR_STOP || trLeaving || /log in/i.test(String((e && e.message) || ''))) throw e;
+            report(e);
+            tab.shut();
+            trSay(`${TR_SCHOOLS[s].name}’s Courses page didn’t open just now: its courses start on the next round`, 'warn');
+            break;
+          }
+        }
+        const f = [...tab.doc.querySelectorAll('form')].find((x) => [...x.querySelectorAll('input[name="type"]')].some((i) => i.value === 'start'));
+        const petSel = f && f.querySelector('select[name="pet_name"]'), cSel = f && f.querySelector('select[name="course_type"]');
+        const opt = petSel && [...petSel.options].find((o) => o.value.toLowerCase() === m.lc);
+        if (!f || !opt) { trNote(p, `not on ${TR_SCHOOLS[s].name}’s Courses list`); continue; }
+        if (/too advanced|too young|can(?:no|’|')t|not able/i.test(opt.textContent)) { trNote(p, reClean(opt.textContent.slice(opt.textContent.indexOf('-') + 1))); continue; }
+        if (!cSel || ![...cSel.options].some((o) => o.value === nx.c)) { trNote(p, `${TR_SCHOOLS[s].name}’s Courses page doesn’t offer ${nx.c}`); continue; }
+        await trStep(run, `Starting ${p.name}’s ${nx.c} course…`);
+        for (const [sel, v] of [[cSel, nx.c], [petSel, opt.value]]) { sel.value = v; for (const t of ['input', 'change']) sel.dispatchEvent(new Event(t, { bubbles: true })); }   // (chosen as you'd choose them)
+        const r = await trDo(tab, { form: f, by: f.querySelector('input[type="submit"], button[type="submit"]') });
+        tried.push({ p, c: nx.c, lost: r.lost, why: r.lost || onStatus(s) ? '' : trWords(tab.doc) });   // (sent back to Status: its words aren't an answer)
+        if (!r.lost) take(s);
+      }
+      if (tried.some((t) => t.p.s === s) && !onStatus(s)) await read(s);
+    }
     for (const t of tried) {   // (what Status says now is what happened)
       const q = at(t.p.lc);
       if (q && q.kind !== 'free') { run.did++; trNote(q, ''); trSay(`${t.p.name}: started ${q.study || t.c} at ${TR_SCHOOLS[q.s].name}`, 'ok'); continue; }
@@ -8090,7 +8245,6 @@
       trBlock(t.p, t.c);
       trSay(`${t.p.name}: Neopets didn’t start ${t.c}${t.why ? `: “${t.why}”` : ''}`, 'warn');
     }
-    redo.clear();
     const due = mine.map((m) => at(m.lc)).filter((p) => p && p.kind === 'pay' && p.stones.length);
     if (!due.length) return;
     const need = new Map();   // (the stones every course waiting asks for)
@@ -8120,20 +8274,23 @@
       }
     }
     const paid = [];
-    for (const p of due) {   // (each course whose stones are all here: paid, in your pets' order)
-      const want = new Map();
-      for (const n of p.stones) want.set(n.toLowerCase(), (want.get(n.toLowerCase()) || 0) + 1);
-      if ([...want].some(([k, c]) => (have.get(k) || 0) < c)) { trNote(p, `waiting for ${p.stones.join(', ')}`); continue; }
-      for (const [k, c] of want) have.set(k, have.get(k) - c);
-      const a = trAct(p, 'pay');
-      if (!a) continue;
-      await trStep(run, `Paying for ${p.name}’s ${p.study || ''} course…`);
-      const r = await trTry(`${TR_SCHOOLS[p.s].path}?type=status`, a);
-      said.set(p.lc, r.lost ? 'no answer came back just now' : /[?&]type=status\b/.test(r.url) ? '' : trWords(r.doc));
-      paid.push(p);
-      redo.add(p.s);
+    for (const s of order()) {   // (each course whose stones are all here: paid by its own button on its Status, in your pets' order)
+      for (const p0 of due.filter((x) => x.s === s)) {
+        const want = new Map();
+        for (const n of p0.stones) want.set(n.toLowerCase(), (want.get(n.toLowerCase()) || 0) + 1);
+        if ([...want].some(([k, c]) => (have.get(k) || 0) < c)) { trNote(p0, `waiting for ${p0.stones.join(', ')}`); continue; }
+        if (!onStatus(s)) await read(s);
+        const p = at(p0.lc), act = p && p.kind === 'pay' && p.s === s ? trLiveAct(tab.doc, p.lc, 'pay') : null;
+        if (!act) continue;   // (paid or changed meanwhile)
+        for (const [k, c] of want) have.set(k, have.get(k) - c);
+        await trStep(run, `Paying for ${p.name}’s ${p.study || ''} course…`);
+        const r = await trDo(tab, act);
+        said.set(p.lc, r.lost ? 'no answer came back just now' : onStatus(s) ? '' : trWords(tab.doc));
+        if (!r.lost) take(s);
+        paid.push(p0);
+      }
+      if (paid.some((p) => p.s === s) && !onStatus(s)) await read(s);
     }
-    for (const s of redo) await read(s);
     for (const p of paid) {
       const q = at(p.lc);
       if (q && q.kind === 'busy') {
@@ -8174,20 +8331,22 @@
     if (stale && (now - L.last > 10 * 60000 || L.failed)) return true;
     return trSeenPets().some((p) => trHasGoal(G[p.lc]) && (p.kind === 'done' || (p.kind === 'pay' && !L.note[p.lc]) || (p.kind === 'busy' && p.end && p.end <= now) || (p.kind === 'free' && !L.note[p.lc])));
   }
+  const trRand = (x) => { const v = Math.sin(Number(x) / 997) * 43758.5453; return v - Math.floor(v); };   // (0 to 1, the same for the same moment: a wait drawn once, however often it's worked out again)
+  const trLag = (end) => (trRand(end) < 0.75 ? 40000 + trRand(end + 1) * 260000 : 300000 + trRand(end + 1) * 600000);   // (from a course's end till it's seen to, as you'd come back to it: mostly within a few minutes, now and then up to a quarter of an hour)
   function trPlan(gap = 180000, stale = false) {   // (the next round on this page: when there's something to do, but not sooner than gap after the last; else soon after a course of a pet with goals ends. Moved to your hours)
     clearTimeout(trTimer);
     trNextAt = 0;
     if (!trOn() || !trSchoolOf(location.pathname)) return;
     if (trLog().paused) { trPaint(); return; }   // (paused: no round of its own till you resume)
     const G = trGoals(), now = Date.now(), ends = trSeenPets().filter((p) => trHasGoal(G[p.lc]) && p.kind === 'busy' && p.end > now).map((p) => p.end);
-    const L = trLog(), due = trDue(stale), end = ends.length ? Math.min(...ends) + 20000 + Math.random() * 60000 : 0;
-    const wiz = L.wizUntil > now && trSeenPets().some((p) => trHasGoal(G[p.lc]) && p.kind === 'pay') ? L.wizUntil + 30000 + Math.random() * 60000 : 0;   // (a course waiting on stones the Wizard wouldn't look for: when its break is over)
-    let at = due ? Math.max(now + 2000 + Math.random() * 2000, L.last + gap) : Math.min(end || Infinity, wiz || Infinity);   // (a round that left something undone (a payment Neopets didn't take): the next a few minutes on, never straight after)
+    const L = trLog(), due = trDue(stale), first = ends.length ? Math.min(...ends) : 0, end = first ? first + trLag(first) : 0;
+    const wiz = L.wizUntil > now && trSeenPets().some((p) => trHasGoal(G[p.lc]) && p.kind === 'pay') ? L.wizUntil + 30000 + trRand(L.wizUntil) * 90000 : 0;   // (a course waiting on stones the Wizard wouldn't look for: when its break is over)
+    let at = due ? Math.max(now + 2500 + Math.random() * 3500, L.last + gap) : Math.min(end || Infinity, wiz || Infinity);   // (a round that left something undone (a payment Neopets didn't take): the next a few minutes on, never straight after)
     if (at === Infinity) at = 0;
     trNextWhy = due || !at ? '' : at === wiz ? 'wiz' : 'end';
-    if (at && !trHoursOk(new Date(at))) { const nx = trHoursNext(new Date(at)); at = nx ? nx.getTime() + Math.random() * 90000 : 0; }
+    if (at && !trHoursOk(new Date(at))) { const nx = trHoursNext(new Date(at)); at = nx ? nx.getTime() + 60000 + trRand(nx.getTime()) * 240000 : 0; }
     trNextAt = at;
-    if (at) trTimer = setTimeout(() => { untilShown().then(() => trRun(false)).catch(report); }, Math.min(Math.max(at - now, 1500), 2 ** 31 - 1));
+    if (at) trTimer = setTimeout(() => { const away = document.hidden; untilShown().then(() => (away ? wtSleep(3000 + Math.random() * 5000) : null)).then(() => trRun(false)).catch(report); }, Math.min(Math.max(at - now, 1500), 2 ** 31 - 1));   // (back to the tab: a moment's look first)
     trPaint();
   }
 
@@ -8454,7 +8613,8 @@
     if (trFinding) return;
     trFinding = true;
     trPaint();
-    try { const st = {}; for (const s of Object.keys(TR_SCHOOLS)) { st[s] = trPets(await trPage(`${TR_SCHOOLS[s].path}?type=status`), s); await wtSleep(1500 + Math.random() * 1200); } trSeen(st); } catch (e) { if (!trLeaving) trFlash('Neopets didn’t answer just now: try again in a moment'); report(e); }
+    const tab = trTabNew();   // (each school's Status, opened in an unseen tab of its own as you'd open them)
+    try { const st = {}; let k = 0; for (const s of Object.keys(TR_SCHOOLS)) { if (k++) await wtSleep(1500 + Math.random() * 1200); await tab.open(`${TR_SCHOOLS[s].path}?type=status`); if (!trainTable(tab.doc)) throw new Error('Neopets didn’t answer just now'); st[s] = trPets(tab.doc, s); } trSeen(st); } catch (e) { if (!trLeaving) trFlash('Neopets didn’t answer just now: try again in a moment'); report(e); } finally { tab.shut(); }
     trFinding = false;
     trPaint();
   }
@@ -8963,7 +9123,7 @@
       const still = invApply(tab, html, want);
       if (!still && invAct && want && want.id === invAct.id) invAct = null;   // (changed or gone: a press on it is a press on what's there now)
       if (all) { const g = tab.querySelector('.item-grid'); if (g) g.__bnpAll = true; }   // (both lists in it already: not asked for again)
-      if (still && n < 4) { invStale = true; setTimeout(() => { untilShown().then(() => invSync(want, n + 1)).catch(report); }, [2000, 6000, 15000, 30000][n] * (0.85 + Math.random() * 0.4)); }   // (still there: the page again first, next time)   // (Neopets can take a while: about 50 seconds in all)   // (what was used still there as it was: Neopets may not have caught up yet)
+      if (still && n < 3) { invStale = true; setTimeout(() => { untilShown().then(() => invSync(want, n + 1)).catch(report); }, [2500, 9000, 25000][n] * (0.85 + Math.random() * 0.4)); }   // (still there: the page again first, next time)   // (Neopets can take a while: about 50 seconds in all)   // (what was used still there as it was: Neopets may not have caught up yet)
     } finally {
       invBusy = false;
       if (invMore) { const w = invMore.id ? invMore : want; invMore = null; invSyncSoon(w); } else if (!invDue && invWait.length) { const w = invWait; invWait = []; for (const f of w) f(); }
@@ -10319,7 +10479,7 @@
       if (!a || a === nbPeekA) return;
       clearTimeout(nbPeekT);
       nbPeekA = a;
-      nbPeekT = setTimeout(() => nbPeek(a), 500);   // (a moment's pause on it, not just passing over)
+      nbPeekT = setTimeout(() => { if (nbAheadOk()) nbPeek(a); }, 900);   // (a moment's pause on it, not just passing over)
     }, { passive: true });
     document.addEventListener('pointerout', (e) => {
       const a = e.target instanceof Element && e.target.closest(NB_PEEK_SEL);
@@ -10715,6 +10875,14 @@
 
   // ---- a topic's other pages, in place: no new page, so your reply box (and what's in it) stays; Back and Forward work as ever ----
   const nbPageCache = new Map();   // (address → its page, asked for once: when you point at its button, or come near the end of this page)
+  const nbAhead = [];
+  function nbAheadOk() {   // (a page read ahead of a click (pointed at a while): eight a minute at most, as a person's looking about)
+    const now = Date.now();
+    while (nbAhead.length && now - nbAhead[0] > 60000) nbAhead.shift();
+    if (nbAhead.length >= 8) return false;
+    nbAhead.push(now);
+    return true;
+  }
   function nbPageGet(url) {
     const u = new URL(url, location.href);
     u.hash = '';
@@ -10748,7 +10916,7 @@
       const a = e.target instanceof Element && e.target.closest('a[href]');
       if (!a || !nbOtherPage(a.href)) return;
       clearTimeout(hoverT);
-      hoverT = setTimeout(() => { if (hoverBusy) return; hoverBusy = true; nbPageGet(a.href).catch(() => { /* */ }).finally(() => { hoverBusy = false; }); }, 350);
+      hoverT = setTimeout(() => { if (hoverBusy || !nbAheadOk()) return; hoverBusy = true; nbPageGet(a.href).catch(() => { /* */ }).finally(() => { hoverBusy = false; }); }, 900);
     }, { passive: true });
     addEventListener('popstate', (e) => {   // (Back or Forward between its pages: each one where you were on it)
       const same = nbHere.kind === 'topic' ? nbSameTopic(location.href) : nbHere.kind === 'board' && nbSameBoard(location.href);
@@ -11520,6 +11688,8 @@
     if (box) box.hidden = true;
   }
   const nbPenKey = (v) => `bnp-nbpen:${nbMe() || '-'}:${v == null ? '0' : v}`;   // (each account's own: switching accounts never shows the other's pens)
+  const nbPenTouchKey = () => `bnp-nbpen-touch:${nbMe() || '-'}`;   // (when you last left Neoboard Settings: pens kept from before are read again)
+  if (!FRAME && location.hostname === 'www.neopets.com' && location.pathname === '/settings/neoboards/') addEventListener('pagehide', () => { try { nbJsonSet(nbPenTouchKey(), Date.now()); } catch (_) { /* */ } });
   const nbPenData = (v) => nbJson(nbPenKey(v), null);
   function nbPrevPaint() { nbMePaint(); nbWysPaint(); }   // (the reply box, and you beside it, with the pen that's picked)
   function nbMyAv() {   // (your avatar now: from a post of yours on this page, your collection's note of it, or Neopets' default)
@@ -11664,7 +11834,7 @@
   const nbPenAsking = new Map();
   function nbPenLoad(v, fresh) {   // (one pen at a time, a moment apart; one already being asked for: that answer)
     const key = nbPenKey(v), kept = nbJson(key, null), id = String(v);
-    if (kept && !fresh && Date.now() - (kept.at || 0) < 5 * 60000) return Promise.resolve(kept);
+    if (kept && !fresh && Date.now() - (kept.at || 0) < 6 * 3600e3 && (kept.at || 0) > Number(nbJson(nbPenTouchKey(), 0) || 0)) return Promise.resolve(kept);   // (kept six hours, or till you've been to Neoboard Settings since: then read again)
     if (nbPenAsking.has(id)) return nbPenAsking.get(id);
     const run = nbPenLine.then(async () => {
       const gap = nbPenAt + 2500 + Math.random() * 1500 - Date.now();
@@ -11683,7 +11853,7 @@
       fd.append('route', 'Neoboards');
       fd.append('mode', 'load');
       if (String(v) !== '0') fd.append('setpen', String(v));
-      const j = await fetch('/np-templates/ajax/settings/neoboards/neoboards_load.php', { method: 'POST', credentials: 'include', headers: { 'x-requested-with': 'XMLHttpRequest' }, body: fd }).then((r) => r.json());
+      const j = await fromPage('/settings/neoboards/', '/np-templates/ajax/settings/neoboards/neoboards_load.php', { method: 'POST', credentials: 'include', headers: { 'x-requested-with': 'XMLHttpRequest' }, body: fd }).then((r) => r.json());   // (from Neoboard Settings itself, where its own page asks it)
       const f = (j && j.flags) || {};
       let title = '';
       const each = (items) => { for (const it of items || []) { if (!it || typeof it !== 'object') continue; if (Array.isArray(it.items)) each(it.items); if (it.name === 'neotitle' && Array.isArray(it.options) && f.neotitle !== '' && f.neotitle != null) { const o = it.options.find((x) => String(x.value) === String(f.neotitle)); if (o) title = reClean(o.text); } } };
@@ -14097,7 +14267,7 @@
     form.classList.add('is-busy');
     let sent = false;
     try {
-      const r = await fetch(new URL(form.getAttribute('action') || 'modify_neomessages.phtml', location.href).href, { method: 'POST', credentials: 'include', body: new URLSearchParams(fd) });
+      const r = await fetch(new URL(form.getAttribute('action') || 'modify_neomessages.phtml', location.href).href, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(fd).toString() });   // (as its form sends it: no charset added)
       sent = true;
       if (!r.ok) throw new Error(`Neomail answered ${r.status}`);
       let doc = nmDoc(await r.text());
@@ -14601,7 +14771,7 @@
     w.to.addEventListener('input', () => { w.sugAt = -1; nmwAvPaint(); nmwSugPaint('type'); nmwSaveSoon(); nmwFullHref(); });
     w.to.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== w.to) nmwSugHide(); }, 120));
     w.subj.addEventListener('input', nmwSaveSoon);
-    w.ta.addEventListener('input', () => { nmwFit(); nmwSaveSoon(); });
+    w.ta.addEventListener('input', () => { nmwFit(); nmwSaveSoon(); if (w.ta.value.trim()) wwwWarm('/neomessages.phtml?type=send'); });   // (Neopets' Send page, opened as you start to write)
     w.head.addEventListener('pointerdown', (e) => {   // (moved by its header; kept where you leave it)
       if (e.button !== 0 || (e.target instanceof Element && e.target.closest('a, button'))) return;
       e.preventDefault();
@@ -14722,7 +14892,7 @@
     if (el) el.focus();
   }
   async function nmSendNow(to, subject, body) {   // (a Neomail sent from Neopets' own Send page (fromPage), as that page sends one; its answer read: '' once it's gone, or what's wrong)
-    const r = await fromPage('/neomessages.phtml?type=send', '/process_neomessages.phtml', { method: 'POST', credentials: 'include', body: new URLSearchParams({ recipient: to, neofriends: '', subject, message_type: 'notitle', message_body: body }) });
+    const r = await fromPage('/neomessages.phtml?type=send', '/process_neomessages.phtml', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ recipient: to, neofriends: '', subject, message_type: 'notitle', message_body: body }).toString() });   // (its fields in its form's order, sent as its form sends them)
     const doc = nmDoc(await r.text());
     if (/\/login\b/.test(new URL(r.url || location.href).pathname) || doc.querySelector('form[action*="login"] input[type="password"]')) return 'Neopets has logged you out. Log in again, then send it: what you’ve written is kept.';
     const em = doc.querySelector('.errormess');
@@ -14859,7 +15029,7 @@
   }
   function nclMyAvFresh() {   // (your main pen read again from Neoboard Settings (only reading it) when what's kept is half an hour old: the avatar you wear now)
     const d = nbJson(nbPenKey('0'), null);
-    if (!nclMe() || nclMyAvFresh.busy || (d && Date.now() - (d.at || 0) < 30 * 60000)) return;
+    if (!nclMe() || nclMyAvFresh.busy || (d && Date.now() - (d.at || 0) < 6 * 3600e3 && (d.at || 0) > Number(nbJson(nbPenTouchKey(), 0) || 0))) return;   // (six hours, or till you've been to Neoboard Settings since)
     nclMyAvFresh.busy = true;
     const go = () => nbPenLoad('0', true).then(() => { if (ncl) nclChatPaint(); });
     (navigator.locks && navigator.locks.request ? navigator.locks.request('bnp-ncl-av', { ifAvailable: true }, (lock) => (lock ? go() : null)) : go()).catch(() => { /* (another time) */ }).finally(() => { nclMyAvFresh.busy = false; });   // (one tab reads it; the others leave it to that one)
@@ -15233,7 +15403,7 @@
     el.addEventListener('input', (e) => {
       const t = e.target;
       if (t.matches('[data-ncl-q]')) { ncl.q = t.value.trim(); if (ncl.home && ncl.q) nclHomeSet(false); nclListPaint(); }   // (Home: what's found, in the list)
-      else if (t.matches('[data-ncl-ta]')) { nclDraftPut(ncl.who, t.value); nclFit(t); const sa = ncl.el.querySelector('[data-ncl="snipadd"]'); if (sa) sa.disabled = !t.value.trim(); }   // (quick replies open: Save what's written as you write it)
+      else if (t.matches('[data-ncl-ta]')) { nclDraftPut(ncl.who, t.value); nclFit(t); if (t.value.trim() && ncl.who && !NCL_NOREPLY.has(ncl.who)) wwwWarm('/neomessages.phtml?type=send'); const sa = ncl.el.querySelector('[data-ncl="snipadd"]'); if (sa) sa.disabled = !t.value.trim(); }   // (quick replies open: Save what's written as you write it)
       else if (t.matches('[data-ncl-subj]')) delete t.dataset.auto;   // (your own subject: left as you write it)
     });
     el.addEventListener('keydown', (e) => {
@@ -15783,6 +15953,7 @@
     ask.setAttribute('role', 'alertdialog');
     ask.innerHTML = `<span data-ncl-asksay>Send <b>${esc(name)}</b> a Neofriend request?</span><button type="button" class="bnp-pillbtn is-go" data-ncl="nfyes">Send it</button><button type="button" class="bnp-pillbtn" data-ncl="nfno">Not now</button>`;
     box.querySelector('[data-ncl-chead]').after(ask);
+    wwwWarm('/neofriend_requests.phtml', 3 * 60000);   // (Neopets' Neofriends page opened while you're asked, so the request comes from a page that's been open a moment)
     ask.querySelector('[data-ncl="nfyes"]').focus();
   }
   async function nclNfAdd() {   // (a Neofriend request, as Neopets' own page sends one: that page's token, then the request; Neopets' own words if it says no)
@@ -21798,7 +21969,7 @@
   let mallLastAsk = 0;
   let mallQueue = Promise.resolve();
   function mallTurn(now) {   // (NE's own asks one after another, a moment apart; the first after a pause goes at once. now: your own press and what it needs read again, at once, as the Mall's app does them)
-    const t = mallQueue.then(async () => { const gap = now ? 0 : 650 + Math.random() * 700 - (Date.now() - mallLastAsk); if (gap > 0) await saSleep(gap); mallLastAsk = Date.now(); });
+    const t = mallQueue.then(async () => { if (!now) await untilShown(); const gap = now ? 0 : 650 + Math.random() * 700 - (Date.now() - mallLastAsk); if (gap > 0) await saSleep(gap); mallLastAsk = Date.now(); });   // (NE's own asks wait while this tab is out of sight)
     mallQueue = t.catch(() => {});
     return t;
   }
@@ -22452,7 +22623,7 @@
   // new by itemdb's newest NC items (first seen as they went on sale, so nothing brought back counts) or by Neopets' own list having had
   // them (kept 30 days); each found on sale in the Mall itself (Specialty newest first, then a search for any it hasn't got); none older
   // than Neopets' own oldest; a thing and its bundles as one, in the size Neopets' list shows from that release where it can ----
-  const MALL_NEW_SEEN = 'mall-newseen', MALL_NEW_IDB = 'mall-newidb', MALL_NEW_GONE = 'mall-newgone';
+  const MALL_NEW_SEEN = 'mall-newseen', MALL_NEW_IDB = 'mall-newidb', MALL_NEW_GONE = 'mall-newgone', MALL_NEW_FOUND = 'mall-newfound';
   const MALL_FILL_TIP = 'Also new: Neopets’ own New list leaves this out (it only holds so many at a time). It came out with the others, so NE adds it back.';
   const mallFam = (n) => n.replace(/\s+(?:double\s+)?\d+[-\s](?:bundle|pack)$/i, '').trim().toLowerCase();   // (a thing's name without its bundle's or pack's size)
   const mallFamSize = (n) => { const m = /(double\s+)?(\d+)[-\s](?:bundle|pack)$/i.exec(n); return m ? Number(m[2]) * (m[1] ? 2 : 1) : 0; };
@@ -22493,7 +22664,9 @@
     for (const [id, x] of Object.entries(seen)) if (ok(Number(id), x.n, x.b)) want.set(Number(id), x.n);
     if (!mall || !want.size) return;
     const found = new Map(), take = (arr) => { for (const x of Array.isArray(arr) ? arr : []) { const id = Number(x.objInfoId || x.id); if (want.has(id) && !found.has(id)) found.set(id, mallItem(x)); } };
-    try { take((await mallGet('category/index.phtml', { type: 'browse', cat: MALL_SPECIALTY, sort: '-saleBegin', page: 1, limit: 100 })).data); } catch (_) { /* */ }
+    const kept = get(MALL_NEW_FOUND, null) || {}, fresh = (k) => k && k.it && Date.now() - (k.at || 0) < 2 * 3600e3;   // (found lately: shown as found, not looked for again for two hours)
+    for (const [id] of want) if (fresh(kept[id])) found.set(id, kept[id].it);
+    if ([...want.keys()].some((id) => !found.has(id))) { try { take((await mallGet('category/index.phtml', { type: 'browse', cat: MALL_SPECIALTY, sort: '-saleBegin', page: 1, limit: 100 })).data); } catch (_) { /* */ } }
     let asked = 0;
     for (const [id, n] of want) {
       if (found.has(id) || !mall) continue;
@@ -22503,6 +22676,9 @@
     }
     for (const k of Object.keys(gone)) if (Date.now() - gone[k] > 6 * 3600e3) delete gone[k];
     set(MALL_NEW_GONE, gone);
+    for (const [id, it] of found) if (!fresh(kept[id])) kept[id] = { it, at: Date.now() };
+    for (const k of Object.keys(kept)) if (!fresh(kept[k])) delete kept[k];
+    set(MALL_NEW_FOUND, kept);
     if (!mall || mall.data[mallListKey('new')] !== d) return;
     const fams = new Map();
     for (const it of found.values()) {
@@ -24940,7 +25116,7 @@
       if (!clo || clo.gen !== gen) throw CLO_GONE;
       const ac = new AbortController(), cut = setTimeout(() => ac.abort(), 30000);
       try {
-        const r = await fetch(`/np-templates/ajax/closet/get-items.php?${new URLSearchParams({ page: p, per_page: CLO_PER, search: '', category: '' })}`, { credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' }, signal: ac.signal });
+        const r = await fetch(`/np-templates/ajax/closet/get-items.php?${new URLSearchParams({ page: p, per_page: CLO_PER, search: '', category: '' })}`, { credentials: 'include', signal: ac.signal });   // (as the closet's own page asks: no other headers)
         const d = await r.json().catch(() => null);
         if (d && d.success && Array.isArray(d.items)) return d;
       } catch (_) { /* (no answer, or too slow) */ } finally { clearTimeout(cut); }
@@ -27626,7 +27802,7 @@
   }
   function shopPmGap(src) {   // (between two items, a person's pace (user, 2026-10-31: "a bit more of a delay between pricing each item… with SSW… with a small bit of random jitter"): the Super Shop Wizard about 6–9 seconds, the Shop Wizard 3–6; now and then a longer breath)
     const gap = src === 'ssw' ? 6000 + Math.random() * 3000 : 3000 + Math.random() * 3000;
-    return gap + (Math.random() < 0.2 ? 1500 + Math.random() * 3500 : 0);
+    return gap + (Math.random() < 0.2 ? 1500 + Math.random() * 3500 : 0) + (Math.random() < 0.06 ? 8000 + Math.random() * 17000 : 0);   // (and once in a while a real pause, as a person's)
   }
   async function shopPmWaitOut(src, run) {   // (the wizards let you search again at the top of the hour: wait till a moment in its first five minutes, never always :00:00 (user, 2026-10-31), then carry on. false: stopped while waiting)
     const pm = shop.pm, H = 3600000, top = Math.ceil((Date.now() + 1000) / H) * H, until = top + 5000 + Math.random() * (5 * 60000 - 5000);   // (Neopian time's hours start with UTC's)
@@ -27657,7 +27833,7 @@
       if (run) { run.done[name] = got.r; shopPmRunSet(run); }
       if (got.r.cant) {
         cants.push(rows[i]);
-        if ((cants.length === 1 || cants.length % 5 === 0) && !/not allowed to search/i.test(got.r.cant) && !await shopPmIn()) {   // (a no that isn't its "You are not allowed to search for … in the Super Wiz.": to you, logged out (it says "Access denied."), rather than to the item? Then stopped, and these asked again once you're back)
+        if ((cants.length === 2 || (cants.length > 2 && cants.length % 5 === 0)) && !/not allowed to search/i.test(got.r.cant) && !await shopPmIn()) {   // (two in a row first: one item it won't search for isn't you logged out)   // (a no that isn't its "You are not allowed to search for … in the Super Wiz.": to you, logged out (it says "Access denied."), rather than to the item? Then stopped, and these asked again once you're back)
           for (const t of cants) { pm.res.delete(t.dataset.name); if (run) delete run.done[t.dataset.name]; shopPmRow(t); }
           if (run) shopPmRunSet(run);
           Object.assign(pm, { why: 'out', whyMsg: got.r.cant });
@@ -29863,8 +30039,10 @@
       busy = true;
       fill(t);
       try {
-        const body = new URLSearchParams(new FormData(f));
-        const r = await fetch(new URL(f.getAttribute('action') || location.href, location.href), { method: 'POST', body, credentials: 'same-origin' });
+        const sub = f.querySelector('input[type="submit"], button[type="submit"]');
+        let fd;
+        try { fd = new FormData(f, sub || undefined); } catch (_) { fd = new FormData(f); }   // (its own button's name too, when it has one, as a press sends it)
+        const r = await fetch(new URL(f.getAttribute('action') || location.href, location.href), { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(fd).toString(), credentials: 'same-origin' });
         if (/\/login/i.test(new URL(r.url).pathname)) return { ok: false, why: 'Neopets wants you to log in again first: nothing was bought.' };
         const doc = new DOMParser().parseFromString(await r.text(), 'text/html'), tx = doc.body ? doc.body.textContent : '', list = ticketsIn(tx);
         const tok = doc.querySelector('form[action*="process_lottery"] input[name="_ref_ck"]'), mine = f.querySelector('input[name="_ref_ck"]');
@@ -29900,7 +30078,7 @@
       paint();
       for (const t of q) {
         if (run.stop || !room()) break;
-        if (k) { await new Promise((ok) => { const w = setTimeout(ok, 1200 + Math.random() * 2000); run.wake = () => { clearTimeout(w); ok(); }; }); await untilShown(); if (run.stop) break; }   // (a person's moment between two, cut short by Stop; only while this tab is in sight)
+        if (k) { await new Promise((ok) => { const w = setTimeout(ok, 2000 + Math.random() * 2500); run.wake = () => { clearTimeout(w); ok(); }; }); await untilShown(); if (run.stop) break; }   // (a person's moment between two, cut short by Stop; only while this tab is in sight)
         say(`Buying ${k + 1} of ${n}…`);
         const r = await buyOne(t);
         if (!r.ok) { why = r.why; break; }
@@ -30713,7 +30891,7 @@
     me.placing = -1;
     if (!me.queue.length) me.all = false;
     fcPaint();
-    if (me.queue.length) setTimeout(() => { if (fc === me) fcPlaceNext(); }, 500 + Math.random() * 500);   // (a moment between two, as a person's clicks)
+    if (me.queue.length) setTimeout(() => { if (fc === me) untilShown().then(() => { if (fc === me) fcPlaceNext(); }); }, 1600 + Math.random() * 2400);   // (a moment between two, as a person's clicks; only while this tab is in sight)
   }
   const fcPlacedN = () => Number(fc.form.dataset.betsPlaced) || 0;
   const fcMaxN = () => Number(fc.form.dataset.maxBets) || 10;
@@ -31440,14 +31618,14 @@
   }
   async function wtFetch(key, pool, page) {   // (one page of 90, asked for as Neopets' own page asks for it)
     if (key === 'closet') {
-      const r = await fetch(`/np-templates/ajax/closet/get-items.php?${new URLSearchParams({ page, per_page: 90, search: '', category: '' })}`, { credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const r = await fetch(`/np-templates/ajax/closet/get-items.php?${new URLSearchParams({ page, per_page: 90, search: '', category: '' })}`, { credentials: 'include' });   // (as the closet's own page asks: no other headers)
       const d = await r.json().catch(() => null);
       if (!d || !d.success) throw new Error('Neopets didn’t give the closet’s items just now: try again in a moment.');
       return { items: (d.items || []).map((i) => ({ n: reClean(i.obj_name), q: Math.max(1, Number(i.qty) || 1), nc: !!i.is_nc, pb: !!i.is_paintbrush, img: i.image_url || '' })), pages: Number(d.total_pages) || 1, total: Number(d.total) || 0, qty: Number(d.total_qty) || null };
     }
     const ck = (PAGE.__sdbData && PAGE.__sdbData.refCk) || '';
     if (!ck) throw new Error('Your SDB’s page didn’t load all the way: open it again, then count.');
-    const r = await fetch('/np-templates/ajax/safetydeposit/get-items.php', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'XMLHttpRequest' }, body: JSON.stringify({ page, per_page: 90, search: '', category: '', sort: '', view_filter: pool, _ref_ck: ck }) });
+    const r = await fetch('/np-templates/ajax/safetydeposit/get-items.php', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'XMLHttpRequest' }, body: JSON.stringify({ page, per_page: 90, search: '', category: '', sort: 'name_asc', rarity_min: null, rarity_max: null, view_filter: pool, _ref_ck: ck }) });   // (every field its own page sends, in its order)
     const d = await r.json().catch(() => null);
     if (!d || !d.success || !d.data) throw new Error('Neopets didn’t give your SDB’s items just now: try again in a moment.');
     const pg = d.data.pagination || {};
@@ -32031,7 +32209,7 @@
     clearTimeout(ss.saveT);
     ss.saveT = setTimeout(() => nbJsonSet(SS_KEEP, ss.kept), 1200);
   }
-  async function ssRun() {   // (three species at a time, the ones in sight first, only while Available is open and you're here)
+  async function ssRun() {   // (one species at a time, a moment apart, the ones in sight first, only while Available is open and you're here)
     if (!ss || ss.busy || !ssOn() || ss.err) return;
     ss.busy = true;
     ss.inflight = new Set();
@@ -32056,9 +32234,10 @@
         else await ssNap(3000);
         if (!ss) return;
         if (kind === ss.kind) { ssRow(id); ssFilter(); }
+        if (styles) await ssNap(1600 + Math.random() * 2200);   // (a moment before the next, as you'd pick it)
       }
     };
-    try { await Promise.all([worker(), worker(), worker()]); }
+    try { await worker(); }
     finally { if (ss) { ss.busy = false; ss.inflight.clear(); ssState(); } }
   }
   function ssBig(card) {   // (a style's picture large beside its card, as the Studio's own window shows one)
@@ -32754,6 +32933,7 @@
     if (!id) { set('guild', { none: true, at: Date.now() }); return null; }
     const url = `${SITE}/guilds/guild.phtml?id=${id}`;
     let info = {};
+    await new Promise((ok) => setTimeout(ok, 2000 + Math.random() * 3000));   // (its page a moment after the HQ's, as you'd click through)
     try { info = guildRead(new DOMParser().parseFromString(await (await fetch(url, { credentials: 'include' })).text(), 'text/html')); } catch (_) { /* (its name another time) */ }
     set('guild', { url, name: info.name || '', logo: info.logo || '', at: Date.now() });
     return guildInfo();
@@ -32761,8 +32941,9 @@
   function guildMaybeFind() {   // (a guild in your menus, not looked at for a week: looked at again, quietly, once the page is idle)
     let has = false;
     for (const list of Object.values(S.menus)) walk(list, (e) => { if (e.t === 'l' && e.special === 'guild' && !e.hide) has = true; });
-    if (!has || /^\/login/i.test(location.pathname) || Date.now() - guildInfo().at < 7 * DAY_MS) return;
-    const go = () => guildFind().then(() => { try { applyAll(); } catch (_) { /* */ } }).catch(() => { /* (another day) */ });
+    if (!has || /^\/login/i.test(location.pathname) || Date.now() - guildInfo().at < 7 * DAY_MS || Date.now() - (Number(get('guildTry', 0)) || 0) < 6 * 3600e3) return;
+    set('guildTry', Date.now());   // (tried now: another tab opened together leaves it to this one)
+    const go = () => untilShown().then(guildFind).then(() => { try { applyAll(); } catch (_) { /* */ } }).catch(() => { /* (another day) */ });
     if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 8000 }); else setTimeout(go, 3000);
   }
   function noteGuild() {   // (the Guild HQ and your guild's own pages: which guild, its name and logo; "Messages" from the menu goes on to its board)
@@ -42246,7 +42427,9 @@
     try { localStorage.setItem('bnp-games-try', String(gameTried)); } catch (_) { /* */ }
     try {
       const byId = new Map();
-      for (const path of ['/games/hiscores.phtml', '/games/classic.phtml']) {
+      await untilShown();
+      for (const [k, path] of ['/games/hiscores.phtml', '/games/classic.phtml'].entries()) {
+        if (k) await new Promise((ok) => setTimeout(ok, 2000 + Math.random() * 3000));   // (the second a moment after the first, as you'd go on to it)
         const r = await fetch(SITE + path, { credentials: 'include' });
         if (!r.ok) continue;
         for (const g of gameRead(new DOMParser().parseFromString(await r.text(), 'text/html'))) if (!byId.has(g.i)) byId.set(g.i, g);
@@ -48354,6 +48537,12 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.9.3', '2026-11-02', [
+      'Trainer: works in a hidden tab of its own, through Neopets’ own links and buttons, so each step goes just as your clicks would; it only looks at the schools your pets are at',
+      'Trainer: counts your codestones from Quick Stock’s own list, takes them out of your SDB with one search, and comes back to a finished course more like a person would',
+      'NeoChat and Neomail: sent just as Neopets’ Write a Neomail page sends them, from that page opened as you start writing',
+      'Calmer, more natural pacing for the Styling Studio’s Available tab, Food Club’s Place all, the Lottery’s Buy all, the boards’ look-ahead and the NC Mall’s New Items',
+    ]],
     ['4.9.2', '2026-11-02', [
       'Trainer: pets you choose while a round is going start straight after it, not minutes later, and their cards say so meanwhile',
       'Trainer: a step whose answer from Neopets gets lost no longer ends the round; the rest goes on, and the next round sees to that pet',
