@@ -1,10 +1,11 @@
 {
- "version": "5.0",
+ "version": "5.1",
  "date": "2026-11-02",
  "notes": [
-  "Quick Ref made over on Neopets’ new page",
-  "Books Read, Booktastic and Gourmet on the new pages",
-  "Side menu: Quick Ref is back",
-  "NC Mall: Re-release and Collectible fixes"
+  "Buy Mode for books, gourmet foods and stamps",
+  "Safety Deposit Box: read several books to a pet at once",
+  "Inventory: used items grey out at once",
+  "Books Read and Quick Ref polished, titles in the middle",
+  "Dailies run bar: skip ahead or back"
  ]
 }

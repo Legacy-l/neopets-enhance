@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.0
+// @version      5.1
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -192,7 +192,7 @@
   // Requests Neopets takes only from one of its own pages (a theme saved in General Settings, a Neomail sent, a Neofriend request; it says
   // "directed to this page from the wrong place" otherwise): made from that page itself, opened unseen in a frame of NE's own with NE only
   // relaying there, so they carry that page as their referrer because they truly come from it. Already on that page: from here
-  function fromPageOk(p) { return /^\/(?:settings\/general\/|settings\/neoboards\/|neomessages\.phtml|neofriend_requests\.phtml|shops\/wizard\.phtml|island\/(?:fight_)?training\.phtml|quickstock\.phtml|browseshop\.phtml|safetydeposit\.phtml)$/.test(p); }   // (the Shop Wizard's page: Price mode's searches come from it, as a person's do)
+  function fromPageOk(p) { return /^\/(?:settings\/general\/|settings\/neoboards\/|neomessages\.phtml|neofriend_requests\.phtml|shops\/wizard\.phtml|island\/(?:fight_)?training\.phtml|quickstock\.phtml|browseshop\.phtml|safetydeposit\.phtml|inventory\.phtml)$/.test(p); }   // (the Shop Wizard's page: Price mode's searches come from it, as a person's do)
   const fromHere = (page) => !ON_MALL && !FRAME && location.pathname + location.search === page;
   const fromPage = (page, u, o) => (fromHere(page) ? fetch(u, o) : wwwFetch(u, o, page));
   const fromPageHtml = (page) => (fromHere(page) ? Promise.resolve(document.documentElement.outerHTML) : wwwFetch(page, { page: 1 }, page).then((r) => r.text()));   // (the page as it is there: nothing asked for again)
@@ -3296,7 +3296,7 @@
     const at = new Map(dailyRunOrder().map((d, i) => [d.id, i]));
     return list.slice().sort((a, b) => (at.has(a.id) ? at.get(a.id) : 9e9) - (at.has(b.id) ? at.get(b.id) : 9e9));
   }
-  let runHere = null;
+  let runHere = null, runPick = '';   // (runPick: the ready one the bar is showing as next, once you've skipped along: none, the first)
   function dailyRunBar() {   // (runs as the page is read: only on a daily from your own list)
     if (!S.features.dailyRun || !S.dailies.length) return;
     const hit = dailyOfPage();
@@ -3313,7 +3313,8 @@
     const list = dailyRunOrder(), now = Date.now(), i = list.findIndex((d) => d.id === runHere.id);
     const st = dailyState(runHere, now), sts = list.map((d) => dailyState(d, now).s);
     const total = sts.filter((x) => x !== 'locked' && x !== 'off').length, done = sts.filter((x) => x === 'done' || x === 'wait').length;   // (as the board counts them)
-    const next = dailyOrderMine() ? [...list.slice(i + 1), ...list.slice(0, Math.max(0, i))].find((d) => d.id !== runHere.id && dailyReady(d, now)) : dailyOrdered(list.filter((d) => d.id !== runHere.id && dailyReady(d, now)), now)[0];
+    const queue = dailyOrderMine() ? [...list.slice(i + 1), ...list.slice(0, Math.max(0, i))].filter((d) => d.id !== runHere.id && dailyReady(d, now)) : dailyOrdered(list.filter((d) => d.id !== runHere.id && dailyReady(d, now)), now);   // (the ready ones after this one, in your order)
+    const k = Math.max(0, queue.findIndex((d) => d.id === runPick)), next = queue[k];   // (Skip moves along them here, without leaving the page)
     const finished = S.features.dailyRunAuto !== false && list.length > 0 && list.every((d) => dailyTimely(d) || ['done', 'locked', 'off'].includes(dailyState(d, now).s));   // (every daily done for today: the timelies never keep it open)
     if (finished && !bar) return;   // (all done before this page: no bar)
     if (!bar) {
@@ -3329,6 +3330,7 @@
         if (b.dataset.run === 'board') openBoard();
         if (b.dataset.run === 'x') { bar.dataset.closed = '1'; bar.hidden = true; runRoom(); }
         if (b.dataset.run === 'tick' && runHere) dailyMark(runHere.id, b.getAttribute('aria-pressed') === 'true' ? { undo: true } : { full: true });   // (done here, by hand)
+        if ((b.dataset.run === 'skip' || b.dataset.run === 'back') && b.dataset.to) { runPick = b.dataset.to; paintRunBar(); const again = bar.querySelector(`[data-run="${b.dataset.run}"]`) || bar.querySelector('[data-run="skip"]'); if (again) again.focus(); }   // (the next one along, or the one before: nothing opened)
       });
       document.body.append(bar);
       themeRun(bar);
@@ -3336,13 +3338,14 @@
     const nowText = st.s === 'done' ? 'Done ✓' : st.s === 'wait' ? `Done ✓ · again in ${fmtLeft(st.next - now)}` : st.s === 'ready' ? (st.count ? st.text : st.closes ? `To do: ${fmtLeft(st.closes - now)} left` : 'To do') : stateMid(runHere, st, now);   // (where this one is)
     bar.classList.toggle('is-done', st.s === 'done' || st.s === 'wait');
     const ticked = st.s === 'done' || st.s === 'wait', canTick = st.s !== 'locked' && st.s !== 'off';
+    const counted = list.filter((d) => !['locked', 'off'].includes(dailyState(d, now).s)), back = k > 0 ? queue[k - 1] : null, after = queue.length > 1 ? queue[(k + 1) % queue.length] : null;
     bar.innerHTML = `<span class="bnp-run-ic" style="${esc(icoCss(dailyIcon(runHere)))}"></span>
       <span class="bnp-run-now"><b>${esc(runHere.label)}</b><small>${esc(nowText)} · ${done} of ${total} done today</small></span>
       ${canTick ? `<button type="button" class="bnp-run-tick" data-run="tick" aria-pressed="${ticked}" title="${ticked ? 'Untick it' : 'Done here? Tick it'}" aria-label="${esc(runHere.label)}: ${ticked ? 'untick' : 'tick as done'}"></button>` : ''}
-      ${next ? `<a class="bnp-run-next" href="${esc(next.href)}" data-dgo="${esc(next.id)}" title="${esc(`${next.label}: ${stateLong(next, dailyState(next, now), now)}`)}"><small>Next</small><span class="bnp-run-nic" style="${esc(icoCss(dailyIcon(next)))}"></span><b>${esc(next.label)}</b><i aria-hidden="true">›</i></a>`
+      ${next ? `<span class="bnp-run-go">${back ? `<button type="button" class="bnp-run-step" data-run="back" data-to="${esc(back.id)}" title="${esc(`Back to ${back.label}`)}" aria-label="${esc(`Back to ${back.label}`)}"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M7.5 2.5 4 6l3.5 3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}<a class="bnp-run-next" href="${esc(next.href)}" data-dgo="${esc(next.id)}" title="${esc(`${next.label}: ${stateLong(next, dailyState(next, now), now)}`)}"><span class="bnp-run-nic" style="${esc(icoCss(dailyIcon(next)))}"></span><span class="bnp-run-nx"><small>Next${queue.length > 1 ? ` <em>${k + 1}/${queue.length}</em>` : ''}</small><b>${esc(next.label)}</b></span><i aria-hidden="true">›</i></a>${after ? `<button type="button" class="bnp-run-skip" data-run="skip" data-to="${esc(after.id)}" title="${esc(`Skip it for now: ${after.label} instead (nothing is opened)`)}" aria-label="${esc(`Skip ${next.label}: show ${after.label}`)}">Skip<svg viewBox="0 0 14 12" width="13" height="11" aria-hidden="true"><path d="M2.5 2.5 6 6l-3.5 3.5M7.5 2.5 11 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}</span>`
         : '<span class="bnp-run-all">All your ready ones are done ✓</span>'}
       <button type="button" class="bnp-run-b" data-run="board" title="The Dailies board: all of them" aria-label="The Dailies board"><i style="${esc(icoCss(iconOf(FOLDERS.dailies.icon)))}"></i></button><button type="button" class="bnp-run-x" data-run="x" title="Hide it on this page" aria-label="Hide it on this page">×</button>
-      <i class="bnp-run-prog" style="--p:${total ? Math.round((done / total) * 100) : 0}%" aria-hidden="true"></i>`;
+      <span class="bnp-run-segs" aria-hidden="true">${counted.map((d) => { const x = dailyState(d, now).s; return `<i class="${x === 'done' || x === 'wait' ? 'is-done' : ''}${d.id === runHere.id ? ' is-here' : ''}"></i>`; }).join('')}</span>`;   // (how far you are today: a segment for each, the ones done filled, this one ringed)
     if (finished && !bar.dataset.fold) {   // (the last one done here: said for a moment, then folded away)
       bar.dataset.fold = '1';
       const all = bar.querySelector('.bnp-run-all');
@@ -5547,6 +5550,8 @@
   const PT = [   // (the page, its title row, the header it's in, its links bar, its pictures, your theme's first)
     [/^\/quickstock\.phtml$/, '.qs-title-container', '.qs-page-header', '.qs-menubar', () => [...LINKS.qs.icon, `url:${NPI}themes/h5/newyears/images/quickstock-icon.png`]],
     [/^\/safetydeposit\.phtml$/, '.sdb-header-title-row', '.sdb-header', '.sdb-menubar', () => [...LINKS.sdb.icon]],
+    [/^\/books_read\.phtml$/, '.page-title__2020', '.page-title__2020', '[data-bnp="col"]', () => ['side:/bookshelf/pet-bookshelf.phtml', `url:${NPI}themes/h5/basic/images/v3/petbookshelf-icon.png`]],   // (Books Read, Booktastic its tab (the user, 2026-11-02: "what we did with like quick stock"): the Pet Bookshelf's picture; centred between the top bar and NE's box under it)
+    [/^\/quickref\.phtml$/, '.page-title__2020', '.page-title__2020', '.qr-menubar', () => ['el:#navprofiledropdown__2020 .nav-petcentral-icon', 'side:/home/', `url:${NPI}themes/h5/basic/images/mypets-icon.svg`]],   // (Quick Ref (the user, 2026-11-02: "needs the same treatment, icon, bigger text, centered in the area"): your theme's My Pets picture, as its side menu has it for Quick Ref)
     [/^\/closet\.phtml$/, '.closet-header-title-row', '.closet-header', '.closet-menubar', () => ['side:/closet.phtml', 'side:/customise/', `url:${NPI}themes/h5/basic/images/v3/customise-icon.svg`]],
     [/^\/market\.phtml$/, '.qs-title-container', '.qs-page-header', '.mkt-banner', () => (/[?&]type=sales(?:&|$)/.test(location.search) ? MKT_JUMP.find(([re]) => re.test('market.phtml?type=sales'))[1] : ['nat:shop-usershop-icon'])],   // (Sales History: its "Jump to" chip's own picture)   // (the Marketplace's pages: Quick Stock's header, the market's banner under it)
   ];
@@ -6004,7 +6009,7 @@
       if (t.closest('a.inv-refresh') || t.closest('#invResult .popup-exit') || t.closest('#invResult input[value="Close and Refresh"]')) { e.preventDefault(); e.stopImmediatePropagation(); close(); }
     }, true);
     let actT = 0;
-    document.addEventListener('bnp-inv-acted', () => { invStale = true; if (!itSettings().noReload) return; clearTimeout(actT); actT = setTimeout(() => { if (invNextStep()) return; invAct = last; invSyncSoon(last, 0); }, 400); });   // (an action answered, whichever: the grid as it is now, under the pop-up already; one step of several (a gift box's who-to) not till the last)
+    document.addEventListener('bnp-inv-acted', (e) => { invStale = true; if (!itSettings().noReload) return; let u = ''; try { u = String(JSON.parse(e.detail || '{}').u || ''); } catch (_) { /* */ } clearTimeout(actT); actT = setTimeout(() => { if (invNextStep()) return; if (INV_DOES.test(u)) invUsedMark(last); invAct = last; invSyncSoon(last, 0); }, 400); });   // (an action answered, whichever: the grid as it is now, under the pop-up already; one step of several (a gift box's who-to) not till the last)
     const res = document.getElementById('invResult');
     if (!res) return;
     let shown = false, autoT = 0, told = '', had = false;
@@ -6013,7 +6018,7 @@
       const h3 = now ? ((res.querySelector('h3') || {}).textContent || '').trim() : '';
       if (now && h3 && !/^Loading/i.test(h3) && itSettings().noReload) {   // (a result shown — whatever sent it: the grid under it as it is now)
         const said = `${h3}|${((res.querySelector('.popup-body__2020') || {}).textContent || '').length}`;
-        if (said !== told) { told = said; had = true; invStale = true; if (!invNextStep()) { invAct = last; invSyncSoon(last, 500); } }
+        if (said !== told) { told = said; had = true; invStale = true; if (!invNextStep()) { invUsedMark(last); invAct = last; invSyncSoon(last, 500); } }
       } else if (!now || /^Loading/i.test(h3)) told = '';
       if (now && itSettings().autoClose) { const h = res.querySelector('h3'); clearTimeout(autoT); if (h && !/^\s*Loading/i.test(h.textContent) && !invNextStep()) autoT = setTimeout(() => { if (!invNextStep()) close(); }, 700); }   // (never in the middle of a gift box's steps)
       if (now === shown) return;
@@ -6204,8 +6209,9 @@
         if (this.__bnpPost && !/\/ajax\/inventory\.php/.test(this.__bnpPost) && (up('invDesc') || up('invResult'))) {   // (sent from an item's pop-up: an action, not the grid itself)
           const u = this.__bnpPost, q = typeof body === 'string' ? new URLSearchParams(body) : null, k = q && /deposit/i.test(q.get('action') || '') ? `i${++sdbN}` : '';   // (into your SDB: told as it goes, by the item's id alone)
           if (k) document.dispatchEvent(new CustomEvent('bnp-sdb-send', { detail: JSON.stringify({ k, where: 'inv', obj: q.get('obj_id') || '', nc: /process_cash_object/.test(u) }) }));
+          const read = /useobject\.phtml/.test(u) && q && /^Read to /i.test(q.get('action') || '') ? q.get('action') : '';   // (a book read to a pet: which pet, for its lists)
           this.addEventListener('loadend', () => {
-            document.dispatchEvent(new CustomEvent('bnp-inv-acted', { detail: JSON.stringify({ u, status: this.status }) }));
+            document.dispatchEvent(new CustomEvent('bnp-inv-acted', { detail: JSON.stringify({ u, status: this.status, act: read }) }));
             if (k) document.dispatchEvent(new CustomEvent('bnp-sdb-done', { detail: JSON.stringify({ k, ok: this.status === 200 }) }));
           });
         }
@@ -6250,6 +6256,9 @@
         }
       } catch (_) { k = ''; }
       const p = F.apply(this, arguments);
+      try {
+        if (/\/safetydeposit\/pet-action\.php/.test(u)) { const b = JSON.parse(String((init && init.body) || '{}')) || {}; if (/read/i.test(String(b.verb || '')) && b.pet_name) p.then((r) => r.clone().json()).then((d) => { if (d && d.success === true) say('bnp-col-read', { pet: String(b.pet_name) }); }, () => {}); }   // (a book read to a pet from here: which pet, for its lists)
+      } catch (_) { /* */ }
       try {
         if (k) p.then((r) => r.clone().json()).then((d) => say('bnp-sdb-done', { k, ok: !!(d && d.success === true) }), () => say('bnp-sdb-done', { k, ok: false }));
         else if (QSL.test(u)) {
@@ -9073,9 +9082,22 @@
   function invSyncSoon(want, ms = 150) { clearTimeout(invT); invDue = true; invT = setTimeout(() => { invDue = false; invSync(want, 0).catch(report); }, ms); }
   const invNextStep = () => {   // (the result pop-up asking for more (a gift box's who-to and message, a password…): a step of several, nothing done to the item yet)
     const r = document.getElementById('invResult'), b = r && getComputedStyle(r).display !== 'none' && r.querySelector('.popup-body__2020');
-    return !!b && !!b.querySelector('form, select, textarea, input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"])');
+    if (!b) return false;
+    const shelf = document.getElementById('invResultBookshelf');
+    if (/bsConfirmReadArchive/.test(b.innerHTML) && !(shelf && shelf.style.display !== 'none')) return true;   // (an archive book's "are you sure?": Neopets shows the Bookshelf link once it's read)
+    return !!b.querySelector('form, select, textarea, input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"])');
   };
   const invNow = () => new Promise((ok) => { const t = setTimeout(ok, 12000); invWait.push(() => { clearTimeout(t); ok(); }); invStale = true; if (!invBusy) invSyncSoon(invAct, 0); });   // (the grid as Neopets has it now, its page loaded first; done when it is)
+  const INV_DOES = /\/(useobject|process_cash_object|fc_ncitem|add_auction)\.phtml/;   // (what uses, gives, moves or sells an item: not the views that only show one)
+  function invUsedMark(w) {   // (the card just used, given or moved from: greyed at once, till Neopets' list says what's left of it)
+    const h = document.querySelector('#invResult h3'), said = h ? h.textContent.trim() : '';
+    if (!w || !w.id || /^(error|uh oh|kit already activated)\b/i.test(said)) return;   // (Neopets said it wasn't done)
+    const tab = invTab($('#invDisplay')), i = tab ? [...tab.querySelectorAll('.grid-item:not(.bnp-inv-gone) .item-img[data-objid]')].find((x) => x.getAttribute('data-objid') === w.id && (x.getAttribute('data-itemquantity') || '') === w.q) : null, g = i && i.closest('.grid-item');
+    if (!g) return;   // (drawn again already: what's there is what's left)
+    g.classList.add('bnp-inv-used');
+    g.__bnpUsedAt = Date.now();
+    setTimeout(() => { if (Date.now() - (g.__bnpUsedAt || 0) >= 45000) g.classList.remove('bnp-inv-used'); }, 45500);   // (never left grey: Neopets' list not read by then)
+  }
   function invHeld(it) {   // (a press on the card of a stack just used from, before NE has seen what Neopets has now: it waits for that, then the card as it is now opens: its next one, at its new count)
     const card = it.closest('.grid-item'), was = invAct, n = it.getAttribute('data-itemname') || '', k = it.getAttribute('data-itemset') || '';
     if (!card || !was || card.classList.contains('bnp-inv-wait')) return;
@@ -9115,6 +9137,7 @@
     try {
       const d = $('#invDisplay');
       if (!d) return;
+      const t0 = Date.now();
       if (invStale) { invStale = false; await invFresh().catch(report); }
       const ask = invAsk(d), all = invAllOn();
       const html = all ? invMergeHtml(await invListHtml(d, 'np'), await invListHtml(d, 'nc'), d.dataset.filter === 'a') : await invListHtml(d, d.dataset.type || 'np');   // (All: both lists, as one)
@@ -9122,6 +9145,7 @@
       if (!tab || invAsk(d) !== ask || invAllOn() !== all || !/grid-item|inv-total-count/.test(html) || /inv-loading-static/.test(tab.innerHTML)) return;   // (another tab, order or All chosen meanwhile, or Neopets drawing it itself: left to Neopets)
       invSdbCheck(html, ask);
       const still = invApply(tab, html, want);
+      for (const g of tab.querySelectorAll('.grid-item.bnp-inv-used:not(.bnp-inv-gone)')) if ((g.__bnpUsedAt || 0) < t0) g.classList.remove('bnp-inv-used');   // (greyed before this look and still here as it was: not used up after all, a toy played with or Neopets saying no)
       if (!still && invAct && want && want.id === invAct.id) invAct = null;   // (changed or gone: a press on it is a press on what's there now)
       if (all) { const g = tab.querySelector('.item-grid'); if (g) g.__bnpAll = true; }   // (both lists in it already: not asked for again)
       if (still && n < 3) { invStale = true; setTimeout(() => { untilShown().then(() => invSync(want, n + 1)).catch(report); }, [2500, 9000, 25000][n] * (0.85 + Math.random() * 0.4)); }   // (still there: the page again first, next time)   // (Neopets can take a while: about 50 seconds in all)   // (what was used still there as it was: Neopets may not have caught up yet)
@@ -15645,6 +15669,19 @@
     root.style.setProperty('--bnp-ncl-pagew', w);
     addEventListener('load', () => setTimeout(() => { try { nclPinPaint(); } catch (_) { /* */ } }, 0), { once: true });   // (never left kept for a NeoChat that didn't come)
   }
+  function pinRowsEarly() {   // (NeoChat's room kept from the start: the row under the top bar (its icons, your Neopoints and Neocash) placed the moment it and Neopets' box are there, never only once the whole page has loaded (a slow ad or file holds that back); hidden till then, so it never shows at the window's edges first)
+    const root = document.documentElement;
+    if (window.top !== window || !root.classList.contains('bnp-ncl-pinned')) return;
+    root.classList.add('bnp-pinwait');
+    const done = () => root.classList.remove('bnp-pinwait'), t0 = Date.now();
+    setTimeout(done, 4000);   // (never hidden longer)
+    const look = () => {
+      if (!root.classList.contains('bnp-pinwait')) return;
+      if (document.querySelector('.navsub-left__2020, .navsub-right__2020') && document.getElementById('container__2020')) { try { pageMax(); } catch (_) { /* */ } done(); return; }
+      if (Date.now() - t0 < 4000) requestAnimationFrame(look);
+    };
+    requestAnimationFrame(look);
+  }
   addEventListener('resize', (e) => { if (e.isTrusted && document.documentElement.classList.contains('bnp-ncl-pinned')) { clearTimeout(nclPinEarly.t); nclPinEarly.t = setTimeout(() => { try { nclPinPaint(); } catch (_) { /* */ } }, 150); } });
   function nclDimPaint() {   // (the page behind NeoChat's window: darker, blurred, both, or as it is (Settings › NeoChat › Its window); never while it's pinned (the page is beside it), folded or full screen. A click on it folds NeoChat)
     if (!ncl || ncl.page) return;
@@ -17424,15 +17461,15 @@
   };
   function sdbPagesPaint(app) {   // (each of Neopets' page rows: NE's own strip of page buttons in place of its numbers, in its own classes)
     const on = S.features.sdbPages !== false;
-    document.documentElement.classList.toggle('bnp-sdb-pages', on);
+    if (document.documentElement.classList.contains('bnp-sdb-pages') !== on) document.documentElement.classList.toggle('bnp-sdb-pages', on);
     const rows = [...app.querySelectorAll('.sdb-pagination')];
     if (!on) { for (const r of rows) { const m = r.querySelector('[data-bnp="sdbpg"]'); if (m) m.remove(); } return; }
     const st = sdbVm(), cur = st ? Number(st.currentPage) || 1 : 0, last = st ? Number(st.totalPages) || 0 : 0;
     for (const r of rows) {
       const theirs = r.querySelector(':scope > .sdb-pagination-buttons:not([data-bnp])');
       let mine = r.querySelector(':scope > [data-bnp="sdbpg"]');
-      if (!theirs || !st || last < 2) { if (mine) mine.remove(); r.classList.remove('bnp-pg'); continue; }
-      r.classList.add('bnp-pg');
+      if (!theirs || !st || last < 2) { if (mine) mine.remove(); if (r.classList.contains('bnp-pg')) r.classList.remove('bnp-pg'); continue; }
+      if (!r.classList.contains('bnp-pg')) r.classList.add('bnp-pg');   // (only when it changes: a class written again, unchanged, is still a change to the watcher, and it painted again, over and over)
       if (!mine) {
         mine = document.createElement('div');
         mine.className = 'sdb-pagination-buttons bnp-sdbpg';
@@ -19707,6 +19744,7 @@
     bt: '<svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path d="M3.5 4.5c2.2-.9 4.4-.9 6.5.6 2.1-1.5 4.3-1.5 6.5-.6v11c-2.2-.9-4.4-.9-6.5.6-2.1-1.5-4.3-1.5-6.5-.6zM10 5.1v11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14.6 1.6l.5 1.2 1.2.5-1.2.5-.5 1.2-.5-1.2-1.2-.5 1.2-.5z" fill="currentColor"/></svg>',
     food: '<svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path d="M5 2.5v5a2 2 0 0 0 4 0v-5M7 2.5v15M14.5 17.5v-15c-1.9 1-3 3.4-3 6.2 0 1.6 1.3 2.3 3 2.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   };
+  const BM_CART = '<svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path d="M2.5 3.5h2.2l2 9.2h8.6l1.7-6.4H6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="16" r="1.4" fill="currentColor"/><circle cx="14" cy="16" r="1.4" fill="currentColor"/></svg>';   // (Buy Mode's button)
   const colNorm = (n) => reClean(n).toLowerCase();
   const colImgOf = (src) => { const m = /\/items\/([^/?#]+?)\.(gif|png|jpe?g|webp)(?:[?#]|$)/i.exec(String(src || '')); return m ? `${m[1]}.${m[2].toLowerCase()}` : ''; };   // (an item's picture's own name: "book_algebra.gif")
   const colImgKey = (f) => String(f || '').replace(/\.[a-z]+$/i, '').toLowerCase();   // (… and its name alone, as itemdb has it)
@@ -19934,6 +19972,7 @@
     colCounts();
     document.documentElement.classList.add('bnp-col-ready');
     colWire(root);
+    root.addEventListener('error', (e) => { const t = e.target; if (t instanceof HTMLImageElement && t.dataset.fb && t.getAttribute('src') !== t.dataset.fb) t.src = t.dataset.fb; }, true);
     colPaint();
     colLoad(false);
   }
@@ -20040,27 +20079,28 @@
     const partial = col.cat && col.cat.partial, total = partial ? 0 : items.length, hadN = col.had.size, inList = items.filter((it) => col.had.has(colImgKey(it[0]))).length, left = total - inList;   // (only part of itemdb's list in: the ones known so far listed, no total till it's whole)
     const pct = total ? Math.min(100, Math.round((inList / total) * 1000) / 10) : 0;
     const tracked = colTracked(kind).some((x) => x.toLowerCase() === pet.toLowerCase());
-    const face = d.face || `https://pets.neopets.com/cpn/${encodeURIComponent(pet)}/1/2.png`, shop = COL_SHOP[kind];
+    const face = d.face || `https://pets.neopets.com/cpn/${encodeURIComponent(pet)}/1/2.png`, shop = COL_SHOP[kind], head = face.replace(/\/(\d+)\/\d+\.png$/, '/$1/6.png');   // (its head shot at 150 px, as Quick Ref's portraits; its whole picture if that doesn't come)
     const tab = (x) => `<a class="bnp-col-tab" href="${esc(colHref(x, pet))}" aria-current="${x === kind ? 'page' : 'false'}">${COL_IC[x]}${esc(COL_KINDS[x].label)}</a>`;
     const subs = k.cats.length > 1 && total ? k.cats.map((c, i) => { const all = items.filter((it) => it[4] === i), had = all.filter((it) => col.had.has(colImgKey(it[0]))).length; return { i, c, all: all.length, had }; }).filter((x) => x.all) : [];
     const { list } = colList();
     const todo = list.filter((x) => x.not), cost = todo.reduce((s, x) => s + (x.it[3] > 0 ? x.it[3] : 0), 0), priced = todo.filter((x) => x.it[3] > 0).length;
+    const hadIt = items.filter((it) => col.had.has(colImgKey(it[0])) && it[3] > 0), worth = hadIt.reduce((s, it) => s + it[3], 0);   // (what it has had, at itemdb's prices: to know, never to price anything by (the user, 2026-11-02))
     const part = col.part, so = part ? `NE has ${part.got.toLocaleString()} of its ${part.total.toLocaleString()} ${esc(k.what)} so far${col.cat && col.cat.stale ? ' for the new list (the one shown is the one before)' : ''}, and carries on from there, never from the start. ` : '', back = itPauseEnds();
     const err = col.err === 'visit' ? `itemdb gives its lists to scripts like this one once you’ve opened itemdb today; then the list comes by itself. ${so}<a class="bnp-col-btn is-small" href="https://itemdb.com.br/" target="_blank" rel="noopener">Open itemdb</a>`
       : col.err === 'busy' ? `itemdb asked for a pause. ${so}It goes on by itself ${back > Date.now() ? `after ${esc(fmtNst(back))} NST` : 'in a moment'}, while this tab is open.` : col.err === 'down' ? `itemdb didn’t answer just now. ${so}` : '';
     const sorts = col.view === 'had' ? [['order', 'Newest read first'], ['name', 'Name, A to Z'], ['rare', 'Rarest first'], ['rarelow', 'Least rare first'], ['dear', 'Priciest first']] : [['cheap', 'Cheapest first'], ['dear', 'Priciest first'], ['rarelow', 'Least rare first'], ['rare', 'Rarest first'], ['name', 'Name, A to Z'], ['new', 'Newest to itemdb']];
     if (col.view === 'had') sorts[0][1] = kind === 'food' ? 'Newest eaten first' : 'Newest read first';
     root.innerHTML = `<section class="bnp-col-head"><div class="bnp-col-band">
-        <span class="bnp-col-face"><img src="${esc(face)}" alt="" width="64" height="64"></span>
-        <span class="bnp-col-who"><b>${esc(pet)}</b><small>${esc(k.label)} ${esc(k.did)} · <a href="${esc(k.clubUrl)}">${esc(k.club)}</a></small></span>
+        <span class="bnp-col-me"><span class="bnp-col-face"><img src="${esc(head)}" data-fb="${esc(face)}" alt="" width="72" height="72"></span>
+        <span class="bnp-col-who"><b>${esc(pet)}</b><small>${esc(k.label)} ${esc(k.did)} · <a href="${esc(k.clubUrl)}">${esc(k.club)}</a></small></span></span>
         <nav class="bnp-col-tabs" aria-label="This pet’s lists">${COL_ORDER.map(tab).join('')}</nav>
-        <span class="bnp-col-acts">${kind === 'food' ? '' : `<a class="bnp-col-btn is-go" href="/bookshelf/pet-bookshelf.phtml?pet=${encodeURIComponent(pet)}" title="${esc(`${pet}’s Pet Bookshelf`)}">Pet Bookshelf</a>`}${shop ? `<a class="bnp-col-btn is-go" href="${esc(shop[0])}">${esc(shop[1])}</a>` : ''}
-        <button type="button" class="bnp-col-btn${tracked ? ' is-on' : ''}" data-col-track aria-pressed="${tracked}" title="${esc(tracked ? `Marks on items ${pet} still needs, wherever items show. Click to stop` : `Mark the ${k.what} ${pet} still needs wherever items show (shops, your inventory, the Trading Post…): up to two pets for each list`)}">${tracked ? '★ Tracking' : '☆ Track'}</button></span>
+        <span class="bnp-col-acts">${kind === 'food' ? '' : `<a class="bnp-col-btn is-go" href="/bookshelf/pet-bookshelf.phtml?pet=${encodeURIComponent(pet)}" title="${esc(`${pet}’s Pet Bookshelf`)}"><img src="${NPI}themes/h5/basic/images/v3/petbookshelf-icon.png" alt="" width="22" height="22">Pet Bookshelf</a>`}${shop ? `<a class="bnp-col-btn is-go" href="${esc(shop[0])}"><span class="bnp-col-bic">${COL_IC[kind]}</span>${esc(shop[1])}</a>` : ''}
+        <button type="button" class="bnp-col-btn${tracked ? ' is-on' : ''}" data-col-track aria-pressed="${tracked}" title="${esc(tracked ? `Marks on items ${pet} still needs, wherever items show. Click to stop` : `Mark the ${k.what} ${pet} still needs wherever items show (shops, your inventory, the Trading Post…): up to two pets for each list`)}"><img src="${NPI}themes/h5/basic/images/${tracked ? 'active' : 'inactive'}-icon.svg" alt="" width="20" height="18">${tracked ? 'Tracking' : 'Track'}</button></span>
       </div>${colPetRow()}</section>
       ${col.note ? `<p class="bnp-col-note" role="status">${esc(col.note)}</p>` : ''}
       <div class="bnp-col-sum">
         <div class="bnp-col-prog"><div class="bnp-col-big"><b>${(total ? inList : d.n).toLocaleString()}</b>${total ? ` of ${total.toLocaleString()} ${esc(k.what)} ${esc(k.did)}` : ` ${esc(k.what)} ${esc(k.did)}`}${total ? `<span class="bnp-col-pct">${pct}%</span>` : ''}${d.n !== hadN || (total && hadN !== inList) ? `<small title="Neopets’ own count${hadN - inList > 0 ? `, and ${hadN - inList} that aren’t on itemdb’s list` : ''}">Neopets counts ${Number(d.n).toLocaleString()}</small>` : ''}</div>
-        ${total ? `<div class="bnp-col-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${inList}"><i style="width:${pct}%"></i></div>` : ''}</div>
+        ${total ? `<div class="bnp-col-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${inList}"><i style="width:${pct}%"></i></div>` : ''}${hadIt.length ? `<p class="bnp-col-worth">What ${esc(pet)} has ${esc(k.did)} is worth about <b>${colNp(worth)} NP</b><small>itemdb’s prices, for the ${hadIt.length.toLocaleString()} of them with one</small></p>` : ''}</div>
         ${(() => { const g = colGoals(kind, Number(d.n) || hadN, total); return g ? `<div class="bnp-col-award">${g}</div>` : ''; })()}
         ${subs.length ? (() => {
           const left2 = (s) => (col.view === 'had' ? s.had : s.all - s.had), many = subs.length > 9, order = many ? subs.slice().sort((a, b) => left2(b) - left2(a)) : subs;
@@ -20076,7 +20116,7 @@
         ${col.view === 'had' ? '' : `<button type="button" class="bnp-col-tog" data-col-priced aria-pressed="${col.priced}" title="Leave out the ones itemdb has no price for (most can’t be bought now)"><i aria-hidden="true"></i>Only ones with a price</button>`}
       </div>
       ${err ? `<p class="bnp-col-err">${err}</p>` : ''}
-      ${col.view !== 'had' && total ? `<p class="bnp-col-cost">${todo.length.toLocaleString()} to go${priced ? ` · about <b>${colNp(cost)} NP</b> for the ${priced.toLocaleString()} with a price` : ''}${todo.length - priced > 0 ? ` · ${(todo.length - priced).toLocaleString()} without one` : ''}</p>` : ''}
+      ${col.view !== 'had' && total ? `<p class="bnp-col-cost">${todo.length.toLocaleString()} to go${priced ? ` · about <b>${colNp(cost)} NP</b> for the ${priced.toLocaleString()} with a price` : ''}${todo.length - priced > 0 ? ` · ${(todo.length - priced).toLocaleString()} without one` : ''}${todo.length ? `<button type="button" class="bnp-col-btn is-go bnp-col-buy" data-col-buy title="${esc(`Buy the ${k.what} ${pet} hasn’t ${k.did} from users’ shops: the ones you tick, one of each, never over your limits`)}"><span class="bnp-col-bic">${BM_CART}</span>Buy Mode</button>` : ''}</p>` : ''}
       <div class="bnp-col-grid${col.mode === 'list' ? ' is-list' : ''}" data-col-grid>${col.busy && !total ? '<p class="bnp-col-empty">Reading itemdb’s list…</p>' : list.length ? list.map((x) => colTile(x)).join('') : `<p class="bnp-col-empty">${col.view === 'had' ? `None yet.` : total ? (col.q ? 'None by that name.' : `${esc(pet)} has had every one of them!`) : ''}</p>`}</div>
       <p class="bnp-col-foot">${col.cat ? `itemdb’s list of ${esc(k.what)}, read ${colAgo(col.cat.t)}. Prices are itemdb’s, approximate.` : ''} <button type="button" class="bnp-col-btn is-small" data-col-refresh title="itemdb’s list again, with today’s prices"${col.busy ? ' disabled' : ''}>${col.busy ? 'Reading…' : 'Read it again'}</button> <button type="button" class="bnp-col-btn is-small" data-col-neo aria-expanded="${document.documentElement.classList.contains('bnp-col-showneo')}">${document.documentElement.classList.contains('bnp-col-showneo') ? 'Hide Neopets’ own list' : 'Neopets’ own list'}</button></p>`;
     colRows();
@@ -20113,6 +20153,7 @@
       const t = e.target instanceof Element ? e.target.closest('button') : null;
       if (!t || !root.contains(t)) return;
       const d = t.dataset;
+      if ('colBuy' in d) { bmOpen(col.kind); return; }
       if ('colTrack' in d) {
         const list = colTracked(col.kind), on = list.some((x) => x.toLowerCase() === col.pet.toLowerCase());
         if (on) { colTrackSet(col.kind, list.filter((x) => x.toLowerCase() !== col.pet.toLowerCase())); col.note = `Not tracking ${col.pet}’s ${COL_KINDS[col.kind].what} any more.`; }
@@ -20286,8 +20327,39 @@
     const q = colNorm(cb.q);
     for (const el of cb.root.querySelectorAll('[data-cb-name]')) el.hidden = !!q && !el.dataset.cbName.includes(q);
   }
+  const colReadPets = new Set();
+  function colReadWatch() {   // (a book read to a pet you track, from your Inventory or your SDB: its lists read again a moment later, and the marks with them)
+    if (colReadWatch.on) return;
+    colReadWatch.on = true;
+    const heard = (pet) => {
+      if (!pet || !['books', 'bt'].some((k) => colTracked(k).some((x) => x.toLowerCase() === pet.toLowerCase()))) return;
+      colReadPets.add(pet);
+      clearTimeout(colReadWatch.t);
+      colReadWatch.t = setTimeout(() => colReadAgain().catch(report), 1500 + Math.random() * 1500);   // (a few read one after another: once, after the last)
+    };
+    document.addEventListener('bnp-inv-acted', (e) => { let d = null; try { d = JSON.parse(e.detail || '{}'); } catch (_) { return; } const m = d && d.status === 200 && /^Read to (.+)$/i.exec(String(d.act || '')); if (m) heard(m[1].trim()); });
+    document.addEventListener('bnp-col-read', (e) => { let d = null; try { d = JSON.parse(e.detail || '{}'); } catch (_) { return; } if (d && d.pet) heard(String(d.pet).trim()); });
+  }
+  async function colReadAgain() {
+    const pets = [...colReadPets];
+    colReadPets.clear();
+    for (const pet of pets) for (const kind of ['books', 'bt']) {
+      if (!colTracked(kind).some((x) => x.toLowerCase() === pet.toLowerCase())) continue;
+      try {
+        const r = await fetch(colHref(kind, pet), { credentials: 'include' });
+        const d = colParse(kind, new DOMParser().parseFromString(await r.text(), 'text/html'));
+        if (d && !d.notYours) await colPetSet(kind, pet, colSlim(colOrderFix(d, null)));
+      } catch (_) { /* (not read now: the marks stay as they were) */ }
+      await new Promise((ok) => setTimeout(ok, 900 + Math.random() * 900));
+    }
+    colNeed = null;
+    await colMarksLoad();
+    for (const m of document.querySelectorAll('[data-bnp="it"] .bnp-it-cols')) m.remove();   // (drawn again from what's kept now)
+    colMarkAll();
+  }
   function colMarksBoot(now) {   // (any page with item rows: once what's kept is read, marks on them; again a moment later, for rows drawn late. now: an item's row is being drawn here)
     if (!colMarksOn() || colOn()) return;
+    colReadWatch();
     if (!now && !itPageKey()) return;   // (not a page of items: read once a row is drawn, if one is)
     colMarksLoad().then(() => { colMarkAll(); setTimeout(colMarkAll, 1500); });
   }
@@ -20315,19 +20387,25 @@
     html.bnp-col-page :where(.bnp-col button) { font-family: inherit; }
     /* the band: whose, which list, track it */
     html.bnp-col-page .bnp-col-band { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 9px 12px; border: 2px solid var(--nb-frame); border-radius: 15px; background: var(--nb-band); box-shadow: 0 3px 0 var(--nb-frame); }
-    html.bnp-col-page .bnp-col-face { flex: none; display: block; width: 64px; height: 64px; overflow: hidden; border: 2px solid var(--nb-frame); border-radius: 14px; background: #fff; }
-    html.bnp-col-page .bnp-col-face img { display: block; width: 100%; height: 100%; }
-    html.bnp-col-page .bnp-col-who { display: grid; min-width: 0; padding: 4px 12px 5px; border-radius: 12px; background: rgba(255, 255, 255, .88); }
-    html.bnp-col-page .bnp-col-who b { overflow: hidden; color: #262626; font: 22px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-overflow: ellipsis; white-space: nowrap; }
+    html.bnp-col-page .bnp-col-me { display: inline-flex; align-items: center; min-width: 0; }   /* (the pet: a round portrait, its name on a plate joined to it) */
+    html.bnp-col-page .bnp-col-face { position: relative; z-index: 1; flex: none; display: block; width: 80px; height: 80px; overflow: hidden; border: 4px solid var(--nb-frame); border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px rgba(255, 255, 255, .85), 0 4px 12px rgba(0, 0, 0, .25); }
+    html.bnp-col-page .bnp-col-face img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    html.bnp-col-page .bnp-col-who { display: grid; min-width: 0; margin-left: -18px; padding: 6px 20px 7px 28px; border-radius: 0 999px 999px 0; background: rgba(255, 255, 255, .94); box-shadow: 0 2px 0 var(--nb-frame), 0 4px 10px rgba(0, 0, 0, .12); }
+    html.bnp-col-page .bnp-col-who b { overflow: hidden; color: #262626; font: 25px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; text-overflow: ellipsis; white-space: nowrap; }
     html.bnp-col-page .bnp-col-who small { color: var(--nb-muted); font: 12.5px var(--nb-ui); }
     html.bnp-col-page .bnp-col-who a { color: var(--nb-blink) !important; }
-    html.bnp-col-page .bnp-col-tabs { display: inline-flex; padding: 3px; border: 2px solid var(--nb-frame); border-radius: 12px; background: #fff; }
-    html.bnp-col-page .bnp-col-tab { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 9px; color: #444 !important; font: 13px var(--nb-ui); text-decoration: none !important; }
+    html.bnp-col-page .bnp-col-tabs { display: inline-flex; padding: 3px; border: 2px solid var(--nb-frame); border-radius: 999px; background: #fff; box-shadow: 0 2px 0 var(--nb-frame); }
+    html.bnp-col-page .bnp-col-tab { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: 999px; color: #3a3a3a !important; font: 15px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-decoration: none !important; }
     html.bnp-col-page .bnp-col-tab:hover { background: var(--nb-alt); color: #1f1f1f !important; }
     html.bnp-col-page .bnp-col-tab[aria-current="page"] { background: var(--nb-bar); color: var(--nb-bar-ink) !important; box-shadow: 0 1px 0 var(--nb-bar-edge); }
     html.bnp-col-page .bnp-col-sp { flex: 1; }
     html.bnp-col-page .bnp-col-acts { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-left: auto; }   /* (Pet Bookshelf, the shop and Track: together, at the band's end, a line of their own when there isn't room)*/
-    html.bnp-col-page .bnp-col-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; margin: 0; padding: 0 14px; border: 2px solid var(--nb-frame); border-radius: 12px; background: #fff; color: #262626; box-shadow: 0 2px 0 var(--nb-frame); font: 13.5px var(--nb-ui); cursor: pointer; white-space: nowrap; }
+    html.bnp-col-page .bnp-col-btn { display: inline-flex; align-items: center; gap: 7px; height: 36px; margin: 0; padding: 0 15px; border: 2px solid var(--nb-frame); border-radius: 999px; background: #fff; color: #262626; box-shadow: 0 2px 0 var(--nb-frame); font: 13.5px var(--nb-ui); cursor: pointer; white-space: nowrap; transition: transform .12s; }
+    html.bnp-col-page .bnp-col-band .bnp-col-btn:not(.is-small) { padding-left: 8px; }
+    html.bnp-col-page .bnp-col-band .bnp-col-btn:hover { transform: translateY(-1px); }
+    html.bnp-col-page .bnp-col-btn img { flex: none; width: 22px; height: auto; max-height: 22px; }
+    html.bnp-col-page .bnp-col-bic { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--nb-alt); color: var(--nb-bar); }
+    html.bnp-col-page .bnp-col-bic svg { width: 14px; height: 14px; }
     html.bnp-col-page .bnp-col-btn:hover { border-color: var(--nb-bar-edge); box-shadow: 0 2px 0 var(--nb-bar-edge); }
     html.bnp-col-page .bnp-col-btn.is-on { border-color: var(--nb-bar-edge); background: var(--nb-bar); color: var(--nb-bar-ink); box-shadow: 0 2px 0 var(--nb-bar-edge); }
     html.bnp-col-page .bnp-col-btn.is-ic { width: 36px; justify-content: center; padding: 0; }
@@ -20359,18 +20437,42 @@
     html.bnp-col-page .bnp-col-big > b { color: var(--nb-text); font: 30px/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; }
     html.bnp-col-page .bnp-col-pct { margin-left: auto; color: var(--nb-text); font: 22px/1 "Cafeteria", "Arial Bold", sans-serif; }
     html.bnp-col-page .bnp-col-big small { flex-basis: 100%; color: var(--nb-muted); font: 12px var(--nb-txt); }
-    html.bnp-col-page .bnp-col-bar { height: 12px; overflow: hidden; border-radius: 99px; background: var(--nb-tint); box-shadow: inset 0 0 0 1.5px var(--nb-line); }
+    html.bnp-col-page .bnp-col-bar { height: 16px; overflow: hidden; border-radius: 99px; background: var(--nb-tint); box-shadow: inset 0 0 0 1.5px var(--nb-line), inset 0 2px 3px rgba(0, 0, 0, .08); }   /* (how far: a fuller bar) */
+    html.bnp-col-page .bnp-col-worth { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin: 0; color: var(--nb-muted); font: 13px var(--nb-txt); }   /* (what it has had is worth) */
+    html.bnp-col-page .bnp-col-worth b { color: #2a6e2a; font: 15px var(--nb-ui); }
+    html.bnp-col-page .bnp-col-worth small { color: var(--nb-muted); font: 11.5px var(--nb-txt); }
     html.bnp-col-page .bnp-col-bar i { display: block; height: 100%; min-width: 4px; border-radius: 99px; background: linear-gradient(180deg, color-mix(in srgb, var(--nb-bar) 72%, #fff), var(--nb-bar)); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .12); }
     html.bnp-col-page .bnp-col-goals { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
     html.bnp-col-page .bnp-col-goalhead { display: grid; margin-right: 4px; color: var(--nb-text); font: 13px var(--nb-ui); }
     html.bnp-col-page .bnp-col-goalhead small { color: var(--nb-muted); font: 11.5px var(--nb-txt); }
     html.bnp-col-page .bnp-col-goal { display: inline-flex; align-items: center; gap: 7px; padding: 3px 12px 3px 4px; border: 2px solid var(--nb-line); border-radius: 12px; background: #fff; }
-    html.bnp-col-page .bnp-col-goal img { flex: none; width: 30px; height: 30px; }
+    html.bnp-col-page .bnp-col-goal img { flex: none; width: 36px; height: 36px; }
     html.bnp-col-page .bnp-col-goal > span { display: grid; line-height: 1.15; }
     html.bnp-col-page .bnp-col-goal b { color: var(--nb-text); font: 12.5px var(--nb-ui); }
     html.bnp-col-page .bnp-col-goal small { color: var(--nb-muted); font: 12px var(--nb-txt); }
     html.bnp-col-page .bnp-col-goal.is-got { border-color: #9fd39a; background: #f1faf0; }
     html.bnp-col-page .bnp-col-goal.is-got small { color: #2a6e2a; font-family: var(--nb-ui); }
+    /* polished again (the user, 2026-11-02): the title with its picture, bigger, in the middle; Quick Ref's raised look on all that's pressed */
+    html.bnp-col-page .bnp-col-btn { background: linear-gradient(#fff, color-mix(in srgb, var(--nb-tint, #f3efe2) 55%, #fff)); box-shadow: inset 0 1px 0 #fff, 0 2px 0 var(--nb-frame), 0 4px 9px rgba(0, 0, 0, .08); transition: transform .12s, box-shadow .12s; }
+    html.bnp-col-page .bnp-col-btn:hover, html.bnp-col-page .bnp-col-btn:focus-visible { transform: translateY(-1px); border-color: var(--nb-frame); box-shadow: inset 0 1px 0 #fff, 0 3px 0 var(--nb-frame), 0 6px 12px rgba(0, 0, 0, .14); outline: none; }
+    html.bnp-col-page .bnp-col-btn:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .12), 0 1px 0 var(--nb-frame); }
+    html.bnp-col-page .bnp-col-btn.is-on, html.bnp-col-page .bnp-col-pet.is-on, html.bnp-col-page .bnp-col-subs button[aria-pressed="true"], html.bnp-col-page .bnp-col-seg button[aria-pressed="true"] { background: linear-gradient(color-mix(in srgb, var(--nb-bar) 78%, #fff), var(--nb-bar) 70%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 2px 0 var(--nb-bar-edge), 0 4px 9px rgba(0, 0, 0, .12); text-shadow: 0 1px 1px rgba(0, 0, 0, .25); }   /* (chosen: the theme's colour, lit the same way) */
+    html.bnp-col-page .bnp-col-tabs { background: linear-gradient(color-mix(in srgb, var(--nb-tint, #f3efe2) 50%, #fff), #fff); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06), 0 2px 0 var(--nb-frame); }
+    html.bnp-col-page .bnp-col-tab { transition: background-color .12s, transform .12s; }
+    html.bnp-col-page .bnp-col-tab[aria-current="page"] { background: linear-gradient(color-mix(in srgb, var(--nb-bar) 78%, #fff), var(--nb-bar) 70%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 2px 0 var(--nb-bar-edge); text-shadow: 0 1px 1px rgba(0, 0, 0, .25); }
+    html.bnp-col-page .bnp-col-who { background: linear-gradient(#fff, color-mix(in srgb, var(--nb-tint, #f3efe2) 45%, #fff)); box-shadow: inset 0 1px 0 #fff, 0 2px 0 var(--nb-frame), 0 5px 12px rgba(0, 0, 0, .14); }   /* (the name on a plate lit from the top) */
+    html.bnp-col-page .bnp-col-pet { background: linear-gradient(#fff, color-mix(in srgb, var(--nb-tint, #f3efe2) 40%, #fff)); box-shadow: inset 0 1px 0 #fff, 0 2px 0 var(--nb-line); transition: transform .12s, box-shadow .12s, border-color .12s; }
+    html.bnp-col-page .bnp-col-pet:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 #fff, 0 3px 0 var(--nb-frame); }
+    html.bnp-col-page .bnp-col-pet img { box-shadow: 0 0 0 1.5px #fff, 0 1px 3px rgba(0, 0, 0, .2); }
+    html.bnp-col-page .bnp-col-subs button { background: linear-gradient(#fff, color-mix(in srgb, var(--nb-tint, #f3efe2) 40%, #fff)); box-shadow: inset 0 1px 0 #fff, 0 2px 0 var(--nb-line); transition: transform .12s, box-shadow .12s; }
+    html.bnp-col-page .bnp-col-subs button:hover { transform: translateY(-1px); }
+    html.bnp-col-page .bnp-col-seg { box-shadow: inset 0 1px 2px rgba(0, 0, 0, .07); }
+    html.bnp-col-page .bnp-col-bar i { position: relative; background: linear-gradient(180deg, color-mix(in srgb, var(--nb-bar) 62%, #fff), var(--nb-bar) 75%); }
+    html.bnp-col-page .bnp-col-bar i::after { content: ""; position: absolute; left: 6px; right: 6px; top: 2px; height: 35%; border-radius: 99px; background: rgba(255, 255, 255, .32); }   /* (a sheen along its top) */
+    html.bnp-col-page .bnp-col-goal { background: linear-gradient(#fff, color-mix(in srgb, var(--nb-tint, #f3efe2) 45%, #fff)); box-shadow: inset 0 1px 0 #fff, 0 2px 0 var(--nb-line); }   /* (the award's trophies on raised plaques) */
+    html.bnp-col-page .bnp-col-goal img { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .2)); }
+    html.bnp-col-page .bnp-col-goal.is-got { background: linear-gradient(#f6fcf5, #e7f5e5); box-shadow: inset 0 1px 0 #fff, 0 2px 0 #9fd39a; }
+    @media (prefers-reduced-motion: reduce) { html.bnp-col-page :is(.bnp-col-btn, .bnp-col-pet, .bnp-col-subs button, .bnp-col-tab) { transition: none; } }
     html.bnp-col-page .bnp-col-top { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--nb-tint); color: var(--nb-text); font: 13px/1 "Cafeteria", "Arial Bold", sans-serif; }
     html.bnp-col-page .bnp-col-subs { display: flex; flex-wrap: wrap; gap: 5px; }
     html.bnp-col-page .bnp-col-subs button { display: inline-flex; align-items: center; gap: 6px; height: 29px; margin: 0; padding: 0 5px 0 10px; border: 2px solid var(--nb-line); border-radius: 99px; background: #fff; color: #333; font: 12.5px var(--nb-ui); cursor: pointer; }
@@ -20397,6 +20499,7 @@
     html.bnp-col-page .bnp-col-tog[aria-pressed="true"] i { border-color: var(--nb-bar); background: var(--nb-bar) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='m2.5 6.2 2.3 2.3 4.7-5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 10px no-repeat; }
     html.bnp-col-page .bnp-col-cost, html.bnp-col-page .bnp-col-err { margin: -2px 4px 0; color: var(--nb-muted); font: 13px/1.45 var(--nb-txt); }
     html.bnp-col-page .bnp-col-cost b { color: var(--nb-text); font-family: var(--nb-ui); }
+    html.bnp-col-page .bnp-col-cost .bnp-col-buy { height: 28px; margin: 0 0 0 10px; padding: 0 12px 0 5px; font-size: 12.5px; vertical-align: middle; }   /* (Buy Mode, by what it buys from) */
     html.bnp-col-page .bnp-col-err { padding: 9px 14px; border: 2px solid #f0c2a8; border-radius: 12px; background: #fff6f0; color: #8a3b12; }
     html.bnp-col-page .bnp-col-err a { color: inherit !important; font-family: var(--nb-ui); }
     /* the items */
@@ -21187,7 +21290,7 @@
             ${unread.length && sa.mine && M.acct ? chip('is-quiet', '', `${unread.length} page${unread.length === 1 ? '' : 's'} not read yet`) : ''}
           </div>
         </div>
-        <div class="bnp-sa-heroacts">${read}
+        <div class="bnp-sa-heroacts">${read}${sa.mine && M.acct && todo.length ? `<button type="button" class="bnp-sa-btn is-go" data-sa-buy title="Buy the stamps your album still needs from users’ shops: the ones you tick, one of each, never over your limits">${BM_CART}<span>Buy Mode</span></button>` : ''}
           <span class="bnp-sa-links"><a class="bnp-sa-btn is-small" href="/objects.phtml?type=shop&amp;obj_type=58">Post Office Kiosk</a><a class="bnp-sa-btn is-small" href="/gamescores.phtml?game_id=346">High scores</a></span>
         </div>
       </div>
@@ -21482,6 +21585,7 @@
       if (d.saTab) { sa.tab = d.saTab; saPSet('tab', sa.tab); saPaint(); return; }
       if (d.saFilter) { sa.filter = d.saFilter; saPSet('filter', sa.filter); saPaint(); return; }
       if (d.saTf) { sa.tf = d.saTf; saPSet('tf', sa.tf); saPaint(); return; }
+      if ('saBuy' in d) { bmOpen('stamps'); return; }
       if ('saReadall' in d) { saReadAll(); return; }
       if ('saStop' in d) { if (sa.reading) sa.reading.stop = true; b.disabled = true; return; }
       if ('saPriced' in d) { sa.priced = !sa.priced; saPSet('priced', sa.priced); saPaint(); }
@@ -31999,6 +32103,830 @@
     wtRefresh().catch(report);
   }
   // ═══════════════════════════════════════════════════════════════════════════
+  // SDB: books read to a pet, several at once (the user, 2 November 2026: "ability to select multiple books at once and read to pet from
+  // sdb, even multiple pages"). Neopets' own SDB reads one at a time: its pet actions are offered only with one item selected, though its
+  // selection keeps what's chosen on every page. NE's Read to a pet: in its drawer while books are selected, and in its header for every
+  // book in it. A pet chosen, its Books Read pages read afresh and the books it has read left out; the rest read one at a time through
+  // the SDB's own Read to (its own request, one of each), a person's pause between, only while this tab's in front. An Archive book asks
+  // first, as Neopets' own does. A PIN your SDB asks for is used for this run only, never kept
+  // ═══════════════════════════════════════════════════════════════════════════
+  const SDR_PET = 'bnp-sdr-pet';   // (the pet chosen last time, on this browser)
+  const ARCH_KEY = 'bnp-archive-books', ARCH_WHY = 'An Archive book: it goes in your Archive Bookshelf, it isn’t read';   // (books Neopets has said are Archive books, by name: for the Archive Bookshelf's collection, never read (the user, 2026-11-02))
+  const archAll = () => { try { const v = JSON.parse(localStorage.getItem(ARCH_KEY) || '{}'); return v && typeof v === 'object' ? v : {}; } catch (_) { return {}; } };
+  const archIs = (name) => !!archAll()[reClean(name || '').toLowerCase()];
+  const archAdd = (name) => { const k = reClean(name || '').toLowerCase(); if (k) { try { localStorage.setItem(ARCH_KEY, JSON.stringify({ ...archAll(), [k]: 1 })); } catch (_) { /* */ } } };
+  const SDR_BOOKS = '6';   // (the SDB's own Books category)
+  const SDR_SORT = 'bnp-sdr-sort';   // (how the books are listed and read: cheap, dear or name)
+  const sdrSortOf = () => { try { const v = localStorage.getItem(SDR_SORT); return v === 'dear' || v === 'name' ? v : 'cheap'; } catch (_) { return 'cheap'; } };
+  function sdrSorted() {   // (the books as listed, and read: the ones it hasn't read in your order, then the ones it has, by name)
+    const by = sdrSortOf(), name = (a, b) => a.name.localeCompare(b.name);
+    const order = by === 'name' ? name : by === 'dear' ? (a, b) => ((b.p || -1) - (a.p || -1)) || name(a, b) : (a, b) => ((a.p || Infinity) - (b.p || Infinity)) || name(a, b);
+    return [...sdr.books.filter((b) => !b.done).sort(order), ...sdr.books.filter((b) => b.done).sort(name)];
+  }
+  async function sdrPrices() {   // (each book's itemdb price, only to sort by and show: from NE's kept Books Read lists, else itemdb asked, a hundred at a time)
+    const cat = new Map();
+    for (const kind of ['books', 'bt']) { const c = await idbGet(`col-cat-${kind}`).catch(() => null); for (const it of c && Array.isArray(c.items) ? c.items : []) if (it[3] > 0) cat.set(colImgKey(it[0]), it[3]); }
+    let t = 0;
+    const soon = () => { clearTimeout(t); t = setTimeout(() => { if (sdr && sdr.state === 'ready') sdrPaint(); }, 300); };
+    for (const b of sdr.books) {
+      const k = colImgKey(b.it.obj_filename), c = itPriceCache()[b.name];
+      if (cat.has(k)) b.p = cat.get(k);
+      else if (c) b.p = (c.r && c.r.p) || 0;
+      else itPriceAsk(b.name, (r) => { b.p = (r && r.p) || 0; soon(); });
+    }
+  }
+  async function sdrPinStatus() {   // (as Neopets' own confirm asks on opening: does your SDB want a PIN now? null when it didn't say)
+    const ck = (PAGE.__sdbData && PAGE.__sdbData.refCk) || '';
+    const init = { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'XMLHttpRequest' }, body: JSON.stringify({ _ref_ck: ck }) };
+    try {
+      const f = typeof PAGE.fetch === 'function' ? PAGE.fetch : fetch;
+      const r = await f.call(PAGE, '/np-templates/ajax/safetydeposit/pin-status.php', typeof cloneInto === 'function' ? cloneInto(init, PAGE) : init);
+      if (!r.ok) return null;
+      const d = await r.json();
+      if (d && d.success && typeof d.pin_required === 'boolean') { const st = sdbVm(); try { if (st) st.pinRequired = d.pin_required; } catch (_) { /* */ } return d.pin_required; }
+    } catch (_) { /* */ }
+    return null;
+  }
+  let sdr = null;
+  const sdrHadKept = new Map();
+  const sdrOn = () => !FRAME && location.pathname === '/safetydeposit.phtml' && S.features.sdbRead !== false;
+  const sdrPets = () => { try { return [...((PAGE.__sdbData && PAGE.__sdbData.pets) || [])].map((p) => String((p && p.name) || '')).filter(Boolean); } catch (_) { return []; } };
+  const sdrPic = (it) => (it && it.obj_filename ? `https://images.neopets.com/items/${it.obj_filename}.gif` : '');
+  const sdrHead = (pet) => `https://pets.neopets.com/cpn/${encodeURIComponent(pet)}/1/6.png`;
+  const sdrPinAsked = () => { const st = sdbVm(); try { return !!((st && st.pinRequired) || (PAGE.__sdbData && PAGE.__sdbData.pinRequired)); } catch (_) { return false; } };
+  function sdrPicked() {   // (the books among what's selected in Neopets' own list, on every page of it)
+    const st = sdbVm();
+    try { return st ? [...(st.selectedItemsList || [])].filter((x) => x && x.can_read) : []; } catch (_) { return []; }
+  }
+  function sdrBoot() {   // (its two ways in, kept in place as Neopets' list and drawer come and go)
+    if (!sdrOn() || sdrBoot.on) return;
+    sdrBoot.on = true;
+    styles();
+    let t = 0;
+    const ours = (m) => { const el = m.target instanceof Element ? m.target : m.target.parentElement; return !el || !!el.closest('[data-bnp], .sdb-pagination'); };   // (NE's own changing, or the page buttons: nothing new selected)
+    new MutationObserver((ms) => {
+      if (t || ms.every(ours)) return;
+      t = setTimeout(() => { t = 0; sdrEntries(); }, 150);   // (at most every 150 ms, however busy the page is)
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    sdrEntries();
+  }
+  function sdrEntries() {
+    if (!sdrOn()) return;
+    const row = $('.sdb-drawer .sdb-drawer-action-row'), n = row ? sdrPicked().length : 0;
+    let b = $('[data-bnp="sdrbtn"]');
+    if (row && n) {
+      if (!b || b.parentElement !== row) {
+        if (b) b.remove();
+        b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'np-button button-default__2020 button-yellow__2020 bnp-sdr-drawbtn';
+        b.setAttribute('data-bnp', 'sdrbtn');
+        b.addEventListener('click', () => sdrOpen('sel'));
+        row.append(b);
+      }
+      const t = n === 1 ? 'Read the book to a pet' : `Read the ${n} books to a pet`, l = n === 1 ? 'Read to a pet' : `Read ${n} to a pet`;
+      if (b.textContent !== l) b.textContent = l;
+      b.title = `${t}: NE leaves out any it has read already`;
+    } else if (b) b.remove();
+    const bar = $('.sdb-header-bar');
+    if (bar && !$('[data-bnp="sdrpill"]')) {
+      const p = document.createElement('button');
+      p.type = 'button';
+      p.className = 'bnp-sdr-pill';
+      p.setAttribute('data-bnp', 'sdrpill');
+      p.title = 'Read the books in your SDB to a pet, the ones it hasn’t read, several at once';
+      p.innerHTML = `<span class="bnp-sdr-pic" aria-hidden="true">${COL_IC.books}</span>Read books to a pet`;
+      const th = themeHead();
+      if (th && th.bg) { p.style.setProperty('--bnp-sdr-c', th.bg); p.style.setProperty('--bnp-sdr-ink', inkReads(th.ink, th.bg)); }   // (your theme's colour, as its pop-ups' headers wear it)
+      p.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); sdrOpen(sdrPicked().length ? 'sel' : 'all'); });
+      bar.append(p);
+    }
+  }
+  function sdrOpen(src) {
+    if (!sdrOn()) return;
+    styles();
+    if (!sdr) {
+      const veil = document.createElement('div'), win = document.createElement('div');
+      veil.className = 'bnp-veil';
+      veil.setAttribute('data-bnp', 'sdrveil');
+      win.className = 'bnp-go bnp-sdr';
+      win.setAttribute('data-bnp', 'sdrwin');
+      win.setAttribute('role', 'dialog');
+      win.setAttribute('aria-modal', 'true');
+      win.setAttribute('aria-label', 'Read to a pet');
+      win.innerHTML = '<div class="popup-header__2020 bnp-hub-head"><h3>Read to a pet</h3><button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-sdr-x" data-sdr="x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button><div class="popup-header-pattern__2020"></div></div><div class="bnp-sdr-body" data-sdr-body></div><div class="bnp-sdr-foot" data-sdr-foot></div>';
+      document.body.append(veil, win);
+      veil.addEventListener('click', () => sdrClose());
+      win.addEventListener('click', sdrClick);
+      win.addEventListener('change', sdrChange);
+      win.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.matches('[data-sdrupto]')) { e.preventDefault(); sdrUpTo(); return; } if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.matches('[data-sdrpin]')) { e.preventDefault(); const go = win.querySelector('[data-sdr="go"]'); if (go && !go.disabled) go.click(); } });
+      win.addEventListener('error', (e) => { const t = e.target; if (t instanceof HTMLImageElement && t.dataset.fb && t.getAttribute('src') !== t.dataset.fb) t.src = t.dataset.fb; }, true);
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sdr && sdr.win.classList.contains('open')) { e.preventDefault(); sdrClose(); } });
+      sdr = { win, veil, pet: '', src: 'sel', state: 'pick', books: [], had: null, err: '', run: null, pin: '', scan: null };
+    }
+    if (sdr.run && !sdr.run.over) { sdrShow(); return; }   // (reading: the window as it is)
+    const pets = sdrPets();
+    let pet = '';
+    try { pet = localStorage.getItem(SDR_PET) || ''; } catch (_) { /* */ }
+    if (!pets.includes(pet)) pet = pets.length === 1 ? pets[0] : '';
+    Object.assign(sdr, { src: src === 'all' || !sdrPicked().length ? 'all' : 'sel', pet, state: 'pick', books: [], had: null, err: '', run: null, pin: '', scan: null });
+    sdrShow();
+    if (pet) sdrCheck().catch(report);
+  }
+  function sdrShow() {
+    themeWin(sdr.win);
+    sdr.veil.classList.add('open');
+    sdr.win.classList.add('open');
+    sdrPaint();
+    const f = sdr.win.querySelector('[data-sdrpet][aria-checked="true"]') || sdr.win.querySelector('[data-sdrpet]') || sdr.win.querySelector('[data-sdr="x"]');
+    if (f) f.focus({ preventScroll: true });
+  }
+  function sdrClose() {
+    if (!sdr || !sdr.win.classList.contains('open')) return;
+    if (sdr.run && !sdr.run.over) sdr.run.stop = true;   // (closed while reading: it stops after the book it's on)
+    if (sdr.scan) sdr.scan.stop = true;
+    sdr.pin = '';
+    sdr.win.classList.remove('open');
+    sdr.veil.classList.remove('open');
+    const b = $('[data-bnp="sdrbtn"]') || $('[data-bnp="sdrpill"]');
+    if (b) b.focus({ preventScroll: true });
+  }
+  async function sdrHad(pet) {   // (what a pet has read, from its own Books Read pages (both tabs), afresh once in ten minutes: Neopets' ids for them, else their pictures)
+    const k = pet.toLowerCase(), c = sdrHadKept.get(k);
+    if (c && Date.now() - c.t < 10 * 60000) return c;
+    const out = { ids: new Set(), keys: new Set(), n: 0, bt: 0, t: Date.now() };
+    for (const kind of ['books', 'bt']) {
+      if (kind === 'bt') await wtSleep(900 + Math.random() * 900);   // (its second tab, as you'd go on to it)
+      const r = await fetch(colHref(kind, pet), { credentials: 'include' });
+      if (!r.ok) throw new Error('lists');
+      const doc = new DOMParser().parseFromString(await r.text(), 'text/html'), cfg = pageJson(doc, '__booksReadConfig'), d = colParse(kind, doc);
+      if (!d) throw new Error('lists');
+      if (d.notYours) throw new Error('mine');
+      for (const b of cfg && Array.isArray(cfg.books) ? cfg.books : []) if (b && b.objInfoId != null) out.ids.add(String(b.objInfoId));
+      for (const it of d.items) out.keys.add(colImgKey(it[0]));
+      out[kind === 'bt' ? 'bt' : 'n'] = Number(d.n) || 0;
+      colPetSet(kind, pet, colSlim(colOrderFix(d, null)));   // (kept for its Books Read page and the marks, as a visit there keeps it)
+    }
+    sdrHadKept.set(k, out);
+    return out;
+  }
+  const sdrRead1 = (h, it) => (h.ids.size ? h.ids.has(String(it.obj_info_id)) : h.keys.has(colImgKey(it.obj_filename)));   // (read already: by Neopets' own id for it where the page gives them)
+  async function sdrScan(me) {   // (every book in your SDB: its Books, every page, asked for as its own list asks, a moment between pages)
+    const ck = (PAGE.__sdbData && PAGE.__sdbData.refCk) || '', out = [];
+    if (!ck) throw new Error('page');
+    for (let p = 1, pages = 1; p <= pages && p <= 30; p++) {
+      if (p > 1) await bmSleep(1800 + Math.random() * 1600);
+      while (document.hidden && !bmP().bg && !me.stop) await bmSleep(500);
+      if (me.stop) return null;
+      me.page = p;
+      sdrPaint();
+      const r = await fetch('/np-templates/ajax/safetydeposit/get-items.php', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'XMLHttpRequest' }, body: JSON.stringify({ page: p, per_page: 150, search: '', category: SDR_BOOKS, sort: 'name_asc', rarity_min: null, rarity_max: null, view_filter: 'np', _ref_ck: ck }) });
+      const d = await r.json().catch(() => null);
+      if (!d || !d.success || !d.data) throw new Error('sdb');
+      pages = Number(d.data.pagination && d.data.pagination.total_pages) || 1;
+      me.pages = pages;
+      for (const it of Array.isArray(d.data.items) ? d.data.items : []) if (it && it.can_read && !it.is_nc) out.push(it);
+    }
+    return out;
+  }
+  async function sdrCheck() {   // (the pet chosen: what it's read, then the books to read it)
+    if (!sdr || !sdr.pet || (sdr.run && !sdr.run.over)) return;
+    const pet = sdr.pet, src = sdr.src, me = { stop: false, page: 0, pages: 0 };
+    if (sdr.scan) sdr.scan.stop = true;
+    Object.assign(sdr, { state: 'check', books: [], had: null, err: '', scan: me, run: null });
+    sdrPaint();
+    try {
+      const had = await sdrHad(pet);
+      if (me.stop || sdr.pet !== pet || sdr.src !== src) return;
+      sdr.had = had;
+      sdrPaint();
+      const list = src === 'all' ? await sdrScan(me) : sdrPicked();
+      if (!list || me.stop || sdr.pet !== pet || sdr.src !== src) return;
+      const seen = new Set();
+      sdr.books = list.filter((it) => { const k = String(it.obj_info_id); if (seen.has(k)) return false; seen.add(k); return true; })
+        .map((it) => { const arch = archIs(it.obj_name), done = arch || sdrRead1(had, it); return { it, id: String(it.obj_info_id), name: reClean(it.obj_name || ''), done, arch, on: !done, st: '', why: '', p: 0 }; });
+      await sdrPrices().catch(() => {});
+      sdr.state = 'ready';
+    } catch (e) {
+      if (me.stop || sdr.pet !== pet) return;
+      const m = e && e.message;
+      sdr.err = m === 'mine' ? `Neopets says ${pet} isn’t yours.` : m === 'page' ? 'Your SDB’s page didn’t load all the way: reload it, then try again.' : m === 'sdb' ? 'Your SDB didn’t answer just now: try again in a moment.' : `${pet}’s Books Read pages didn’t load just now: try again in a moment.`;
+      sdr.state = 'pick';
+      if (!['mine', 'page', 'sdb', 'lists'].includes(m)) report(e);
+    } finally { if (sdr.scan === me) sdr.scan = null; }
+    sdrPaint();
+  }
+  async function sdrReadOne(it, pet, pin, archive) {   // (one book, as the SDB's own Read to sends it, through the page's own fetch so what NE keeps of your SDB hears it as it hears Neopets' own)
+    const ck = (PAGE.__sdbData && PAGE.__sdbData.refCk) || '';
+    const init = { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'XMLHttpRequest' }, body: JSON.stringify({ obj_info_id: it.obj_info_id, quantity: 1, verb: 'read', pet_name: pet, pin, confirm_read_archive: archive ? 1 : 0, _ref_ck: ck }) };
+    let d = null;
+    try {
+      const f = typeof PAGE.fetch === 'function' ? PAGE.fetch : fetch;
+      const r = await f.call(PAGE, '/np-templates/ajax/safetydeposit/pet-action.php', typeof cloneInto === 'function' ? cloneInto(init, PAGE) : init);
+      if (!r.ok) return { net: true };
+      d = await r.json();
+    } catch (_) { return { net: true }; }
+    if (!d) return { net: true };
+    if (d.needs_confirm) return { confirm: true, words: sdrWords(d.message_html || d.message || '') };
+    if (d.success) return { ok: true };
+    if (d.error === 'pin_required' || d.error === 'pin_wrong') return { pin: true, why: reClean(String(d.message || '')) || (d.error === 'pin_wrong' ? 'That PIN doesn’t match.' : 'Your SDB asks for your PIN.') };
+    return { why: sdrWords(d.message || d.error || '') || 'Neopets didn’t read it.' };
+  }
+  const sdrWords = (h) => { const t = document.createElement('template'); t.innerHTML = String(h || ''); return reClean(t.content.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 300); };   // (Neopets' words, as text)
+  async function sdrRun() {
+    if (!sdr || sdr.state !== 'ready' || (sdr.run && !sdr.run.over)) return;
+    const list = sdrSorted().filter((b) => b.on), pet = sdr.pet, st = sdbVm();
+    if (!list.length) return;
+    if (sdrPinAsked() && !sdr.pin) { sdr.err = 'Your SDB asks for your PIN first.'; sdrPaint(); const p = sdr.win.querySelector('[data-sdrpin]'); if (p) p.focus(); return; }
+    try { localStorage.setItem(SDR_PET, pet); } catch (_) { /* */ }
+    const run = sdr.run = { n: list.length, i: 0, read: 0, stop: false, over: false, at: null, fails: 0, pinStop: '' };
+    for (const b of sdr.books) { b.st = b.on ? 'wait' : ''; b.why = ''; }
+    sdr.err = '';
+    sdr.state = 'run';
+    try { if (st) for (const b of list) if (!st.isSelected(b.it)) st.toggleSelection(b.it); } catch (_) { /* */ }   // (all of them selected in its own list while they wait, as you'd select them: what NE keeps of your SDB knows their names; each one read leaves the selection)
+    sdrPaint();
+    for (const b of list) {
+      while (document.hidden && !bmP().bg && !run.stop) await bmSleep(500);   // (in a background tab only if you've turned that off)
+      if (run.stop) break;
+      run.at = b;
+      b.st = 'now';
+      sdrPaint();
+      const pinNow = await sdrPinStatus();   // (as its own confirm asks on opening)
+      if (pinNow && !sdr.pin) { b.st = 'wait'; run.pinStop = 'your SDB asks for your PIN now: Look again, type it, then Read'; break; }
+      await bmSleep(1200 + Math.random() * 1600);   // (the moment its confirm is read, and Confirm pressed)
+      if (run.stop) { b.st = 'wait'; break; }
+      let a = await sdrReadOne(b.it, pet, sdr.pin, false);
+      if (a.confirm) { archAdd(b.name); b.arch = true; a = { kept: true }; }   // (an Archive book, Neopets says: for the Archive Bookshelf, never read; left, and remembered)
+      if (a.ok) { b.st = 'read'; b.why = ''; run.read++; run.fails = 0; try { if (st) { st.onPageChange(Number(st.currentPage) || 1); await sdbIdle(st); } } catch (e) { report(e); } }   // (its own list asked for again, as after its own Read to)
+      else if (a.kept) { b.st = 'kept'; b.why = ARCH_WHY; }
+      else if (a.pin) { b.st = 'wait'; b.why = ''; run.pinStop = a.why; sdr.pin = ''; break; }
+      else if (a.net) { b.st = 'no'; b.why = 'Neopets didn’t answer just now.'; if (++run.fails >= 2) { run.stop = true; run.netStop = true; } }
+      else { b.st = 'no'; b.why = a.why; run.fails = 0; }
+      if (b.st === 'read' || b.st === 'kept') { try { if (st && st.isSelected(b.it)) st.toggleSelection(b.it); } catch (_) { /* */ } }   // (done with: out of the selection; the rest stay selected)
+      run.i++;
+      sdrPaint();
+      if (run.i < list.length && !run.stop) await bmSleep(2500 + Math.random() * 3500 + (Math.random() < 0.15 ? 3000 + Math.random() * 6000 : 0));   // (a person's pause before the next: mostly a few seconds, now and then longer)
+    }
+    run.over = true;
+    run.at = null;
+    sdr.state = 'done';
+    for (const b of sdr.books) if (b.st === 'now') b.st = 'wait';
+    if (sdr.had && run.read) { for (const b of sdr.books) if (b.st === 'read') { sdr.had.ids.add(b.id); sdr.had.keys.add(colImgKey(b.it.obj_filename)); if (/booktastic/i.test(String(b.it.type_name || ''))) sdr.had.bt++; else sdr.had.n++; } }   // (what it's read now, without asking again)
+    sdrPaint();
+    if (run.read) {
+      document.dispatchEvent(new CustomEvent('bnp-col-read', { detail: JSON.stringify({ pet }) }));   // (its kept lists and the marks: read again)
+    }
+  }
+  function sdrClick(e) {
+    const el = e.target instanceof Element ? e.target : null;
+    if (!el || !sdr) return;
+    const pc = el.closest('[data-sdrpet]');
+    if (pc) { if (sdr.run && !sdr.run.over) return; if (sdr.pet !== pc.dataset.sdrpet || sdr.state === 'pick' || sdr.state === 'done') { sdr.pet = pc.dataset.sdrpet; sdrCheck().catch(report); } return; }
+    const sv = el.closest('[data-sdrsrc]');
+    if (sv) { if (sdr.run && !sdr.run.over) return; const s = sv.dataset.sdrsrc === 'all' ? 'all' : 'sel'; if (s !== sdr.src || sdr.state === 'done') { sdr.src = s; if (sdr.pet) sdrCheck().catch(report); else sdrPaint(); } return; }
+    const t = el.closest('[data-sdr]');
+    if (!t) return;
+    const a = t.dataset.sdr;
+    if (a === 'x' || a === 'done') sdrClose();
+    else if (a === 'go') sdrRun().catch(report);
+    else if (a === 'stop') { if (sdr.run) { sdr.run.stop = true; sdrPaint(); } }
+    else if (a === 'again') { if (sdr.pet) sdrCheck().catch(report); }
+    else if (a === 'all' || a === 'none') { for (const b of sdr.books) if (!b.done) b.on = a === 'all'; sdrPaint(); }
+    else if (a === 'upto') sdrUpTo();
+  }
+  function sdrUpTo() {   // (the books itemdb prices at or under the price written ticked, the rest not)
+    const i = sdr.win.querySelector('[data-sdrupto]'), v = i ? bmParse(i.value) : 0;
+    if (!v || sdr.state !== 'ready') return;
+    try { localStorage.setItem('bnp-sdr-upto', String(v)); } catch (_) { /* */ }
+    for (const b of sdr.books) if (!b.done) b.on = b.p > 0 && b.p <= v;
+    sdrPaint();
+    const n = sdr.win.querySelector('[data-sdrupto]');
+    if (n) n.focus();
+  }
+  function sdrChange(e) {
+    if (e.target instanceof HTMLInputElement && e.target.matches('[data-sdrbg]')) { bmPSet('bg', e.target.checked); return; }
+    if (e.target instanceof HTMLSelectElement && e.target.matches('[data-sdrsort]') && sdr) { try { localStorage.setItem(SDR_SORT, e.target.value); } catch (_) { /* */ } sdrPaint(); const f = sdr.win.querySelector('[data-sdrsort]'); if (f) f.focus(); return; }
+    const i = e.target;
+    if (!(i instanceof HTMLInputElement) || !sdr) return;
+    if (i.dataset.sdrbook) { const b = sdr.books.find((x) => x.id === i.dataset.sdrbook); if (b && sdr.state === 'ready' && !b.arch) { b.on = i.checked; sdrPaintFoot(); const row = i.closest('.bnp-sdr-row'); if (row) row.classList.toggle('is-off', !i.checked); } }
+  }
+  function sdrRowHtml(b, can) {
+    const pic = sdrPic(b.it), st = b.st, mark = { read: '<i class="bnp-sdr-st is-read" title="Read">✓</i>', kept: '<i class="bnp-sdr-st is-kept" title="Kept for your Archive">–</i>', no: '<i class="bnp-sdr-st is-no" title="Not read">!</i>', now: '<i class="bnp-sdr-st is-now" aria-label="Reading"></i>', ask: '<i class="bnp-sdr-st is-ask" title="Asks first">?</i>' }[st] || '';
+    const why = b.why && st !== 'ask' ? `<small class="bnp-sdr-why">${esc(b.why)}</small>` : b.done && !st ? `<small>${b.arch ? esc(ARCH_WHY) : `${esc(sdr.pet)} has read it`}</small>` : !st || st === 'wait' ? `<small>${b.p ? `itemdb ≈ ${b.p.toLocaleString()} NP` : 'No itemdb price'}${Number(b.it.amount) > 1 ? ` · ${Number(b.it.amount).toLocaleString()} in your SDB, it reads one` : ''}</small>` : '';
+    return `<label class="bnp-sdr-row${b.on ? '' : ' is-off'}${st ? ` is-${st}` : ''}"${b.st === 'now' ? ' data-sdrnow' : ''}>${can ? `<input type="checkbox" data-sdrbook="${esc(b.id)}"${b.on ? ' checked' : ''}${b.arch ? ' disabled' : ''}>` : ''}<span class="bnp-sdr-bk">${pic ? `<img src="${esc(pic)}" alt="" width="40" height="40" loading="lazy">` : ''}</span><span class="bnp-sdr-nm"><b>${esc(b.name)}</b>${why}</span>${mark}</label>`;
+  }
+  function sdrPaint() {
+    if (!sdr || !sdr.win.classList.contains('open')) return;
+    const body = sdr.win.querySelector('[data-sdr-body]'), y = (sdr.win.querySelector('.bnp-sdr-list') || { scrollTop: 0 }).scrollTop, pets = sdrPets(), run = sdr.run, busy = !!(run && !run.over), picked = sdrPicked().length;
+    const chips = pets.length ? pets.map((p) => `<button type="button" class="bnp-sdr-chip" role="radio" aria-checked="${sdr.pet === p}" data-sdrpet="${esc(p)}"${busy ? ' disabled' : ''}><img src="${esc(sdrHead(p))}" data-fb="${esc(`https://pets.neopets.com/cpn/${encodeURIComponent(p)}/1/1.png`)}" alt="" width="44" height="44"><b>${esc(p)}</b></button>`).join('') : '<p class="bnp-sdr-note">Neopets didn’t list your pets on this page: reload it, then try again.</p>';
+    const src = (picked && !busy) || sdr.src === 'sel' ? `<div class="bnp-sdr-src" role="group" aria-label="Which books"><button type="button" data-sdrsrc="sel" aria-pressed="${sdr.src === 'sel'}"${busy || !picked ? ' disabled' : ''}>Selected in your SDB${picked ? ` (${picked.toLocaleString()})` : ''}</button><button type="button" data-sdrsrc="all" aria-pressed="${sdr.src === 'all'}"${busy ? ' disabled' : ''}>Every book in your SDB</button></div>` : '';   // (only when books are selected in its own list: otherwise every book, ticked here)
+    let main = '';
+    if (!sdr.pet) main = `<p class="bnp-sdr-note">Choose a pet: NE looks at what it has read and leaves those books out.</p>${sdr.err ? `<p class="bnp-sdr-note is-err">${esc(sdr.err)}</p>` : ''}`;
+    else if (sdr.state === 'pick') main = `${sdr.err ? `<p class="bnp-sdr-note is-err">${esc(sdr.err)}</p>` : ''}<p class="bnp-sdr-note"><button type="button" class="bnp-sdr-lb" data-sdr="again">Try again</button></p>`;
+    else if (sdr.state === 'check') { const sc = sdr.scan; main = `<p class="bnp-sdr-wait"><i class="bnp-sdr-spin" aria-hidden="true"></i>${!sdr.had ? `Looking at what ${esc(sdr.pet)} has read…` : sdr.src === 'all' ? `Looking through your SDB’s books${sc && sc.pages > 1 ? ` (page ${sc.page} of ${sc.pages})` : ''}…` : 'Looking at the books you’ve selected…'}</p>`; }
+    else {
+      const shown = sdrSorted(), todo = shown.filter((b) => !b.done), done = shown.filter((b) => b.done), can = sdr.state === 'ready', on = sdr.books.filter((b) => b.on).length, h = sdr.had, by = sdrSortOf();
+      const count = h ? `<p class="bnp-sdr-count">${esc(sdr.pet)} has read <b>${h.n.toLocaleString()}</b> ${h.n === 1 ? 'book' : 'books'}${h.bt ? ` and <b>${h.bt.toLocaleString()}</b> Booktastic ${h.bt === 1 ? 'book' : 'books'}` : ''}${run && run.read ? ` <em>(${run.read.toLocaleString()} just now)</em>` : ''}<a class="bnp-sdr-go" href="${esc(colHref('books', sdr.pet))}">${COL_IC.books}Books Read</a><a class="bnp-sdr-go" href="/bookshelf/pet-bookshelf.phtml?pet=${encodeURIComponent(sdr.pet)}"><img src="${NPI}themes/h5/basic/images/v3/petbookshelf-icon.png" alt="" width="16" height="16">Pet Bookshelf</a></p>` : '';
+      let head = '';
+      if (run) {
+        const left = sdr.books.filter((b) => b.st === 'wait').length, nos = sdr.books.filter((b) => b.st === 'no').length, kept = sdr.books.filter((b) => b.st === 'kept').length;
+        head = run.over
+          ? `<div class="bnp-sdr-sum is-done"><b>${run.read ? `${run.read.toLocaleString()} ${run.read === 1 ? 'book' : 'books'} read to ${esc(sdr.pet)}` : `Nothing read to ${esc(sdr.pet)}`}</b>${nos ? `<span>${nos.toLocaleString()} not read: Neopets’ reason is beside ${nos === 1 ? 'it' : 'each'}</span>` : ''}${kept ? `<span>${kept.toLocaleString()} Archive ${kept === 1 ? 'book isn’t' : 'books aren’t'} read: ${kept === 1 ? 'it goes' : 'they go'} in your Archive Bookshelf</span>` : ''}${left ? `<span>${run.pinStop ? `Stopped: ${esc(run.pinStop)}` : run.netStop ? 'Stopped: Neopets didn’t answer twice in a row' : 'Stopped'}. ${left.toLocaleString()} still to read ${left === 1 ? 'is' : 'are'} still selected</span>` : ''}</div>`
+          : `<div class="bnp-sdr-sum"><b>Reading ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()} to ${esc(sdr.pet)}</b><span>${run.at ? esc(run.at.name) : ''}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
+      } else head = todo.length ? `<div class="bnp-sdr-sum"><b>${todo.length.toLocaleString()} ${todo.length === 1 ? 'book' : 'books'} ${esc(sdr.pet)} hasn’t read</b>${done.filter((b) => !b.arch).length ? `<span>${done.filter((b) => !b.arch).length.toLocaleString()} it has read already ${done.filter((b) => !b.arch).length === 1 ? 'is' : 'are'} left out</span>` : ''}${done.some((b) => b.arch) ? `<span>${done.filter((b) => b.arch).length.toLocaleString()} Archive ${done.filter((b) => b.arch).length === 1 ? 'book isn’t' : 'books aren’t'} read</span>` : ''}${todo.length > 1 ? `<span class="bnp-sdr-tick"><label class="bnp-sdr-sortby"><span>Sort</span><select data-sdrsort aria-label="Sort the books">${[['cheap', 'Cheapest first'], ['dear', 'Priciest first'], ['name', 'A to Z']].map(([v, l]) => `<option value="${v}"${by === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label><button type="button" class="bnp-sdr-lb" data-sdr="all">All</button><button type="button" class="bnp-sdr-lb" data-sdr="none">None</button><span class="bnp-upto" title="Ticks the ones itemdb prices at or under this, and unticks the rest"><label><span>Up to</span><input type="text" inputmode="numeric" autocomplete="off" data-sdrupto value="${esc(((() => { try { return Number(localStorage.getItem('bnp-sdr-upto')) || 0; } catch (_) { return 0; } })() || 5000).toLocaleString())}" aria-label="Tick the ones up to this many Neopoints">NP</label><button type="button" class="bnp-sdr-lb" data-sdr="upto">Tick</button></span></span>` : ''}</div>`
+        : `<div class="bnp-sdr-sum is-done"><b>${sdr.books.length ? `${esc(sdr.pet)} has read ${sdr.books.length === 1 ? 'it' : `all ${sdr.books.length.toLocaleString()}`} already` : sdr.src === 'all' ? 'No books in your SDB' : 'No books selected'}</b>${sdr.books.length && sdr.src === 'sel' ? '<span>Choose another pet, or look through every book in your SDB.</span>' : ''}</div>`;
+      const rows = `${todo.map((b) => sdrRowHtml(b, can)).join('')}${done.length ? `${todo.length ? `<p class="bnp-sdr-sep">Left out: ${done.some((b) => !b.arch) ? `the ones ${esc(sdr.pet)} has read${can ? ' (tick one to read it anyway)' : ''}` : ''}${done.some((b) => !b.arch) && done.some((b) => b.arch) ? ', and ' : ''}${done.some((b) => b.arch) ? 'Archive books, which aren’t read' : ''}</p>` : ''}${done.map((b) => sdrRowHtml(b, can)).join('')}` : ''}`;
+      main = `${count}${head}${sdr.err ? `<p class="bnp-sdr-note is-err" role="alert">${esc(sdr.err)}</p>` : ''}${rows ? `<div class="bnp-sdr-list">${rows}</div>` : ''}`;
+      if (can && !on && todo.length) main += '<p class="bnp-sdr-note">Tick the books to read.</p>';
+    }
+    body.innerHTML = `<div class="bnp-sdr-pets" role="radiogroup" aria-label="Which pet">${chips}</div>${src}<div class="bnp-sdr-main">${main}</div>`;
+    const l = body.querySelector('.bnp-sdr-list');
+    if (l) { l.scrollTop = y; const now = l.querySelector('[data-sdrnow]'); if (now) { const r = now.getBoundingClientRect(), lr = l.getBoundingClientRect(); if (r.top < lr.top || r.bottom > lr.bottom) l.scrollTop += r.top - lr.top - lr.height / 3; } }
+    sdrPaintFoot();
+  }
+  function sdrPaintFoot() {
+    const foot = sdr.win.querySelector('[data-sdr-foot]'), run = sdr.run, busy = !!(run && !run.over), on = sdr.books.filter((b) => b.on).length, pin = sdrPinAsked();
+    const had = foot.querySelector('[data-sdrpin]'), pv = had ? had.value : '';
+    if (had) sdr.pin = pv;
+    let h = '';
+    if (busy) h = `<span class="bnp-sdr-fnote">One at a time, a moment between${bmP().bg ? '' : ': it carries on while this tab is in front'}.</span><button type="button" class="button-default__2020 button-red__2020 bnp-sdr-btn" data-sdr="stop"${run.stop ? ' disabled' : ''}>${run.stop ? 'Stopping…' : 'Stop'}</button>`;
+    else if (sdr.state === 'done') h = `<span class="bnp-sdr-fnote"></span>${sdr.books.some((b) => b.st === 'wait' || b.st === 'no') ? '<button type="button" class="bnp-sdr-lb" data-sdr="again">Look again</button>' : ''}<button type="button" class="button-default__2020 button-yellow__2020 bnp-sdr-btn" data-sdr="done">Done</button>`;
+    else {
+      const ready = sdr.state === 'ready' && on > 0;
+      h = `<label class="bnp-sdr-bgchk" title="Off: it waits while you’re in another tab, and carries on when you’re back (Buy Mode goes by this too)"><input type="checkbox" data-sdrbg${bmP().bg ? ' checked' : ''}> Keep going in a background tab</label>${pin ? `<label class="bnp-sdr-pin"><span>Your PIN</span><input type="password" inputmode="numeric" autocomplete="off" maxlength="8" data-sdrpin aria-label="Your SDB PIN"></label>` : '<span class="bnp-sdr-fnote">Each book is read as the SDB’s own Read to reads it, one at a time.</span>'}<button type="button" class="bnp-sdr-lb" data-sdr="x">Cancel</button><button type="button" class="button-default__2020 button-green__2020 bnp-sdr-btn" data-sdr="go"${ready ? '' : ' disabled'}>${ready ? `Read ${on.toLocaleString()} to ${esc(sdr.pet)}` : 'Read to a pet'}</button>`;
+    }
+    foot.innerHTML = h;
+    const np = foot.querySelector('[data-sdrpin]');
+    if (np) { np.value = pv || sdr.pin || ''; np.addEventListener('input', () => { sdr.pin = np.value; if (sdr.err) { sdr.err = ''; const n = sdr.win.querySelector('.bnp-sdr-main .is-err'); if (n) n.remove(); } }); }
+  }
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Buy Mode (the user, 2 November 2026: "Buy Mode for buyable books/gourmets/stamps you dont have yet, travel to shops and buy as
+  // normally as possible", "ability to select settings with which ones you want to buy and start/pause/stop", "SSW or SW which one you
+  // want to use", and "needs to work with shop wizard bans with saying if user is shop wizard banned for the current hour, and settings if
+  // it should continue after bans (0-5 minutes after like we have it other areas)"; they chose a most for one item plus a budget for the
+  // run, and a list they tick). Books, Booktastic books and gourmet foods the pet on the page hasn't had (itemdb's list less its own), or
+  // the stamps your album's read pages still need; ticked, then bought one of each, one at a time as you would: the wizard asked as its
+  // own Search asks (the Shop Wizard twice, for a fairer cheapest), the cheapest shop at or under your most opened from its result, its
+  // own Buy pressed. Never over your most for one item or what's left of your budget; itemdb's prices only shown, as a guide. Told to come
+  // back later: said, with when it lets you search again (the top of the hour), not asked again till then, and carried on a moment in
+  // that hour's first five minutes if you want it to
+  // ═══════════════════════════════════════════════════════════════════════════
+  const BM_KEY = 'bnp-bm', BM_BAN = 'bnp-bm-ban';   // (how you like it, on this browser; a wizard's break, till when)
+  let bm = null;
+  const bmNumOk = (v, d) => { const n = Math.round(Number(v)); return n > 0 ? n : d; };
+  const bmP = () => { const v = saJson(BM_KEY, {}); return { src: v.src === 'ssw' && itPremium() ? 'ssw' : 'sw', max: bmNumOk(v.max, 10000), budget: bmNumOk(v.budget, 100000), wait: v.wait !== false, read: v.read !== false, times: [1, 2, 3].includes(Number(v.times)) ? Number(v.times) : 1, bg: v.bg !== false, full: ['use', 'sdb', 'stop'].includes(v.full) ? v.full : 'use' }; };
+  const bmPSet = (k, v) => { try { localStorage.setItem(BM_KEY, JSON.stringify({ ...saJson(BM_KEY, {}), [k]: v })); } catch (_) { /* */ } };
+  const bmNp = (v) => `${Math.round(Number(v) || 0).toLocaleString()} NP`;
+  function bmParse(s) {   // ("10,000", "10k", "1.5m": Neopoints; 0 when it isn't a number)
+    const m = /^\s*([\d,.]+)\s*([km])?\s*(?:np)?\s*$/i.exec(String(s || ''));
+    if (!m) return 0;
+    const n = Number(m[1].replace(/,/g, '')) * (m[2] ? (m[2].toLowerCase() === 'k' ? 1e3 : 1e6) : 1);
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
+  }
+  const bmBanned = (src) => { const t = Number(saJson(BM_BAN, {})[src]) || 0; return t > Date.now() ? t : 0; };   // (when the wizard lets you search again, while that's still ahead)
+  const bmBanSet = (src, until) => { try { localStorage.setItem(BM_BAN, JSON.stringify({ ...saJson(BM_BAN, {}), [src]: until })); } catch (_) { /* */ } };
+  const bmTop = () => Math.ceil((Date.now() + 1000) / 3600000) * 3600000;
+  const bmWiz = (src) => (src === 'ssw' ? 'Super Shop Wizard' : 'Shop Wizard');
+  const bmAt = (ms) => { const n = nstOf(ms); return `${n.h % 12 || 12}:${String(n.mi).padStart(2, '0')} ${n.h < 12 ? 'am' : 'pm'} NST`; };   // (a time with its minutes, always: 3:00 pm, 3:02 pm)   // (the next top of the hour: the wizards' breaks end then; Neopian time's hours start with UTC's)
+  function bmWhat(kind, pet) {
+    if (kind === 'stamps') return { title: 'Stamps your album still needs', none: 'Your album’s read pages have every stamp' };
+    const k = COL_KINDS[kind];
+    return { title: `${k.label === 'Books' ? 'Books' : k.what.charAt(0).toUpperCase() + k.what.slice(1)} ${pet} hasn’t ${k.did}`, none: `${pet} has ${k.did} every one NE knows of` };
+  }
+  function bmList(kind) {   // (the rows: what's still needed, NP items only, as { name, img, guide (itemdb's price), retired, where })
+    if (kind === 'stamps') {
+      const out = [], seen = new Set();
+      let unread = 0;
+      for (let p = 1; p <= saPagesN(); p++) {
+        const st = saState(p);
+        if (!st.exists) continue;
+        if (!st.have) { unread++; continue; }
+        st.slots.forEach((x, i) => {
+          if (!x || st.have.has(i) || seen.has(x[1].toLowerCase())) return;
+          seen.add(x[1].toLowerCase());
+          const pr = saPrice(x[1]);
+          out.push({ name: x[1], img: saItemPic(x[0]), guide: pr && pr.p > 0 ? pr.p : 0, retired: false, where: saPageName(p) });
+        });
+      }
+      return { rows: out, unread };
+    }
+    if (!col || col.kind !== kind || !col.cat || !Array.isArray(col.cat.items)) return null;
+    return { rows: col.cat.items.filter((it) => !it[6] && !col.had.has(colImgKey(it[0])) && !((kind === 'books' || kind === 'bt') && archIs(it[1]))).map((it) => ({ name: it[1], img: `${NPI}items/${it[0]}`, file: it[0], guide: it[3] > 0 ? it[3] : 0, retired: !!it[7], where: '' })), unread: 0, partial: !!col.cat.partial };
+  }
+  function bmOpen(kind) {
+    styles();
+    if (!bm) {
+      const veil = document.createElement('div'), win = document.createElement('div');
+      veil.className = 'bnp-veil';
+      veil.setAttribute('data-bnp', 'bmveil');
+      win.className = 'bnp-go bnp-bm';
+      win.setAttribute('data-bnp', 'bmwin');
+      win.setAttribute('role', 'dialog');
+      win.setAttribute('aria-modal', 'true');
+      win.setAttribute('aria-label', 'Buy Mode');
+      win.innerHTML = '<div class="popup-header__2020 bnp-hub-head"><h3>Buy Mode</h3><button type="button" class="popup-exit button-default__2020 button-red__2020" data-bm="x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button><div class="popup-header-pattern__2020"></div></div><div class="bnp-bm-body" data-bm-body></div><div class="bnp-sdr-foot" data-bm-foot></div>';
+      document.body.append(veil, win);
+      veil.addEventListener('click', () => bmClose());
+      win.addEventListener('click', bmClick);
+      win.addEventListener('change', bmChange);
+      win.addEventListener('input', (e) => { const t = e.target; if (t instanceof HTMLInputElement && t.matches('[data-bmfind]')) { bm.q = t.value; bmFilter(); } });
+      win.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.matches('[data-bmupto]')) { e.preventDefault(); bmUpTo(); } });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && bm && bm.win.classList.contains('open') && !(e.target instanceof HTMLInputElement && e.target.matches('[data-bmfind]') && e.target.value)) { e.preventDefault(); bmClose(); } });
+      bm = { win, veil, kind: '', pet: '', rows: [], run: null, q: '', note: '' };
+    }
+    if (!(bm.run && !bm.run.over)) {   // (a run under way: the window as it is)
+      const L = bmList(kind);
+      Object.assign(bm, { kind, pet: kind === 'stamps' ? '' : (col && col.pet) || '', q: '', note: '', run: null, unread: L ? L.unread : 0, partial: !!(L && L.partial), missing: !L });
+      bm.rows = (L ? L.rows : []).map((r, i) => ({ ...r, i, on: false, st: '', why: '', paid: 0 })).sort((a, b) => ((a.guide || Infinity) - (b.guide || Infinity)) || a.name.localeCompare(b.name));
+      bm.rows.forEach((r, i) => { r.i = i; });
+    }
+    themeWin(bm.win);
+    bm.veil.classList.add('open');
+    bm.win.classList.add('open');
+    bmPaint();
+    const x = bm.win.querySelector('[data-bm="x"]');
+    if (x) x.focus({ preventScroll: true });
+  }
+  function bmClose() {
+    if (!bm || !bm.win.classList.contains('open')) return;
+    if (bm.run && !bm.run.over) { bm.run.stop = true; bm.run.pause = false; }   // (closed while buying: it stops after what it's doing)
+    bm.win.classList.remove('open');
+    bm.veil.classList.remove('open');
+  }
+  const bmMark = { got: ['read', '✓', 'Bought'], over: ['ask', '!', 'Over your limit'], none: ['kept', '–', 'Not in a shop'], no: ['no', '!', 'Not bought'], now: ['now', '', 'Buying'] };
+  function bmRowHtml(r, busy) {
+    const m = bmMark[r.st], small = r.st === 'got' && (r.paid || r.mine) ? `<small>${r.mine ? 'In your inventory already' : `Bought for ${esc(bmNp(r.paid))}`}${r.read && bmUse() ? ` · ${esc(bmUse().done(bm.pet))}` : r.sdb ? ' · put in your SDB' : r.readWhy ? ` · <span class="bnp-sdr-why">${esc(r.readWhy)}</span>` : ''}</small>`
+      : r.why ? `<small class="${r.st === 'no' ? 'bnp-sdr-why' : ''}">${esc(r.why)}</small>`
+      : `<small>${r.guide ? `itemdb ≈ ${esc(bmNp(r.guide))}` : 'No itemdb price'}${r.retired ? ' · retired' : ''}${r.where ? ` · ${esc(r.where)}` : ''}</small>`;
+    return `<label class="bnp-sdr-row${r.on ? '' : ' is-off'}${m ? ` is-${m[0]}` : ''}" data-bmr="${r.i}"><input type="checkbox" data-bmrow="${r.i}"${r.on ? ' checked' : ''}${busy || r.st === 'got' ? ' disabled' : ''}><span class="bnp-sdr-bk"><img src="${esc(r.img)}" alt="" width="40" height="40" loading="lazy"></span><span class="bnp-sdr-nm"><b>${esc(r.name)}</b>${small}</span>${m ? `<i class="bnp-sdr-st is-${m[0]}" title="${esc(m[2])}">${m[1]}</i>` : ''}</label>`;
+  }
+  function bmPaint() {
+    if (!bm || !bm.win.classList.contains('open')) return;
+    const body = bm.win.querySelector('[data-bm-body]'), y = (body.querySelector('.bnp-sdr-list') || { scrollTop: 0 }).scrollTop, P = bmP(), run = bm.run, busy = !!(run && !run.over), what = bmWhat(bm.kind, bm.pet), wiz = bmWiz(P.src), ban = bmBanned(P.src);
+    const seg = (v, l, dis, tip) => `<button type="button" data-bmsrc="${v}" aria-pressed="${P.src === v}"${dis ? ' disabled' : ''}${tip ? ` title="${esc(tip)}"` : ''}>${l}</button>`;
+    const set = `<div class="bnp-bm-set">
+        <div class="bnp-bm-f"><span>Search with</span><span class="bnp-sdr-src" role="group" aria-label="Search with">${seg('sw', 'Shop Wizard', busy)}${seg('ssw', 'Super Shop Wizard', busy || !itPremium(), itPremium() ? '' : 'The Super Shop Wizard comes with Premium')}</span></div>
+        ${P.src === 'sw' ? `<div class="bnp-bm-f"><span>Searches for each</span><span class="bnp-sdr-src" role="group" aria-label="Shop Wizard searches for each item" title="The Shop Wizard shows a few shops each search: more searches can find a cheaper one, but take longer and use up your searches faster (it asks for a break after too many)">${[1, 2, 3].map((n) => `<button type="button" data-bmtimes="${n}" aria-pressed="${P.times === n}"${busy ? ' disabled' : ''}>${n}</button>`).join('')}</span></div>` : ''}
+        <label class="bnp-bm-f"><span>Most for one item</span><span class="bnp-bm-np"><input type="text" inputmode="numeric" autocomplete="off" data-bmnum="max" value="${P.max.toLocaleString()}"${busy ? ' disabled' : ''}>NP</span></label>
+        <label class="bnp-bm-f"><span>Budget for this run</span><span class="bnp-bm-np"><input type="text" inputmode="numeric" autocomplete="off" data-bmnum="budget" value="${P.budget.toLocaleString()}"${busy ? ' disabled' : ''}>NP</span></label>
+        ${bmReads() ? `<label class="bnp-bm-chk"><input type="checkbox" data-bmread${P.read ? ' checked' : ''}${busy ? ' disabled' : ''}><span>${esc(bmUse().sw(bm.pet))}<small>From your inventory, as its own pop-up does: when your inventory is full (it holds 50), while a wizard’s break is waited out, and at the end.${esc(bmUse().note || '')}</small></span></label>` : ''}
+        <div class="bnp-bm-f bnp-bm-full"><span>When your inventory’s full (it holds 50)</span><span class="bnp-sdr-src" role="group" aria-label="When your inventory’s full">${[...(bmUse() ? [['use', bmUse().full]] : []), ['sdb', 'Put them in your SDB'], ['stop', 'Stop']].map(([v, l]) => `<button type="button" data-bmfull="${v}" aria-pressed="${(P.full === 'use' && !bmUse() ? 'sdb' : P.full) === v}"${busy ? ' disabled' : ''}>${esc(l)}</button>`).join('')}</span></div>
+        <label class="bnp-bm-chk"><input type="checkbox" data-bmbg${P.bg ? ' checked' : ''}><span>Keep going when this tab’s in the background<small>Off: it waits while you’re in another tab, and carries on when you’re back.</small></span></label>
+        <label class="bnp-bm-chk"><input type="checkbox" data-bmwait${P.wait ? ' checked' : ''}><span>If the ${esc(wiz)} asks for a break, carry on after the top of the hour<small>A moment in its first five minutes, when it lets you search again. Off: Buy Mode pauses till you press Resume.</small></span></label>
+      </div>`;
+    const banP = ban ? `<p class="bnp-bm-ban" role="status"><b>The ${esc(wiz)} has asked for a break this hour.</b> It lets you search again at ${esc(bmAt(ban))}. ${busy && run.waitUntil ? `Buy Mode carries on at about ${esc(bmAt(run.waitUntil))}.` : busy && run.pause ? 'Press Resume once it’s past.' : P.wait ? 'Start any time: Buy Mode waits till then, then carries on.' : 'Buy Mode doesn’t search till then.'}</p>` : '';
+    const notes = `${bm.unread ? `<p class="bnp-sdr-note">${bm.unread.toLocaleString()} album ${bm.unread === 1 ? 'page hasn’t' : 'pages haven’t'} been read yet: their stamps aren’t listed. Read them on your album’s front page.</p>` : ''}${bm.partial ? '<p class="bnp-sdr-note">Only part of itemdb’s list is in so far: the rest comes on this page by itself.</p>' : ''}`;
+    let main = '';
+    if (bm.missing) main = '<p class="bnp-sdr-note is-err">NE doesn’t have the list for this page yet. Once it’s in, open Buy Mode again.</p>';
+    else if (!bm.rows.length) main = `<div class="bnp-sdr-sum is-done"><b>${esc(what.none)}</b></div>`;
+    else main = `${bmSumHtml()}<div class="bnp-sdr-list">${bm.rows.map((r) => bmRowHtml(r, busy)).join('')}</div>`;
+    body.innerHTML = `<p class="bnp-bm-what"><b>${esc(what.title)}</b><span>From users’ shops, one of each: the cheapest shop at or under your most, through the ${esc(wiz)}. itemdb’s prices are only a guide.</span></p>${set}${banP}${notes}${bm.note ? `<p class="bnp-sdr-note is-err" role="alert">${esc(bm.note)}</p>` : ''}${main}`;
+    const l = body.querySelector('.bnp-sdr-list');
+    if (l) l.scrollTop = y;
+    bmFilter();
+    bmFootPaint();
+  }
+  function bmSumHtml() {
+    const run = bm.run, busy = !!(run && !run.over), on = bm.rows.filter((r) => r.on), guide = on.reduce((s, r) => s + r.guide, 0);
+    if (run) {
+      const got = bm.rows.filter((r) => r.st === 'got' && !r.mine), mine = bm.rows.filter((r) => r.mine).length, why = run.why;
+      if (!run.over && run.looking) return '<div class="bnp-sdr-sum" data-bmsum><b>Looking at what you have</b><span>Your inventory and your SDB, so nothing’s bought twice</span></div>';
+      const u = run.use, U = u && u.sdb ? BM_SDB : bmUse();
+      if (!run.over && u && U) { const more = run.n - run.i; return `<div class="bnp-sdr-sum" data-bmsum><b>${U.doing} ${Math.min(u.i + 1, u.n).toLocaleString()} of ${u.n.toLocaleString()}${esc(U.to(bm.pet))}</b><span>${esc(u.name || '')}</span><span>${run.useOnly ? 'From your inventory, one at a time' : more > 0 ? `Then back to buying: ${more.toLocaleString()} of ${run.n.toLocaleString()} left` : 'Then it’s done'} · spent ${esc(bmNp(run.spent))}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * u.i / Math.max(1, u.n)))}%"></i></div></div>`; }   // (its own progress while it's at it)
+      if (!run.over) return `<div class="bnp-sdr-sum" data-bmsum><b>${run.waitUntil ? 'Waiting out the wizard’s break' : run.pause ? 'Paused' : `Buying ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()}`}</b><span>${run.at && !run.reading ? esc(run.at.name) : ''}</span><span>Spent ${esc(bmNp(run.spent))} of your ${esc(bmNp(run.budget))}${Number.isFinite(run.room) ? ` · inventory ${Math.max(0, 50 - run.room)} of 50` : ''}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
+      const unread = bmUnread();
+      return `<div class="bnp-sdr-sum is-done" data-bmsum><b>${got.length ? `Bought ${got.length.toLocaleString()} for ${esc(bmNp(run.spent))}` : 'Nothing bought'}${run.read && bmUse() ? ` · ${run.read.toLocaleString()} ${esc(bmUse().done(bm.pet))}` : ''}${run.sdb ? ` · ${run.sdb.toLocaleString()} put in your SDB` : ''}${mine ? ` · ${mine.toLocaleString()} you had already` : ''}</b>${unread.length ? `<span class="bnp-sdr-tick"><button type="button" class="bnp-sdr-lb" data-bm="readnow">${esc(bmUse().now(unread.length === 1 ? 'one' : unread.length.toLocaleString(), bm.pet))}</button></span>` : ''}${why ? `<span>${esc(why === 'budget' ? 'Your budget for this run is used up.' : why === 'ban' ? `Stopped while the ${bmWiz(run.src)} was on its break.` : why)}</span>` : run.stop ? '<span>Stopped.</span>' : ''}<span>${(() => { const left = got.filter((r) => !r.read && !r.sdb).length; return left ? (left === got.length ? 'They’re in your inventory. ' : `${left.toLocaleString()} still in your inventory. `) : ''; })()}Tick more and Start again any time.</span></div>`;
+    }
+    return `<div class="bnp-sdr-sum" data-bmsum><b>${bm.rows.length.toLocaleString()} listed</b><span>${on.length.toLocaleString()} ticked${guide ? ` · itemdb’s guide ≈ ${esc(bmNp(guide))}` : ''}</span><span class="bnp-sdr-tick"><input type="search" class="bnp-bm-find" data-bmfind placeholder="Find…" aria-label="Find one by name" value="${esc(bm.q)}"${busy ? ' disabled' : ''}><button type="button" class="bnp-sdr-lb" data-bm="all">All</button><button type="button" class="bnp-sdr-lb" data-bm="none">None</button><span class="bnp-upto" title="Ticks the ones itemdb prices at or under this, and unticks the rest (of those in sight). Only a guide: Buy Mode goes by the shops’ prices, never over your most"><label><span>Up to</span><input type="text" inputmode="numeric" autocomplete="off" data-bmupto value="${esc((bmNumOk(saJson(BM_KEY, {}).upto, 0) || bmP().max).toLocaleString())}"${busy ? ' disabled' : ''} aria-label="Tick the ones up to this many Neopoints">NP</label><button type="button" class="bnp-sdr-lb" data-bm="upto"${busy ? ' disabled' : ''}>Tick</button></span></span></div>`;
+  }
+  function bmSumPaint() {
+    const s = bm.win.querySelector('[data-bmsum]');
+    if (s) { const f = s.querySelector('[data-bmfind]'), had = f && document.activeElement === f; s.outerHTML = bmSumHtml(); if (had) { const n = bm.win.querySelector('[data-bmfind]'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } } }
+    bmFootPaint();
+  }
+  function bmRowPaint(r) { const el = bm.win.querySelector(`[data-bmr="${r.i}"]`); if (el) el.outerHTML = bmRowHtml(r, !!(bm.run && !bm.run.over)); bmFilter(); }
+  function bmFilter() {   // (Find: only the rows whose name has it)
+    const q = String(bm.q || '').trim().toLowerCase();
+    for (const el of bm.win.querySelectorAll('[data-bmr]')) { const r = bm.rows[Number(el.dataset.bmr)]; el.hidden = !!q && !!r && !r.name.toLowerCase().includes(q); }
+  }
+  function bmFootPaint() {
+    const foot = bm.win.querySelector('[data-bm-foot]'), run = bm.run, busy = !!(run && !run.over), on = bm.rows.filter((r) => r.on && r.st !== 'got').length;
+    let h = '';
+    if (busy) h = `<span class="bnp-sdr-fnote">${run.waitUntil ? `Carrying on at about ${esc(bmAt(run.waitUntil))}.` : run.pause ? 'Paused: Resume carries on from here.' : `One at a time, a moment between${run.bg ? '' : ': it carries on while this tab is in front'}.`}</span>${run.waitUntil ? '' : `<button type="button" class="bnp-sdr-lb" data-bm="${run.pause ? 'resume' : 'pause'}">${run.pause ? 'Resume' : 'Pause'}</button>`}<button type="button" class="button-default__2020 button-red__2020 bnp-sdr-btn" data-bm="stop"${run.stop ? ' disabled' : ''}>${run.stop ? 'Stopping…' : 'Stop'}</button>`;
+    else h = `<span class="bnp-sdr-fnote">${run && run.over ? '' : 'Never over your most for one item, or your budget.'}</span><button type="button" class="bnp-sdr-lb" data-bm="x">${run && run.over ? 'Done' : 'Cancel'}</button><button type="button" class="button-default__2020 button-green__2020 bnp-sdr-btn" data-bm="start"${on ? '' : ' disabled'}>${on ? `Start: buy ${on.toLocaleString()}` : 'Tick what to buy'}</button>`;
+    foot.innerHTML = h;
+  }
+  function bmClick(e) {
+    const el = e.target instanceof Element ? e.target : null;
+    if (!el || !bm) return;
+    const sv = el.closest('[data-bmsrc]');
+    if (sv) { if (!sv.disabled) { bmPSet('src', sv.dataset.bmsrc); bmPaint(); } return; }
+    const fv = el.closest('[data-bmfull]');
+    if (fv) { if (!fv.disabled) { bmPSet('full', fv.dataset.bmfull); bmPaint(); } return; }
+    const tv = el.closest('[data-bmtimes]');
+    if (tv) { if (!tv.disabled) { bmPSet('times', Number(tv.dataset.bmtimes)); bmPaint(); } return; }
+    const t = el.closest('[data-bm]');
+    if (!t) return;
+    const a = t.dataset.bm, run = bm.run, vis = (r) => { const q = String(bm.q || '').trim().toLowerCase(); return !q || r.name.toLowerCase().includes(q); };
+    if (a === 'x') bmClose();
+    else if (a === 'start') bmRun().catch((e2) => { report(e2); if (bm && bm.run) { bm.run.over = true; bm.run.why = 'Something went wrong: what’s bought stays bought.'; bmPaint(); } });
+    else if (a === 'stop') { if (run) { run.stop = true; run.pause = false; bmFootPaint(); } }
+    else if (a === 'readnow') bmReadNow().catch(report);
+    else if (a === 'pause' || a === 'resume') { if (run && !run.over) { run.pause = a === 'pause'; if (!run.pause && run.why === 'ban') run.why = ''; bmSumPaint(); } }
+    else if (a === 'all' || a === 'none') { for (const r of bm.rows) if (vis(r) && r.st !== 'got') r.on = a === 'all'; bmPaint(); }
+    else if (a === 'upto') bmUpTo();
+  }
+  function bmUpTo() {   // (the ones itemdb prices at or under the price written ticked, the rest not: those in sight)
+    const i = bm.win.querySelector('[data-bmupto]'), v = i ? bmParse(i.value) : 0, q = String(bm.q || '').trim().toLowerCase();
+    if (!v) { bm.note = 'Write a number of Neopoints: 5000, 5,000 or 5k.'; bmPaint(); return; }
+    bmPSet('upto', v);
+    bm.note = '';
+    for (const r of bm.rows) if ((!q || r.name.toLowerCase().includes(q)) && r.st !== 'got') r.on = r.guide > 0 && r.guide <= v;
+    bmPaint();
+    const n = bm.win.querySelector('[data-bmupto]');
+    if (n) n.focus();
+  }
+  function bmChange(e) {
+    const t = e.target;
+    if (!(t instanceof HTMLInputElement) || !bm) return;
+    if (t.dataset.bmrow != null) { const r = bm.rows[Number(t.dataset.bmrow)]; if (r) { r.on = t.checked; const row = t.closest('.bnp-sdr-row'); if (row) row.classList.toggle('is-off', !t.checked); bmSumPaint(); } return; }
+    if (t.matches('[data-bmupto]')) return;
+    if (t.dataset.bmnum) { const v = bmParse(t.value); if (v) { bmPSet(t.dataset.bmnum, v); bm.note = ''; } else bm.note = 'Write a number of Neopoints: 10000, 10,000 or 10k.'; bmPaint(); return; }
+    if (t.matches('[data-bmwait]')) { bmPSet('wait', t.checked); bmPaint(); return; }
+    if (t.matches('[data-bmbg]')) { bmPSet('bg', t.checked); if (bm.run && !bm.run.over) bm.run.bg = t.checked; bmPaint(); return; }   // (a run under way goes by it from now)
+    if (t.matches('[data-bmread]')) { bmPSet('read', t.checked); bmPaint(); }
+  }
+  async function bmGate(run) {   // (on, unless paused or stopped: only while this tab is in front)
+    while (!run.stop && (run.pause || (document.hidden && !run.bg))) await bmSleep(400);   // (in a background tab only if you've turned that off)
+    return !run.stop;
+  }
+  let bmWorker = null, bmWorkerN = 0;
+  const bmWaits = new Map();
+  function bmSleep(ms) {   // (a wait that keeps time in a background tab too: browsers slow a hidden page's own timers to about once a minute after a few minutes, never a worker's. No worker here: the page's own timers)
+    if (bmWorker === null) {
+      try {
+        bmWorker = new Worker(URL.createObjectURL(new Blob(['onmessage=function(e){setTimeout(function(){postMessage(e.data.id)},e.data.ms)}'], { type: 'text/javascript' })));
+        bmWorker.onmessage = (e) => { const f = bmWaits.get(e.data); if (f) { bmWaits.delete(e.data); f(); } };
+        bmWorker.onerror = () => { bmWorker = false; for (const f of bmWaits.values()) f(); bmWaits.clear(); };   // (refused after all: what's waiting goes on, the rest by the page's own timers)
+      } catch (_) { bmWorker = false; }
+    }
+    if (!bmWorker) return wtSleep(ms);
+    return new Promise((ok) => { const id = ++bmWorkerN; bmWaits.set(id, ok); bmWorker.postMessage({ id, ms: Math.max(0, Math.round(ms)) }); });
+  }
+  const BM_PACE = { next: [1500, 2000, 0.12, 2000, 4000], again: [1200, 1400], look: [800, 1200], buy: [600, 1000], read: [1000, 1500, 0.1, 1500, 2500] };   // (each moment, in ms: [least, spread, chance of a longer one, its least, its spread]. next: on to the next item; again: the wizard asked again; look: the shop picked from the results; buy: its page looked at before Buy; read: on to the next book in your inventory)
+  async function bmStep(run, how = 'next') {   // (a quick person's moment between things, uneven, now and then longer; while paused or in the background it waits)
+    const [a, b, c = 0, d = 0, e = 0] = BM_PACE[how] || BM_PACE.next;
+    const until = Date.now() + a + Math.random() * b + (Math.random() < c ? d + Math.random() * e : 0);
+    while (Date.now() < until && !run.stop) await bmSleep(Math.max(20, Math.min(500, until - Date.now())));
+    return bmGate(run);
+  }
+  async function bmWaitOut(run, top) {   // (the wizard lets you search again at the top of the hour: a moment in its first five minutes, never always :00:00)
+    run.waitUntil = top + 5000 + Math.random() * (5 * 60000 - 5000);
+    bmPaint();
+    while (Date.now() < run.waitUntil && !run.stop) await bmSleep(Math.max(50, Math.min(1000, run.waitUntil - Date.now())));
+    run.waitUntil = 0;
+    bmPaint();
+    return bmGate(run);
+  }
+  async function bmBuyOne(run, r) {   // (one of an item: { got, price } | { over, by } | { none } | { gone } | { cant } | { err } | { busy } | { halt } | { stopped })
+    const name = r.name, src = run.src, all = [];
+    if (bmBanned(src)) return { busy: true };   // (its break still on: not asked again till it's over)
+    for (let k = 0; k < (src === 'ssw' ? 1 : run.times || 1); k++) {   // (the Shop Wizard shows a few shops a search: as many searches as you chose, for a fairer cheapest)
+      if (k && !(await bmStep(run, 'again'))) return { stopped: true };
+      try { all.push(...await shopPmAsk(name, src)); } catch (e) {
+        if (e && e.busy) { if (all.length) break; return { busy: true, says: String(e.message || '') }; }
+        if (e && e.cant) return { cant: e.cant };
+        if (!all.length) return { err: String((e && e.message) || e).slice(0, 160) };
+        break;
+      }
+    }
+    const best = new Map();
+    for (const o of all) if (o.href && (!best.has(o.owner) || o.price < best.get(o.owner).price)) best.set(o.owner, o);
+    const offers = [...best.values()].sort((a, b) => a.price - b.price), left = run.budget - run.spent, cap = Math.min(run.max, left);
+    if (!offers.length) return { none: true };
+    if (offers[0].price > cap) return { over: offers[0].price, by: left < run.max ? 'budget' : 'max' };
+    for (const o of offers.slice(0, 4)) {
+      if (o.price > cap) break;
+      let u;
+      try { u = new URL(o.href, 'https://www.neopets.com'); } catch (_) { continue; }
+      if (u.pathname !== '/browseshop.phtml') continue;
+      if (!(await bmStep(run, 'look'))) return { stopped: true };
+      const shop = u.pathname + u.search, oii = u.searchParams.get('buy_obj_info_id') || '';
+      if (src === 'sw') { try { await wwwGo('/shops/wizard.phtml', shop); } catch (e) { report(e); const t = wwwFrames.get(shop); if (t) t.down = 0; } }   // (a Shop Wizard result's shop: opened from the Wizard's page, as its link is clicked there)
+      let doc = null;
+      try { doc = new DOMParser().parseFromString(await fromPageHtml(shop), 'text/html'); } catch (_) { wwwShut(shop); continue; }
+      const btn = [...doc.querySelectorAll('.bsp-item__buy[data-buy-url]')].find((b) => reClean(b.getAttribute('data-name')).toLowerCase() === name.toLowerCase() && (!oii || ((b.closest('[data-oii]') || { getAttribute: () => oii }).getAttribute('data-oii') === oii)));
+      const price = btn ? shopNum(btn.getAttribute('data-price')) : 0, npa = doc.getElementById('npanchor'), np = npa ? shopNum(npa.textContent) : Infinity, held = bmInvHere(doc);
+      if (held != null) { run.room = 50 - held; if (run.room <= 0) { wwwShut(shop); return { full: true }; } }   // (your inventory as the shop's own header counts it now: full, nothing's bought)
+      if (!btn || !price || price > cap) { wwwShut(shop); continue; }   // (sold meanwhile, or dearer now: the next shop)
+      if (np < price) { wwwShut(shop); return { halt: `Not enough Neopoints on hand for ${name} (${bmNp(price)})` }; }
+      if (!(await bmStep(run, 'buy'))) { wwwShut(shop); return { stopped: true }; }   // (a moment on its page before Buy, as you'd look)
+      const url = btn.getAttribute('data-buy-url');
+      let j = null, status = 0;
+      try { const res = await fromPage(shop, `${url}${url.includes('?') ? '&' : '?'}ajax=1`, { method: 'GET', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }); status = res.status; j = await res.json().catch(() => null); } catch (_) { j = null; }
+      wwwShut(shop);
+      if (j && j.success) return { got: true, price };
+      const why = reClean((j && j.message) || `Neopets said no (${status})`);
+      if (/maximum of \d+ items|carry/i.test(why)) return { halt: 'Your inventory is full (50 items): make room, then Start again for the rest' };
+      if (/neopoints|afford/i.test(why)) return { halt: `Not enough Neopoints on hand for ${name}` };
+    }
+    return { gone: true };
+  }
+  const bmInvHere = (doc = document) => { const el = doc.getElementById('invanchor'), t = el ? String(el.textContent || '').trim() : ''; return /\d/.test(t) ? Number(t.replace(/\D/g, '')) : null; };   // (how many items you have, as Neopets' own header says beside your NP; null where there's none)
+  const BM_READ = { pick: (o, pet) => o.v.toLowerCase() === `read to ${pet}`.toLowerCase(), doing: 'Reading', to: (pet) => ` to ${pet}`, done: (pet) => `read to ${pet}`, offer: (pet) => `Read to ${pet}`, sw: (pet) => `Read them to ${pet} as they’re bought`, now: (n, pet) => `Read the ${n} bought to ${pet}`, full: 'Read them' };
+  const BM_USE = {   // (what's done with each kind once it's bought, from your inventory: its pop-up's choice for it, and its words)
+    books: BM_READ,
+    bt: BM_READ,
+    food: { pick: (o, pet) => o.v.toLowerCase() === `feed to ${pet}`.toLowerCase(), doing: 'Feeding', to: (pet) => ` to ${pet}`, done: (pet) => `fed to ${pet}`, offer: (pet) => `Feed to ${pet}`, sw: (pet) => `Feed them to ${pet} as they’re bought`, now: (n, pet) => `Feed the ${n} bought to ${pet}`, full: 'Feed them', note: ' A pet that’s full won’t eat more: the rest stay in your inventory.' },
+    stamps: { pick: (o) => /album/i.test(`${o.v} ${o.l}`) && !/tcg|trading card/i.test(`${o.v} ${o.l}`), doing: 'Putting', to: () => ' in your album', done: () => 'put in your album', offer: () => 'Put in your album', sw: () => 'Put them in your album as they’re bought', now: (n) => `Put the ${n} bought in your album`, full: 'Put them in your album' },
+  };
+  const bmUse = () => (bm && (bm.kind === 'stamps' || bm.pet) && BM_USE[bm.kind]) || null;
+  const bmReads = () => !!bmUse();   // (the lists whose items are used as they're bought)
+  const bmUnread = () => (bmReads() ? bm.rows.filter((r) => r.st === 'got' && !r.read && !r.readWhy && !r.sdb) : []);
+  const bmInInv = () => bm.rows.filter((r) => r.st === 'got' && !r.read && !r.sdb);   // (what's bought, or was there already, and still in your inventory: for your SDB when it's full)
+  const BM_SDB_CAT = { books: '6', bt: '6', food: '18', stamps: '15' };   // (each kind's own category in your SDB: Books, Food, Album Item)
+  const BM_SDB = { pick: (o) => /deposit/i.test(o.v) || /safety deposit/i.test(o.l), doing: 'Putting', to: () => ' in your SDB', done: () => 'put in your SDB', offer: () => 'Put into your SDB' };   // (into your SDB from your inventory, as its own pop-up puts one there)
+  async function bmInv() {   // (your inventory's page, opened afresh unseen, as a refresh would (its list is up to date only after that): its NP items' cards once drawn, and how many items. null when it didn't come)
+    const page = '/inventory.phtml';
+    wwwShut(page);
+    await wwwOpen(page);
+    const k = wwwFrames.get(page), t0 = Date.now();
+    while (Date.now() - t0 < 15000) {
+      let d = null;
+      try { d = k && k.f && k.f.contentDocument; } catch (_) { d = null; }
+      if (d && d.querySelector('#invDisplay .inv-total-count, #invDisplay .item-img[data-objid]')) {
+        const cards = [...d.querySelectorAll('#invDisplay .item-img[data-objid]')].filter((i) => (i.getAttribute('data-itemset') || 'np') !== 'nc');   // (NC items aren't in the 50)
+        return { cards, n: cards.reduce((t, i) => t + Math.max(1, Number(i.getAttribute('data-itemquantity')) || 1), 0) };
+      }
+      await bmSleep(250);
+    }
+    return null;
+  }
+  async function bmOwned(run) {   // (what you have already, so it isn't bought again: your inventory's NP items (its page, afresh), and your SDB's of this kind, its page then its list as its own category asks)
+    const have = { inv: new Set(), sdb: new Set() };
+    try { const inv = await bmInv(); if (inv) { for (const c of inv.cards) have.inv.add(reClean(c.getAttribute('data-itemname') || '').toLowerCase()); run.room = 50 - inv.n; } } catch (e) { report(e); } finally { wwwShut('/inventory.phtml'); }
+    const page = '/safetydeposit.phtml', cat = BM_SDB_CAT[bm.kind];
+    if (!cat) return have;
+    try {
+      await bmStep(run, 'look');
+      const html = await fromPageHtml(page), ck = (/"refCk"\s*:\s*"([^"]*)"/.exec(html) || [])[1] || '';
+      for (let pg = 1, pages = 1; ck && pg <= pages && pg <= 20 && !run.stop; pg++) {
+        if (pg > 1) await bmStep(run, 'look');
+        const r = await fromPage(page, '/np-templates/ajax/safetydeposit/get-items.php', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'XMLHttpRequest' }, body: JSON.stringify({ page: pg, per_page: 150, search: '', category: cat, sort: 'name_asc', rarity_min: null, rarity_max: null, view_filter: 'np', _ref_ck: ck }) });
+        const d = await r.json().catch(() => null);
+        if (!d || !d.success || !d.data) break;
+        pages = Number(d.data.pagination && d.data.pagination.total_pages) || 1;
+        for (const it of Array.isArray(d.data.items) ? d.data.items : []) have.sdb.add(reClean(it.obj_name || '').toLowerCase());
+      }
+    } catch (e) { report(e); } finally { wwwShut(page); }
+    return have;
+  }
+  const bmReadPending = (run) => bmDoPending(run, 'use');
+  async function bmDoPending(run, mode) {   // (what's bought and waiting, from your inventory as its own pop-up does it: used (read, fed, put in your album), or put in your SDB (mode 'sdb'). The item opened, a moment, its choice. How many it did)
+    const pet = bm.pet, page = '/inventory.phtml', sdb = mode === 'sdb', list = sdb ? bmInInv() : bmUnread(), U = sdb ? BM_SDB : bmUse();
+    if (!list.length || !U || (!sdb && run.full)) return 0;
+    run.reading = list.length;
+    run.use = { n: list.length, i: 0, name: '', sdb };
+    bmSumPaint();
+    let read = 0;
+    try {
+      const inv = await bmInv();
+      if (!inv) { for (const r of list) { r.readWhy = 'your inventory didn’t open just now'; bmRowPaint(r); } return 0; }
+      const used = new Set();
+      for (const r of list) {
+        if (!(await bmStep(run, 'read'))) break;
+        run.use.name = r.name;
+        bmSumPaint();
+        const card = inv.cards.find((i) => !used.has(i.getAttribute('data-objid')) && reClean(i.getAttribute('data-itemname') || '').toLowerCase() === r.name.toLowerCase());
+        if (!card) { r.readWhy = 'it wasn’t in your inventory when NE looked'; run.use.i++; bmRowPaint(r); continue; }
+        const id = card.getAttribute('data-objid');
+        used.add(id);
+        r.st = 'now';
+        bmRowPaint(r);
+        let act = '';
+        try {   // (its pop-up, as pressing its picture opens it: Neopets' own list of what it can do)
+          const info = await fromPage(page, `/np-templates/views/iteminfo.phtml?obj_id=${encodeURIComponent(id)}`, { method: 'POST', credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: '*/*' } });
+          const o = [...new DOMParser().parseFromString(await info.text(), 'text/html').querySelectorAll('option')].map((x) => ({ raw: x.getAttribute('value') || '', v: reClean(x.getAttribute('value') || ''), l: reClean(x.textContent || '') })).find((x) => x.raw && U.pick(x, pet));
+          act = o ? o.raw : '';
+        } catch (_) { act = ''; }
+        r.st = 'got';
+        if (!act) { r.readWhy = `its pop-up didn’t offer ${U.offer(pet)}`; run.use.i++; bmRowPaint(r); continue; }
+        await bmSleep(900 + Math.random() * 1100);   // (its choice made, Submit pressed)
+        let words = '', ok = false;
+        try {
+          const res = await fromPage(page, '/np-templates/views/useobject.phtml', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest', Accept: 'text/html, */*; q=0.01' }, body: wizParam({ obj_id: id, action: act, petcare: '0' }) });
+          const h = await res.text();
+          if (/bsConfirmReadArchive/.test(h)) { archAdd(r.name); r.readWhy = 'an Archive book: it goes in your Archive Bookshelf, it isn’t read (it’s in your inventory)'; run.use.i++; bmRowPaint(r); continue; }
+          words = sdrWords(h);
+          ok = res.ok && !/already|can.?t|cannot|unable|not able|isn.?t able|too (?:dumb|young|full|tired)|not hungry|full up|bloated/i.test(words);
+        } catch (_) { ok = false; words = 'Neopets didn’t answer just now'; }
+        run.use.i++;
+        if (ok) { if (sdb) { r.sdb = true; run.sdb = (run.sdb || 0) + 1; } else { r.read = true; run.read = (run.read || 0) + 1; } read++; } else r.readWhy = words.slice(0, 160) || 'Neopets didn’t do it';
+        bmRowPaint(r);
+        if (!ok && bm.kind === 'food' && /too full|not hungry|full up|bloated/i.test(words)) { run.full = true; for (const x of list) if (!x.read && !x.readWhy) { x.readWhy = `${pet} is too full to eat more just now: it’s in your inventory`; bmRowPaint(x); } break; }   // (too full to eat more: the rest left)
+      }
+    } finally { wwwShut(page); run.reading = 0; run.use = null; bmSumPaint(); }
+    if (read && !sdb) {
+      if (bm.kind === 'books' || bm.kind === 'bt') document.dispatchEvent(new CustomEvent('bnp-col-read', { detail: JSON.stringify({ pet }) }));   // (its kept lists and the marks: read again)
+      if (bm.kind !== 'stamps' && col && col.pet === pet && col.kind === bm.kind) { for (const r of bm.rows) if (r.read && r.file && !col.had.has(colImgKey(r.file))) col.had.set(colImgKey(r.file), [col.had.size + 1, r.name, r.file, '']); colPaint(); }   // (this page shows them read, or eaten)
+      if (bm.kind === 'stamps') {   // (your album: the stamps put in, counted in at once)
+        try {
+          const K = saKnown();
+          for (const r of bm.rows) {
+            if (!r.read || r.counted) continue;
+            const at = K.byName.get(r.name.toLowerCase());
+            if (!at || !saMine) continue;
+            if (!saMine.pages[at[0]]) saMine.pages[at[0]] = { t: Date.now(), have: [], n: Number(saMine.counts[at[0]]) || 0 };   // (a page with none yet: its first)
+            const pg = saMine.pages[at[0]];
+            if (!Array.isArray(pg.have) || pg.have.includes(at[1])) continue;
+            pg.have.push(at[1]);
+            pg.n = (Number(pg.n) || 0) + 1;
+            saMine.counts[at[0]] = pg.n;
+            r.counted = true;
+          }
+          saMineSave();
+          if (sa && sa.root) saPaint(true);
+        } catch (e) { report(e); }
+      }
+    }
+    return read;
+  }
+  async function bmReadNow() {   // (the books bought but not read, read now: Stop as ever)
+    if (!bm || !bm.run || !bm.run.over || !bmUnread().length) return;
+    const run = bm.run;
+    Object.assign(run, { over: false, stop: false, pause: false, why: '', useOnly: true, full: false });
+    bmPaint();
+    try { await bmReadPending(run); } finally { run.over = true; run.useOnly = false; bmPaint(); }
+  }
+  async function bmRun() {
+    if (!bm || (bm.run && !bm.run.over)) return;
+    const P = bmP(), ticked = bm.rows.filter((r) => r.on && r.st !== 'got');
+    if (!ticked.length) return;
+    const run = bm.run = { n: ticked.length, i: 0, spent: 0, stop: false, pause: false, over: false, at: null, src: P.src, times: P.times, bg: P.bg, max: P.max, budget: P.budget, waitUntil: 0, why: '', room: Infinity, read: 0, sdb: 0, reading: 0, looking: true };
+    const reading = P.read && bmReads(), full = P.full === 'use' && !bmReads() ? 'sdb' : P.full;
+    for (const r of bm.rows) if (r.st !== 'got') { r.st = ''; r.why = ''; }
+    bm.note = '';
+    bmPaint();
+    let have = { inv: new Set(), sdb: new Set() };
+    try { have = await bmOwned(run); } catch (e) { report(e); }   // (what you have already, in your inventory or your SDB: not bought again)
+    run.looking = false;
+    if (!Number.isFinite(run.room)) { const here = bmInvHere(); if (here != null) run.room = 50 - here; }   // (your inventory didn't open: its count as this page's header says)
+    const list = [];
+    for (const r of ticked) {
+      const k = r.name.toLowerCase();
+      if (have.inv.has(k)) { r.st = 'got'; r.mine = true; r.paid = 0; r.why = ''; bmRowPaint(r); }   // (in your inventory already: not bought; used with the rest)
+      else if (have.sdb.has(k)) { r.st = 'none'; r.why = 'In your SDB already: not bought again'; bmRowPaint(r); }
+      else list.push(r);
+    }
+    run.n = list.length;
+    bmSumPaint();
+    const makeRoom = async () => {   // (your inventory full: what's bought used, or put in your SDB, as you chose. How much room it made)
+      if (full === 'use' && bmReads() && bmUnread().length) return bmDoPending(run, 'use');
+      if (full === 'sdb' && bmInInv().length) return bmDoPending(run, 'sdb');
+      return 0;
+    };
+    for (const r of list) {
+      if (!(await bmGate(run))) break;
+      if (run.budget - run.spent <= 0) { run.why = 'budget'; break; }
+      if (run.room <= 0) { run.room += await makeRoom(); if (run.stop) break; }   // (full: room made as you chose)
+      if (run.room <= 0) { run.why = 'Your inventory is full (it holds 50 items): make room, then Start again for the rest'; break; }
+      run.at = r;
+      r.st = 'now';
+      bmRowPaint(r);
+      bmSumPaint();
+      let a = null;
+      for (;;) {   // (told to come back later: waited out, or paused, then this one again; full: the books bought read, then this one again)
+        a = await bmBuyOne(run, r);
+        if (a.full) { const made = await makeRoom(); run.room += made; if (run.stop) break; if (made && run.room > 0) continue; }
+        if (!a.busy) break;
+        const top = bmBanned(run.src) || bmTop();
+        bmBanSet(run.src, top);
+        if (reading && bmUnread().length) { run.room += await bmReadPending(run); if (run.stop) break; }   // (the break put to use: the books bought so far read meanwhile)
+        if (!bmP().wait) { run.pause = true; run.why = 'ban'; bmPaint(); if (!(await bmGate(run))) break; if (bmBanned(run.src)) bmBanSet(run.src, 0); }   // (Resume pressed: asked again, whatever the time)
+        else if (!(await bmWaitOut(run, top))) break;
+      }
+      if (run.stop && (!a || a.busy || a.stopped)) { r.st = ''; bmRowPaint(r); break; }
+      if (a.got) { r.st = 'got'; r.paid = a.price; r.why = `Bought for ${bmNp(a.price)}`; run.spent += a.price; run.room--; }
+      else if (a.over) { r.st = 'over'; r.why = `Cheapest just now ${bmNp(a.over)}: over ${a.by === 'budget' ? 'what’s left of your budget' : 'your most for one item'}`; }
+      else if (a.none) { r.st = 'none'; r.why = 'In no shop the wizard showed just now'; }
+      else if (a.gone) { r.st = 'none'; r.why = 'Sold or dearer by the time its shop opened'; }
+      else if (a.cant) { r.st = 'no'; r.why = `The Super Shop Wizard says: ${a.cant}`; }
+      else if (a.err) { r.st = 'no'; r.why = a.err; }
+      else if (a.halt) { r.st = ''; r.why = ''; run.why = a.halt; run.halted = true; }
+      else if (a.full) { r.st = ''; r.why = ''; run.why = 'Your inventory is full (it holds 50 items): make room, then Start again for the rest'; run.halted = true; }
+      run.i++;
+      bmRowPaint(r);
+      bmSumPaint();
+      if (run.stop || run.halted) break;
+      if (r !== list[list.length - 1] && !(await bmStep(run))) break;
+    }
+    if (reading && !run.stop && bmUnread().length) await bmReadPending(run);   // (at the end: the books bought, read)
+    run.over = true;
+    run.at = null;
+    for (const r of bm.rows) if (r.st === 'now') r.st = '';
+    bmPaint();
+  }
+  // ═══════════════════════════════════════════════════════════════════════════
   // Styling Chamber: the Poses box much bigger (the real one, floated, so every control of Neopets' still works) and a Species
   // sort. (Was the "Token Gallery" script, sc_gallery.user.js 2.1: if that one's still switched on, it does it and this stands aside)
   // ═══════════════════════════════════════════════════════════════════════════
@@ -35836,6 +36764,8 @@
     qrAccent(app);   // (the cards dress in the theme's own colours)
     app.addEventListener('click', qrClick);
     app.addEventListener('keydown', qrMenuKeys);
+    app.addEventListener('keydown', qrDdKeys);
+    if (!qrDdSet.on) { qrDdSet.on = true; document.addEventListener('pointerdown', (e) => { if (qr && qr.dd && !(e.target instanceof Element && e.target.closest('.bq-dd'))) qrDdSet(''); }, true); }   // (a press anywhere else: the menu shuts)
     app.addEventListener('error', (e) => { const t = e.target; if (t instanceof HTMLImageElement && t.dataset.fb && t.getAttribute('src') !== t.dataset.fb) t.src = t.dataset.fb; }, true);   // (a picture that doesn't come: its stand-in, once)
     document.addEventListener('click', (e) => {
       const t = e.target instanceof Element ? e.target : null;
@@ -36022,7 +36952,7 @@
       n.sick ? count('sick', 'Sick', n.sick, P.show === 'sick' ? 'Every pet again' : 'Only the sick ones') : '',
       n.lodge ? count('lodge', 'Neolodge', n.lodge, P.show === 'lodge' ? 'Every pet again' : 'Only the ones at the Neolodge') : ''].join('');
     return `<section class="bq-pets${open ? ' is-open' : ''}" aria-label="Your pets">
-        <div class="popup-header__2020 bq-plate"><h3>Your Pets</h3><div class="popup-header-pattern__2020"></div><span class="bq-platerim" aria-hidden="true"></span></div>
+        <div class="popup-header__2020 bq-plate"><h3>Your Pets</h3><div class="popup-header-pattern__2020"></div></div>
         <button type="button" class="bq-fold" data-qp aria-expanded="${open}" title="${open ? 'Fold your pets away' : 'Show your pets'}"><i></i></button>
         <div class="bq-tray">
           <div class="bq-counts" role="group" aria-label="Show">${counts}</div>
@@ -36065,12 +36995,32 @@
   function qrToolsBar() {   // (Neopets' amber chips, as its shops' Jump to: how the pets are sorted and shown)
     const P = qr.prefs, chip = (attr, v, label, on, tip) => `<button type="button" class="bq-chip${on ? ' is-active' : ''}" ${attr}="${v}" aria-pressed="${on}"${tip ? ` title="${esc(tip)}"` : ''}>${esc(label)}</button>`;
     const sorts = [['active', 'Active first'], ['name', 'Name'], ['level', 'Level'], ['age', 'Oldest'], ['hunger', 'Hungriest'], ['custom', 'My order', 'Your own order: drag the cards, or the pets above']];
-    return `<nav class="bq-tools" aria-label="How your pets are shown">
-        <span class="bq-group is-sort" role="group" aria-label="Sort"><span class="bq-label">Sort</span>${sorts.map(([v, l, tip]) => chip('data-qs', v, l, P.sort === v, tip)).join('')}</span>
-        <div class="bq-toolrow"><span class="bq-group" role="group" aria-label="View"><span class="bq-label">View</span>${chip('data-qv', 'cards', 'Cards', P.view !== 'rows')}${chip('data-qv', 'rows', 'Rows', P.view === 'rows', 'Every pet in one table')}</span>
-        ${P.view === 'rows' ? '' : `<span class="bq-group" role="group" aria-label="Pictures"><span class="bq-label">Pictures</span>${QR_PICS.map(([k, l]) => chip('data-qpic', k, l, qrPicKey() === k)).join('')}</span>`}
-        <span class="bq-group">${chip('data-qt', '1', 'Pet colours', !!P.tint, 'Each card in its pet’s own colour')}</span></div>
-      </nav>`;
+    const dd = (k, label, attr, opts, cur) => {   // (one choice as a dropdown: what's chosen on the pill, the rest in its menu)
+      const on = opts.find(([v]) => v === cur) || opts[0], open = qr.dd === k;
+      const menu = open ? `<div class="bq-menu" role="listbox" aria-label="${esc(label)}">${opts.map(([v, l, tip]) => `<button type="button" class="bq-opt${v === on[0] ? ' is-on' : ''}" role="option" aria-selected="${v === on[0]}" ${attr}="${v}"${tip ? ` title="${esc(tip)}"` : ''}>${esc(l)}</button>`).join('')}</div>` : '';
+      return `<span class="bq-group" role="group" aria-label="${esc(label)}"><span class="bq-label">${esc(label)}</span><span class="bq-dd"><button type="button" class="bq-chip bq-pick is-active" data-qdd="${k}" aria-haspopup="listbox" aria-expanded="${open}" aria-label="${esc(`${label}: ${on[1]}`)}">${esc(on[1])}<i class="bq-caret" aria-hidden="true"></i></button>${menu}</span></span>`;
+    };
+    return `<nav class="bq-tools" aria-label="How your pets are shown">${dd('sort', 'Sort', 'data-qs', sorts, P.sort)}${dd('view', 'View', 'data-qv', [['cards', 'Cards'], ['rows', 'Rows', 'Every pet in one table']], P.view === 'rows' ? 'rows' : 'cards')}${P.view === 'rows' ? '' : dd('pic', 'Pictures', 'data-qpic', QR_PICS, qrPicKey())}<span class="bq-group">${chip('data-qt', '1', 'Pet colours', !!P.tint, 'Each card in its pet’s own colour')}</span></nav>`;
+  }
+  function qrDdSet(k, focus) {   // (a dropdown of the tools bar open (its key) or shut (''): only the bar drawn again; from the keys, its chosen choice focused)
+    if (!qr) return;
+    qr.dd = k;
+    const bar = qr.app && qr.app.querySelector('.bq-tools');
+    if (bar) bar.outerHTML = qrToolsBar();
+    if (k && focus) { const o = qr.app.querySelector('.bq-menu .bq-opt.is-on') || qr.app.querySelector('.bq-menu .bq-opt'); if (o) o.focus({ preventScroll: true }); }
+  }
+  function qrDdKeys(e) {
+    const t = e.target instanceof Element ? e.target : null;
+    if (!t || !qr) return;
+    const pick = t.closest('[data-qdd]'), menu = t.closest('.bq-menu');
+    if (pick && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); qrDdSet(pick.dataset.qdd, true); return; }
+    if (pick && e.key === 'Escape' && qr.dd) { e.preventDefault(); qrDdSet(''); qrFocus(`[data-qdd="${pick.dataset.qdd}"]`); return; }
+    if (!menu) return;
+    const opts = [...menu.querySelectorAll('.bq-opt')], i = opts.indexOf(t.closest('.bq-opt')), k = qr.dd;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); opts[(i + (e.key === 'ArrowDown' ? 1 : -1) + opts.length) % opts.length].focus({ preventScroll: true }); }
+    else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus({ preventScroll: true }); }
+    else if (e.key === 'Escape') { e.preventDefault(); qrDdSet(''); qrFocus(`[data-qdd="${k}"]`); }
+    else if (e.key === 'Tab') qrDdSet('');
   }
   const QR_PENCIL = IM('themes/020_ppl_3c22d/events/battle_accept.png');   // (Neopets' own pencil, for writing about a pet: the one place to change it)
   function qrActList(p) {   // (every action for a pet: [key, label, link, the theme's picture for it, a drawn mark if it has none, tooltip])
@@ -36332,10 +37282,12 @@
     if (swl) { if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey && !e.button && !(swl.target && swl.target !== '_self')) { try { sessionStorage.setItem('bnp-sw', swl.dataset.sw); } catch (_) { /* (the Shop Wizard then just waits for its Search button) */ } } return; }   // (the Shop Wizard runs this search by itself when it opens)
     const P = qr.prefs, d = (sel) => t.closest(sel);
     let b;
+    if ((b = d('[data-qdd]'))) { qrDdSet(qr.dd === b.dataset.qdd ? '' : b.dataset.qdd, e.detail === 0); return; }
+    if (d('.bq-menu')) qr.dd = '';
     if ((b = d('[data-qf]'))) { P.show = b.dataset.qf === P.show ? 'all' : b.dataset.qf; qrSave(); qrPaint(); return; }
-    if ((b = d('[data-qs]'))) { P.sort = b.dataset.qs; qrSave(); qrPaint(); qrFocus(`[data-qs="${P.sort}"]`); return; }
-    if ((b = d('[data-qv]'))) { P.view = b.dataset.qv; qrSave(); qrPaint(); qrFocus(`[data-qv="${P.view}"]`); return; }
-    if ((b = d('[data-qpic]'))) { P.pic = b.dataset.qpic; qrSave(); qrPaint(); qrFocus(`[data-qpic="${P.pic}"]`); return; }
+    if ((b = d('[data-qs]'))) { P.sort = b.dataset.qs; qrSave(); qrPaint(); qrFocus('[data-qdd="sort"]'); return; }
+    if ((b = d('[data-qv]'))) { P.view = b.dataset.qv; qrSave(); qrPaint(); qrFocus('[data-qdd="view"]'); return; }
+    if ((b = d('[data-qpic]'))) { P.pic = b.dataset.qpic; qrSave(); qrPaint(); qrFocus('[data-qdd="pic"]'); return; }
     if (d('[data-qt]')) { P.tint = !P.tint; qrSave(); if (P.tint) qrTintsKept(); qrPaint(); qrFocus('[data-qt]'); if (P.tint) qrTints(); return; }
     if (d('[data-qp]')) { P.strip = P.strip === false; qrSave(); qrPaint(); qrFocus('[data-qp]'); return; }
     if ((b = d('[data-qj]'))) { qrMenuClose(); qrJump(b.closest('[data-pet]').dataset.pet); return; }
@@ -41918,6 +42870,7 @@
         <label class="bnp-switch"><input type="checkbox" data-feat="sdbCalm"${f.sdbCalm !== false ? ' checked' : ''}><span>Safety Deposit Box: suggestions only when you ask<small>Neopets’ list of suggestions under the search box stays shut till you press the arrow beside it, or ↓.</small></span></label>
         <label class="bnp-switch"><input type="checkbox" data-feat="sdbAll"${f.sdbAll !== false ? ' checked' : ''}><span>Safety Deposit Box: search all of it<small>Neopets’ search starts on Entire SDB instead of the page shown. Its own Page switch is still there for the other way.</small></span></label>
         <label class="bnp-switch"><input type="checkbox" data-feat="sdbTop"${f.sdbTop !== false ? ' checked' : ''}><span>Safety Deposit Box: page buttons at the top too<small>Beside its Grid and List switch: the same buttons as under your items, so a long box needs no scrolling down to turn the page.</small></span></label>
+        <label class="bnp-switch"><input type="checkbox" data-feat="sdbRead"${f.sdbRead !== false ? ' checked' : ''}><span>Safety Deposit Box: read books to a pet, several at once<small>Read to a pet in its drawer when books are selected (on any of its pages), and Read books to a pet by its totals for every book in it. NE leaves out the ones the pet has read and reads the rest one at a time, a moment between.</small></span></label>
         <label class="bnp-switch"><input type="checkbox" data-itx="descHide"${set.descHide ? ' checked' : ''}><span>Users’ shops without their descriptions<small>The owner’s words and pictures above their items go (some are very long).</small></span></label>
       </div>`;
   }
@@ -44788,9 +45741,9 @@
     .bq .bqr-title h1 { margin: auto; padding: 0; color: #363636; font: 26pt/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .5pt; }
     /* Your Pets: Neopets' Quick Links, a full bar in the theme's header with the counts that show only those pets */
     .bq-pets { position: relative; margin: 30px 0 16px; border: 2px solid var(--bq-ln); border-radius: 18px; background: radial-gradient(120% 90% at 50% 0%, #fff 0%, color-mix(in srgb, var(--bq-h) 9%, #fff) 55%, color-mix(in srgb, var(--bq-h) 16%, #fff) 100%); box-shadow: 0 3px 0 var(--bq-ln), 0 8px 18px rgba(0, 0, 0, .08); }   /* (a box of its own: lit from the top, the theme's tint at its edges) */
-    .bq .bq-plate { position: absolute !important; top: 0 !important; left: 50% !important; z-index: 2; display: grid !important; place-items: center; width: auto !important; min-width: 230px; height: 48px !important; margin: 0 !important; padding: 0 34px !important; border: 2px solid var(--bq-ln) !important; border-radius: 999px !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 3px 0 var(--bq-ln), 0 7px 16px rgba(0, 0, 0, .2) !important; color: var(--bq-hi); overflow: hidden; transform: translate(-50%, -55%); }   /* (its title on a nameplate in the theme's own header, set on the box's top edge) */
-    .bq .bq-plate h3 { position: relative; z-index: 2; top: -2px; margin: 0 !important; padding: 0 !important; color: inherit; font: 23pt/1 "Cafeteria", "Arial Bold", sans-serif !important; letter-spacing: .6pt; white-space: nowrap; -webkit-text-stroke: 6px var(--bq-tedge, rgba(255, 255, 255, .92)); paint-order: stroke fill; text-shadow: 0 2px 3px rgba(0, 0, 0, .18); }   /* (its words in the middle (Cafeteria sits low in its line), edged so they read on the pattern) */
-    .bq-platerim { position: absolute; z-index: 1; inset: 3px; border-radius: inherit; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .55), inset 0 10px 14px -10px rgba(255, 255, 255, .5); pointer-events: none; }   /* (a light rim inside the plate, and a little sheen at its top) */
+    .bq .bq-plate { position: absolute !important; top: 0 !important; left: 50% !important; z-index: 2; display: grid !important; place-items: center; width: auto !important; min-width: 214px; height: 46px !important; margin: 0 !important; padding: 0 30px !important; border: 1.5px solid color-mix(in srgb, var(--bq-h) 55%, #000 45%) !important; border-radius: 999px !important; background: linear-gradient(color-mix(in srgb, var(--bq-h) 76%, #fff), var(--bq-h) 58%, color-mix(in srgb, var(--bq-h) 90%, #000)) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -2px 0 rgba(0, 0, 0, .1), 0 3px 0 color-mix(in srgb, var(--bq-h) 55%, #000 45%), 0 8px 16px rgba(0, 0, 0, .18) !important; color: var(--bq-hi); overflow: hidden; transform: translate(-50%, -52%); }   /* (its title on a nameplate in the theme's colour, lit from the top with a ledge under it, as the cards' buttons: set on the box's top edge) */
+    .bq .bq-plate h3 { position: relative; z-index: 2; top: -1px; max-width: none !important; margin: 0 !important; padding: 0 !important; color: inherit; font: 22pt/1 "Cafeteria", "Arial Bold", sans-serif !important; letter-spacing: .5pt; white-space: nowrap; -webkit-text-stroke: 3px var(--bq-tedge, rgba(255, 255, 255, .92)); paint-order: stroke fill; text-shadow: 0 2px 0 color-mix(in srgb, var(--bq-h) 45%, #000); }   /* (in the middle: Neopets caps a header's h3 at 90% less 65px for a pop-up's X, which pushed these words 11px right; a thin edge, a little depth) */
+    .bq .bq-plate .popup-header-pattern__2020 { opacity: .22; -webkit-mask-image: linear-gradient(90deg, #000, transparent 30%, transparent 70%, #000); mask-image: linear-gradient(90deg, #000, transparent 30%, transparent 70%, #000); }   /* (the theme's pattern only faintly, at its ends) */
     .bq-tray { padding: 36px 16px 18px; }   /* (under the nameplate: the counts, then your pets) */
     .bq-pets:not(.is-open) { width: fit-content; min-width: 320px; max-width: 100%; margin-left: auto; margin-right: auto; }   /* (folded: only as wide as its counts, in the middle (the user, 2026-11-02)) */
     .bq-pets:not(.is-open) .bq-tray { padding: 36px 60px 14px; }
@@ -44834,9 +45787,20 @@
     .bq-tile.is-drag { opacity: .45; }
     .bq-tile.drop-before .bq-tbox { box-shadow: -6px 0 0 #2c5aa0; } .bq-tile.drop-after .bq-tbox { box-shadow: 6px 0 0 #2c5aa0; }
     /* how they're sorted and shown: Neopets' shop chips (a bar with raised pills, the chosen one dark), in your theme's colours (the user, 2026-11-02: "in the same style but theme colors") */
-    .bq-tools { display: grid; justify-items: center; gap: 7px; width: fit-content; max-width: 100%; margin: 0 auto 16px; padding: 8px 20px; border-radius: 8px; background: linear-gradient(var(--bq-h), color-mix(in srgb, var(--bq-h) 80%, #000)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 2px 0 color-mix(in srgb, var(--bq-h) 62%, #000); color: var(--bq-hi); }
+    .bq-tools { position: relative; z-index: 3; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 16px; width: fit-content; max-width: 100%; margin: 0 auto 14px; padding: 5px 14px; border-radius: 8px; background: linear-gradient(var(--bq-h), color-mix(in srgb, var(--bq-h) 80%, #000)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 2px 0 color-mix(in srgb, var(--bq-h) 62%, #000); color: var(--bq-hi); }
     .bq-group { display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 5px; }
-    .bq-toolrow { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 7px 16px; }   /* (how they're shown: the line under the sorts) */
+    .bq-dd { position: relative; display: inline-flex; }
+    .bq .bq-chip.bq-pick { display: inline-flex; align-items: center; gap: 7px; padding-right: 9px; }
+    .bq-caret { width: 0; height: 0; border-top: 5px solid currentColor; border-right: 4px solid transparent; border-left: 4px solid transparent; opacity: .85; transition: transform .15s; }
+    .bq-pick[aria-expanded="true"] .bq-caret { transform: rotate(180deg); }
+    .bq-menu { position: absolute; top: calc(100% + 7px); left: 50%; z-index: 60; display: grid; gap: 3px; min-width: max(100%, 132px); padding: 5px; border: 1px solid color-mix(in srgb, var(--bq-h) 55%, #000 45%); border-radius: 12px; background: linear-gradient(var(--bq-h), color-mix(in srgb, var(--bq-h) 80%, #000)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 10px 24px rgba(0, 0, 0, .35); transform: translateX(-50%); animation: bq-menu-in .12s ease-out; }   /* (the bar's own colours, dropped from its pill) */
+    @keyframes bq-menu-in { from { opacity: 0; transform: translate(-50%, -4px); } to { opacity: 1; transform: translateX(-50%); } }
+    .bq-opt { display: flex; align-items: center; gap: 7px; margin: 0; padding: 5px 14px 5px 9px; border: 0; border-radius: 999px; background: none; color: var(--bq-hi); font: 10.5pt/1.2 "MuseoSansRounded700", "Museo Sans Rounded Bold", Arial, sans-serif; text-align: left; white-space: nowrap; cursor: pointer; }
+    .bq-opt::before { content: ""; flex: none; width: 12px; font-size: 11px; text-align: center; }
+    .bq-opt:hover, .bq-opt:focus-visible { background: rgba(255, 255, 255, .18); outline: none; }
+    .bq-opt.is-on { background: linear-gradient(color-mix(in srgb, var(--bq-h) 50%, #000), color-mix(in srgb, var(--bq-h) 36%, #000)); color: #fff; text-shadow: 0 1px 1px rgba(0, 0, 0, .3); }   /* (the chosen one: the bar's dark chosen pill, ticked) */
+    .bq-opt.is-on::before { content: "✓"; }
+    @media (prefers-reduced-motion: reduce) { .bq-menu { animation: none; } .bq-caret { transition: none; } }
     .bq-label { margin-right: 3px; color: inherit; font: 9pt "MuseoSansRounded700", "Museo Sans Rounded Bold", Arial, sans-serif; letter-spacing: .1em; opacity: .9; text-transform: uppercase; white-space: nowrap; }
     .bq .bq-chip { margin: 0; padding: 4px 11px; border: 1px solid color-mix(in srgb, var(--bq-h) 55%, #000 45%); border-radius: 999px; background: linear-gradient(color-mix(in srgb, var(--bq-h) 68%, #fff), var(--bq-h)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), 0 2px 3px rgba(0, 0, 0, .25); color: var(--bq-hi); font: 10.5pt/1.2 "MuseoSansRounded700", "Museo Sans Rounded Bold", Arial, sans-serif; white-space: nowrap; cursor: pointer; }
     .bq .bq-chip:hover, .bq .bq-chip:focus-visible { background: linear-gradient(color-mix(in srgb, var(--bq-h) 52%, #fff), color-mix(in srgb, var(--bq-h) 84%, #fff)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 4px 7px rgba(0, 0, 0, .3); outline: none; transform: translateY(-1px); }
@@ -44854,7 +45818,7 @@
     .bq .bq-head { position: relative; color: var(--bq-hi); display: flex; align-items: center; gap: 10px; min-height: 48px; margin: 0; padding: 6px 14px !important; border-radius: 14px 14px 0 0 !important; overflow: hidden; text-align: left !important; }
     .bq .bq-card.is-tinted .bq-head { background: var(--bq-h) !important; color: var(--bq-hi) !important; }
     .bq .bq-card.is-tinted .bq-head .popup-header-pattern__2020 { filter: grayscale(1) contrast(1.1); mix-blend-mode: soft-light; opacity: .9; }
-    .bq .bq-head h3 { position: relative; z-index: 1; flex: 0 1 auto; min-width: 0; margin: 0 !important; overflow: hidden; color: inherit; font: 21pt/1.15 "Cafeteria", "Arial Bold", sans-serif !important; letter-spacing: .4pt; text-overflow: ellipsis; white-space: nowrap; }
+    .bq .bq-head h3 { position: relative; z-index: 1; flex: 0 1 auto; min-width: 0; max-width: none !important; margin: 0 !important; overflow: hidden; color: inherit; font: 21pt/1.15 "Cafeteria", "Arial Bold", sans-serif !important; letter-spacing: .4pt; text-overflow: ellipsis; white-space: nowrap; }
     .bq .bq-head h3 a { color: inherit !important; text-decoration: none !important; }
     .bq .bq-head h3 a:hover { text-decoration: underline !important; }
     .bq .bq-card.is-tinted .bq-head :is(h3, .bq-sub) { color: var(--bq-hi) !important; text-shadow: var(--bqr-tint-shadow) !important; }
@@ -46468,10 +47432,125 @@
     .bnp-wt-pulse { animation: bnp-wt-pulse 1.1s ease-in-out 3; }
     @keyframes bnp-wt-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(254, 209, 35, 0); } 50% { box-shadow: 0 0 0 7px rgba(254, 209, 35, .9); } }
     @media (prefers-reduced-motion: reduce) { .bnp-wt-pulse { animation: none; outline: 3px solid #fed123; outline-offset: 3px; } }
+    /* SDB: Read to a pet — the header's way in, the drawer's button, and its window (your theme's pop-up colours) */
+    .bnp-sdr-pill { display: inline-flex; align-items: center; gap: 7px; height: 32px; margin: 0 0 0 auto; padding: 0 15px 0 5px; border: 1px solid color-mix(in srgb, var(--bnp-sdr-c, #c9a227) 70%, #000); border-radius: 999px; background: linear-gradient(color-mix(in srgb, var(--bnp-sdr-c, #fed123) 80%, #fff), var(--bnp-sdr-c, #fed123)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 2px 0 color-mix(in srgb, var(--bnp-sdr-c, #c9a227) 70%, #000); color: var(--bnp-sdr-ink, #363636); font: 14px/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; white-space: nowrap; cursor: pointer; transition: transform .12s, box-shadow .12s; }
+    .bnp-sdr-pill:hover, .bnp-sdr-pill:focus-visible { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 3px 0 color-mix(in srgb, var(--bnp-sdr-c, #c9a227) 70%, #000), 0 5px 12px rgba(0, 0, 0, .16); outline: none; }
+    .bnp-sdr-pill .bnp-sdr-pic { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: rgba(255, 255, 255, .85); color: #5c4a0a; }
+    .bnp-sdr-pill .bnp-sdr-pic svg { width: 15px; height: 15px; }
+    .sdb-drawer .sdb-drawer-action-row .bnp-sdr-drawbtn { width: auto; min-width: 160px; margin: 0 0 0 10px; padding: 0 16px; white-space: nowrap; }
+    .bnp-go.bnp-sdr { width: min(660px, calc(100vw - 24px)); max-height: min(760px, 88vh); top: 6vh; }
+    .bnp-sdr-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 6px; overflow: hidden; }
+    .bnp-sdr-pets { flex: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 7px 8px; }
+    .bnp-sdr-chip { display: inline-flex; align-items: center; gap: 8px; height: 54px; margin: 0; padding: 3px 16px 3px 3px; border: 2px solid #e2dccb; border-radius: 999px; background: #fff; color: #363636; font: 14px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .12s; }
+    .bnp-sdr-chip img { flex: none; width: 44px; height: 44px; border-radius: 50%; background: #f4f0e4; object-fit: cover; }
+    .bnp-sdr-chip b { font-weight: normal; }
+    .bnp-sdr-chip:hover:not(:disabled) { transform: translateY(-1px); border-color: color-mix(in srgb, var(--bnp-accent) 70%, #777); }
+    .bnp-sdr-chip[aria-checked="true"] { border-color: color-mix(in srgb, var(--bnp-accent) 80%, #000 10%); background: color-mix(in srgb, var(--bnp-accent) 16%, #fff); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bnp-accent) 45%, transparent); }
+    .bnp-sdr-chip:focus-visible { outline: 2px solid color-mix(in srgb, var(--bnp-accent) 70%, #000 15%); outline-offset: 2px; }
+    .bnp-sdr-chip:disabled { cursor: default; opacity: .5; }
+    .bnp-sdr-chip[aria-checked="true"]:disabled { opacity: 1; }
+    .bnp-sdr-src { flex: none; align-self: center; display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: #f1ecdd; }
+    .bnp-sdr-src button { height: 30px; margin: 0; padding: 0 15px; border: 0; border-radius: 999px; background: none; color: #5c5845; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; transition: background-color .15s; }
+    .bnp-sdr-src button:hover:not(:disabled):not([aria-pressed="true"]) { background: rgba(255, 255, 255, .75); color: #2a2a2a; }
+    .bnp-sdr-src button[aria-pressed="true"] { background: var(--bnp-accent); color: var(--bnp-accent-text); box-shadow: 0 2px 0 color-mix(in srgb, var(--bnp-accent) 65%, #000), 0 1px 5px rgba(0, 0, 0, .12); }
+    .bnp-sdr-src button:disabled { cursor: default; opacity: .45; }
+    .bnp-sdr-src button[aria-pressed="true"]:disabled { opacity: 1; }
+    .bnp-sdr-main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+    .bnp-sdr-note { margin: 4px 0; color: #5d5845; font-size: 13px; text-align: center; }
+    .bnp-sdr-note.is-err { color: #a12b1f; }
+    .bnp-sdr-wait { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 18px 0; color: #4a4636; font-size: 14px; }
+    .bnp-sdr-spin { width: 18px; height: 18px; border: 3px solid color-mix(in srgb, var(--bnp-accent) 45%, #ddd); border-top-color: color-mix(in srgb, var(--bnp-accent) 85%, #000); border-radius: 50%; animation: bnp-sdr-spin .8s linear infinite; }
+    @keyframes bnp-sdr-spin { to { transform: rotate(360deg); } }
+    .bnp-sdr-count { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px; margin: 0; color: #5d5845; font-size: 13px; }
+    .bnp-sdr-count b { color: #262626; font-weight: normal; font-family: "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-sdr-count em { color: #2b6a2f; font-style: normal; }
+    .bnp-sdr-go { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 11px 0 7px; border: 1.5px solid #ddd6c2; border-radius: 999px; background: #fff; color: #363636 !important; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; text-decoration: none !important; }
+    .bnp-sdr-go:hover { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #777); }
+    .bnp-sdr-go svg, .bnp-sdr-go img { flex: none; width: 15px; height: 15px; }
+    .bnp-sdr-sum { flex: none; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; padding: 9px 13px 10px; border-radius: 12px; background: color-mix(in srgb, var(--bnp-accent) 15%, #fff); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--bnp-accent) 40%, #fff); }
+    .bnp-sdr-sum > b { color: #262626; font: 18px/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    .bnp-sdr-sum > span { color: #5d5845; font-size: 12.5px; }
+    .bnp-sdr-sum .bnp-sdr-tick { display: inline-flex; gap: 6px; margin-left: auto; }
+    .bnp-sdr-track { flex: 1 0 100%; height: 10px; margin-top: 6px; overflow: hidden; border-radius: 99px; background: rgba(255, 255, 255, .9); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--bnp-accent) 45%, #ccc); }
+    .bnp-sdr-track i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(color-mix(in srgb, var(--bnp-accent) 75%, #fff), color-mix(in srgb, var(--bnp-accent) 92%, #000)); transition: width .4s ease; }
+    .bnp-sdr-list { flex: 1 1 auto; min-height: 90px; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); align-content: start; gap: 6px; padding: 2px 3px 6px; overscroll-behavior: contain; }
+    .bnp-sdr-row { display: flex; align-items: center; gap: 9px; min-width: 0; min-height: 54px; margin: 0; padding: 5px 10px 5px 9px; border: 1.5px solid #e6e0cd; border-radius: 12px; background: #fff; cursor: pointer; transition: opacity .15s, border-color .15s, background-color .15s; }
+    .bnp-sdr-row:hover { border-color: color-mix(in srgb, var(--bnp-accent) 60%, #bbb); }
+    .bnp-sdr-row.is-off { opacity: .5; }
+    .bnp-sdr-row input { flex: none; width: 16px; height: 16px; margin: 0; accent-color: color-mix(in srgb, var(--bnp-accent) 85%, #000); cursor: pointer; }
+    .bnp-sdr-bk { flex: none; display: grid; place-items: center; width: 40px; height: 40px; }
+    .bnp-sdr-bk img { display: block; width: 40px; height: 40px; }
+    .bnp-sdr-nm { flex: 1 1 auto; min-width: 0; display: grid; gap: 1px; }
+    .bnp-sdr-nm b { overflow: hidden; color: #262626; font: 13px/1.3 "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-sdr-nm small { color: #6b6653; font-size: 11.5px; line-height: 1.3; }
+    .bnp-sdr-nm small.bnp-sdr-why { color: #a12b1f; }
+    .bnp-sdr-st { flex: none; display: grid; place-items: center; width: 22px; height: 22px; margin-left: auto; border-radius: 50%; color: #fff; font: bold 13px/1 Arial, sans-serif; font-style: normal; }
+    .bnp-sdr-st.is-read { background: #3f9b45; }
+    .bnp-sdr-st.is-kept { background: #8a8571; }
+    .bnp-sdr-st.is-no { background: #c9452f; }
+    .bnp-sdr-st.is-ask { background: #e0a400; }
+    .bnp-sdr-st.is-now { width: 18px; height: 18px; border: 3px solid color-mix(in srgb, var(--bnp-accent) 45%, #ddd); border-top-color: color-mix(in srgb, var(--bnp-accent) 85%, #000); background: none; animation: bnp-sdr-spin .8s linear infinite; }
+    .bnp-sdr-row.is-now { border-color: color-mix(in srgb, var(--bnp-accent) 80%, #000 10%); box-shadow: 0 0 0 2px color-mix(in srgb, var(--bnp-accent) 40%, transparent); }
+    .bnp-sdr-row.is-read { border-color: #bfdcbf; background: #f3faf2; }
+    .bnp-sdr-row.is-no { border-color: #efc6bd; background: #fdf4f2; }
+    .bnp-sdr-row.is-kept { background: #f7f5ef; }
+    .bnp-sdr-row.is-wait { cursor: default; }
+    .bnp-sdr-sep { grid-column: 1 / -1; margin: 6px 2px 0; color: #6b6653; font-size: 12px; }
+    .bnp-sdr-lb { display: inline-flex; align-items: center; height: 30px; margin: 0; padding: 0 14px; border: 2px solid #ddd6c2; border-radius: 999px; background: #fff; color: #363636; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
+    .bnp-sdr-lb:hover { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #777); }
+    .bnp-sdr-sum .bnp-sdr-lb { height: 26px; padding: 0 11px; font-size: 12px; }
+    .bnp-upto { display: inline-flex; align-items: center; gap: 5px; padding-left: 6px; border-left: 1.5px solid rgba(0, 0, 0, .1); }
+    .bnp-upto label { display: inline-flex; align-items: center; gap: 5px; margin: 0; color: #5d5845; font: 12px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; cursor: text; }
+    .bnp-upto input { width: 74px; height: 26px; margin: 0; padding: 0 8px; border: 1.5px solid #ddd6c2; border-radius: 999px; background: #fff; color: #222; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; text-align: right; outline: none; }
+    .bnp-upto input:focus { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #000 12%); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bnp-accent) 35%, transparent); }
+    .bnp-sdr-sortby { display: inline-flex; align-items: center; gap: 6px; margin-right: 2px; color: #5d5845; font: 12px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-sdr-sortby select { height: 26px; margin: 0; padding: 0 8px; border: 1.5px solid #ddd6c2; border-radius: 999px; background: #fff; color: #222; font: 12.5px "MuseoSansRounded500", Arial, sans-serif; cursor: pointer; }
+    .bnp-sdr-foot { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 10px; padding: 10px 14px 12px; border-top: 1px solid #efeadb; }
+    .bnp-sdr-fnote { margin-right: auto; color: #6b6653; font-size: 12px; line-height: 1.35; }
+    .bnp-sdr-pin { display: inline-flex; align-items: center; gap: 8px; margin-right: auto; color: #4a4636; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-sdr-pin input { width: 96px; height: 32px; margin: 0; padding: 0 12px; border: 2px solid #d8d3c2; border-radius: 999px; background: #fff; color: #222; font: 15px monospace; letter-spacing: 3px; outline: none; }
+    .bnp-sdr-pin input:focus { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #000 12%); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bnp-accent) 40%, transparent); }
+    .bnp-sdr-foot .button-default__2020 { flex: none; width: auto !important; min-width: 0; height: auto; margin: 0; padding: 4px 20px 7px; font-size: 12pt; white-space: nowrap; }   /* (Neopets' buttons their own size, as NE's other windows have them) */
+    .bnp-sdr-foot .bnp-sdr-btn { min-width: 130px; }
+    .bnp-sdr-bgchk { display: inline-flex; align-items: center; gap: 6px; margin: 0 auto 0 0; color: #5d5845; font-size: 12px; cursor: pointer; }
+    .bnp-sdr-bgchk input { width: 15px; height: 15px; margin: 0; accent-color: color-mix(in srgb, var(--bnp-accent) 85%, #000); }
+    .bnp-sdr-bgchk ~ .bnp-sdr-pin, .bnp-sdr-bgchk ~ .bnp-sdr-fnote { margin-right: 0; }
+    .bnp-sdr-foot .bnp-sdr-btn:disabled { filter: grayscale(.7); opacity: .6; cursor: default; }
+    @media (max-width: 560px) { .bnp-sdr-list { grid-template-columns: 1fr; } .bnp-sdr-chip { height: 46px; padding-right: 12px; } .bnp-sdr-chip img { width: 36px; height: 36px; } }
+    @media (prefers-reduced-motion: reduce) { .bnp-sdr-spin, .bnp-sdr-st.is-now { animation-duration: 2.4s; } .bnp-sdr-pill, .bnp-sdr-chip { transition: none; } }
+    /* Buy Mode: its window in your theme's pop-up colours, its settings in a box of their own; the list and rows as Read to a pet's */
+    .bnp-go.bnp-bm { width: min(740px, calc(100vw - 24px)); max-height: min(840px, 92vh); top: 4vh; }
+    .bnp-bm-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 9px; padding: 12px 14px 6px; overflow: hidden; }
+    .bnp-bm-what { flex: none; display: grid; gap: 2px; margin: 0; text-align: center; }
+    .bnp-bm-what b { color: #262626; font: 19px/1.2 "Cafeteria", "Arial Bold", sans-serif; font-weight: normal; letter-spacing: .3pt; }
+    .bnp-bm-what span { color: #6b6653; font-size: 12.5px; }
+    .bnp-bm-set { flex: none; display: grid; grid-template-columns: repeat(3, auto); justify-content: center; align-items: end; gap: 8px 18px; padding: 9px 14px 10px; border-radius: 12px; background: #faf7ee; box-shadow: inset 0 0 0 1.5px #ebe4cf; }
+    .bnp-bm-f { display: grid; justify-items: start; gap: 4px; margin: 0; color: #5d5845; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-bm-f > span:first-child { padding-left: 4px; }
+    .bnp-bm-np { display: inline-flex; align-items: center; gap: 6px; color: #5d5845; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-bm-np input { width: 110px; height: 32px; margin: 0; padding: 0 12px; border: 2px solid #d8d3c2; border-radius: 999px; background: #fff; color: #222; font: 14px "MuseoSansRounded700", Arial, sans-serif; text-align: right; outline: none; }
+    .bnp-bm-np input:focus { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #000 12%); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bnp-accent) 40%, transparent); }
+    .bnp-bm-np input:disabled { background: #f3f0e6; color: #777; }
+    .bnp-bm-chk { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 8px; margin: 2px 0 0; color: #3f3a26; font-size: 12.5px; line-height: 1.35; cursor: pointer; }
+    .bnp-bm-chk input { flex: none; width: 16px; height: 16px; margin: 1px 0 0; accent-color: color-mix(in srgb, var(--bnp-accent) 85%, #000); }
+    .bnp-bm-chk small { display: block; color: #6b6653; font-size: 11.5px; }
+    .bnp-bm-ban { flex: none; margin: 0; padding: 8px 12px; border: 2px solid #e0a400; border-radius: 12px; background: #fff8e1; color: #3f3a26; font-size: 12.5px; line-height: 1.4; }
+    .bnp-bm-ban b { color: #5c4300; }
+    .bnp-bm-find { width: 130px; height: 26px; margin: 0; padding: 0 10px; border: 1.5px solid #ddd6c2; border-radius: 999px; background: #fff; color: #222; font: 12.5px "MuseoSansRounded500", Arial, sans-serif; outline: none; }
+    .bnp-bm-find:focus { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #000 12%); }
+    .bnp-bm .bnp-sdr-row[hidden] { display: none; }
+    .bnp-bm .bnp-sdr-row.is-off { opacity: 1; }   /* (here most aren't ticked: the ticked ones stand out instead of the rest fading) */
+    .bnp-bm .bnp-sdr-row:not(.is-off):not(.is-read):not(.is-ask):not(.is-kept):not(.is-no):not(.is-now) { border-color: color-mix(in srgb, var(--bnp-accent) 75%, #000 8%); background: color-mix(in srgb, var(--bnp-accent) 12%, #fff); box-shadow: 0 0 0 1px color-mix(in srgb, var(--bnp-accent) 45%, transparent); }
+    .bnp-bm .bnp-sdr-row.is-ask { border-color: #f0d68a; background: #fffaf0; }   /* (over your limit) */
+    .bnp-bm .bnp-sdr-list { min-height: 120px; }
+    .bnp-sa-heroacts .bnp-sa-btn svg { flex: none; width: 15px; height: 15px; }
+    @media (max-width: 620px) { .bnp-bm-set { grid-template-columns: 1fr 1fr; } }
     #invDisplay .grid-item.bnp-inv-gone { opacity: 0; transform: scale(.9); transition: opacity .25s ease, transform .25s ease; pointer-events: none; }
     #invDisplay .grid-item.bnp-inv-new { animation: bnp-inv-in .35s ease-out; }
     #invDisplay .grid-item.bnp-inv-wait { cursor: progress; }
     #invDisplay .grid-item.bnp-inv-wait .item-img { opacity: .45; transition: opacity .15s ease; }
+    #invDisplay .grid-item.bnp-inv-used .item-img { filter: grayscale(1); opacity: .35; cursor: progress; transition: filter .2s ease, opacity .2s ease; }   /* (just used, given or moved: grey till Neopets' list says what's left of it) */
+    #invDisplay .grid-item.bnp-inv-used > :not(.item-img) { opacity: .45; transition: opacity .2s ease; }
     @keyframes bnp-inv-in { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
     @media (prefers-reduced-motion: reduce) { #invDisplay .grid-item.bnp-inv-gone { transition: none; } #invDisplay .grid-item.bnp-inv-new { animation: none; } }
     @media (prefers-reduced-motion: reduce) { .bnp-wt-track i { transition: none; } }
@@ -46812,6 +47891,7 @@
     #container__2020 #invDisplay.inv-items { border-radius: 0 0 15px 15px; }   /* (the Inventory's white box: rounded at its foot, as the tabs over it are at their top) */
     #container__2020 h1.bnp-pt { display: inline-flex; align-items: center; justify-content: center; gap: 12px; max-width: none !important; font-size: 46px !important; line-height: var(--pt-lh) !important; white-space: nowrap; }   /* (an item page's title, bigger, with its picture: no taller than Neopets' own; moved to the middle of its room by ptFit) */
     #container__2020 h1:not(.bnp-pt) > .bnp-pt-ic { display: none; }
+    #container__2020 .page-title__2020:has(> h1.bnp-pt) { position: relative; }   /* (Books Read's and Quick Ref's title rows: moved to the middle of their room by their top) */
     #container__2020 .bnp-pt-ic { flex: none; width: 56px; height: 56px; margin: min(0px, calc((var(--pt-lh, 56px) - 56px) / 2)) 0; object-fit: contain; }
     @media (max-width: 768px) { #container__2020 h1.bnp-pt { font-size: 30px !important; gap: 8px; } #container__2020 .bnp-pt-ic { width: 36px; height: 36px; margin: min(0px, calc((var(--pt-lh, 36px) - 36px) / 2)) 0; } }
     #container__2020 .inv-title-container h1.bnp-ib .inv-chest-icon { left: var(--ib-cx) !important; top: var(--ib-cy) !important; width: var(--ib-cw) !important; height: var(--ib-ch) !important; }
@@ -47164,7 +48244,7 @@
     .bnp-cp.bnp-cp-pop { --bnp-accent: #fed123; --bnp-accent-text: #363636; position: fixed; z-index: 2147482950; color: #363636; font: 13px/1.35 "MuseoSansRounded500", Arial, sans-serif; text-align: left; letter-spacing: normal; }   /* (a window's own colour, chosen over the page beside it) */
     .bnp-cp-pop *, .bnp-cp-pop *::before, .bnp-cp-pop *::after { box-sizing: border-box; }
     /* the daily run bar: a small card in the corner of a daily's page */
-    .bnp-run { --bnp-accent: #fed123; --bnp-accent-text: #363636; position: fixed; z-index: 2147482800; right: 16px; bottom: 16px; display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 32px); padding: 6px 6px 6px 6px; border: 3px solid color-mix(in srgb, var(--bnp-accent) 65%, #000 15%); border-radius: 16px; background: #fff; box-shadow: 0 8px 26px rgba(0, 0, 0, .28); box-sizing: border-box; color: #363636; font: 13px/1.3 "MuseoSansRounded500", Arial, sans-serif; text-align: left; letter-spacing: normal; animation: bnp-rem-in .35s cubic-bezier(.2, .9, .3, 1.2); }
+    .bnp-run { --bnp-accent: #fed123; --bnp-accent-text: #363636; position: fixed; z-index: 2147482800; right: 16px; bottom: 16px; display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 32px); padding: 7px 8px 13px 7px; border: 2px solid color-mix(in srgb, var(--bnp-accent) 65%, #000 15%); border-radius: 18px; background: linear-gradient(#fff 55%, color-mix(in srgb, var(--bnp-accent) 7%, #fff)); box-shadow: 0 3px 0 color-mix(in srgb, var(--bnp-accent) 55%, #000 20%), 0 10px 28px rgba(0, 0, 0, .25); box-sizing: border-box; color: #363636; font: 13px/1.3 "MuseoSansRounded500", Arial, sans-serif; text-align: left; letter-spacing: normal; animation: bnp-rem-in .35s cubic-bezier(.2, .9, .3, 1.2); }
     .bnp-run[hidden] { display: none; }
     @media (prefers-reduced-motion: reduce) { .bnp-run { animation: none; } }
     html.bnp-cocowait body { visibility: hidden !important; }
@@ -47800,32 +48880,41 @@
     .bnp-quiet:hover, .bnp-quiet:focus-visible { border-color: #000; outline: none; box-shadow: 0 0 0 3px rgba(254, 209, 35, .7), 0 2px 6px rgba(0, 0, 0, .25); }
     html:has(.premium-widget__2024[style*="block"]) .bnp-run { visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }   /* (the Super Shop Wizard's panel, or another premium one, open: the bar out of its way till it shuts) */
     html[data-bnp-runon] body:not(:has(.footer__2020))::after { content: ""; display: block; height: calc(var(--bnp-runh, 64px) + 28px); }   /* (room at the foot of a page with no foot of its own: nothing stays under the bar. Neopets' foot is taller than the bar: with it, the bar floats over its corner at the end, and the page ends as Neopets made it) */
-    .bnp-run-ic { flex: none; width: 40px; height: 40px; border-radius: 10px; background: #f4f1e6 center / contain no-repeat; }
-    .bnp-run-now { display: flex; flex-direction: column; min-width: 0; }
-    .bnp-run-now b { overflow: hidden; max-width: 190px; font: 14px "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
-    .bnp-run-now small { color: #6f6a58; font-size: 11.5px; white-space: nowrap; }
+    .bnp-run-ic { flex: none; width: 44px; height: 44px; border-radius: 13px; background: color-mix(in srgb, var(--bnp-accent) 14%, #fff) center / 34px no-repeat; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--bnp-accent) 45%, #d6d0bd); }   /* (the daily you're on, in a tile of the theme's tint) */
+    .bnp-run-now { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+    .bnp-run-now b { overflow: hidden; max-width: 200px; color: #2b2b2b; font: 17px/1.15 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-run-now small { color: #6f6a58; font: 12px "MuseoSansRounded500", Arial, sans-serif; white-space: nowrap; }
     .bnp-run.is-done .bnp-run-now small { color: #2b8a27; }
-    .bnp-run .bnp-run-next { display: inline-flex; align-items: center; gap: 7px; margin-left: 4px; padding: 5px 10px 5px 10px; border-radius: 12px; background: var(--bnp-accent); color: var(--bnp-accent-text); font: 14px "MuseoSansRounded700", Arial, sans-serif; text-decoration: none; white-space: nowrap; }
-    .bnp-run .bnp-run-next:hover { filter: brightness(1.06); }
-    .bnp-run-next small { font-size: 10px; letter-spacing: .07em; text-transform: uppercase; opacity: .85; }
-    .bnp-run-next b { overflow: hidden; max-width: 170px; text-overflow: ellipsis; }
-    .bnp-run-nic { flex: none; width: 26px; height: 26px; background: center / contain no-repeat; }
-    .bnp-run-next i { font-style: normal; font-size: 22px; line-height: .8; }
+    .bnp-run-go { display: inline-flex; align-items: center; gap: 5px; margin-left: 4px; }   /* (Next, with Skip after it and back before it) */
+    .bnp-run .bnp-run-next { display: inline-flex; align-items: center; gap: 8px; padding: 4px 13px 4px 4px; border: 1px solid color-mix(in srgb, var(--bnp-accent) 60%, #000 25%); border-radius: 999px; background: linear-gradient(color-mix(in srgb, var(--bnp-accent) 86%, #fff), var(--bnp-accent)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 2px 0 color-mix(in srgb, var(--bnp-accent) 60%, #000 25%); color: var(--bnp-accent-text); text-decoration: none; white-space: nowrap; transition: transform .12s, filter .12s; }
+    .bnp-run .bnp-run-next:hover, .bnp-run .bnp-run-next:focus-visible { filter: brightness(1.06); outline: none; transform: translateY(-1px); }
+    .bnp-run-nic { flex: none; width: 34px; height: 34px; border-radius: 50%; background: #fff center / 26px no-repeat; box-shadow: 0 0 0 2px rgba(255, 255, 255, .5); }
+    .bnp-run-nx { display: grid; min-width: 0; line-height: 1.1; }
+    .bnp-run-nx small { font: 10px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .08em; opacity: .85; text-transform: uppercase; }
+    .bnp-run-nx small em { margin-left: 3px; font-style: normal; letter-spacing: .02em; opacity: .9; }
+    .bnp-run-nx b { overflow: hidden; max-width: 180px; font: 16px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-overflow: ellipsis; }
+    .bnp-run-next > i { font-style: normal; font-size: 22px; line-height: .8; }
+    .bnp-run .bnp-run-skip { display: inline-flex; align-items: center; gap: 4px; height: 30px; margin: 0; padding: 0 10px 0 12px; border: 1.5px solid #d3ccb7; border-radius: 999px; background: #fff; box-shadow: 0 2px 0 #e4dece; color: #4a4636; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; transition: transform .12s; }   /* (Skip: the next one along shown here, nothing opened) */
+    .bnp-run .bnp-run-step { display: grid; place-items: center; width: 30px; height: 30px; margin: 0; padding: 0; border: 1.5px solid #d3ccb7; border-radius: 50%; background: #fff; box-shadow: 0 2px 0 #e4dece; color: #4a4636; cursor: pointer; transition: transform .12s; }
+    .bnp-run .bnp-run-skip:hover, .bnp-run .bnp-run-skip:focus-visible, .bnp-run .bnp-run-step:hover, .bnp-run .bnp-run-step:focus-visible { border-color: color-mix(in srgb, var(--bnp-accent) 65%, #000 15%); background: color-mix(in srgb, var(--bnp-accent) 22%, #fff); outline: none; transform: translateY(-1px); }
     .bnp-run-all { color: #2b8a27; font: 13px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }
     .bnp-run .bnp-run-x { flex: none; margin: 0; padding: 4px 6px; border: 0; border-radius: 8px; background: none; color: #6f6a58; font: 16px/1 Arial, sans-serif; cursor: pointer; }
     .bnp-run .bnp-run-x:hover { background: #f1eee3; color: #222; }
-    .bnp-run .bnp-run-b { flex: none; display: grid; place-items: center; width: 34px; height: 34px; margin: 0; padding: 0; border: 1px solid #d3ccb7; border-radius: 50%; background: #faf9f5; box-shadow: 0 2px 0 #e4dece; cursor: pointer; }   /* (the board: its button, with the Dailies picture) */
+    .bnp-run .bnp-run-b { flex: none; display: grid; place-items: center; width: 36px; height: 36px; margin: 0; padding: 0; border: 1.5px solid #d3ccb7; border-radius: 50%; background: #fff; box-shadow: 0 2px 0 #e4dece; cursor: pointer; }   /* (the Dailies board: all of them) */
     .bnp-run .bnp-run-b:hover { border-color: color-mix(in srgb, var(--bnp-accent) 65%, #000 15%); background: color-mix(in srgb, var(--bnp-accent) 30%, #fff); }
     .bnp-run .bnp-run-b i { width: 22px; height: 22px; background: center / contain no-repeat; }
-    .bnp-run .bnp-run-tick { flex: none; position: relative; width: 26px; height: 26px; margin: 0; padding: 0; border: 2px solid #d6d0bd; border-radius: 50%; background: #fff; cursor: pointer; transition: background-color .15s, border-color .15s; }   /* (done here: ticked by hand) */
-    .bnp-run .bnp-run-tick::after { content: ""; position: absolute; left: 7px; top: 3px; width: 6px; height: 11px; border: solid transparent; border-width: 0 3px 3px 0; transform: rotate(45deg); }
+    .bnp-run .bnp-run-tick { flex: none; position: relative; width: 28px; height: 28px; margin: 0; padding: 0; border: 2px solid #d6d0bd; border-radius: 50%; background: #fff; cursor: pointer; transition: background-color .15s, border-color .15s, transform .15s; }
+    .bnp-run .bnp-run-tick::after { content: ""; position: absolute; left: 8px; top: 4px; width: 6px; height: 11px; border: solid transparent; border-width: 0 3px 3px 0; transform: rotate(45deg); }
     .bnp-run .bnp-run-tick:hover { border-color: #3cb043; }
     .bnp-run .bnp-run-tick:hover::after { border-color: #9ccf9c; }
-    .bnp-run .bnp-run-tick[aria-pressed="true"] { border-color: #3cb043; background: #3cb043; }
+    .bnp-run .bnp-run-tick[aria-pressed="true"] { border-color: #3cb043; background: #3cb043; box-shadow: 0 2px 0 #2b8a27; }
     .bnp-run .bnp-run-tick[aria-pressed="true"]::after { border-color: #fff; }
-    .bnp-run .bnp-run-prog { position: absolute; left: 14px; right: 14px; bottom: 2px; height: 3px; overflow: hidden; border-radius: 3px; background: #efebdf; pointer-events: none; }   /* (how far you are today) */
-    .bnp-run .bnp-run-prog::before { content: ""; display: block; width: var(--p, 0%); height: 100%; border-radius: inherit; background: #3cb043; transition: width .4s; }
-    @media (max-width: 760px) { .bnp-run { left: 8px; right: 8px; bottom: 74px; max-width: none; } .bnp-run-now b { max-width: 110px; } }
+    .bnp-run .bnp-run-segs { position: absolute; left: 16px; right: 16px; bottom: 4px; display: flex; gap: 3px; height: 4px; pointer-events: none; }   /* (how far you are today: a segment for each daily) */
+    .bnp-run-segs i { flex: 1; min-width: 2px; border-radius: 2px; background: #e8e3d4; transition: background-color .3s; }
+    .bnp-run-segs i.is-done { background: #3cb043; }
+    .bnp-run-segs i.is-here { background: color-mix(in srgb, var(--bnp-accent) 80%, #000 12%); }   /* (the one you're on: the theme's colour; green with a dark edge once it's done) */
+    .bnp-run-segs i.is-here.is-done { background: #3cb043; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .35); }
+    @media (max-width: 760px) { .bnp-run { left: 8px; right: 8px; bottom: 74px; max-width: none; } .bnp-run-now b { max-width: 110px; } .bnp-run-nx b { max-width: 110px; } .bnp-run .bnp-run-skip { padding: 0 8px; font-size: 0; gap: 0; } }   /* (narrow: Skip as its arrows) */
     /* Go to…: Neopets' pop-up look, high on the page, the list under the box */
     .bnp-go { --bnp-accent: #fed123; --bnp-accent-text: #363636; position: fixed; z-index: 2147483001; left: 50%; top: 9vh; transform: translateX(-50%); display: none; flex-direction: column; width: min(600px, calc(100vw - 24px)); max-height: min(640px, 82vh); overflow: hidden; border: var(--bnp-border, 3px solid #4d4d4d); border-radius: 15px; background: #fff; box-shadow: 0 14px 44px rgba(0, 0, 0, .45); box-sizing: border-box; color: #363636; font: 14px/1.35 "MuseoSansRounded500", Arial, sans-serif; text-align: left; letter-spacing: normal; text-transform: none; }
     .bnp-go.open { display: flex; }
@@ -48085,6 +49174,7 @@
     html.bnp-side-pinned.bnp-ncl-pinned.bnp-old #main { max-width: calc(100vw - var(--bnp-ncl-pagew, 400px) - var(--bnp-side-w, 280px) - 16px) !important; }
     html.bnp-side-pinned #navprofiledropdown__2020.bnp-pinned { border-right: var(--bnp-side-edge, 3px solid rgb(77, 77, 77)) !important; box-shadow: 8px 0 24px rgba(0, 0, 0, .18); }   /* (its edge, like NeoChat's pinned and the windows') */
     html.bnp-side-pinned .navsub-left__2020 { left: calc(var(--bnp-side-w, 280px) + 10px) !important; }
+    html.bnp-pinwait :is(.navsub-left__2020, .navsub-right__2020) { visibility: hidden !important; }   /* (the row under the top bar, till it's placed beside what's pinned) */
     html.bnp-side-pinned.bnp-ncl-pinned.bnp-ncl-pinleft .navsub-left__2020 { left: calc(var(--bnp-ncl-pagew, 400px) + var(--bnp-side-w, 280px) + 10px) !important; }
     html.bnp-side-pinned .togglePopup__2020 { left: calc(var(--bnp-side-w, 280px) + (100vw - var(--bnp-side-w, 280px)) / 2) !important; }
     html.bnp-side-pinned.bnp-ncl-pinned:not(.bnp-ncl-pinleft) .togglePopup__2020 { left: calc(var(--bnp-side-w, 280px) + (100vw - var(--bnp-side-w, 280px) - var(--bnp-ncl-pagew, 400px)) / 2) !important; }
@@ -48956,6 +50046,17 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.1', '2026-11-02', [
+      'Buy Mode: buy the books, Booktastic books, gourmet foods and stamps you don’t have yet from users’ shops. Tick them, or all up to a price, with a most for one item and a budget',
+      'Buy Mode: the Shop Wizard (1 to 3 searches an item) or Super Shop Wizard. A Shop Wizard break says when you can search again, and it carries on just after the hour or waits for Resume',
+      'Buy Mode: reads the books it buys to your pet, feeds it the foods and puts the stamps in your album as it goes, showing how far it’s got. What you already have isn’t bought again',
+      'Buy Mode: it knows your inventory holds 50 (when it’s full: use them, put them in your SDB, or stop) and keeps going in a background tab',
+      'Safety Deposit Box: Read to a pet for several books at once, from any pages or every book in it. The ones your pet has read and Archive books are left out; sort or tick by price',
+      'Inventory: an item you use greys out at once, until it’s gone',
+      'Books Read: a bigger title with the Pet Bookshelf, in the middle; raised buttons, a round portrait and what your pet’s books are worth. Marks update as books are read',
+      'Quick Ref: its sort and view bar on one row with dropdowns, the Your Pets nameplate in the middle, and a bigger title in the middle',
+      'Dailies: skip ahead or back in the run bar before you go on. Fixes: the SDB page no longer redraws itself all the time, and with NeoChat pinned your Neopoints row is in place at once',
+    ]],
     ['5.0', '2026-11-02', [
       'Quick Ref: made over on Neopets’ new page, in your theme. Your Pets has round portraits, and counts that show only the hungry, sick or Neolodge pets',
       'Quick Ref cards: a health meter, battle stats, what each pet has on, its petpet, training, its Neolodge stay to the minute (with Check out early), the cure and where to feed it',
@@ -49451,7 +50552,7 @@
     if (document.documentElement) { fn(); return; }
     const o = new MutationObserver(() => { if (document.documentElement) { o.disconnect(); fn(); } });
     o.observe(document, { childList: true });
-  })(() => { for (const f of [barLook, boxEarly, nclPinEarly, tpEarly, tpSalesEar, invEar, sdbEar, qsAllEar, pageEar, dailyFormEar, quietEar, cocoEarly, fishEarly, myEarly, tabsMark, dockMark, shopMin, srEarly, nbEarly, stEarly, nmEarly, nmSentEarly, smEarly, cuEarly, colEarly, saEarly, cloEarly, galEarly, shopEarly, mallEarly, pinAdEarly, pageWait, waitStyle, navEarly]) { try { f(); } catch (e) { report(e); } } });
+  })(() => { for (const f of [barLook, boxEarly, nclPinEarly, pinRowsEarly, tpEarly, tpSalesEar, invEar, sdbEar, qsAllEar, pageEar, dailyFormEar, quietEar, cocoEarly, fishEarly, myEarly, tabsMark, dockMark, shopMin, srEarly, nbEarly, stEarly, nmEarly, nmSentEarly, smEarly, cuEarly, colEarly, saEarly, cloEarly, galEarly, shopEarly, mallEarly, pinAdEarly, pageWait, waitStyle, navEarly]) { try { f(); } catch (e) { report(e); } } });
   // ═══════════════════════════════════════════════════════════════════════════
   // The page at its very start
   // ═══════════════════════════════════════════════════════════════════════════
@@ -49573,7 +50674,7 @@
     setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 4000 + Math.random() * 12000);   // (the Turmaculus' due hours, if they're needed: a moment after the page, not at once)
     document.addEventListener('visibilitychange', () => { if (document.hidden) return; clearTimeout(turmacRead.t); turmacRead.t = setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 3000 + Math.random() * 6000); });
     try { startKeep(); } catch (e) { report(e); }
-    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, labPage, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
+    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, sdrBoot, labPage, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
     themeAfter(themeChanged);   // (an old page, its theme's sheets still coming: everything of ours dressed again once they're in)
     whenLoaded(() => { setTimeout(() => { try { boxFootNote(); } catch (e) { report(e); } }, 900); try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } setTimeout(() => { updCheck(false).catch(report); try { updSeen(); } catch (e) { report(e); } }, 1500); try { const w = myWorn(), sw = w && themeData().sw[myLive(w).base]; if (w && (!sw || sw.v !== 7)) themeSwatches(); } catch (e) { report(e); } });   // (a theme of yours: its base's sheet read, if it hasn't been yet)   // (a random event Neopets adds a moment later; theme pictures for the tab)
     if (document.getElementById('navtop__2020') || document.getElementById('navbottom__2020')) startOnce();
