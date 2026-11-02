@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.9
+// @version      4.9.1
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -8301,7 +8301,7 @@
     }
     const pets = [...by.values()].sort((a, b) => b.courses - a.courses || b.at - a.at);
     const card = (p) => `<article class="bnp-tr-hcard">
-      <header><img src="https://pets.neopets.com/cpn/${encodeURIComponent(p.n)}/1/2.png" alt="" width="52" height="52" loading="lazy"><span><b>${esc(p.n)}</b><small>${p.courses} course${p.courses === 1 ? '' : 's'} completed · ${p.stones} codestone${p.stones === 1 ? '' : 's'} used</small></span></header>
+      <header>${trPicBox(p.n, 52)}<span><b>${esc(p.n)}</b><small>${p.courses} course${p.courses === 1 ? '' : 's'} completed · ${p.stones} codestone${p.stones === 1 ? '' : 's'} used</small></span></header>
       <div class="bnp-tr-gains">${[...TR_STATS, 'lv'].map((k) => `<span class="${p.g[k] ? 'is-up' : ''}"><small>${TR_SHORT[k]}</small><b>${p.g[k] ? `+${p.g[k]}` : '0'}</b></span>`).join('')}</div>
       <p class="bnp-tr-hcost">${p.np ? `<b>${trNp(p.np)}</b> spent` : 'Nothing bought'}${p.est ? ` · <span title="Codestones from your SDB or inventory, at itemdb’s price">≈ ${trNp(p.est)} of your own codestones</span>` : ''}</p>
     </article>`;
@@ -8316,6 +8316,27 @@
       <div class="bnp-tr-hcards">${pets.map(card).join('')}</div>
       <h5 class="bnp-tr-sec bnp-tr-hsec"><span>Recent</span><small>the newest 40</small></h5>
       <div class="bnp-tr-hwrap"><table class="bnp-tr-htable"><thead><tr><th>When</th><th>Pet</th><th>Course</th><th>What happened</th><th class="is-num">NP</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  const trPics = new Map();   // (each pet's picture, once a page: the board drawn again keeps it, loaded or loading)
+  function trPicEl(name, size) {
+    const key = `${name.toLowerCase()}|${size}`;
+    let img = trPics.get(key);
+    if (img) return img;
+    img = document.createElement('img');
+    img.alt = '';
+    img.decoding = 'async';
+    const tries = ['1/2.png', '1/2.png', '1/2.png', '1/1.png'];   // (its 150px picture, shown smaller; asked again a few seconds on; then its 50px one)
+    let n = 0;
+    const go = () => { img.src = `https://pets.neopets.com/cpn/${encodeURIComponent(name)}/${tries[n]}${n ? `?try=${n}` : ''}`; };
+    img.addEventListener('load', () => { img.classList.add('is-ok'); if (img.parentElement) img.parentElement.classList.add('is-ok'); });
+    img.addEventListener('error', () => { if (++n < tries.length) setTimeout(go, [0, 2500, 6000, 12000][n]); });
+    go();
+    trPics.set(key, img);
+    return img;
+  }
+  const trPicBox = (name, size) => `<span class="bnp-tr-picbox" data-trpic="${esc(name)}" data-size="${size}" data-initial="${esc(String(name).charAt(0))}" style="width:${size}px;height:${size}px" aria-hidden="true"></span>`;
+  function trPicsIn(root) {   // (each pet's own picture into its place)
+    for (const b of root.querySelectorAll('[data-trpic]')) { const img = trPicEl(b.dataset.trpic, Number(b.dataset.size) || 64); b.append(img); if (img.classList.contains('is-ok')) b.classList.add('is-ok'); }
   }
   function trSetupPaint() { trPaint(); }
   function trPaint() {
@@ -8335,6 +8356,7 @@
       <div class="bnp-tr-tabs" role="tablist">${tabBtn('pets', `Your pets${n ? ` <b>${n} training</b>` : ''}`)}${tabBtn('hist', 'History')}${tabBtn('log', `Log${L.lines.length ? ` <b>${Math.min(L.lines.length, 40)}</b>` : ''}`)}</div>`;
     if (view.contains(document.activeElement) && document.activeElement.matches('input')) return;   // (a number being typed: left as it is till you're out of it)
     view.innerHTML = trTab === 'log' ? trLogHtml(L) : trTab === 'hist' ? trHistHtml() : trBoardHtml(L, G);
+    trPicsIn(view);
   }
   const trLogHtml = (L) => (L.lines.length ? `<ol class="bnp-tr-log">${L.lines.slice(0, 40).map((x) => `<li class="${x.k ? `is-${esc(x.k)}` : ''}"><time>${esc(trWhen(x.at))}</time><span>${esc(x.t)}</span></li>`).join('')}</ol>` : '<p class="bnp-tr-empty">Nothing yet: each step it takes is written here.</p>');
   function trLeft(ms) {   // ("3:58:41", "4:07": a course's time left, as a clock counting down)
@@ -8376,7 +8398,7 @@
       </div>`;
     };
     return `<article class="bnp-tr-card is-${tone}${on ? ' is-on' : ''}">${on ? '' : `<button type="button" class="bnp-tr-nevbtn" data-trnever="${esc(p.lc)}" title="${esc(`Never train ${p.name}: put it in Never train, out of the way`)}" aria-label="${esc(`Never train ${p.name}`)}">${TR_EYEOFF}</button>`}
-      <header class="bnp-tr-chead"><img src="https://pets.neopets.com/cpn/${encodeURIComponent(p.name)}/1/2.png" alt="" width="64" height="64" loading="lazy"><span class="bnp-tr-cname"><b>${esc(p.name)}</b><span><i class="bnp-tr-lv${cur === 'lv' ? ' is-now' : nx === 'lv' ? ' is-next' : ''}" title="${esc(cur === 'lv' ? 'On a Level course now' : nx === 'lv' ? 'Its level is trained next: the stats it trains are waiting for it' : 'Its level: trained when the stats it trains are waiting for it')}">Level ${p.lv}${cur === 'lv' ? '<em>now</em>' : nx === 'lv' ? '<em>next</em>' : ''}</i><small class="bnp-tr-school">${on ? trSchoolIc(trPetSchool({ ...p, s: p.s })) : ''}${trPetSchool({ ...p, s: p.s }) === 'ninja' ? 'Ninja school' : 'Mystery Island'}</small></span></span>${on ? `<button type="button" class="bnp-tr-pill bnp-tr-cstop" data-trstop="${esc(p.lc)}" title="${esc(`Take ${p.name} out of training (a course it’s on goes on)`)}">Remove</button>` : ''}</header>
+      <header class="bnp-tr-chead">${trPicBox(p.name, 64)}<span class="bnp-tr-cname"><b>${esc(p.name)}</b><span><i class="bnp-tr-lv${cur === 'lv' ? ' is-now' : nx === 'lv' ? ' is-next' : ''}" title="${esc(cur === 'lv' ? 'On a Level course now' : nx === 'lv' ? 'Its level is trained next: the stats it trains are waiting for it' : 'Its level: trained when the stats it trains are waiting for it')}">Level ${p.lv}${cur === 'lv' ? '<em>now</em>' : nx === 'lv' ? '<em>next</em>' : ''}</i><small class="bnp-tr-school">${on ? trSchoolIc(trPetSchool({ ...p, s: p.s })) : ''}${trPetSchool({ ...p, s: p.s }) === 'ninja' ? 'Ninja school' : 'Mystery Island'}</small></span></span>${on ? `<button type="button" class="bnp-tr-pill bnp-tr-cstop" data-trstop="${esc(p.lc)}" title="${esc(`Take ${p.name} out of training (a course it’s on goes on)`)}">Remove</button>` : ''}</header>
       <div class="bnp-tr-tiles">${TR_STATS.map(tile).join('')}</div>
       <p class="bnp-tr-where"><i class="bnp-tr-dot" aria-hidden="true"></i><span>${esc(where)}${end ? ` <span class="bnp-tr-cdw">(<time class="bnp-tr-cd" data-end="${end}">${trLeft(end - Date.now())}</time> left)</span>` : ''}</span></p>
     </article>`;
@@ -8400,7 +8422,7 @@
     const on = pets.filter((p) => trHasGoal(G[p.lc])).sort((a, b) => order[a.kind] - order[b.kind] || (a.end || 0) - (b.end || 0) || a.name.localeCompare(b.name));
     const never = trNever(), nev = pets.filter((p) => never[p.lc] && !trHasGoal(G[p.lc])).sort((a, b) => a.name.localeCompare(b.name));
     const off = pets.filter((p) => !trHasGoal(G[p.lc]) && !never[p.lc]).sort((a, b) => b.lv - a.lv || a.name.localeCompare(b.name));
-    const nevPanel = nev.length ? `<section class="bnp-tr-panel is-never${trNevOpen ? ' is-open' : ''}"><button type="button" class="bnp-tr-sec bnp-tr-addhead" data-tr="never" aria-expanded="${trNevOpen}"><i class="bnp-tr-nevic" aria-hidden="true">${TR_EYEOFF}</i><span>Never train</span><b>${nev.length}</b><small>${trNevOpen ? 'out of the way: Bring back, and a pet’s with the others again' : `${nev.length === 1 ? 'a pet' : `${nev.length} pets`} kept out of the way: show ${nev.length === 1 ? 'it' : 'them'}`}</small><i class="bnp-tr-caret" aria-hidden="true"></i></button>${trNevOpen ? `<div class="bnp-tr-nevlist">${nev.map((p) => `<span class="bnp-tr-nevpet"><img src="https://pets.neopets.com/cpn/${encodeURIComponent(p.name)}/1/2.png" alt="" width="40" height="40" loading="lazy"><span><b>${esc(p.name)}</b><small>Level ${p.lv}</small></span><button type="button" class="bnp-tr-pill" data-trback="${esc(p.lc)}">Bring back</button></span>`).join('')}</div>` : ''}</section>` : '';
+    const nevPanel = nev.length ? `<section class="bnp-tr-panel is-never${trNevOpen ? ' is-open' : ''}"><button type="button" class="bnp-tr-sec bnp-tr-addhead" data-tr="never" aria-expanded="${trNevOpen}"><i class="bnp-tr-nevic" aria-hidden="true">${TR_EYEOFF}</i><span>Never train</span><b>${nev.length}</b><small>${trNevOpen ? 'out of the way: Bring back, and a pet’s with the others again' : `${nev.length === 1 ? 'a pet' : `${nev.length} pets`} kept out of the way: show ${nev.length === 1 ? 'it' : 'them'}`}</small><i class="bnp-tr-caret" aria-hidden="true"></i></button>${trNevOpen ? `<div class="bnp-tr-nevlist">${nev.map((p) => `<span class="bnp-tr-nevpet">${trPicBox(p.name, 40)}<span><b>${esc(p.name)}</b><small>Level ${p.lv}</small></span><button type="button" class="bnp-tr-pill" data-trback="${esc(p.lc)}">Bring back</button></span>`).join('')}</div>` : ''}</section>` : '';
     if (!pets.length) return `<div class="bnp-tr-empty"><p>None of your pets trains at ${TR_SCHOOLS[here].long} just now${here === 'ninja' ? ': it takes pets of level 250 and up' : ''}.</p></div>${elsewhere}`;
     const every = (k) => pets.filter((p) => !nev.includes(p)).every((p) => trHasGoal(G[p.lc]) && G[p.lc].g[k]);
     return `<div class="bnp-tr-quick"><span>Every pet:</span>${TR_STATS.map((k) => `<button type="button" class="bnp-tr-qchip" data-trevery="${k}" aria-pressed="${every(k)}" title="${esc(every(k) ? `Stop training ${TR_NAME[k]} on every pet` : `Train ${TR_NAME[k]} on every pet`)}">${TR_NAME[k]}</button>`).join('')}<small>or click the stats on each pet. It trains the lowest of a pet’s first, and its level when they’re waiting for it.</small></div>
@@ -46704,7 +46726,11 @@
     .bnp-tr-card.is-busy { border-left-color: #3f9a2e; } .bnp-tr-card.is-pay { border-left-color: #e0a800; } .bnp-tr-card.is-done { border-left-color: #3b7dd8; } .bnp-tr-card.is-goal { border-left-color: #2f7d29; } .bnp-tr-card.is-free { border-left-color: #c9b98a; }
     .bnp-tr-cards.is-off .bnp-tr-card { border-style: dashed; border-left-width: 2px; background: #fff; }
     .bnp-tr-chead { display: flex; align-items: center; gap: 10px; }
-    .bnp-tr-chead img { flex: none; width: 64px; height: 64px; border-radius: 12px; background: #f4f1e8; }
+    .bnp-tr-picbox { position: relative; display: inline-flex; flex: none; align-items: center; justify-content: center; overflow: hidden; border-radius: 12px; background: #f4f1e8; color: #c9bfa0; font: 700 22px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; }   /* (a pet's picture: its first letter on a soft tile till it's in) */
+    .bnp-tr-picbox::before { content: attr(data-initial); }
+    .bnp-tr-picbox.is-ok::before { content: none; }
+    .bnp-tr-picbox img { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity .2s; }
+    .bnp-tr-picbox img.is-ok { opacity: 1; }
     .bnp-tr-cname { display: flex; flex: 1; flex-direction: column; min-width: 0; }
     .bnp-tr-cname > b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 18px/1.25 "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-tr-cname > span { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; margin-top: 2px; }
@@ -46778,7 +46804,7 @@
     .bnp-tr-nevic svg { width: 100%; height: 100%; }
     .bnp-tr-nevlist { display: flex; flex-wrap: wrap; gap: 8px; }
     .bnp-tr-nevpet { display: inline-flex; align-items: center; gap: 8px; padding: 5px 6px 5px 5px; border: 1px solid #ddd8ca; border-radius: 12px; background: #fff; }
-    .bnp-tr-nevpet img { width: 40px; height: 40px; border-radius: 9px; background: #f4f1e8; }
+    .bnp-tr-nevpet .bnp-tr-picbox { border-radius: 9px; font-size: 15px; }
     .bnp-tr-nevpet > span { display: flex; flex-direction: column; min-width: 0; }
     .bnp-tr-nevpet b { font: 700 14px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-tr-nevpet small { color: #8a8470; font-size: 11.5px; }
@@ -46787,7 +46813,7 @@
     .bnp-tr-hcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
     .bnp-tr-hcard { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 2px solid #e2ddcd; border-radius: 14px; background: #fff; }
     .bnp-tr-hcard header { display: flex; align-items: center; gap: 10px; }
-    .bnp-tr-hcard header img { flex: none; width: 52px; height: 52px; border-radius: 11px; background: #f4f1e8; }
+    .bnp-tr-hcard header .bnp-tr-picbox { border-radius: 11px; font-size: 18px; }
     .bnp-tr-hcard header span { display: flex; flex-direction: column; min-width: 0; }
     .bnp-tr-hcard header b { font: 700 17px/1.25 "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-tr-hcard header small { color: #6f6a58; font-size: 12px; }
@@ -48307,6 +48333,9 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.9.1', '2026-11-02', [
+      'Fixes: the Trainer’s pet pictures load every time: each is kept as the board updates, tried again when Neopets’ picture server is slow, with the pet’s letter on a soft tile till it’s in',
+    ]],
     ['4.9', '2026-11-02', [
       'Trainer mode at the Mystery Island and Ninja schools: a Trainer link with their own shows your pets as cards; click a stat on a pet and it trains it, the lowest of them first, course after course by itself while you’re on a school page',
       'Trainer mode: finished courses completed, the next ones started, codestones taken out of your SDB and the rest bought from the cheapest shop under your limits, then paid',

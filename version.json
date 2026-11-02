@@ -1,9 +1,7 @@
 {
- "version": "4.9",
+ "version": "4.9.1",
  "date": "2026-11-02",
  "notes": [
-  "Trainer mode: click a stat on a pet at the training schools, and it trains it by itself",
-  "Its History: each pet’s gains, NP spent and codestones used",
-  "The Ninja school’s Pay is a button now, apart from Cancel"
+  "The Trainer’s pet pictures load every time now"
  ]
 }
