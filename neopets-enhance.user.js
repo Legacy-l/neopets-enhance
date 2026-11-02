@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.9.4
+// @version      5.0
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -19635,6 +19635,21 @@
   // show, a mark on the ones the pets you track still need. What a pet has had is read from Neopets' own pages, as you visit them or
   // when you ask; nothing is guessed. (Book Award counts seven kinds of item; the Gourmet Club, food of rarity 90 to 100)
   // ═══════════════════════════════════════════════════════════════════════════
+  function pageJson(src, name) {   // (an object a page's own script sets, window.<name> = {…}, read as data, never run: from a document, or a page's text)
+    const t = typeof src === 'string' ? src : [...(src || document).querySelectorAll('script:not([src])')].map((x) => x.textContent).find((x) => x.includes(name)) || '';
+    const at = t.indexOf(`${name} =`) >= 0 ? t.indexOf(`${name} =`) : t.indexOf(name);
+    const from = at < 0 ? -1 : t.indexOf('{', at);
+    if (from < 0) return null;
+    let depth = 0, str = false;
+    for (let i = from; i < t.length; i++) {
+      const c = t[i];
+      if (str) { if (c === '\\') i++; else if (c === '"') str = false; continue; }
+      if (c === '"') str = true;
+      else if (c === '{') depth++;
+      else if (c === '}' && --depth === 0) { try { return JSON.parse(t.slice(from, i + 1)); } catch (_) { return null; } }
+    }
+    return null;
+  }
   const COL_KINDS = {
     books: { page: '/books_read.phtml', label: 'Books', did: 'read', not: 'Not read yet', what: 'books', club: 'Book Award', clubUrl: '/book_award.phtml',
       cats: ['Book', 'Brightvale Books', 'Desert Scroll', 'Faerie Book', 'Moltaran Books', 'Neovian Press', 'Qasalan Tablets'],
@@ -19696,7 +19711,9 @@
   const colImgOf = (src) => { const m = /\/items\/([^/?#]+?)\.(gif|png|jpe?g|webp)(?:[?#]|$)/i.exec(String(src || '')); return m ? `${m[1]}.${m[2].toLowerCase()}` : ''; };   // (an item's picture's own name: "book_algebra.gif")
   const colImgKey = (f) => String(f || '').replace(/\.[a-z]+$/i, '').toLowerCase();   // (… and its name alone, as itemdb has it)
   const colNp = (v) => (v >= 1e9 ? `${+(v / 1e9).toFixed(v >= 1e10 ? 0 : 1)}B` : v >= 1e6 ? `${+(v / 1e6).toFixed(v >= 1e7 ? 0 : 1)}M` : v >= 1e4 ? `${Math.round(v / 1e3)}k` : Number(v).toLocaleString());
-  const colKindHere = () => COL_ORDER.find((k) => COL_KINDS[k].page === location.pathname) || '';
+  const colKindHere = () => { const p = location.pathname; return p === '/books_read.phtml' ? (new URLSearchParams(location.search).get('tab') === 'booktastic' ? 'bt' : 'books') : p === '/moon/books_read.phtml' ? 'bt' : p === '/gourmet_club.phtml' ? 'food' : ''; };   // (Booktastic Books is Books Read's second tab since 2 November 2026)
+  const colHref = (kind, pet) => (kind === 'food' ? `/gourmet_club.phtml?pet_name=${encodeURIComponent(pet)}` : `/books_read.phtml?pet_name=${encodeURIComponent(pet)}${kind === 'bt' ? '&tab=booktastic' : ''}`);
+  const COL_SHOP = { books: ['/objects.phtml?type=shop&obj_type=7', 'Book Shop'], bt: ['/objects.phtml?type=shop&obj_type=70', 'Booktastic Book Shop'] };   // (as Neopets' own page names them)
   const colPetHere = () => reClean(new URLSearchParams(location.search).get('pet_name') || '');
   const colOn = () => S.features.col !== false && !!colKindHere() && !!colPetHere();   // (a pet's own page: the Gourmet Club's without a pet is its Hall of Fame)
   const colBoardKind = () => { const p = location.pathname; return p === '/book_award.phtml' ? 'books' : p === '/moon/book_award.phtml' ? 'bt' : p === '/gourmet_club.phtml' && !colPetHere() ? 'food' : ''; };
@@ -19712,42 +19729,71 @@
     });
   }
   const colCatAsk = {};
-  function colCatalog(kind, force) {   // ({ t, items: [[picture, name, rarity, price, kind's index, itemdb's slug, NC, retired, item id]] } or { err })
+  const COL_PART_TTL = 12 * 3600e3;   // (a read itemdb cut short: carried on within half a day, its prices still fresh enough; begun again after that)
+  const itPauseEnds = () => { try { const t = parseInt(localStorage.getItem(IT_401) || '', 10) || 0; return t ? t + 10 * 60000 : 0; } catch (_) { return 0; } };   // (when itemdb's "no" stops holding: itBlocked's 10 minutes)
+  function colCatalog(kind, force) {   // ({ t, items: [[picture, name, rarity, price, kind's index, itemdb's slug, NC, retired, item id]] } or { err }; cut short by itemdb, what's in so far and how far: { items, partial: { got, total }, err }, or the list before it with { part })
     if (!force && colCatAsk[kind]) return colCatAsk[kind];
     return (colCatAsk[kind] = (async () => {
-      const k = COL_KINDS[kind], key = `col-cat-${kind}`, kept = await idbGet(key).catch(() => null);
+      const k = COL_KINDS[kind], key = `col-cat-${kind}`, pkey = `${key}-part`, kept = await idbGet(key).catch(() => null);
       if (!force && kept && Array.isArray(kept.items) && kept.items.length && Date.now() - kept.t < COL_TTL) return kept;
       const old = kept && Array.isArray(kept.items) && kept.items.length ? { ...kept, stale: true } : null;
-      if (itBlocked()) return old || { err: itBlockedBusy() ? 'busy' : 'visit' };
-      const items = [];
-      for (let page = 1; page <= 5; page++) {
+      const sig = JSON.stringify([k.cats, k.rarity || 0]);   // (the list asked for: a part kept for another isn't carried on)
+      let part = await idbGet(pkey).catch(() => null);
+      if (!part || part.sig !== sig || !Array.isArray(part.items) || !(part.page >= 1) || Date.now() - part.t > COL_PART_TTL) part = null;
+      const cut = (err, extra = {}) => {   // (stopped part way: the list before it while there is one, else what's in so far)
+        const p = part && part.items.length ? { got: part.items.length, total: Math.max(part.total || 0, part.items.length) } : null;
+        if (old) return { ...old, part: p };
+        if (p) return { t: part.t, items: part.items, partial: p, err, ...extra };
+        return { err, ...extra };
+      };
+      if (itBlocked()) return cut(itBlockedBusy() ? 'busy' : 'visit');
+      if (!part) part = { sig, t: Date.now(), page: 0, total: 0, items: [] };
+      for (let page = part.page + 1; page <= 5; page++) {
         const q = new URLSearchParams([...k.cats.map((c) => ['category[]', c]), ...(k.rarity ? [['rarity[]', String(k.rarity[0])], ['rarity[]', String(k.rarity[1])]] : []), ['limit', '3000'], ['page', String(page)], ['intent', 'card'], ['includeStats', 'true']]);
         const r = await colGet(`https://itemdb.com.br/api/v2/search?${q}`);
-        if (r.status === 401 || r.status === 429) {   // (no itemdb visit lately, or its limit for now: as the Item Helper's prices say it)
+        if (r.status === 401 || r.status === 429) {   // (no itemdb visit lately, or its limit for now: as the Item Helper's prices say it; what's in so far kept)
           const refused = r.status === 401 && Date.now() - itVisitAt() < 3 * 60000;
           try { localStorage.setItem(IT_401, `${Date.now()}|${r.status}${refused ? 'r' : ''}`); } catch (_) { /* */ }
-          return old || { err: r.status === 401 ? 'visit' : 'busy', refused };
+          return cut(r.status === 401 ? 'visit' : 'busy', { refused });
         }
-        if (r.status !== 200 || !r.json || !Array.isArray(r.json.content)) return old || { err: 'down' };
-        if (page === 1) { try { localStorage.removeItem(IT_401); } catch (_) { /* */ } }
+        if (r.status !== 200 || !r.json || !Array.isArray(r.json.content)) return cut('down');
+        try { localStorage.removeItem(IT_401); } catch (_) { /* */ }
         for (const x of r.json.content) {
           const img = colImgOf(x.image && (x.image.url || x.image)) || (x.image && x.image.id ? `${x.image.id}.gif` : '');
           if (!img || !x.name) continue;
           const p = x.price && Number(x.price.value) > 0 ? Math.round(Number(x.price.value)) : 0;
-          items.push([img, String(x.name), Number(x.rarity) || 0, p, Math.max(0, k.cats.indexOf(String(x.category || ''))), String(x.slug || ''), x.type === 'nc' ? 1 : 0, /no longer/i.test(String(x.status || '')) ? 1 : 0, Number(x.item_id) || 0]);
+          part.items.push([img, String(x.name), Number(x.rarity) || 0, p, Math.max(0, k.cats.indexOf(String(x.category || ''))), String(x.slug || ''), x.type === 'nc' ? 1 : 0, /no longer/i.test(String(x.status || '')) ? 1 : 0, Number(x.item_id) || 0]);
         }
-        const total = Number(r.json.totalResults) || 0;
-        if (r.json.content.length < 3000 || items.length >= total) break;
+        part.page = page;
+        part.total = Number(r.json.totalResults) || part.total;
+        if (r.json.content.length < 3000 || part.items.length >= part.total) break;
+        await idbSet(pkey, part).catch(() => {});   // (so far, kept: a pause, or the page shut, carries on from the next page)
         await new Promise((ok) => setTimeout(ok, 1600 + Math.random() * 1200));
       }
-      if (!items.length) return old || { err: 'down' };
+      if (!part.items.length) return cut('down');
+      const seen = new Set(), items = part.items.filter((it) => { const kk = colImgKey(it[0]); if (seen.has(kk)) return false; seen.add(kk); return true; });   // (pages read minutes apart: one that moved along is in once)
       const cat = { t: Date.now(), items };
       await idbSet(key, cat).catch(() => {});
+      await idbSet(pkey, null).catch(() => {});
       return cat;
     })().catch(() => ({ err: 'down' })));
   }
   // a pet's own page: what it has had (its pictures, and on the books' page their names), and Neopets' own count
   function colParse(kind, doc) {
+    const cfg = kind !== 'food' && pageJson(doc, '__booksReadConfig');
+    if (cfg) {   // (Books Read since 2 November 2026: the page's own data; its Booktastic tab the same page)
+      if ((cfg.activeTab === 'booktastic') !== (kind === 'bt')) return null;
+      if (cfg.petError) return /own|yours|belong/i.test(String(cfg.petError)) ? { notYours: true } : null;
+      const items = [], seen = new Set();
+      for (const b of Array.isArray(cfg.books) ? cfg.books : []) {
+        const src = fullUrl(String((b && b.image) || '')), f = colImgOf(src) || colImgOf(`${NPI}items/${src.split('/').pop()}`);
+        if (!f || seen.has(colImgKey(f))) continue;
+        seen.add(colImgKey(f));
+        items.push([f, reClean(b.name || ''), reClean(b.desc || '')]);
+      }
+      const pets = (Array.isArray(cfg.pets) ? cfg.pets : []).filter((p) => p && p.name).map((p) => ({ name: String(p.name), thumb: fullUrl(String(p.thumbImage || '')), active: !!p.isActive }));
+      return { n: Number(cfg.count) || items.length, items, neo: true, pets, face: fullUrl(String(cfg.currentPetImage || '')) };
+    }
     const box = doc.querySelector('td.content') || doc.querySelector('#content') || doc.body;
     if (!box) return null;
     const txt = box.textContent || '';
@@ -19769,6 +19815,25 @@
     if (!m && !items.length) return null;
     return { n: m ? Number(m[1].replace(/,/g, '')) : items.length, items };
   }
+  const colSlim = (d) => ({ n: d.n, items: d.items, neo: !!d.neo });   // (what's kept of a pet's page: its count and what it's had)
+  const COL_ORDER_KEY = 'bnp-col-neworder';
+  function colOrderFix(d, old) {   // (Neopets' new lists put first read first, as the old pages did, whichever way they come: seen once, against a list the old page gave)
+    if (!d || !d.neo || d.items.length < 2) return d;
+    let how = '';
+    try { how = localStorage.getItem(COL_ORDER_KEY) || ''; } catch (_) { /* */ }
+    if (!how && old && !old.neo && Array.isArray(old.items) && old.items.length > 2) {
+      const at = new Map(old.items.map((x, i) => [colImgKey(x[0]), i])), idx = d.items.map((x) => at.get(colImgKey(x[0]))).filter((i) => i != null);
+      if (idx.length > 2) {
+        let up = 0, down = 0;
+        for (let i = 1; i < idx.length; i++) { if (idx[i] > idx[i - 1]) up++; else down++; }
+        how = up >= down ? 'same' : 'rev';
+        try { localStorage.setItem(COL_ORDER_KEY, how); } catch (_) { /* */ }
+      }
+    }
+    if (how === 'rev' && !d.flipped) { d.items.reverse(); d.flipped = true; }
+    return d;
+  }
+  const colHadMap = (d) => new Map(d.items.map((x, i) => [colImgKey(x[0]), [i + 1, x[1] || '', x[0], x[2] || '']]));   // (picture → its place in the order, name, picture, Neopets' words for it)
   const colPetKey = (kind, pet) => `col-pet-${kind}-${String(pet).toLowerCase()}`;
   const colPetGet = (kind, pet) => idbGet(colPetKey(kind, pet)).catch(() => null);
   const colPetSet = (kind, pet, d) => idbSet(colPetKey(kind, pet), { ...d, pet, t: Date.now() }).catch(() => false);
@@ -19816,7 +19881,7 @@
     if (!out.length) return null;
     const box = document.createElement('span');
     box.className = 'bnp-it-cols';
-    box.innerHTML = out.map(([kind, pets]) => { const k = COL_KINDS[kind]; return `<a class="bnp-it-col is-${kind}" href="${esc(`${k.page}?pet_name=${encodeURIComponent(pets[0])}`)}" title="${esc(`${k.label}: ${pets.join(' and ')} ${pets.length > 1 ? 'haven’t' : 'hasn’t'} ${k.did} this yet`)}">${COL_IC[kind]}<span>${esc(pets.join(' · '))}</span></a>`; }).join('');
+    box.innerHTML = out.map(([kind, pets]) => { const k = COL_KINDS[kind]; return `<a class="bnp-it-col is-${kind}" href="${esc(colHref(kind, pets[0]))}" title="${esc(`${k.label}: ${pets.join(' and ')} ${pets.length > 1 ? 'haven’t' : 'hasn’t'} ${k.did} this yet`)}">${COL_IC[kind]}<span>${esc(pets.join(' · '))}</span></a>`; }).join('');
     return box;
   }
   function colMarkAll() {   // (marks on rows put in before what's kept was read: added now)
@@ -19839,25 +19904,54 @@
     if (colBoardOn()) { colBoardPage(); return; }
     if (!colOn()) return;
     colEarly();
-    const kind = colKindHere(), pet = colPetHere(), box = document.querySelector('td.content');
+    const kind = colKindHere(), pet = colPetHere(), np = document.getElementById('books-read-app'), box = np ? np.parentElement : document.querySelector('td.content');
     const d = box && colParse(kind, document);
     if (!d || d.notYours) { document.documentElement.classList.remove('bnp-col-page', 'bnp-col-ready'); return; }   // (not your pet, or a page we don't know: Neopets' own, as it is)
     try { nbTheme(); } catch (e) { report(e); }
-    colPetSet(kind, pet, d).then(() => { if (colTracked(kind).some((x) => x.toLowerCase() === pet.toLowerCase())) colNeed = null; });
+    colOrderFix(d, null);
+    colPetGet(kind, pet).then((old) => {   // (the order checked once against what the old page gave, then what's here kept)
+      const was = d.flipped;
+      colOrderFix(d, old);
+      if (d.flipped !== was && col && col.d === d) { col.had = colHadMap(d); colPaint(); }
+      return colPetSet(kind, pet, colSlim(d));
+    }).then(() => { if (colTracked(kind).some((x) => x.toLowerCase() === pet.toLowerCase())) colNeed = null; });
     const P = colP();
     const root = document.createElement('div');
     root.className = 'bnp-col';
     root.setAttribute('data-bnp', 'col');
-    col = { kind, pet, root, d, cat: null, err: '', had: new Map(d.items.map((x, i) => [colImgKey(x[0]), [i + 1, x[1] || '', x[0]]])), view: 'not', sort: P[`sort_${kind}`] || 'cheap', q: '', sub: -1, priced: !!P.priced, shown: 0, io: null };
+    col = { kind, pet, root, d, cat: null, err: '', had: colHadMap(d), view: 'not', sort: P[`sort_${kind}`] || 'cheap', q: '', sub: -1, priced: !!P.priced, mode: P.mode === 'list' ? 'list' : 'grid', counts: {}, shown: 0, io: null };
     const neo = document.createElement('div');   // (Neopets' own page, all of it, out of sight under ours: one click shows it again)
     neo.className = 'bnp-col-neobox';
     neo.setAttribute('data-bnp', 'colneo');
-    while (box.firstChild) neo.append(box.firstChild);
-    box.append(root, neo);
+    if (np) {   // (the new page: its title stays; its how-to, its Enter Pet Bookshelf (ours is in the band) and its own list below ours)
+      for (const el of [box.querySelector(':scope > .pageDesc'), box.querySelector(':scope > a[href*="pet-bookshelf"]'), np]) if (el) neo.append(el);
+      const title = box.querySelector(':scope > .page-title__2020');
+      if (title) title.after(root, neo); else box.prepend(root, neo);
+    } else {
+      while (box.firstChild) neo.append(box.firstChild);
+      box.append(root, neo);
+    }
+    colCounts();
     document.documentElement.classList.add('bnp-col-ready');
     colWire(root);
     colPaint();
     colLoad(false);
+  }
+  const colPets = () => (col.d.pets && col.d.pets.length ? col.d.pets : ((get('pets', null) || {}).list || []).filter((p) => p && p.name).map((p) => ({ name: String(p.name), thumb: `https://pets.neopets.com/cpn/${encodeURIComponent(p.name)}/1/1.png`, active: !!p.active })));   // (Neopets' own list of them on Books Read; NE's on the Gourmet Club, which has none)
+  async function colCounts() {   // (each pet's count for this list, as NE last read its page: in the row of pets)
+    const kind = col.kind, out = {};
+    for (const p of colPets()) { const d = await colPetGet(kind, p.name); if (d && d.n != null) out[p.name.toLowerCase()] = Number(d.n); }
+    if (!col || col.kind !== kind) return;
+    col.counts = out;
+    colPaint();
+  }
+  function colPetRow() {   // (Neopets' pet carousel, as a row: every pet's face, the one shown lit, how many each has had)
+    const pets = colPets(), k = COL_KINDS[col.kind];
+    if (pets.length < 2) return '';
+    return `<nav class="bnp-col-pets" aria-label="Your pets’ ${esc(k.label)}">${pets.map((p) => {
+      const me = p.name.toLowerCase() === col.pet.toLowerCase(), n = me ? Number(col.d.n) : col.counts[p.name.toLowerCase()];
+      return `<a class="bnp-col-pet${me ? ' is-on' : ''}" href="${esc(colHref(col.kind, p.name))}"${me ? ' aria-current="page"' : ''} title="${esc(`${p.name}’s ${k.label}${n != null ? `: ${n.toLocaleString()} ${k.did}` : ''}`)}"><img src="${esc(p.thumb)}" alt="" width="40" height="40" loading="lazy"><span>${esc(p.name)}</span>${n != null ? `<b>${n.toLocaleString()}</b>` : ''}</a>`;
+    }).join('')}</nav>`;
   }
   async function colBoard(kind) {   // (the award's high score board, its top 200, read once a day: each place's count, and which places each trophy is)
     const key = `bnp-colboard-${kind}`;
@@ -19903,17 +19997,20 @@
     const cat = await colCatalog(col.kind, force);
     if (!col) return;
     col.busy = false;
-    if (cat && cat.items) { col.cat = cat; col.err = cat.stale ? (itBlocked() ? (itBlockedBusy() ? 'busy' : 'visit') : 'down') : ''; } else col.err = (cat && cat.err) || 'down';
-    if (col.err === 'visit') colWatchVisit();
+    if (cat && cat.items) { col.cat = cat; col.err = cat.err || (cat.stale ? (itBlocked() ? (itBlockedBusy() ? 'busy' : 'visit') : 'down') : ''); } else col.err = (cat && cat.err) || 'down';
+    col.part = (cat && (cat.partial || cat.part)) || null;   // (how far a read itemdb cut short has got: carried on from there)
+    if (col.err === 'visit' || col.err === 'busy') colWatchVisit();
     colPaint();
   }
   let colWatching = false;
-  function colWatchVisit() {   // (itemdb wants a visit first: the list comes by itself once it's had one, in another tab or as you come back)
+  const colAgain = () => { if (col && col.err && !itBlocked() && document.visibilityState === 'visible') { colCatAsk[col.kind] = null; colLoad(false); } };
+  function colWatchVisit() {   // (itemdb wants a visit first, or a pause: the list comes by itself once it's had one, in another tab or as you come back, or once the pause is over, carrying on from where it stopped)
+    clearTimeout(colWatchVisit.t);
+    if (col && col.err === 'busy') colWatchVisit.t = setTimeout(colAgain, Math.max(0, itPauseEnds() - Date.now()) + 20000 + Math.random() * 40000);
     if (colWatching) return;
     colWatching = true;
-    const again = () => { if (col && col.err && !itBlocked()) { colCatAsk[col.kind] = null; colLoad(false); } };
-    try { GM_addValueChangeListener(KEY + 'idbvisit', (n, o, v, remote) => { if (remote) again(); }); } catch (_) { /* */ }
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') again(); });
+    try { GM_addValueChangeListener(KEY + 'idbvisit', (n, o, v, remote) => { if (remote) colAgain(); }); } catch (_) { /* */ }
+    document.addEventListener('visibilitychange', colAgain);
   }
   function colList() {   // (what's shown: not yet had, or had; one kind; found by name; with a price only; sorted)
     const k = COL_KINDS[col.kind], items = col.cat ? col.cat.items : [], q = colNorm(col.q);
@@ -19940,30 +20037,31 @@
   function colPaint() {
     if (!col) return;
     const { kind, pet, root, d } = col, k = COL_KINDS[kind], items = col.cat ? col.cat.items : [];
-    const total = items.length, hadN = col.had.size, inList = items.filter((it) => col.had.has(colImgKey(it[0]))).length, left = total - inList;
+    const partial = col.cat && col.cat.partial, total = partial ? 0 : items.length, hadN = col.had.size, inList = items.filter((it) => col.had.has(colImgKey(it[0]))).length, left = total - inList;   // (only part of itemdb's list in: the ones known so far listed, no total till it's whole)
     const pct = total ? Math.min(100, Math.round((inList / total) * 1000) / 10) : 0;
     const tracked = colTracked(kind).some((x) => x.toLowerCase() === pet.toLowerCase());
-    const face = `https://pets.neopets.com/cpn/${encodeURIComponent(pet)}/1/2.png`;
-    const tab = (x) => `<a class="bnp-col-tab" href="${esc(`${COL_KINDS[x].page}?pet_name=${encodeURIComponent(pet)}`)}" aria-current="${x === kind ? 'page' : 'false'}">${COL_IC[x]}${esc(COL_KINDS[x].label)}</a>`;
+    const face = d.face || `https://pets.neopets.com/cpn/${encodeURIComponent(pet)}/1/2.png`, shop = COL_SHOP[kind];
+    const tab = (x) => `<a class="bnp-col-tab" href="${esc(colHref(x, pet))}" aria-current="${x === kind ? 'page' : 'false'}">${COL_IC[x]}${esc(COL_KINDS[x].label)}</a>`;
     const subs = k.cats.length > 1 && total ? k.cats.map((c, i) => { const all = items.filter((it) => it[4] === i), had = all.filter((it) => col.had.has(colImgKey(it[0]))).length; return { i, c, all: all.length, had }; }).filter((x) => x.all) : [];
     const { list } = colList();
     const todo = list.filter((x) => x.not), cost = todo.reduce((s, x) => s + (x.it[3] > 0 ? x.it[3] : 0), 0), priced = todo.filter((x) => x.it[3] > 0).length;
-    const err = col.err === 'visit' ? 'itemdb gives its lists to scripts like this one once you’ve opened itemdb today; then the list comes by itself. <a class="bnp-col-btn is-small" href="https://itemdb.com.br/" target="_blank" rel="noopener">Open itemdb</a>'
-      : col.err === 'busy' ? 'itemdb asked for a pause: its list again in a few minutes.' : col.err === 'down' ? 'itemdb didn’t answer just now.' : '';
+    const part = col.part, so = part ? `NE has ${part.got.toLocaleString()} of its ${part.total.toLocaleString()} ${esc(k.what)} so far${col.cat && col.cat.stale ? ' for the new list (the one shown is the one before)' : ''}, and carries on from there, never from the start. ` : '', back = itPauseEnds();
+    const err = col.err === 'visit' ? `itemdb gives its lists to scripts like this one once you’ve opened itemdb today; then the list comes by itself. ${so}<a class="bnp-col-btn is-small" href="https://itemdb.com.br/" target="_blank" rel="noopener">Open itemdb</a>`
+      : col.err === 'busy' ? `itemdb asked for a pause. ${so}It goes on by itself ${back > Date.now() ? `after ${esc(fmtNst(back))} NST` : 'in a moment'}, while this tab is open.` : col.err === 'down' ? `itemdb didn’t answer just now. ${so}` : '';
     const sorts = col.view === 'had' ? [['order', 'Newest read first'], ['name', 'Name, A to Z'], ['rare', 'Rarest first'], ['rarelow', 'Least rare first'], ['dear', 'Priciest first']] : [['cheap', 'Cheapest first'], ['dear', 'Priciest first'], ['rarelow', 'Least rare first'], ['rare', 'Rarest first'], ['name', 'Name, A to Z'], ['new', 'Newest to itemdb']];
     if (col.view === 'had') sorts[0][1] = kind === 'food' ? 'Newest eaten first' : 'Newest read first';
-    root.innerHTML = `<div class="bnp-col-band">
+    root.innerHTML = `<section class="bnp-col-head"><div class="bnp-col-band">
         <span class="bnp-col-face"><img src="${esc(face)}" alt="" width="64" height="64"></span>
         <span class="bnp-col-who"><b>${esc(pet)}</b><small>${esc(k.label)} ${esc(k.did)} · <a href="${esc(k.clubUrl)}">${esc(k.club)}</a></small></span>
         <nav class="bnp-col-tabs" aria-label="This pet’s lists">${COL_ORDER.map(tab).join('')}</nav>
-        <span class="bnp-col-sp"></span>
-        <button type="button" class="bnp-col-btn${tracked ? ' is-on' : ''}" data-col-track aria-pressed="${tracked}" title="${esc(tracked ? `Marks on items ${pet} still needs, wherever items show. Click to stop` : `Mark the ${k.what} ${pet} still needs wherever items show (shops, your inventory, the Trading Post…): up to two pets for each list`)}">${tracked ? '★ Tracking' : '☆ Track'}</button>
-      </div>
+        <span class="bnp-col-acts">${kind === 'food' ? '' : `<a class="bnp-col-btn is-go" href="/bookshelf/pet-bookshelf.phtml?pet=${encodeURIComponent(pet)}" title="${esc(`${pet}’s Pet Bookshelf`)}">Pet Bookshelf</a>`}${shop ? `<a class="bnp-col-btn is-go" href="${esc(shop[0])}">${esc(shop[1])}</a>` : ''}
+        <button type="button" class="bnp-col-btn${tracked ? ' is-on' : ''}" data-col-track aria-pressed="${tracked}" title="${esc(tracked ? `Marks on items ${pet} still needs, wherever items show. Click to stop` : `Mark the ${k.what} ${pet} still needs wherever items show (shops, your inventory, the Trading Post…): up to two pets for each list`)}">${tracked ? '★ Tracking' : '☆ Track'}</button></span>
+      </div>${colPetRow()}</section>
       ${col.note ? `<p class="bnp-col-note" role="status">${esc(col.note)}</p>` : ''}
       <div class="bnp-col-sum">
-        <div class="bnp-col-big"><b>${(total ? inList : d.n).toLocaleString()}</b>${total ? ` of ${total.toLocaleString()} ${esc(k.what)} ${esc(k.did)}` : ` ${esc(k.what)} ${esc(k.did)}`}${total ? `<span class="bnp-col-pct">${pct}%</span>` : ''}${d.n !== hadN || (total && hadN !== inList) ? `<small title="Neopets’ own count${hadN - inList > 0 ? `, and ${hadN - inList} that aren’t on itemdb’s list` : ''}">Neopets counts ${Number(d.n).toLocaleString()}</small>` : ''}</div>
-        ${total ? `<div class="bnp-col-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${inList}"><i style="width:${pct}%"></i></div>` : ''}
-        ${colGoals(kind, Number(d.n) || hadN, total)}
+        <div class="bnp-col-prog"><div class="bnp-col-big"><b>${(total ? inList : d.n).toLocaleString()}</b>${total ? ` of ${total.toLocaleString()} ${esc(k.what)} ${esc(k.did)}` : ` ${esc(k.what)} ${esc(k.did)}`}${total ? `<span class="bnp-col-pct">${pct}%</span>` : ''}${d.n !== hadN || (total && hadN !== inList) ? `<small title="Neopets’ own count${hadN - inList > 0 ? `, and ${hadN - inList} that aren’t on itemdb’s list` : ''}">Neopets counts ${Number(d.n).toLocaleString()}</small>` : ''}</div>
+        ${total ? `<div class="bnp-col-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${inList}"><i style="width:${pct}%"></i></div>` : ''}</div>
+        ${(() => { const g = colGoals(kind, Number(d.n) || hadN, total); return g ? `<div class="bnp-col-award">${g}</div>` : ''; })()}
         ${subs.length ? (() => {
           const left2 = (s) => (col.view === 'had' ? s.had : s.all - s.had), many = subs.length > 9, order = many ? subs.slice().sort((a, b) => left2(b) - left2(a)) : subs;
           const shown = many && !col.allSubs ? order.filter((s, n) => n < 8 || s.i === col.sub) : order;
@@ -19974,11 +20072,12 @@
         <span class="bnp-col-seg" role="group" aria-label="Which"><button type="button" data-col-view="not" aria-pressed="${col.view === 'not'}">${esc(k.not)}<b>${total ? left.toLocaleString() : '…'}</b></button><button type="button" data-col-view="had" aria-pressed="${col.view === 'had'}">${kind === 'food' ? 'Eaten' : 'Read'}<b>${hadN.toLocaleString()}</b></button><button type="button" data-col-view="both" aria-pressed="${col.view === 'both'}" title="${esc(`Every one, ${kind === 'food' ? 'eaten' : 'read'} or not: the ones not ${kind === 'food' ? 'eaten' : 'read'} yet faded`)}">Both${total ? `<b>${(total + Math.max(0, hadN - inList)).toLocaleString()}</b>` : ''}</button></span>
         <label class="bnp-col-find"><svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m13 13 4.5 4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><input type="search" data-col-q placeholder="Find one by name" aria-label="Find one by name" spellcheck="false" autocomplete="off" value="${esc(col.q)}"></label>
         <label class="bnp-col-sort"><span>Sort</span><select data-col-sort aria-label="Sort">${sorts.map(([v, l]) => `<option value="${v}"${(col.view === 'had' && !['name', 'rare', 'rarelow', 'dear'].includes(col.sort) ? 'order' : col.sort) === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+        <span class="bnp-col-seg is-mode" role="group" aria-label="Look"><button type="button" data-col-mode="grid" aria-pressed="${col.mode !== 'list'}" title="Pictures in a grid">Grid</button><button type="button" data-col-mode="list" aria-pressed="${col.mode === 'list'}" title="${esc(kind === 'food' ? 'One a line, with its name' : 'One a line, with Neopets’ own words for the ones read')}">List</button></span>
         ${col.view === 'had' ? '' : `<button type="button" class="bnp-col-tog" data-col-priced aria-pressed="${col.priced}" title="Leave out the ones itemdb has no price for (most can’t be bought now)"><i aria-hidden="true"></i>Only ones with a price</button>`}
       </div>
       ${err ? `<p class="bnp-col-err">${err}</p>` : ''}
       ${col.view !== 'had' && total ? `<p class="bnp-col-cost">${todo.length.toLocaleString()} to go${priced ? ` · about <b>${colNp(cost)} NP</b> for the ${priced.toLocaleString()} with a price` : ''}${todo.length - priced > 0 ? ` · ${(todo.length - priced).toLocaleString()} without one` : ''}</p>` : ''}
-      <div class="bnp-col-grid" data-col-grid>${col.busy && !total ? '<p class="bnp-col-empty">Reading itemdb’s list…</p>' : list.length ? list.map((x) => colTile(x)).join('') : `<p class="bnp-col-empty">${col.view === 'had' ? `None yet.` : total ? (col.q ? 'None by that name.' : `${esc(pet)} has had every one of them!`) : ''}</p>`}</div>
+      <div class="bnp-col-grid${col.mode === 'list' ? ' is-list' : ''}" data-col-grid>${col.busy && !total ? '<p class="bnp-col-empty">Reading itemdb’s list…</p>' : list.length ? list.map((x) => colTile(x)).join('') : `<p class="bnp-col-empty">${col.view === 'had' ? `None yet.` : total ? (col.q ? 'None by that name.' : `${esc(pet)} has had every one of them!`) : ''}</p>`}</div>
       <p class="bnp-col-foot">${col.cat ? `itemdb’s list of ${esc(k.what)}, read ${colAgo(col.cat.t)}. Prices are itemdb’s, approximate.` : ''} <button type="button" class="bnp-col-btn is-small" data-col-refresh title="itemdb’s list again, with today’s prices"${col.busy ? ' disabled' : ''}>${col.busy ? 'Reading…' : 'Read it again'}</button> <button type="button" class="bnp-col-btn is-small" data-col-neo aria-expanded="${document.documentElement.classList.contains('bnp-col-showneo')}">${document.documentElement.classList.contains('bnp-col-showneo') ? 'Hide Neopets’ own list' : 'Neopets’ own list'}</button></p>`;
     colRows();
   }
@@ -19986,6 +20085,10 @@
   function colTile(x) {
     const [img, name, r, p, sub, , nc, gone] = x.it, k = COL_KINDS[col.kind];
     const meta = [r ? `r${r}` : '', nc ? 'NC' : p > 0 ? `${colNp(p)} NP` : x.unknown ? '' : 'No price'].filter(Boolean);
+    if (col.mode === 'list') {   // (one a line: its picture, name and Neopets' words for it, its place in the order, rarity and price; its item buttons at the end)
+      const h = col.had.get(colImgKey(img)), words = h && h[3];
+      return `<div class="bnp-col-tile is-row${col.view !== 'not' && !x.not ? ' is-had' : ''}${col.view === 'both' && x.not ? ' is-not' : ''}${gone ? ' is-gone' : ''}" data-col-name="${esc(name)}"><span class="bnp-col-pic"><img src="https://images.neopets.com/items/${esc(img)}" alt="" width="50" height="50" loading="lazy" decoding="async">${col.view !== 'not' && x.order ? `<i class="bnp-col-n">${x.order}</i>` : ''}</span><span class="bnp-col-rtx"><b class="bnp-col-nm">${esc(name || h && h[1] || '(not on itemdb’s list)')}</b>${words ? `<small class="bnp-col-desc">${esc(words)}</small>` : ''}</span><span class="bnp-col-meta">${meta.map((m) => `<i${/NP$/.test(m) ? ' class="is-np"' : m === 'No price' ? ' class="is-none"' : ''}>${esc(m)}</i>`).join('')}${sub >= 0 && k.cats.length > 1 && sub > 0 ? `<i class="is-kind">${esc(k.short[k.cats[sub]] || k.cats[sub])}</i>` : ''}</span></div>`;
+    }
     return `<div class="bnp-col-tile${col.view !== 'not' && !x.not ? ' is-had' : ''}${col.view === 'both' && x.not ? ' is-not' : ''}${gone ? ' is-gone' : ''}" data-col-name="${esc(name)}"><span class="bnp-col-pic"><img src="https://images.neopets.com/items/${esc(img)}" alt="" width="80" height="80" loading="lazy" decoding="async">${col.view !== 'not' && x.order ? `<i class="bnp-col-n" title="${esc(`The ${x.order}${x.order % 10 === 1 && x.order % 100 !== 11 ? 'st' : x.order % 10 === 2 && x.order % 100 !== 12 ? 'nd' : x.order % 10 === 3 && x.order % 100 !== 13 ? 'rd' : 'th'} ${k.did}`)}">${x.order}</i>` : ''}</span><b class="bnp-col-nm">${esc(name || '(not on itemdb’s list)')}</b><span class="bnp-col-meta">${meta.map((m) => `<i${/NP$/.test(m) ? ' class="is-np"' : m === 'No price' ? ' class="is-none"' : ''}>${esc(m)}</i>`).join('')}</span>${sub >= 0 && k.cats.length > 1 && sub > 0 ? `<span class="bnp-col-kind">${esc(k.short[k.cats[sub]] || k.cats[sub])}</span>` : ''}</div>`;
   }
   function colRows() {   // (each tile's item buttons, as it comes into sight: a long list stays quick)
@@ -20022,6 +20125,7 @@
       }
       if ('colRefresh' in d) { colCatAsk[col.kind] = null; colLoad(true); return; }
       if (d.colView) { col.view = d.colView; colPaint(); return; }
+      if (d.colMode) { col.mode = d.colMode === 'list' ? 'list' : 'grid'; colPSet('mode', col.mode); colPaint(); return; }
       if (d.colSub != null) { col.sub = Number(d.colSub); colPaint(); return; }
       if ('colAllsubs' in d) { col.allSubs = !col.allSubs; colPaint(); return; }
       if ('colPriced' in d) { col.priced = !col.priced; colPSet('priced', col.priced); colPaint(); return; }
@@ -20043,10 +20147,10 @@
     for (const [kind, pet] of jobs) {
       while (document.visibilityState !== 'visible') await new Promise((ok) => setTimeout(ok, 2000));   // (only while you're on this tab)
       try {
-        const r = await fetch(`${COL_KINDS[kind].page}?pet_name=${encodeURIComponent(pet)}`, { credentials: 'include' });
+        const r = await fetch(colHref(kind, pet), { credentials: 'include' });
         if (/login/i.test(new URL(r.url).pathname)) { if (say) say('Neopets has signed you out: sign in, then try again.'); return; }
         const d = colParse(kind, new DOMParser().parseFromString(await r.text(), 'text/html'));
-        if (d && !d.notYours) { await colPetSet(kind, pet, d); done++; }
+        if (d && !d.notYours) { await colPetSet(kind, pet, colSlim(colOrderFix(d, null))); done++; }
       } catch (_) { /* */ }
       if (say) say(`Read ${done} of ${jobs.length}…`);
       await new Promise((ok) => setTimeout(ok, 3500 + Math.random() * 2500));
@@ -20161,7 +20265,7 @@
     const mineCard = cb.mine === null ? '' : cb.mine.length ? `<section class="bnp-cb-mine${mineFold ? ' is-folded' : ''}">${mineHead}${mineFold ? '' : `<div class="bnp-cb-minerows">${cb.mine.slice(0, mineAll ? undefined : 3).map((p) => {
       const row = rows.find((r) => r.name.toLowerCase() === p.pet.toLowerCase()), on = !!row, place = row ? row.at : rows.filter((r) => r.n > p.n).length + 1;
       const g = [['Top 200', Math.min(200, rows.length ? rows[rows.length - 1].at : 200), 4], ['Bronze', bl, 3], ['Silver', sl, 2], ['Gold', gl, 1]].map(([l, at, t]) => { const v = goal(p.n, at); return v ? `<span class="bnp-cb-g${v === '✓' ? ' is-got' : ''}" title="${esc(`${l}: ${v === '✓' ? 'reached' : `${v} more`}`)}">${t ? `<img src="${esc(trophy(t))}" alt="" width="22" height="22">` : '<b>200</b>'}${v === '✓' ? '✓' : `+${v}`}</span>` : ''; }).join('');
-      return `<div class="bnp-cb-minerow"><img src="${esc(face(p.pet, 1))}" alt="" width="40" height="40"><span class="bnp-cb-who"><a href="${esc(`${k.page}?pet_name=${encodeURIComponent(p.pet)}`)}"><b>${esc(p.pet)}</b></a><small>${p.n.toLocaleString()} ${esc(noun)}${on ? ` · place ${place.toLocaleString()} on the board` : place <= rows.length ? ` · about place ${place.toLocaleString()}` : ''}</small></span><span class="bnp-cb-gs">${g}</span></div>`;
+      return `<div class="bnp-cb-minerow"><img src="${esc(face(p.pet, 1))}" alt="" width="40" height="40"><span class="bnp-cb-who"><a href="${esc(colHref(kind, p.pet))}"><b>${esc(p.pet)}</b></a><small>${p.n.toLocaleString()} ${esc(noun)}${on ? ` · place ${place.toLocaleString()} on the board` : place <= rows.length ? ` · about place ${place.toLocaleString()}` : ''}</small></span><span class="bnp-cb-gs">${g}</span></div>`;
     }).join('')}</div>`}</section>` : `<section class="bnp-cb-mine is-none"><p>Open one of your pets’ ${esc(k.label)} pages, and where it stands here shows up, with how many more it needs for each trophy. <a class="bnp-col-btn is-small" href="${esc(k.page)}?pet_name=${encodeURIComponent((petsNow().find((p) => p.active) || petsNow()[0] || { name: '' }).name)}">Your active pet’s ${esc(k.label)}</a></p></section>`;
     root.innerHTML = `<div class="bnp-col-band bnp-cb-band">
         <span class="bnp-col-who"><b>${esc(k.club === 'Hall of Fame' ? 'Gourmet Club Hall of Fame' : k.club === 'Booktastic award' ? 'Booktastic Book Award' : 'Neopian Book Award')}</b><small>The pets with the most ${esc(noun)}</small></span>
@@ -20190,7 +20294,7 @@
   function colSetHtml() {   // (Settings: the pets you track, each list; their lists read again)
     const rows = COL_ORDER.map((kind) => {
       const k = COL_KINDS[kind], pets = colTracked(kind);
-      return `<div class="bnp-colset-row"><b class="bnp-colset-k">${COL_IC[kind]}${esc(k.label)}</b><span class="bnp-chips is-static">${pets.length ? pets.map((p) => `<span class="bnp-chip"><a href="${esc(`${k.page}?pet_name=${encodeURIComponent(p)}`)}">${esc(p)}</a><button type="button" class="bnp-chip-x" data-colun="${esc(`${kind}|${p}`)}" title="${esc(`Stop tracking ${p}’s ${k.what}`)}" aria-label="${esc(`Stop tracking ${p}`)}">×</button></span>`).join('') : '<span class="bnp-note">None yet: Track on a pet’s page</span>'}</span></div>`;
+      return `<div class="bnp-colset-row"><b class="bnp-colset-k">${COL_IC[kind]}${esc(k.label)}</b><span class="bnp-chips is-static">${pets.length ? pets.map((p) => `<span class="bnp-chip"><a href="${esc(colHref(kind, p))}">${esc(p)}</a><button type="button" class="bnp-chip-x" data-colun="${esc(`${kind}|${p}`)}" title="${esc(`Stop tracking ${p}’s ${k.what}`)}" aria-label="${esc(`Stop tracking ${p}`)}">×</button></span>`).join('') : '<span class="bnp-note">None yet: Track on a pet’s page</span>'}</span></div>`;
     }).join('');
     const any = COL_ORDER.some((k) => colTracked(k).length);
     return `<div class="bnp-colset">${rows}</div><div class="bnp-tools"><button type="button" class="bnp-pillbtn" data-colpets${any ? '' : ' disabled'}>Read their lists again</button><span class="bnp-note" data-colsay>${any ? 'From each pet’s page on Neopets, one page at a time. They’re read whenever you open those pages too.' : 'Track a pet on its Books, Booktastic or Gourmet Club page.'}</span></div>`;
@@ -20204,7 +20308,7 @@
       --nb-bar: #2e72c0; --nb-bar-ink: #fff; --nb-blink: #2e72c0; --nb-bar-edge: color-mix(in srgb, var(--nb-bar) 68%, #000); --nb-muted: #5f5a4a; --nb-text: #262626;
       --nb-by: color-mix(in srgb, var(--nb-panel) 32%, #fff); --nb-alt: color-mix(in srgb, var(--nb-bar) 8%, #fff);
       --nb-ui: "MuseoSansRounded700", Arial, sans-serif; --nb-txt: "MuseoSansRounded500", Arial, sans-serif; }
-    html.bnp-col-page:not(.bnp-col-ready) td.content { visibility: hidden !important; }   /* (Neopets' own list never shows first) */
+    html.bnp-col-page:not(.bnp-col-ready) :is(td.content, #books-read-app, #container__2020 > .pageDesc, #container__2020 > a[href*="pet-bookshelf"]) { visibility: hidden !important; }   /* (Neopets' own list never shows first) */
     html.bnp-col-page .bnp-col-neobox { display: none; }
     html.bnp-col-page.bnp-col-showneo .bnp-col-neobox { display: block; margin-top: 18px; padding-top: 14px; border-top: 2px dashed var(--nb-line); }
     html.bnp-col-page .bnp-col { display: grid; gap: 12px; margin: 4px 0 10px; color: var(--nb-text); font: 14px/1.4 var(--nb-txt); text-align: left; }
@@ -20222,11 +20326,30 @@
     html.bnp-col-page .bnp-col-tab:hover { background: var(--nb-alt); color: #1f1f1f !important; }
     html.bnp-col-page .bnp-col-tab[aria-current="page"] { background: var(--nb-bar); color: var(--nb-bar-ink) !important; box-shadow: 0 1px 0 var(--nb-bar-edge); }
     html.bnp-col-page .bnp-col-sp { flex: 1; }
+    html.bnp-col-page .bnp-col-acts { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-left: auto; }   /* (Pet Bookshelf, the shop and Track: together, at the band's end, a line of their own when there isn't room)*/
     html.bnp-col-page .bnp-col-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; margin: 0; padding: 0 14px; border: 2px solid var(--nb-frame); border-radius: 12px; background: #fff; color: #262626; box-shadow: 0 2px 0 var(--nb-frame); font: 13.5px var(--nb-ui); cursor: pointer; white-space: nowrap; }
     html.bnp-col-page .bnp-col-btn:hover { border-color: var(--nb-bar-edge); box-shadow: 0 2px 0 var(--nb-bar-edge); }
     html.bnp-col-page .bnp-col-btn.is-on { border-color: var(--nb-bar-edge); background: var(--nb-bar); color: var(--nb-bar-ink); box-shadow: 0 2px 0 var(--nb-bar-edge); }
     html.bnp-col-page .bnp-col-btn.is-ic { width: 36px; justify-content: center; padding: 0; }
     html.bnp-col-page .bnp-col-btn.is-small { height: 30px; padding: 0 12px; box-shadow: none; font-size: 12.5px; }
+    html.bnp-col-page a.bnp-col-btn.is-go { color: #262626 !important; text-decoration: none !important; }
+    html.bnp-col-page .bnp-col-head { overflow: hidden; border: 2px solid var(--nb-frame); border-radius: 15px; background: #fff; box-shadow: 0 3px 0 var(--nb-frame); }   /* (the pet's band and your pets: one box) */
+    html.bnp-col-page .bnp-col-head > .bnp-col-band { border: 0; border-radius: 0; box-shadow: none; }
+    html.bnp-col-page .bnp-col-head > .bnp-col-band:not(:last-child) { border-bottom: 2px solid var(--nb-frame); }
+    html.bnp-col-page .bnp-col-pets { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px 6px; padding: 9px 10px 10px; background: color-mix(in srgb, var(--nb-tint, #f6f1e3) 45%, #fff); }   /* (your pets: Neopets' carousel as a row; twenty fit in two lines) */
+    html.bnp-col-page .bnp-col-pet { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px 0 2px; border: 2px solid var(--nb-line); border-radius: 99px; background: #fff; color: #262626 !important; font: 12.5px var(--nb-ui); text-decoration: none !important; white-space: nowrap; }
+    html.bnp-col-page .bnp-col-pet img { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--nb-tint); }
+    html.bnp-col-page .bnp-col-pet b { min-width: 22px; padding: 0 6px; border-radius: 99px; background: var(--nb-by); color: var(--nb-muted); font: 11px/1.55 var(--nb-ui); text-align: center; }
+    html.bnp-col-page .bnp-col > .bnp-col-sum { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px 26px; }   /* (how far, and the award's goals beside it; the kinds under both) */
+    html.bnp-col-page .bnp-col-prog { display: grid; gap: 8px; min-width: 0; }
+    html.bnp-col-page .bnp-col-sum:not(:has(> .bnp-col-award)) .bnp-col-prog, html.bnp-col-page .bnp-col-sum > .bnp-col-subs { grid-column: 1 / -1; }
+    html.bnp-col-page .bnp-col-award { padding-left: 22px; border-left: 2px dashed var(--nb-line); }
+    html.bnp-col-page .bnp-col-award .bnp-col-goals { flex-wrap: nowrap; }
+    html.bnp-col-page .bnp-col-award .bnp-col-goalhead { margin-right: 2px; }
+    @media (max-width: 960px) { html.bnp-col-page .bnp-col > .bnp-col-sum { grid-template-columns: minmax(0, 1fr); } html.bnp-col-page .bnp-col-award { padding: 10px 0 0; border-left: 0; border-top: 2px dashed var(--nb-line); } html.bnp-col-page .bnp-col-award .bnp-col-goals { flex-wrap: wrap; } }
+    html.bnp-col-page .bnp-col-pet:hover { border-color: var(--nb-frame); }
+    html.bnp-col-page .bnp-col-pet.is-on { border-color: var(--nb-bar-edge); background: var(--nb-bar); color: var(--nb-bar-ink) !important; box-shadow: 0 2px 0 var(--nb-bar-edge); }
+    html.bnp-col-page .bnp-col-pet.is-on b { background: rgba(255, 255, 255, .92); color: #222; }
     html.bnp-col-page .bnp-col-btn:disabled { opacity: .55; cursor: progress; }
     html.bnp-col-page .bnp-col-note { margin: 0; padding: 8px 14px; border: 2px solid var(--nb-line); border-radius: 12px; background: var(--nb-alt); font: 13px/1.4 var(--nb-ui); animation: bnp-col-in .18s ease-out; }
     @keyframes bnp-col-in { from { opacity: 0; transform: translateY(-3px); } }
@@ -20249,9 +20372,9 @@
     html.bnp-col-page .bnp-col-goal.is-got { border-color: #9fd39a; background: #f1faf0; }
     html.bnp-col-page .bnp-col-goal.is-got small { color: #2a6e2a; font-family: var(--nb-ui); }
     html.bnp-col-page .bnp-col-top { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--nb-tint); color: var(--nb-text); font: 13px/1 "Cafeteria", "Arial Bold", sans-serif; }
-    html.bnp-col-page .bnp-col-subs { display: flex; flex-wrap: wrap; gap: 6px; }
-    html.bnp-col-page .bnp-col-subs button { display: inline-flex; align-items: center; gap: 7px; height: 30px; margin: 0; padding: 0 6px 0 12px; border: 2px solid var(--nb-line); border-radius: 99px; background: #fff; color: #333; font: 12.5px var(--nb-ui); cursor: pointer; }
-    html.bnp-col-page .bnp-col-subs button b { min-width: 22px; padding: 0 7px; border-radius: 99px; background: var(--nb-by); color: var(--nb-muted); font: 11.5px/1.6 var(--nb-ui); text-align: center; }
+    html.bnp-col-page .bnp-col-subs { display: flex; flex-wrap: wrap; gap: 5px; }
+    html.bnp-col-page .bnp-col-subs button { display: inline-flex; align-items: center; gap: 6px; height: 29px; margin: 0; padding: 0 5px 0 10px; border: 2px solid var(--nb-line); border-radius: 99px; background: #fff; color: #333; font: 12.5px var(--nb-ui); cursor: pointer; }
+    html.bnp-col-page .bnp-col-subs button b { min-width: 20px; padding: 0 6px; border-radius: 99px; background: var(--nb-by); color: var(--nb-muted); font: 11.5px/1.6 var(--nb-ui); text-align: center; }
     html.bnp-col-page .bnp-col-subs button:hover { border-color: var(--nb-frame); }
     html.bnp-col-page .bnp-col-subs button[aria-pressed="true"] { border-color: var(--nb-bar-edge); background: var(--nb-bar); color: var(--nb-bar-ink); }
     html.bnp-col-page .bnp-col-subs button[aria-pressed="true"] b { background: rgba(255, 255, 255, .9); color: #222; }
@@ -20295,6 +20418,17 @@
     html.bnp-col-page .bnp-col-meta i.is-none { background: #f3f3f3; color: #8c8c8c; }
     html.bnp-col-page .bnp-col-kind { color: var(--nb-muted); font: 11px var(--nb-txt); }
     html.bnp-col-page .bnp-col-tile .bnp-it { margin-top: 2px; }
+    html.bnp-col-page .bnp-col-grid.is-list { grid-template-columns: minmax(0, 1fr); gap: 6px; }   /* (List: one a line, Neopets' own words for each where it gives them) */
+    html.bnp-col-page .bnp-col-tile.is-row { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 7px 12px 7px 8px; text-align: left; }
+    html.bnp-col-page .bnp-col-tile.is-row .bnp-col-pic { flex: none; width: 50px; height: 50px; }
+    html.bnp-col-page .bnp-col-tile.is-row .bnp-col-pic img { width: 50px; height: 50px; }
+    html.bnp-col-page .bnp-col-tile.is-row .bnp-col-n { top: -7px; left: -8px; }
+    html.bnp-col-page .bnp-col-rtx { flex: 1 1 260px; display: grid; gap: 2px; min-width: 0; }
+    html.bnp-col-page .bnp-col-tile.is-row .bnp-col-nm { display: block; min-height: 0; -webkit-line-clamp: none; font-size: 14px; }
+    html.bnp-col-page .bnp-col-desc { color: var(--nb-muted); font: 12.5px/1.4 var(--nb-txt); }
+    html.bnp-col-page .bnp-col-tile.is-row .bnp-col-meta { justify-content: flex-end; }
+    html.bnp-col-page .bnp-col-meta i.is-kind { background: #eef3fb; color: #3b5b8c; }
+    html.bnp-col-page .bnp-col-tile.is-row .bnp-it { margin: 0 0 0 auto; }
     html.bnp-col-page .bnp-col-empty { grid-column: 1 / -1; margin: 0; padding: 30px 20px; border: 2px dashed var(--nb-line); border-radius: 15px; background: #fff; color: var(--nb-muted); font: 14px/1.5 var(--nb-txt); text-align: center; }
     html.bnp-col-page .bnp-col-foot { margin: 0 4px; color: var(--nb-muted); font: 12px/1.6 var(--nb-txt); }
     html.bnp-col-page .bnp-col-foot .bnp-col-btn { margin-left: 6px; vertical-align: middle; }
@@ -21079,7 +21213,8 @@
     let fold = true;   // (folded unless you've opened it: the albums come first on this page)
     try { fold = localStorage.getItem('bnp-sa-newfold') !== '0'; } catch (_) { fold = true; }
     const count = list.length ? (need ? `<b class="bnp-sa-newn" title="${need} of these ${list.length} not in your album yet">${need}</b>` : '<small class="bnp-sa-newall">All in your album</small>') : '';
-    return `<section class="bnp-sa-new${fold ? ' is-folded' : ''}"><div class="bnp-sa-newhead"><h3><button type="button" class="bnp-sa-newfold" data-sa-newfold aria-expanded="${!fold}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>New for your album${count}</button></h3><small>${when} · NE asks itemdb as your album opens, every 6 hours at most</small><button type="button" class="bnp-sa-btn is-small" data-sa-newcheck${busy ? ' disabled' : ''}>Check now</button></div>${list.length ? `<div class="bnp-sa-newrow">${list.map(tile).join('')}</div>` : `<p class="bnp-sa-fine">${esc(err || (busy || !v ? 'Asking itemdb…' : 'Nothing yet.'))}</p>`}</section>`;
+    const saIc = tabIconOf('side:/stamps.phtml?type=album') || `${NPI}themes/h5/basic/images/v3/stamps-icon.svg`;   // (your theme's own stamp, as the side menu's Stamps has it, kept from a beta page when the album's is an old one (the user, 2026-11-02))
+    return `<section class="bnp-sa-new${fold ? ' is-folded' : ''}"><div class="bnp-sa-newhead"><h3><button type="button" class="bnp-sa-newfold" data-sa-newfold aria-expanded="${!fold}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>${saIc ? `<span class="bnp-sa-newic" style="background-image:url('${esc(cssUrl(saIc))}')" aria-hidden="true"></span>` : ''}New for your album${count}</button></h3><small>${when} · NE asks itemdb as your album opens, every 6 hours at most</small><button type="button" class="bnp-sa-btn is-small" data-sa-newcheck${busy ? ' disabled' : ''}>Check now</button></div>${list.length ? `<div class="bnp-sa-newrow">${list.map(tile).join('')}</div>` : `<p class="bnp-sa-fine">${esc(err || (busy || !v ? 'Asking itemdb…' : 'Nothing yet.'))}</p>`}</section>`;
   }
   function saPagesHtml(pages) {
     const live = pages.filter((st) => st.exists);
@@ -21506,6 +21641,7 @@
     html.bnp-sa-page .bnp-sa-newfold { display: inline-flex; align-items: center; gap: 8px; margin: -4px -6px; padding: 4px 6px; border: 0; border-radius: 10px; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-align: left; cursor: pointer; }   /* (the title: one press folds or opens it) */
     html.bnp-sa-page .bnp-sa-newfold:hover, html.bnp-sa-page .bnp-sa-newfold:focus-visible { background: var(--nb-by, #f6f1e3); outline: none; }
     html.bnp-sa-page .bnp-sa-newfold svg { flex: none; width: 15px; height: 15px; transition: transform .15s; }
+    html.bnp-sa-page .bnp-sa-newic { flex: none; width: 30px; height: 30px; margin: -6px -2px -6px 0; background: center / contain no-repeat; }   /* (the theme's stamp beside the title) */
     html.bnp-sa-page .bnp-sa-new:not(.is-folded) .bnp-sa-newfold svg { transform: rotate(90deg); }
     html.bnp-sa-page .bnp-sa-newn { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 7px; box-sizing: border-box; border-radius: 999px; background: var(--nb-frame, #b07d1e); color: #fff; font: 15px/1 "Cafeteria", Arial, sans-serif; letter-spacing: .3pt; }   /* (how many are still to get: solid, white Cafeteria) */
     html.bnp-sa-page .bnp-sa-newhead small.bnp-sa-newall { margin: 0; color: var(--nb-muted); font: 12.5px var(--nb-ui); }
@@ -22023,7 +22159,7 @@
       packOf: Array.isArray(x.formattedPackContents) ? x.formattedPackContents.filter((y) => y && typeof y === 'object') : [],
       stock: Number(x.isLimitedQuantity) ? mallNum(f.limited) : -1,
       buyable: x.isBuyable === undefined ? true : !!Number(x.isBuyable), gone: !!Number(x.isSoldOut),
-      home: !!Number(x.isNeohome), album: !!Number(x.isAlbumTheme), gift: !!Number(x.isGiftbox), elite: !!Number(x.isElite), coll: !!Number(x.isCollectible),
+      home: !!Number(x.isNeohome), album: !!Number(x.isAlbumTheme), gift: !!Number(x.isGiftbox), elite: !!Number(x.isElite), coll: !!Number(x.isCollectible) || /\bnc collectible item from the\b/i.test(String(x.description || '')),   // (or in its own words: November 2026's came without the flag)
       cats: (Array.isArray(x.categories) ? x.categories : []).map(Number).filter(Boolean),
       promo: !!f.ck, faq: String(x.capsuleFaqUrl || ''),
     };
@@ -22043,8 +22179,11 @@
   function mallBack(it) {   // (brought back: on sale for a while only, its sale begun lately, the item far older than what was newest then)
     const now = Date.now() / 1000;
     if (!it.end || !it.begin || !it.id || it.elite || now - it.begin > 60 * 86400) return false;
-    const top = mallNewestSeen(0), newThen = top.id + ((it.begin - top.at / 1000) / 86400) * 13;
-    return it.id < newThen - 1500;
+    const top = mallNewestSeen(0), back = top.id + ((it.begin - top.at / 1000) / 86400) * 13 - it.id;
+    if (back <= 1500) return false;
+    if (back > 4000) return true;
+    const nd = mall && mall.data[mallListKey('new')];
+    return !mallNewIds().has(it.id) && !(nd && Array.isArray(nd.items) && nd.items.some((x) => x.id === it.id));   // (Neopets make some things months ahead: the Archive Bookshelf kits out 2 November 2026 were ~1,800 and ~3,200 numbers back. One their own New list has had, or itemdb first saw as it went on sale, is new unless older still)
   }
   const mallSold = (it) => !!it && (it.promo || it.now > 0) && it.buyable;   // (sold here on its own: a price of its own, or a free gift; what only comes in capsules and packs isn't)
   const MALL_SPECIALTY = 8;   // (the Specialty aisle: its capsules, and their bundles, left to Mystery Capsules (user, 2026-10-29: "its silly that they show up there"))
@@ -22385,7 +22524,7 @@
     for (const other of mallDropBoxes()) if (other !== box && other.classList.contains('is-open')) { other.classList.remove('is-open'); other.querySelector('.bnp-mall-drop').hidden = true; other.querySelector('[data-mall-drop]').setAttribute('aria-expanded', 'false'); }
     const drop = box.querySelector('.bnp-mall-drop');
     if (!box.classList.contains('is-open') && g !== '__more') drop.innerHTML = mallDropHtml(g);
-    if (g === 'games') mallCollFind();
+    if (g !== 'games' && g !== '__more' && drop.querySelector('.bnp-mall-droprow.is-case')) mallCollFind();   // (Specialty's NC Collectible with none known on sale yet: looked for)
     drop.hidden = false;
     drop.style.left = '';
     drop.style.right = '';
@@ -22633,7 +22772,16 @@
     for (const [id, x] of Object.entries((had && had.list) || {})) if (x && now - (x.at || 0) < 30 * 86400e3) keep[id] = x;
     for (const it of items) if (it.id && it.name) keep[it.id] = { n: it.name, b: it.begin || 0, at: now };
     set(MALL_NEW_SEEN, { list: keep });
+    mallNewIdx = null;
     return keep;
+  }
+  let mallNewIdx = null;
+  function mallNewIds() {   // (what's known to be new, whatever its number: Neopets' New list's things (kept 30 days) and itemdb's newest first seen as they went on sale)
+    if (mallNewIdx) return mallNewIdx;
+    const out = new Set(), had = get(MALL_NEW_SEEN, null), idb = get(MALL_NEW_IDB, null);
+    for (const id of Object.keys((had && had.list) || {})) out.add(Number(id));
+    for (const x of (idb && Array.isArray(idb.list) ? idb.list : [])) if (x && x.id && x.b && x.fs && x.fs >= (x.b - 3 * 86400) * 1000) out.add(x.id);
+    return (mallNewIdx = out);
   }
   function mallNewIdb() {   // (itemdb's newest NC items with their Mall dates (item_id is the Mall's own number): asked at most every half hour)
     const c = get(MALL_NEW_IDB, null), old = c && Array.isArray(c.list) ? c.list : [];
@@ -22648,6 +22796,7 @@
             if (!j || !Array.isArray(j.content)) { res(old); return; }
             const list = j.content.map((x) => { const m = x && x.mallData, b = m && Date.parse(m.saleBegin || ''); return m && Number(m.price) > 0 && b ? { id: Number(x.item_id) || 0, n: reClean(String(x.name || '')).slice(0, 90), fs: Date.parse(x.firstSeen || '') || 0, b: Math.round(b / 1000), e: Math.round((Date.parse(m.saleEnd || '') || 0) / 1000) } : null; }).filter((x) => x && x.id && x.n);
             set(MALL_NEW_IDB, { at: Date.now(), list });
+            mallNewIdx = null;
             res(list);
           }, onerror: () => res(old), ontimeout: () => res(old) });
       } catch (_) { res(old); }
@@ -35147,10 +35296,14 @@
       a.innerHTML = `<li class="profile-dropdown-subsection"><div class="nav-settings-icon profile-dropdown-link-icon"></div><h4>${esc(APP)}</h4></li>`;
       sec.append(a);
     }
-    // Quick Ref: a row of its own above My Pets, My Pets' picture turned the other way; a plain link, no arrow
+    // Quick Ref: a row of its own above My Pets, My Pets' picture turned the other way; a plain link, no arrow. Neopets' My Pets went to
+    // Quick Ref on 2 November 2026: with this row there, My Pets goes to the My Pets page again, as it was (the user: "Both, as before")
     const petsIc = side.querySelector('a[href*="/home/index.phtml"] .nav-petcentral-icon') || side.querySelector('.nav-petcentral-icon:not([data-bnp] *)');
     const petsRow = petsIc && (petsIc.closest('li.profile-linkgrid') || petsIc.closest('a'));
+    const petsA = petsIc && petsIc.closest('a:not([data-bnp])');
     let qrRow = side.querySelector('[data-bnp="sideqr"]');
+    if (petsA && S.features.sideQr !== false && /quickref\.phtml/.test(petsA.getAttribute('href') || '')) { petsA.dataset.bnpWas = petsA.getAttribute('href'); petsA.setAttribute('href', '/home/index.phtml'); }
+    else if (petsA && S.features.sideQr === false && petsA.dataset.bnpWas) { petsA.setAttribute('href', petsA.dataset.bnpWas); delete petsA.dataset.bnpWas; }
     if (S.features.sideQr !== false && petsRow && !side.querySelector('a[href*="quickref.phtml"]:not([data-bnp])')) {
       if (!qrRow) {
         qrRow = document.createElement('a');
@@ -35496,8 +35649,7 @@
     if (petsPanel && petsPanel.classList.contains('open')) { paintPets(loud || note ? note : ''); placePets(); }
   }
   async function activate(name, image) {   // (makes a pet the active one, and shows it everywhere at once: the page itself would only after a reload)
-    const r = await fetch(`/process_changepet.phtml?new_active_pet=${encodeURIComponent(name)}`, { credentials: 'include' });
-    if (/login/i.test(new URL(r.url).pathname)) throw new Error('signed out');
+    await petChangeSend(name);
     const p = get('pets', null) || { list: [], at: 0 };
     p.list = Array.isArray(p.list) ? p.list : [];
     p.list.forEach((x) => { x.active = x.name === name; });
@@ -35528,11 +35680,13 @@
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // QuickRef: Quick Ref in the beta look. Every pet's picture, numbers, needs and actions in one place, sorted and filtered your way
+  // QuickRef: Quick Ref made over, on Neopets' own new one (2 November 2026: cards with a stat strip and a star, worn items, petpets,
+  // the Neolodge and the NeoHospital, Quick Links) with what NE's had before it (what each pet needs at a glance, sorting and your own
+  // order, a health meter, battle stats, the cure and where to feed, books read, pet colours, picture sizes, rows), in your theme
   // ═══════════════════════════════════════════════════════════════════════════
   const HUNGER = ['dying', 'starving', 'famished', 'very hungry', 'hungry', 'not hungry', 'fine', 'satiated', 'full up', 'very full', 'bloated', 'very bloated'];
   const hungerAt = (h) => HUNGER.indexOf(String(h || '').toLowerCase().trim());
-  const hungerColour = (i) => (i < 0 ? '#9a9585' : i <= 1 ? '#d23c2c' : i <= 3 ? '#e8742b' : i === 4 ? '#e0a91a' : i <= 7 ? '#3d9b47' : i <= 9 ? '#2f9688' : '#8e5cc4');
+  const hungerColour = (i) => (i < 0 ? '#8a8571' : i <= 1 ? '#d23c2c' : i <= 3 ? '#d4690a' : i === 4 ? '#a87b00' : i <= 7 ? '#2f8a3c' : i <= 9 ? '#23857a' : '#8e5cc4');   // (dark enough to read on the stat strip)
   const GLYPH = {   // (small drawn marks for the few actions the theme has no picture for; they take the text colour)
     spark: '<svg viewBox="0 0 20 20"><path d="M10 1.5l2 5.2 5.5.8-4 3.9 1 5.6L10 14.3 5.5 17l1-5.6-4-3.9 5.5-.8z" fill="currentColor"/></svg>',
     pen: '<svg viewBox="0 0 20 20"><path d="M3 14.6V17h2.4l8.1-8.1-2.4-2.4L3 14.6zm13.7-7.3a.9.9 0 0 0 0-1.3l-1.7-1.7a.9.9 0 0 0-1.3 0l-1.3 1.3 3 3 1.3-1.3z" fill="currentColor"/></svg>',
@@ -35556,7 +35710,8 @@
     ['Jitters', 'Potion of Containment', 'ps_trap_vaccine'], ['Spyder Bite', 'Spyder Juice Elixir', 'ps_spyder_vaccine'], ['Pollenitus', 'Crater Fruit Elixir', 'med_allergycure'],
   ].map(([name, cure, img]) => ({ name, cure, img: `https://images.neopets.com/items/${img}.gif`, k: name.toLowerCase().replace(/[^a-z]/g, '') }))
     .sort((a, b) => b.k.length - a.k.length);   // (longest first: "Sneezles" is found before "Neezles")
-  function diseaseIn(el) {   // (a sick notice → its disease and cure: the name Neopets puts in bold, else whichever disease the words name)
+  const diseaseOf = (s) => { const k = String(s || '').toLowerCase().replace(/[^a-z]/g, ''); return k ? DISEASES.find((d) => d.k === k) || DISEASES.find((d) => k.includes(d.k)) || null : null; };
+  function diseaseIn(el) {   // (a sick notice on the old Quick Ref → its disease and cure: the name Neopets puts in bold, else whichever disease the words name)
     const words = el.textContent.replace(/\s+/g, ' ');
     const said = (/suffering from\s+(.+?)\s*[!.]/i.exec(words) || [])[1] || '';
     const k = (s) => String(s || '').toLowerCase().replace(/[^a-z]/g, '');
@@ -35565,96 +35720,161 @@
     return DISEASES.find((d) => all.includes(d.k)) || (said ? { name: said.trim() } : null);
   }
   const swHref = (q) => `/shops/wizard.phtml?string=${encodeURIComponent(q)}`;
-  function qrRead() {   // (everything Neopets' own Quick Ref already has on the page, for every pet)
+  const QR_ART = {   // (Neopets' own pictures for each part, as its new Quick Ref has them)
+    on: `${NPI}themes/h5/basic/images/active-icon.svg`, off: `${NPI}themes/h5/basic/images/inactive-icon.svg`,
+    level: `${NPI}themes/h5/basic/images/level-icon.png`, hunger: `${NPI}themes/h5/basic/images/hunger-icon.png`, health: `${NPI}themes/h5/basic/images/health-icon.png`, mood: `${NPI}themes/h5/basic/images/mood-icon.png`,
+    lodge: `${NPI}images/onholiday.gif`, sick: `${NPI}images/redcross.gif`, worn: `${NPI}themes/h5/common/images/hanger_icon.png`,
+    grow: `${NPI}themes/h5/basic/images/expand.svg`, shrink: `${NPI}themes/h5/basic/images/compress.svg`,
+  };
+  const QR_FEED = [['/objects.phtml?type=shop&obj_type=1', 'Food Shop'], ['/soupkitchen.phtml', 'Soup Kitchen'], ['/prehistoric/omelette.phtml', 'Giant Omelette'], ['/jelly/jelly.phtml', 'Giant Jelly']];   // (where to feed a hungry pet)
+  const qrTxt = (h) => { const t = document.createElement('template'); t.innerHTML = String(h ?? ''); return reClean(t.content.textContent); };   // (Neopets' words for a fact without their markup: a template's content is never shown or run)
+  const qrAgeOf = (t) => { const n = Number(String(t).replace(/[^\d]/g, '')) || 0; return /hour/i.test(t) ? { age: Math.floor(n / 24), ageH: n } : { age: n, ageH: null }; };   // ("8,853 days": every digit; a young pet's "317 hours": in days, the hours kept)
+  function qrLinks(name, L = {}) {   // (where each of a pet's actions goes: Neopets' own links where its data gives them)
+    const N = encodeURIComponent(name), more = Array.isArray(L.more) ? L.more : [], m = (re) => String((more.find((x) => x && re.test(String(x.label || ''))) || {}).url || '');
+    return {
+      customise: L.customise || `/customise/?view=${N}`, equip: L.battledome || `/dome/neopets.phtml?pet=${N}`, shelf: L.bookshelf || `/bookshelf/pet-bookshelf.phtml?pet=${N}`,
+      books: `/books_read.phtml?pet_name=${N}`, gourmet: `/gourmet_club.phtml?pet_name=${N}`, lookup: m(/lookup/i) || `/petlookup.phtml?pet=${N}`, page: `/~${N}`, abilities: m(/abilit/i) || `/dome/abilities.phtml?pet=${N}`,
+      home: m(/homepage/i) || `/editpage.phtml?pet_name=${N}`, desc: m(/description/i) || `/neopet_desc.phtml?edit_petname=${N}`, photo: m(/photo/i) || `/sendyourpet.phtml?selected=${N}`,
+      jobs: L.jobsCompleted || '/faerieland/employ/employment.phtml', fishing: L.fishingSkill || '/water/fishing.phtml',
+    };
+  }
+  function qrReadCfg(cfg) {   // (Neopets' Quick Ref since 2 November 2026: every pet's facts as the page's own data)
+    const now = Date.now();
+    return (Array.isArray(cfg.pets) ? cfg.pets : []).filter((x) => x && x.name).map((x) => {
+      const name = String(x.name), [hp, hpMax] = qrTxt(x.health).split('/').map((v) => parseInt(v, 10));
+      const ill = x.illness ? qrTxt(x.illness.disease) : '', lg = x.neolodge, pp = x.petpet;
+      const move = lg ? (lg.state === 'checking_in' ? 'in' : lg.state === 'checking_out' ? 'out' : '') : '';
+      return {
+        name, active: x.isActive === true, thumb: fullUrl(String(x.thumbImage || '')), pic: fullUrl(String(x.image || '')),
+        species: qrTxt(x.species), colour: qrTxt(x.colour), gender: qrTxt(x.gender), ...qrAgeOf(qrTxt(x.age)),
+        level: parseInt(qrTxt(x.level), 10) || 0, hp: hp || 0, hpMax: hpMax || 0, mood: qrTxt(x.mood), hunger: qrTxt(x.hunger),
+        strength: qrTxt(x.strength), defence: qrTxt(x.defence), move: qrTxt(x.move), intelligence: qrTxt(x.intelligence),
+        weight: qrTxt(x.weight).replace(/\.$/, ''), height: qrTxt(x.height).replace(/\s*cms?\.?$/i, ' cm'), jobs: qrTxt(x.jobsCompleted), fishing: qrTxt(x.fishingSkill),
+        worn: (Array.isArray(x.wornItems) ? x.wornItems : []).filter((w) => w && w.name).map((w) => ({ name: qrTxt(w.name), img: fullUrl(String(w.image || '')) })),
+        petpet: pp && pp.name ? { name: qrTxt(pp.name), img: fullUrl(String(pp.image || '')), p3: pp.p3Name ? qrTxt(pp.p3Name) : '', p3img: fullUrl(String(pp.p3Image || '')), href: String(pp.visitUrl || '') } : null,
+        lodge: lg ? { move, end: move ? 0 : now + (((Number(lg.days) || 0) * 24 + (Number(lg.hours) || 0)) * 60 + (Number(lg.minutes) || 0)) * 60000 } : null,
+        sick: ill ? { name: ill, cure: diseaseOf(ill), hospital: String(x.illness.cureUrl || '/hospital.phtml') } : null,
+        links: qrLinks(name, x.links || {}),
+      };
+    });
+  }
+  function qrLodgeText(t) {   // (the old page's Neolodge notice: "checks out in 12 days, 3 hours and 20 minutes" from now)
+    if (/checking in/i.test(t)) return { move: 'in', end: 0 };
+    if (/checking out/i.test(t)) return { move: 'out', end: 0 };
+    const part = (u) => { const m = new RegExp(`(\\d+)\\s*${u}`, 'i').exec(t); return m ? +m[1] : 0; };
+    const ms = ((part('day') * 24 + part('hour')) * 60 + part('minute')) * 60000;
+    return { move: '', end: ms ? Date.now() + ms : 0 };
+  }
+  function qrReadOld() {   // (Neopets' Quick Ref before November 2026, an old page: its tables, read into the same facts)
     const pets = [];
     for (const td of $$('#nav td')) {
       const img = td.querySelector('img[title]');
       if (!img) continue;
-      const name = img.getAttribute('title');
-      const det = document.getElementById(name + '_details');
-      const st = {};
+      const name = img.getAttribute('title'), det = document.getElementById(name + '_details'), st = {};
       if (det) for (const tr of det.querySelectorAll('table.pet_stats tr')) {
         const th = tr.querySelector('th'), cell = tr.querySelector('td');
-        if (!th || !cell) continue;
-        const a = cell.querySelector('a');
-        st[th.textContent.replace(/:\s*$/, '').trim().toLowerCase()] = { text: cell.textContent.replace(/\s+/g, ' ').trim(), href: a ? a.getAttribute('href') : '' };
+        if (th && cell) st[th.textContent.replace(/:\s*$/, '').trim().toLowerCase()] = reClean(cell.textContent);
       }
-      const extra = det ? [...det.querySelectorAll('table.pet_stats td[colspan]')].map((c) => c.innerHTML.trim()).filter((h) => h && h.replace(/<[^>]*>/g, '').trim() || /<img/i.test(h)) : [];
+      const extra = det ? [...det.querySelectorAll('table.pet_stats td[colspan]')].map((c) => c.innerHTML.trim()).filter((h) => /<img/i.test(h)) : [];
       const picEl = det && det.querySelector('.pet_image');
-      const notices = det ? [...det.querySelectorAll('.pet_notices > div')].map((n) => {
-        const icon = fullUrl(((n.getAttribute('style') || '').match(/url\(['"]?([^'")]+)/) || [])[1] || '');
-        const kind = /fishbone/.test(icon) ? 'hungry' : /redcross/.test(icon) ? 'sick' : /onholiday/.test(icon) ? 'lodge' : 'other';
-        return { kind, icon, html: n.innerHTML, text: n.textContent.replace(/\s+/g, ' ').trim(), disease: kind === 'sick' ? diseaseIn(n) : null };
-      }) : [];
-      const [hp, hpMax] = ((st.health || {}).text || '').split('/').map((x) => parseInt(x, 10));
+      let lodge = null, sick = null;
+      for (const n of det ? det.querySelectorAll('.pet_notices > div') : []) {
+        const icon = ((n.getAttribute('style') || '').match(/url\(['"]?([^'")]+)/) || [])[1] || '';
+        if (/onholiday/.test(icon)) lodge = qrLodgeText(reClean(n.textContent));
+        else if (/redcross/.test(icon)) { const d = diseaseIn(n); sick = { name: (d && d.name) || 'Sick', cure: d && d.cure ? d : null, hospital: '/hospital.phtml' }; }
+      }
+      let petpet = null;
+      if (extra[0]) { const d = new DOMParser().parseFromString(`<div>${extra[0]}</div>`, 'text/html'), pi = d.querySelector('img'), a = d.querySelector('a'); if (pi) petpet = { name: reClean(d.body.textContent).replace(/^click here to visit\s*/i, '').replace(/!$/, ''), img: fullUrl(pi.getAttribute('src') || ''), p3: '', p3img: '', href: a ? a.getAttribute('href') || '' : '' }; }
+      const [hp, hpMax] = (st.health || '').split('/').map((x) => parseInt(x, 10));
       pets.push({
         name, active: td.classList.contains('active_pet'),
         thumb: fullUrl(bgUrl(img) || ''), pic: fullUrl((picEl && bgUrl(picEl)) || (bgUrl(img) || '').replace(/\/(\d+)\/\d+\.png$/, '/$1/4.png')),   // (Neopets fills in the other pets' big pictures only when they're clicked)
-        species: (st.species || {}).text || '', colour: (st.colour || {}).text || '', gender: (st.gender || {}).text || '',
-        ...(() => { const t = (st.age || {}).text || '', n = Number(t.replace(/[^\d]/g, '')) || 0; return /hour/i.test(t) ? { age: Math.floor(n / 24), ageH: n } : { age: n, ageH: null }; })(),   // ("8,853 days": every digit — parseInt stopped at the comma; a young pet's "317 hours": in days, the hours kept)
-        level: parseInt((st.level || {}).text, 10) || 0, hp: hp || 0, hpMax: hpMax || 0,
-        mood: (st.mood || {}).text || '', hunger: (st.hunger || {}).text || '',
-        strength: (st.strength || {}).text || '', defence: (st.defence || {}).text || '', move: (st.move || {}).text || '',
-        intelligence: (st.intelligence || {}).text || '', books: (st.intelligence || {}).href || `/books_read.phtml?pet_name=${encodeURIComponent(name)}`,
-        extra, notices,
+        species: st.species || '', colour: st.colour || '', gender: st.gender || '', ...qrAgeOf(st.age || ''),
+        level: parseInt(st.level, 10) || 0, hp: hp || 0, hpMax: hpMax || 0, mood: st.mood || '', hunger: st.hunger || '',
+        strength: st.strength || '', defence: st.defence || '', move: st.move || '', intelligence: st.intelligence || '',
+        weight: '', height: '', jobs: '', fishing: '', worn: null, petpet, lodge, sick, links: qrLinks(name),
       });
     }
     return pets;
   }
-  function lodgeLeft(text) {   // ("12 days, 3 hours" left at the Neolodge → the biggest part that isn't 0)
-    const s = lodgeShort(text);
-    return /\d/.test(s.t) ? `${s.t} left` : s.t === 'Neolodge' ? '' : s.t;
+  let qrCfg = null;
+  function qrRead() {   // (every pet's facts: Neopets' own data on its new Quick Ref, else the old page's tables)
+    const cfg = pageJson(document, '__quickrefConfig');
+    if (cfg && Array.isArray(cfg.pets)) { qrCfg = cfg; return qrReadCfg(cfg); }
+    return qrReadOld();
   }
   let qr = null;
   function betterQR() {
     if (!S.features.qr || location.pathname !== '/quickref.phtml') return;
     styles();   // (its look, whatever else is ready: on an old page before the beta look has been seen, nothing else puts it in)
-    try { buildQR(); } finally { document.documentElement.classList.remove('bnp-qrwait'); }   // (the old Quick Ref stayed hidden until now)
+    try { buildQR(); } finally { document.documentElement.classList.remove('bnp-qrwait'); }   // (Neopets' own stayed out of sight until now)
   }
   function buildQR() {
-    const cell = $('td.content');
-    const pets = qrRead();
+    const pets = qrRead(), np = qrCfg && document.getElementById('quickref-app');
+    const cell = np ? np.parentElement : $('td.content');
     if (!cell || !pets.length) return;
-    for (const re of [...cell.querySelectorAll('[data-bnp-re]')].reverse()) {   // (a random event on this page stays in sight, at the top, with its tab)
-      const bar = re.nextElementSibling && re.nextElementSibling.matches('[data-bnp="rebar"]') ? re.nextElementSibling : null;
-      cell.prepend(re);
-      if (bar) re.after(bar);
+    if (np) for (const el of [np, cell.querySelector(':scope > .pageDesc')]) { if (el) el.classList.add('bqr-orig'); }   // (Neopets' own app and its how-to out of sight; its title and menu bar stay)
+    else {
+      for (const re of [...cell.querySelectorAll('[data-bnp-re]')].reverse()) {   // (a random event on the old page stays in sight, at the top, with its tab)
+        const bar = re.nextElementSibling && re.nextElementSibling.matches('[data-bnp="rebar"]') ? re.nextElementSibling : null;
+        cell.prepend(re);
+        if (bar) re.after(bar);
+      }
+      [...cell.children].forEach((c) => { if (!c.matches('link, script, style, [data-bnp-re], [data-bnp="rebar"]')) c.classList.add('bqr-orig'); });
     }
-    [...cell.children].forEach((c) => { if (!c.matches('link, script, style, [data-bnp-re], [data-bnp="rebar"]')) c.classList.add('bqr-orig'); });
     const app = document.createElement('div');
-    app.className = 'bqr';
+    app.className = 'bq';
     app.setAttribute('data-bnp', 'qr');
-    cell.append(app);
+    if (np) np.after(app); else cell.append(app);
     noteLodge(pets);
     const kept = get('qr', null) || {};
-    qr = { app, pets, prefs: { sort: 'active', view: 'cards', show: 'all', order: [], tint: true, strip: true, pic: 'big', ...kept } };
-    if (kept.v !== 2) qr.prefs.tint = true;   // (Pet colours became the default: on once for everyone, then it's yours to switch)
+    const pic = ['s', 'm', 'l'].includes(kept.pic) ? kept.pic : kept.pic === 'normal' ? 'm' : 'l';   // (Large to start with (the user, 2026-11-02: Active first, Cards, Large, Pet colours); the sizes before: Normal → Medium, the bigger ones → Large)
+    qr = { app, pets, cfg: qrCfg, books: {}, prefs: { sort: 'active', view: 'cards', show: 'all', order: [], tint: true, strip: true, wide: {}, ...kept, pic } };
+    if (!kept.v || kept.v < 2) qr.prefs.tint = true;   // (Pet colours became the default: on once for everyone, then it's yours to switch)
+    if (!qr.prefs.wide || typeof qr.prefs.wide !== 'object' || Array.isArray(qr.prefs.wide)) qr.prefs.wide = {};
     if (qr.prefs.tint) qrTintsKept();   // (colours already worked out go on before the first paint: no flash of plain cards)
-    qrAccent(app);   // (the cards dress in the theme's own pop-up colours)
+    qrAccent(app);   // (the cards dress in the theme's own colours)
     app.addEventListener('click', qrClick);
-    app.addEventListener('change', (e) => { if (e.target.matches('[data-qs]')) { qr.prefs.sort = e.target.value; qrSave(); qrPaint(); } });
     app.addEventListener('keydown', qrMenuKeys);
-    document.addEventListener('click', (e) => { if (qrMenuAt && !(e.target instanceof Element && e.target.closest('.bqr-petmenu, [data-qm]'))) qrMenuClose(); });
+    app.addEventListener('error', (e) => { const t = e.target; if (t instanceof HTMLImageElement && t.dataset.fb && t.getAttribute('src') !== t.dataset.fb) t.src = t.dataset.fb; }, true);   // (a picture that doesn't come: its stand-in, once)
+    document.addEventListener('click', (e) => {
+      const t = e.target instanceof Element ? e.target : null;
+      if (qrMenuAt && !(t && t.closest('.bqr-petmenu, [data-qm]'))) qrMenuClose();
+      if (qrWornAt && !(t && t.closest('.bq-wornbox, [data-qw]'))) qrWornClose();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && qrWornAt) qrWornClose(true); });
     qrDrag(app);
     qrPaint();
     if (qr.prefs.tint) qrTints();
+    qrBooksLoad();
   }
-  function qrAccent(app) { const h = themeHead(); if (h) { app.style.setProperty('--bqr-head', h.bg); app.style.setProperty('--bqr-headink', h.ink); } }
-  function noteLodge(pets) {   // (when each pet leaves the Neolodge, for its reminder: "12 days, 3 hours, 20 minutes" from now)
-    const out = {}, now = Date.now(), was = get('lodge', {}) || {};
+  function qrAccent(app) {   // (the theme's header colours; and an edge for titles that sit on its pattern: the theme's own, else white or dark against its writing)
+    const h = themeHead();
+    if (!h) return;
+    app.style.setProperty('--bqr-head', h.bg);
+    app.style.setProperty('--bqr-headink', h.ink);
+    const m = /(\d+)\D+(\d+)\D+(\d+)/.exec(h.ink || ''), lum = m ? (0.2126 * m[1] + 0.7152 * m[2] + 0.0722 * m[3]) / 255 : 0;
+    app.style.setProperty('--bq-tedge', h.edge || (lum < 0.5 ? 'rgba(255, 255, 255, .92)' : 'rgba(20, 16, 30, .6)'));
+  }
+  function noteLodge(pets) {   // (when each pet leaves the Neolodge, for its reminder; read again within a few minutes of before: the same moment)
+    const out = {}, was = get('lodge', {}) || {};
     for (const p of pets) {
-      const n = p.notices.find((x) => x.kind === 'lodge');
-      if (!n) continue;
-      const part = (u) => { const m = new RegExp(`(\\d+)\\s*${u}`, 'i').exec(n.text); return m ? +m[1] : 0; };
-      const ms = ((part('day') * 24 + part('hour')) * 60 + part('minute')) * 60000;
-      if (ms > 0) { const end = Math.round((now + ms) / 60000) * 60000; out[p.name] = Number(was[p.name]) && Math.abs(was[p.name] - end) <= 5 * 60000 ? was[p.name] : end; }   // (read again within a few minutes of before: the same one)
+      if (!p.lodge || !p.lodge.end) continue;
+      const end = Math.round(p.lodge.end / 60000) * 60000;
+      out[p.name] = Number(was[p.name]) && Math.abs(was[p.name] - end) <= 5 * 60000 ? Number(was[p.name]) : end;
+      p.lodge.end = out[p.name];
     }
     set('lodge', out);
   }
-  const qrSave = () => set('qr', { v: 2, sort: qr.prefs.sort, view: qr.prefs.view, show: qr.prefs.show, order: qr.prefs.order, tint: qr.prefs.tint, strip: qr.prefs.strip, pic: qr.prefs.pic });
-  const QR_PICS = [['normal', 'Normal'], ['big', 'Big'], ['bigger', 'Bigger'], ['biggest', 'Biggest']];   // (each card's picture: Neopets' own 158 px; 240, the facts beside it in one column; 320, or the card's whole width, the facts under it)
-  const qrPicKey = () => { const v = qr.prefs.pic; if (QR_PICS.some(([k]) => k === v)) return v; const n = Number(v); return !n || n < 200 ? 'normal' : n < 280 ? 'big' : n < 360 ? 'bigger' : 'biggest'; };   // (a size from the slider before: the nearest)
-  const qrPicSrc = (p) => { const u = p.pic || p.thumb || ''; return ['bigger', 'biggest'].includes(qrPicKey()) ? u.replace(/\/4\.png$/, '/5.png') : u; };   // (past 300 px, Neopets' 500-px picture: never one blown up)
+  const qrSave = () => {
+    const names = new Set(qr.pets.map((p) => p.name)), wide = {};
+    for (const [k, v] of Object.entries(qr.prefs.wide || {})) if (names.has(k)) wide[k] = !!v;   // (only your pets now)
+    qr.prefs.wide = wide;
+    set('qr', { v: 3, sort: qr.prefs.sort, view: qr.prefs.view, show: qr.prefs.show, order: qr.prefs.order, tint: qr.prefs.tint, strip: qr.prefs.strip, pic: qr.prefs.pic, wide });
+  };
+  const QR_PICS = [['s', 'Small'], ['m', 'Medium'], ['l', 'Large']];   // (each card's picture beside its facts: 128, 160, 210 px; a card across the page: 300, or 400 at Large)
+  const qrPicKey = () => (['s', 'm', 'l'].includes(qr.prefs.pic) ? qr.prefs.pic : 'l');
+  const qrWide = (p) => (Object.prototype.hasOwnProperty.call(qr.prefs.wide, p.name) ? !!qr.prefs.wide[p.name] : p.active);   // (across the page: your active pet, as Neopets has it, till you choose otherwise)
   // Pet colours: each card in the colour most found in its pet's picture (white and grey count for less, so it's the pet's colour and not the empty space)
   function petColour(url) {
     return new Promise((done) => {
@@ -35703,30 +35923,44 @@
     const kept = get('qrTints', {}) || {};
     for (const p of qr.pets) { const src = tintSrc(p); if (src && kept[src]) p.tint = kept[src]; }
   }
-  async function qrTints() {   // (worked out once per look of each pet, and kept: a pet that's customised gets a new picture, so a new colour)
+  function qrTintApply(p) {   // (a pet's colour on its card and its tile the moment it's known: none waits for the rest)
+    if (!qr || !qr.prefs.tint || !p.tint) return;
+    for (const el of $$('.bq-card[data-pet], .bq-tile[data-pet]', qr.app)) if (el.dataset.pet === p.name && !el.classList.contains('is-tinted')) { el.classList.add('is-tinted'); el.setAttribute('style', tintVars(p.tint)); }
+  }
+  async function qrTints(again) {   // (worked out once per look of each pet, and kept: a pet that's customised gets a new picture, so a new colour. The user, 2026-11-02: on a new install the colours showed only after Pet colours was pressed twice; the cards waited for every pet's)
     const kept = get('qrTints', {}) || {};
-    let got = false;
-    let next = 0;
+    let got = false, next = 0, missed = 0;
     await Promise.all(Array.from({ length: 3 }, async () => {   // (three at a time)
       while (next < qr.pets.length) {
         const p = qr.pets[next++], src = tintSrc(p);
         if (!src) continue;
-        if (!kept[src]) { const c = await petColour(src); if (c) { kept[src] = c; got = true; } }
+        if (!kept[src]) { const c = await petColour(src); if (c) { kept[src] = c; got = true; } else missed++; }
         p.tint = kept[src] || null;
+        qrTintApply(p);
       }
     }));
-    if (got) {   // (only a new colour needs a new paint)
+    if (got) {   // (kept for next time: then they're on before the first paint)
       const keys = Object.keys(kept);
       for (const k of keys.slice(0, Math.max(0, keys.length - 120))) delete kept[k];
       set('qrTints', kept);
-      qrPaint();
     }
+    if (missed && !again) setTimeout(() => { if (qr && qr.prefs.tint) qrTints(true); }, 4000);   // (a picture that didn't come: asked for once more, a moment later)
   }
-  function tintVars(rgb) {   // (the card's colours from the pet's: the header, a darker edge, a faint wash; dark or light writing, whichever reads)
+  function tintVars(rgb) {   // (a card's colours from its pet's: the bars, a darker edge, dark or light writing, whichever reads)
     const [r, g, b] = rgb;
     const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
     const dark = (k) => `rgb(${Math.round(r * k)}, ${Math.round(g * k)}, ${Math.round(b * k)})`;
     return `--bqr-tint: rgb(${r}, ${g}, ${b}); --bqr-tint-line: ${dark(0.72)}; --bqr-tint-ink: ${lum > 0.58 ? '#2b2b2b' : '#fff'}; --bqr-tint-shadow: ${lum > 0.58 ? 'none' : '0 1px 2px rgba(0, 0, 0, .55)'};`;
+  }
+  async function qrBooksLoad() {   // (the books each pet has read, as NE last saw its Books Read pages: on its card, beside its intelligence)
+    const out = {};
+    for (const p of qr.pets) {
+      const [b, t] = await Promise.all([colPetGet('books', p.name), colPetGet('bt', p.name)]);
+      if ((b && b.n != null) || (t && t.n != null)) out[p.name] = { b: b && b.n != null ? Number(b.n) : null, t: t && t.n != null ? Number(t.n) : null };
+    }
+    if (!qr || !Object.keys(out).length) return;
+    qr.books = out;
+    qrPaint();
   }
   function qrSorted() {
     const list = qr.pets.slice();
@@ -35740,102 +35974,133 @@
     else list.sort((a, b) => (b.active - a.active) || byName(a, b));
     return list;
   }
-  const isHungry = (p) => { const i = hungerAt(p.hunger); return (i >= 0 && i <= 4) || p.notices.some((n) => n.kind === 'hungry'); };
-  const isSick = (p) => p.notices.some((n) => n.kind === 'sick');
-  const inLodge = (p) => p.notices.some((n) => n.kind === 'lodge');
+  const isSick = (p) => !!p.sick;
+  const inLodge = (p) => !!p.lodge;
+  const isHungry = (p) => { const i = hungerAt(p.hunger); return i >= 0 && i <= 4 && !inLodge(p); };   // (the Neolodge feeds its guests)
+  const capFirst = (s) => String(s || '').replace(/^\s*\w/, (c) => c.toUpperCase());
+  const qrWhen = (ms) => `${new Date(ms).toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', weekday: 'short', month: 'short', day: 'numeric' })} at ${fmtNst(ms)} NST`;
+  function qrLeft(ms) {   // ("12 days, 3 hours" · "5 hours, 20 minutes" · "40 minutes")
+    const m = Math.max(0, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60, u = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+    return d ? `${u(d, 'day')}${h ? `, ${u(h, 'hour')}` : ''}` : h ? `${u(h, 'hour')}${mm ? `, ${u(mm, 'minute')}` : ''}` : u(mm, 'minute');
+  }
+  function qrLodgeShort(p) {   // (its Neolodge stay in a word or two, and how soon it ends: under a day red, two orange, three amber)
+    const l = p.lodge;
+    if (!l) return { t: '', c: '' };
+    if (l.move === 'in') return { t: 'Checking in', c: 'is-move' };
+    if (l.move === 'out') return { t: 'Checking out', c: 'is-move is-now' };
+    const left = l.end - Date.now();
+    if (!(left > 0)) return { t: 'Neolodge', c: '' };
+    const d = Math.floor(left / DAY_MS), h = Math.floor(left / 3600e3), m = Math.max(1, Math.round(left / 60000));
+    return { t: d ? `${d} day${d === 1 ? '' : 's'}` : h ? `${h} hour${h === 1 ? '' : 's'}` : `${m} min`, c: d < 1 ? 'is-now' : d < 2 ? 'is-soon' : d < 3 ? 'is-near' : '' };
+  }
+  const qrSickTitle = (p) => (p.sick ? `${p.sick.name}${p.sick.cure ? `: the cure is ${p.sick.cure.cure}` : ''}` : '');
   function qrPaint() {
     const { app, prefs } = qr;
-    for (const [k] of QR_PICS) app.classList.toggle(`is-pic-${k}`, qrPicKey() === k);
-    const pets = qrSorted();
-    const shown = pets.filter((p) => prefs.show === 'hungry' ? isHungry(p) : prefs.show === 'sick' ? isSick(p) : prefs.show === 'lodge' ? inLodge(p) : true);
-    const n = { hungry: pets.filter(isHungry).length, sick: pets.filter(isSick).length, lodge: pets.filter(inLodge).length };
-    const chip = (k, label, count, warn) => `<button type="button" class="bqr-chip${warn ? ' is-warn' : ''}" data-qf="${k}" aria-pressed="${prefs.show === k}">${label} <b>${count}</b></button>`;
-    const strip = prefs.strip !== false && shown.length > 1;
-    qrMenuAt = null;
-    app.innerHTML = `
-      <div class="page-title__2020 bqr-title"><h1>Quick Reference</h1></div>
-      <div class="bqr-bar">
-        <div class="bqr-sum">${chip('all', 'All', pets.length)}${n.hungry ? chip('hungry', 'Hungry', n.hungry, true) : ''}${n.sick ? chip('sick', 'Sick', n.sick, true) : ''}${n.lodge ? chip('lodge', 'Neolodge', n.lodge) : ''}</div>
-        <div class="bqr-tools">
-          <label class="bqr-sortl">Sort <select data-qs aria-label="Sort" title="${prefs.sort === 'custom' ? 'My order: drag the cards, or the pets in Pets at a glance' : ''}">${[['active', 'Active first'], ['name', 'Name'], ['level', 'Level'], ['age', 'Age'], ['hunger', 'Hungriest'], ['custom', 'My order']].map(([v, l]) => `<option value="${v}"${prefs.sort === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
-          <span class="bqr-views" role="group" aria-label="View"><button type="button" data-qv="cards" aria-pressed="${prefs.view !== 'rows'}">Cards</button><button type="button" data-qv="rows" aria-pressed="${prefs.view === 'rows'}">Rows</button></span>
-          <button type="button" class="bqr-tintbtn bqr-stripbtn" data-qp aria-pressed="${prefs.strip !== false}" title="Every pet small at the top, with what needs doing: click one to go to its card">Pets at a glance</button>
-          <button type="button" class="bqr-tintbtn" data-qt aria-pressed="${!!prefs.tint}" title="Each card in its pet’s own colour">Colours</button>
-          ${prefs.view === 'rows' ? '' : `<span class="bqr-sortl bqr-picsz">Pictures <span class="bqr-views" role="group" aria-label="Pet pictures" title="How big each pet’s picture is on its card: the rest of the card makes room">${QR_PICS.map(([k, l]) => `<button type="button" data-qpic="${k}" aria-pressed="${qrPicKey() === k}">${l}</button>`).join('')}</span></span>`}
-        </div>
-      </div>
-      ${strip ? qrStrip(shown) : ''}
-      ${prefs.view === 'rows' ? qrRows(shown) : `<div class="bqr-cards${prefs.sort === 'custom' ? ' is-sortable' : ''}">${shown.map(qrCard).join('')}</div>`}
-      ${shown.length ? '' : '<p class="bqr-none">None of your pets right now. <button type="button" class="bnp-linkbtn" data-qf="all">Show them all</button></p>'}
-      ${strip ? '<button type="button" class="bqr-up" data-qu hidden title="Back up to Pets at a glance"><i></i><span>Your pets</span></button>' : ''}`;
+    app.dataset.pic = qrPicKey();
+    const pets = qrSorted(), n = { hungry: pets.filter(isHungry).length, sick: pets.filter(isSick).length, lodge: pets.filter(inLodge).length };
+    if (prefs.show !== 'all' && !n[prefs.show]) prefs.show = 'all';   // (nobody left to show for it: everyone again)
+    const shown = pets.filter((p) => (prefs.show === 'hungry' ? isHungry(p) : prefs.show === 'sick' ? isSick(p) : prefs.show === 'lodge' ? inLodge(p) : true));
+    qrMenuClose();
+    qrWornClose();
+    app.innerHTML = `${qr.cfg ? '' : '<div class="page-title__2020 bqr-title"><h1>Quick Reference</h1></div>'}
+      ${qrPetsBox(pets, shown, n)}
+      ${qrToolsBar()}
+      ${prefs.view === 'rows' ? qrRows(shown) : `<div class="bq-cards${prefs.sort === 'custom' ? ' is-sortable' : ''}">${shown.map(qrCard).join('')}</div>`}
+      ${shown.length ? '' : '<p class="bq-none">None of your pets right now. <button type="button" class="bq-pill" data-qf="all">Show them all</button></p>'}
+      ${qr.cfg ? `<p class="bq-foot"><button type="button" class="bq-pill" data-qneo aria-expanded="${document.documentElement.classList.contains('bq-showneo')}">${document.documentElement.classList.contains('bq-showneo') ? 'Hide Neopets’ own Quick Ref' : 'Neopets’ own Quick Ref'}</button></p>` : ''}
+      <button type="button" class="bq-up" data-qu hidden title="Back up to your pets"><i></i><span>Your Pets</span></button>`;
     qrWatchStrip();
+    qrHeadsLoad();
+  }
+  // Your Pets: Neopets' Quick Links, with what each pet needs under it, the counts for showing only those, and your order by dragging
+  function qrPetsBox(pets, shown, n) {
+    const open = qr.prefs.strip !== false, P = qr.prefs;
+    const me = pets.find((p) => p.active) || pets[0], pic = { all: (me && me.thumb) || QR_ART.on, hungry: QR_ART.hunger, sick: QR_ART.sick, lodge: QR_ART.lodge };   // (each count with Neopets' own picture for it: for every pet, your active one's face)
+    const count = (k, label, num, tip) => `<button type="button" class="bq-count is-${k}" data-qf="${k}" aria-pressed="${P.show === k}" title="${esc(tip)}"><span class="bq-cpic"><img src="${esc(pic[k])}" alt="" width="24" height="24" draggable="false"></span><b>${num}</b>${esc(label)}</button>`;
+    const counts = [count('all', pets.length === 1 ? 'Pet' : 'Pets', pets.length, 'Every pet'),
+      n.hungry ? count('hungry', 'Hungry', n.hungry, P.show === 'hungry' ? 'Every pet again' : 'Only the ones that need feeding') : '',
+      n.sick ? count('sick', 'Sick', n.sick, P.show === 'sick' ? 'Every pet again' : 'Only the sick ones') : '',
+      n.lodge ? count('lodge', 'Neolodge', n.lodge, P.show === 'lodge' ? 'Every pet again' : 'Only the ones at the Neolodge') : ''].join('');
+    return `<section class="bq-pets${open ? ' is-open' : ''}" aria-label="Your pets">
+        <div class="popup-header__2020 bq-plate"><h3>Your Pets</h3><div class="popup-header-pattern__2020"></div><span class="bq-platerim" aria-hidden="true"></span></div>
+        <button type="button" class="bq-fold" data-qp aria-expanded="${open}" title="${open ? 'Fold your pets away' : 'Show your pets'}"><i></i></button>
+        <div class="bq-tray">
+          <div class="bq-counts" role="group" aria-label="Show">${counts}</div>
+          ${open ? qrStrip(shown) : ''}
+        </div>
+      </section>`;
+  }
+  function qrTags(p) {   // (what a pet needs, in a word each: solid, so they read at a glance)
+    const out = [];
+    if (p.sick) out.push(`<span class="bq-tag is-sick" title="${esc(qrSickTitle(p))}">Sick</span>`);
+    if (p.lodge) { const s = qrLodgeShort(p); out.push(`<span class="bq-tag is-lodge ${s.c}" title="${esc(p.lodge.end ? `At the Neolodge till ${qrWhen(p.lodge.end)}` : 'At the Neolodge')}">${esc(s.t)}</span>`); }
+    else if (isHungry(p)) { const i = hungerAt(p.hunger); out.push(`<span class="bq-tag is-hungry" style="--c:${hungerColour(i)}" title="${esc(capFirst(p.hunger))}: ${esc(p.name)} needs feeding">${esc(capFirst(p.hunger))}</span>`); }
+    return out.length ? `<span class="bq-tags">${out.join('')}</span>` : '';
+  }
+  const qrHead = (p) => (p.pic || p.thumb || '').replace(/\/(\d+)\/\d+\.png$/, '/$1/6.png');
+  const qrHeadsSeen = new Set();
+  function qrHeadsLoad() {   // (the small picture at once, the head shot in its place as it comes: never an empty circle; once come, straight in on the next paint)
+    for (const img of $$('.bq-tpic img[data-hd]', qr.app)) {
+      const hd = img.dataset.hd, pre = new Image();
+      pre.onload = () => { qrHeadsSeen.add(hd); if (img.isConnected && img.dataset.hd === hd) { img.removeAttribute('data-hd'); img.src = hd; } };
+      pre.src = hd;
+    }
+  }   // (Neopets' head shot of it at 150 px: its face, big and sharp in a round frame)
+  function qrStrip(list) {
+    const drag = qr.prefs.sort === 'custom';
+    if (!list.length) return '';
+    return `<div class="bq-strip${drag ? ' is-sortable' : ''}">${list.map((p) => {
+      const tint = qr.prefs.tint && p.tint;
+      return `<div class="bq-tile${p.active ? ' is-active' : ''}${tint ? ' is-tinted' : ''}" data-pet="${esc(p.name)}"${drag ? ' draggable="true"' : ''}${tint ? ` style="${tintVars(p.tint)}"` : ''}>
+          <div class="bq-tbox">
+            <button type="button" class="bq-tpic" data-qj title="${esc(p.name)}: go to its card">${(() => { const hd = qrHead(p), ready = qrHeadsSeen.has(hd) || !p.thumb; return `<img src="${esc(ready ? hd : p.thumb)}"${ready ? ` data-fb="${esc(p.thumb)}"` : ` data-hd="${esc(hd)}"`} alt="${esc(p.name)}" width="74" height="74" draggable="false">`; })()}</button>
+            ${p.active ? `<span class="bq-tstar" title="Your active pet"><img src="${QR_ART.on}" alt="" draggable="false"></span>` : ''}
+            <button type="button" class="bq-tmenu" data-qm aria-haspopup="menu" aria-expanded="false" title="${esc(p.name)}’s links" aria-label="${esc(p.name)}’s links"></button>
+          </div>
+          <span class="bq-tname">${esc(p.name)}</span>
+          ${qrTags(p)}
+        </div>`;
+    }).join('')}</div>`;
+  }
+  function qrToolsBar() {   // (Neopets' amber chips, as its shops' Jump to: how the pets are sorted and shown)
+    const P = qr.prefs, chip = (attr, v, label, on, tip) => `<button type="button" class="bq-chip${on ? ' is-active' : ''}" ${attr}="${v}" aria-pressed="${on}"${tip ? ` title="${esc(tip)}"` : ''}>${esc(label)}</button>`;
+    const sorts = [['active', 'Active first'], ['name', 'Name'], ['level', 'Level'], ['age', 'Oldest'], ['hunger', 'Hungriest'], ['custom', 'My order', 'Your own order: drag the cards, or the pets above']];
+    return `<nav class="bq-tools" aria-label="How your pets are shown">
+        <span class="bq-group is-sort" role="group" aria-label="Sort"><span class="bq-label">Sort</span>${sorts.map(([v, l, tip]) => chip('data-qs', v, l, P.sort === v, tip)).join('')}</span>
+        <span class="bq-group" role="group" aria-label="View"><span class="bq-label">View</span>${chip('data-qv', 'cards', 'Cards', P.view !== 'rows')}${chip('data-qv', 'rows', 'Rows', P.view === 'rows', 'Every pet in one table')}</span>
+        ${P.view === 'rows' ? '' : `<span class="bq-group" role="group" aria-label="Pictures"><span class="bq-label">Pictures</span>${QR_PICS.map(([k, l]) => chip('data-qpic', k, l, qrPicKey() === k)).join('')}</span>`}
+        <span class="bq-group">${chip('data-qt', '1', 'Pet colours', !!P.tint, 'Each card in its pet’s own colour')}</span>
+      </nav>`;
   }
   const QR_PENCIL = IM('themes/020_ppl_3c22d/events/battle_accept.png');   // (Neopets' own pencil, for writing about a pet: the one place to change it)
-  function qrActList(p) {   // (every action for a pet: [label, link, the theme's picture for it, a drawn mark if it has none, tooltip])
-    const N = encodeURIComponent(p.name);
+  function qrActList(p) {   // (every action for a pet: [key, label, link, the theme's picture for it, a drawn mark if it has none, tooltip])
+    const L = p.links;
     const acts = [
-      ['Customise', `/customise/?view=${N}`, ['side:/customise/']],
-      ['Lookup', `/petlookup.phtml?pet=${N}`, ['side:/settings/profile/']],
-      ['Pet page', `/~${N}`, ['side:/home/'], 'home'],
-      ['Abilities', `/abilities.phtml?pet_name=${N}`, [IM('bd2/h5/barracks/images/barracks_abilities.png')], 'spark'],   // (the Battledome's own picture for them)
-      ['Equip', `/dome/neopets.phtml?pet=${N}`, ['nat:battledome-icon']],
-      ['Books read', p.books, ['side:/bookshelf/archive-bookshelf.phtml']],
-      ['Description', `/neopet_desc.phtml?edit_petname=${N}`, [QR_PENCIL], 'pen', `Write ${p.name}’s description`],
-      ['Homepage', `/editpage.phtml?pet_name=${N}`, [QR_PENCIL], 'pen', `Edit ${p.name}’s pet page`],
-      ['Photo', `/sendyourpet.phtml?selected=${N}`, ['side:/gallery/']],
+      ['customise', 'Customise', L.customise, ['side:/customise/', IM('themes/h5/basic/images/v3/customise-icon.svg')], '', `Customise ${p.name}`],
+      ['equip', 'Battledome', L.equip, ['nat:battledome-icon', IM('themes/h5/basic/images/battledome-icon.png')], '', `Equip ${p.name} for the Battledome`],
+      ['books', 'Books Read', L.books, ['side:/bookshelf/archive-bookshelf.phtml', IM('themes/h5/basic/images/v3/petbookshelf-icon.png')], '', `The books ${p.name} has read, and the ones it hasn’t yet`],
+      ['shelf', 'Bookshelf', L.shelf, [IM('themes/h5/basic/images/v3/petbookshelf-icon.png')], '', `${p.name}’s Pet Bookshelf`],
+      ['lookup', 'Lookup', L.lookup, [IM('themes/h5/basic/images/v3/profile-icon.svg'), 'side:/settings/profile/'], '', `${p.name}’s lookup`],
+      ['gourmet', 'Gourmet Club', L.gourmet, [IM('games/trophies/trophy_gourmet_1.gif')], 'star', `The rare foods ${p.name} has eaten, and the ones it hasn’t yet`],   // (under More, first (the user, 2026-11-02): the club's own gold trophy)
+      ['abilities', 'Abilities', L.abilities, [IM('bd2/h5/barracks/images/barracks_abilities.png')], 'spark', `${p.name}’s Battledome abilities`],
+      ['page', 'Pet page', L.page, ['side:/home/'], 'home', `${p.name}’s pet page`],
+      ['home', 'Edit pet page', L.home, [QR_PENCIL], 'pen', `Edit ${p.name}’s pet page`],
+      ['desc', 'Edit description', L.desc, [QR_PENCIL], 'pen', `Write ${p.name}’s description`],
+      ['photo', 'Send a photo', L.photo, [IM('themes/h5/basic/images/v3/gallery-icon.svg'), 'side:/gallery/'], '', `Send a photo of ${p.name}`],
     ];
-    if (!inLodge(p)) acts.push(['Neolodge', lodgeHref(p.name), null, 'moon', `The Neolodge with ${p.name} chosen, at Cockroach Towers (5 NP a night) for the most nights: its Review My Booking shows it all before anything is booked`]);
+    if (!p.lodge) acts.push(['lodge', 'Neolodge', lodgeHref(p.name), [`url:${QR_ART.lodge}`], 'moon', `The Neolodge with ${p.name} chosen, at Cockroach Towers (5 NP a night) for the most nights: its Review My Booking shows it all before anything is booked`]);
+    if (p.sick) acts.push(['hospital', 'NeoHospital', p.sick.hospital || '/hospital.phtml', [`url:${QR_ART.sick}`], '', `${p.name} is sick: the NeoHospital`]);
     return acts;
   }
   const qrPicOf = (spec) => (spec && iconOf(spec)) || '';
-  const QR_MAIN = ['Customise', 'Lookup', 'Pet page', 'Abilities', 'Equip', 'Books read', 'Description', 'Homepage'];   // (on each card, five a row on a Big one; the rest under its More)
-  function qrActions(p, compact) {   // (the actions as buttons: the theme's own pictures where it has one)
-    const one = ([l, h, spec, glyph, t]) => {
-      const u = qrPicOf(spec);
-      const i = u ? `<span class="ic" style="background-image:url('${esc(cssUrl(u))}')"></span>` : `<span class="ic gl">${GLYPH[glyph] || GLYPH.spark}</span>`;
-      return `<a class="bqr-act${compact ? ' is-icon' : ''}" href="${esc(h)}" title="${esc(t || (compact ? l : ''))}">${i}${compact ? '' : `<span>${esc(l)}</span>`}</a>`;
-    };
-    const list = qrActList(p);
-    if (compact) return list.map(one).join('');
-    const more = list.filter(([l]) => !QR_MAIN.includes(l));
-    return list.filter(([l]) => QR_MAIN.includes(l)).map(one).join('') + (more.length ? `<span class="bqr-more" data-pet="${esc(p.name)}"><button type="button" class="bqr-act is-more" data-qm data-qmore aria-haspopup="menu" aria-expanded="false" title="${esc(more.map(([l]) => l).join(', '))}"><span>More</span><svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span>` : '');
-  }
-  // The pet strip: every pet small, at the top, with what needs doing under it; click one to go to its card, its arrow for its actions
-  function lodgeShort(text) {   // ("15 days" / "5 hours" still to go at the Neolodge, and how soon that is)
-    if (/checking in/i.test(text)) return { t: 'Checking in', c: 'is-move' };
-    if (/checking out/i.test(text)) return { t: 'Checking out', c: 'is-move is-now' };
-    const parts = (text.match(/\d+\s+(day|hour|minute|second)s?/gi) || []).filter((x) => parseInt(x, 10) > 0);
-    if (!parts.length) return { t: 'Neolodge', c: '' };
-    const n = parseInt(parts[0], 10), unit = parts[0].replace(/[\d\s]+/, '').replace(/s$/i, '').toLowerCase();
-    return { t: `${n} ${unit}${n === 1 ? '' : 's'}`, c: unit !== 'day' ? 'is-now' : n < 2 ? 'is-soon' : n < 3 ? 'is-near' : '' };
-  }
-  const capFirst = (s) => String(s || '').replace(/^\s*\w/, (c) => c.toUpperCase());
-  const sickTitle = (p) => p.notices.filter((n) => n.kind === 'sick').map((n) => (n.disease && n.disease.name ? `${n.disease.name}${n.disease.cure ? `: the cure is ${n.disease.cure}` : ''}` : 'Sick')).join(' · ') || 'Sick';
-  function qrPills(p) {
-    const out = [];
-    if (isSick(p)) out.push(`<span class="bqr-pill is-sick" title="${esc(sickTitle(p))}">Sick</span>`);
-    const lodge = p.notices.find((n) => n.kind === 'lodge');
-    if (lodge) { const s = lodgeShort(lodge.text); out.push(`<span class="bqr-pill is-lodge ${s.c}" title="${esc(`In the Neolodge${/\d/.test(s.t) ? `: ${s.t} left` : ''}`)}">${GLYPH.moon}${esc(s.t)}</span>`); }
-    else if (isHungry(p)) { const i = hungerAt(p.hunger); out.push(`<span class="bqr-pill is-hunger" style="--c:${hungerColour(i)}">${esc(capFirst(p.hunger) || 'Hungry')}</span>`); }   // (the Neolodge feeds its guests)
-    return out.join('');
-  }
-  function qrStrip(list) {
-    const drag = qr.prefs.sort === 'custom';
-    return `<nav class="bqr-strip${drag ? ' is-sortable' : ''}" aria-label="Your pets">${list.map((p) => {
-      const tint = qr.prefs.tint && p.tint, pills = qrPills(p);
-      return `<div class="bqr-tile${p.active ? ' is-active' : ''}${tint ? ' is-tinted' : ''}" data-pet="${esc(p.name)}"${drag ? ' draggable="true"' : ''}${tint ? ` style="${tintVars(p.tint)}"` : ''}>
-          ${p.active ? `<span class="bqr-tile-star" title="Your active pet">${GLYPH.star}</span>` : ''}
-          <div class="bqr-tile-top">
-            <button type="button" class="bqr-tile-pic" data-qj title="${esc(p.name)}: go to ${esc(p.name)}’s card"><img src="${esc(p.thumb)}" alt="${esc(p.name)}" width="50" height="50" draggable="false"></button>
-            <button type="button" class="bqr-tile-menu" data-qm aria-haspopup="menu" aria-expanded="false" title="${esc(p.name)}’s actions" aria-label="${esc(p.name)}’s actions"></button>
-          </div>
-          <span class="bqr-tile-name">${esc(p.name)}</span>
-          ${pills ? `<div class="bqr-pills">${pills}</div>` : ''}
-        </div>`;
-    }).join('')}</nav>`;
+  const QR_MAIN = ['customise', 'equip', 'books', 'shelf', 'lookup'];   // (on each card; the rest under its More)
+  function qrActions(p) {   // (the actions as buttons, Neopets' new Quick Ref's: the theme's own pictures where it has one)
+    const one = ([, l, h, spec, glyph, t]) => { const u = qrPicOf(spec); return `<a class="bq-act" href="${esc(h)}"${t ? ` title="${esc(t)}"` : ''}>${u ? `<span class="ic" style="background-image:url('${esc(cssUrl(u))}')"></span>` : `<span class="ic gl">${GLYPH[glyph] || GLYPH.spark}</span>`}<span class="bq-actl">${esc(l)}</span></a>`; };
+    const list = qrActList(p), more = list.filter(([k]) => !QR_MAIN.includes(k));
+    return `${list.filter(([k]) => QR_MAIN.includes(k)).map(one).join('')}<span class="bq-more" data-pet="${esc(p.name)}"><button type="button" class="bq-act is-more" data-qm data-qmore aria-haspopup="menu" aria-expanded="false" title="${esc(more.map(([, l]) => l).join(', '))}"><span class="ic gl is-dots" aria-hidden="true">•••</span><span class="bq-actl">More</span></button></span>`;
   }
   function qrJump(name) {   // (to that pet's card, or its row, and a glow so the eye finds it)
-    const el = $$('.bqr-card[data-pet], .bqr-rows tr[data-pet]', qr.app).find((x) => x.dataset.pet === name);
+    const el = $$('.bq-card[data-pet], .bq-rows tr[data-pet]', qr.app).find((x) => x.dataset.pet === name);
     if (!el) return;
     el.scrollIntoView({ behavior: 'smooth', block: el.matches('tr') ? 'center' : 'start' });
     el.classList.remove('is-flash');
@@ -35844,7 +36109,7 @@
     setTimeout(() => el.classList.remove('is-flash'), 1700);
   }
   let qrMenuAt = null;
-  function qrMenuOpen(tile, onlyMore) {   // (a pet's actions, in the bar's own dropdown so the theme dresses it; a card's More: only those not on it)
+  function qrMenuOpen(tile, onlyMore) {   // (a pet's links, in the bar's own dropdown so the theme dresses it; a card's More: only those not on it)
     qrMenuClose();
     const p = qr.pets.find((x) => x.name === tile.dataset.pet);
     if (!p) return;
@@ -35852,7 +36117,7 @@
     m.className = 'nav-dropdown__2020 bqr-petmenu';
     m.setAttribute('role', 'menu');
     const row = (label, href, pic, glyph, title, extra) => `<a href="${esc(href)}" role="menuitem"${title ? ` title="${esc(title)}"` : ''}${extra || ''}><li><div class="dropdown-icon"${pic ? ` style="background-image:url('${esc(cssUrl(pic))}')"` : ''}>${pic ? '' : GLYPH[glyph] || GLYPH.spark}</div><h4>${esc(label)}</h4></li></a>`;
-    m.innerHTML = `<h5>${esc(p.name)}</h5><ul>${p.active || onlyMore ? '' : row('Make active', '#', '', 'star', '', ' data-qa="active"')}${qrActList(p).filter(([l]) => !onlyMore || !QR_MAIN.includes(l)).map(([l, h, spec, glyph, t]) => row(l, h, qrPicOf(spec), glyph, t)).join('')}</ul>`;
+    m.innerHTML = `<h5>${esc(p.name)}</h5><ul>${p.active || onlyMore ? '' : row('Make active', '#', QR_ART.on, 'star', `Make ${p.name} your active pet`, ' data-qa="active"')}${qrActList(p).filter(([k]) => !onlyMore || !QR_MAIN.includes(k)).map(([, l, h, spec, glyph, t]) => row(l, h, qrPicOf(spec), glyph, t)).join('')}</ul>`;
     tile.append(m);
     const btn = tile.querySelector('[data-qm]');
     btn.setAttribute('aria-expanded', 'true');
@@ -35877,153 +36142,241 @@
     else if (e.key === 'Escape') { e.preventDefault(); qrMenuClose(true); }
     else if (e.key === 'Tab') qrMenuClose();
   }
+  let qrWornAt = null;
+  function qrWornOpen(btn) {   // (what a pet has on, Neopets' Worn Items: each one's picture and name, and where to change them)
+    qrWornClose();
+    const card = btn.closest('[data-pet]'), p = card && qr.pets.find((x) => x.name === card.dataset.pet);
+    if (!p || !p.worn || !p.worn.length) return;
+    const box = document.createElement('div');
+    box.className = 'bq-wornbox';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', `What ${p.name} has on`);
+    box.innerHTML = `<div class="bq-wornhead"><b>${esc(p.name)} has on</b><button type="button" class="bq-x" data-qwx aria-label="Close" title="Close">×</button></div>
+      <ul>${p.worn.map((w) => `<li><img src="${esc(w.img)}" alt="" width="50" height="50" loading="lazy"><span>${esc(w.name)}</span></li>`).join('')}</ul>
+      <div class="bq-wornfoot"><a class="bq-pill" href="${esc(p.links.customise)}">Customise</a><a class="bq-pill" href="/stylingchamber/">Styling Chamber</a></div>`;
+    btn.parentElement.append(box);
+    btn.setAttribute('aria-expanded', 'true');
+    qrWornAt = { box, btn };
+    const x = box.querySelector('[data-qwx]');
+    if (x) x.focus({ preventScroll: true });
+  }
+  function qrWornClose(refocus) {
+    if (!qrWornAt) return;
+    const { box, btn } = qrWornAt;
+    qrWornAt = null;
+    box.remove();
+    btn.setAttribute('aria-expanded', 'false');
+    if (refocus) btn.focus({ preventScroll: true });
+  }
   let qrSeen = null;
-  function qrWatchStrip() {   // ("Your pets ▲" waits at the corner once the strip is scrolled away)
+  function qrWatchStrip() {   // ("Your Pets ▲" waits at the corner once they're scrolled away)
     if (qrSeen) { qrSeen.disconnect(); qrSeen = null; }
-    const strip = qr.app.querySelector('.bqr-strip'), up = qr.app.querySelector('.bqr-up');
-    if (!strip || !up || typeof IntersectionObserver !== 'function') return;
+    const box = qr.app.querySelector('.bq-pets'), up = qr.app.querySelector('.bq-up');
+    if (!box || !up || typeof IntersectionObserver !== 'function') return;
     qrSeen = new IntersectionObserver(([en]) => { up.hidden = en.isIntersecting || en.boundingClientRect.top > 0; });
-    qrSeen.observe(strip);
+    qrSeen.observe(box);
   }
-  function qrNotes(p) {   // (Neopets' notices, with what to do about them)
+  function qrNotes(p) {   // (what a pet needs, with what to do about it: the Neolodge, a cure, food)
     const out = [];
-    const feed = [['/objects.phtml?type=shop&amp;obj_type=1', 'Food Shop'], ['/soupkitchen.phtml', 'Soup Kitchen'], ['/prehistoric/omelette.phtml', 'Giant Omelette'], ['/jelly/jelly.phtml', 'Giant Jelly']].map(([h, l]) => `<a class="bqr-gopill" href="${h}">${l}</a>`).join('');   // (where to feed it: pills)
-    if (isHungry(p)) out.push(`<div class="bqr-note is-hungry"><span class="bqr-note-ic" style="background-image:url('https://images.neopets.com/items/foo_delight_fishbone.gif')"></span><b>${esc(capFirst(p.hunger || 'hungry'))}</b><span class="bqr-note-tx bqr-pills">${feed}</span></div>`);
-    for (const n of p.notices) {
-      if (n.kind === 'hungry') continue;
-      if (n.kind === 'sick') {   // (the disease, and the one item that cures it: one click looks for it on the Shop Wizard)
-        const d = n.disease;
-        const wiz = qrPicOf(['nat:shop-sw-icon']);
-        const cure = d && d.cure ? `<a class="bqr-cure" href="${esc(swHref(d.cure))}" data-sw="${esc(d.cure)}" title="The cure: look for ${esc(d.cure)} on the Shop Wizard"><img src="${esc(d.img)}" alt="" width="28" height="28" loading="lazy"><b>${esc(d.cure)}</b><i>${wiz ? `<span style="background-image:url('${esc(cssUrl(wiz))}')"></span>` : ''}Shop Wizard</i></a>` : '';
-        out.push(`<div class="bqr-note is-sick"><span class="bqr-note-ic" style="background-image:url('${esc(cssUrl(n.icon))}')"></span><b>${esc(d && d.name ? d.name : 'Sick')}</b>${cure || `<span class="bqr-note-tx">${n.html}</span>`}</div>`);
-      }
-      else if (n.kind === 'lodge') {   // ("Neolodge: 86 days left", its own Check out early link after; all it says on hover)
-        const left = lodgeLeft(n.text), a = new DOMParser().parseFromString(`<div>${n.html}</div>`, 'text/html').querySelector('a[href]');
-        out.push(`<div class="bqr-note is-lodge" title="${esc(n.text)}"><span class="bqr-note-ic" style="background-image:url('${esc(cssUrl(n.icon))}')"></span><b>Neolodge${left ? ': ' + esc(left) : ''}</b>${a ? `<a class="bqr-note-go bqr-gopill" href="${esc(a.getAttribute('href'))}">${esc(reClean(a.textContent) || 'Check out')}</a>` : ''}</div>`);
-      }
-      else out.push(`<div class="bqr-note"><span class="bqr-note-ic" style="background-image:url('${esc(cssUrl(n.icon))}')"></span><span class="bqr-note-tx">${n.html}</span></div>`);
+    if (p.lodge) {
+      const l = p.lodge, s = qrLodgeShort(p), left = l.end ? l.end - Date.now() : 0;
+      const sub = l.move === 'in' ? ['Checking in…'] : l.move === 'out' ? ['Checking out…'] : left > 0 ? [`${qrLeft(left)} left`, `Checks out ${qrWhen(l.end)}`] : ['Checking out any moment now'];   // (how long, then the moment itself: each a line)
+      out.push(`<div class="bq-note is-lodge ${s.c}"><img class="bq-nic" src="${QR_ART.lodge}" alt="" width="34" height="34"><span class="bq-ntx"><b>At the Neolodge</b>${sub.map((x) => `<small>${esc(x)}</small>`).join('')}</span>${qr.cfg && qr.cfg.neolodgeCheckoutUrl && !l.move ? '<span class="bq-nacts"><button type="button" class="bq-pill" data-qco="ask">Check out early</button></span>' : ''}</div>`);
     }
-    return out.length ? `<div class="bqr-notes">${out.join('')}</div>` : '';
+    if (p.sick) {
+      const c = p.sick.cure;
+      out.push(`<div class="bq-note is-sick"><img class="bq-nic" src="${QR_ART.sick}" alt="" width="34" height="34"><span class="bq-ntx"><b>Sick with ${esc(p.sick.name)}</b><small>${c ? `The cure is ${esc(c.cure)}` : 'The NeoHospital can tell you the cure'}</small></span><span class="bq-nacts">${c ? `<a class="bq-cure" href="${esc(swHref(c.cure))}" data-sw="${esc(c.cure)}" title="Look for ${esc(c.cure)} on the Shop Wizard"><img src="${esc(c.img)}" alt="" width="30" height="30" loading="lazy"><span>Shop Wizard</span></a>` : ''}<a class="bq-pill" href="${esc(p.sick.hospital || '/hospital.phtml')}">NeoHospital</a></span></div>`);
+    }
+    const tr = Object.values(get('train', {}) || {}).find((t) => t && t.pet && t.pet.toLowerCase() === p.name.toLowerCase() && t.end);
+    if (tr) {
+      const left = tr.end - Date.now(), ic = iconOf(['nat:battledome-icon', IM('themes/h5/basic/images/battledome-icon.png')]);
+      out.push(`<div class="bq-note is-train${left > 0 ? '' : ' is-done'}"><img class="bq-nic" src="${esc(ic)}" alt="" width="34" height="34"><span class="bq-ntx"><b>${left > 0 ? `Training at ${esc(tr.school || 'a training school')}` : 'Its course is done'}</b>${left > 0 ? `<small>${esc(qrLeft(left))} left</small><small>Done ${esc(qrWhen(tr.end))}</small>` : `<small>At ${esc(tr.school || 'its school')}: finish the course to get its stat point</small>`}</span>${tr.href ? `<span class="bq-nacts"><a class="bq-pill" href="${esc(tr.href)}">${left > 0 ? 'Its school' : 'Finish it'}</a></span>` : ''}</div>`);
+    }
+    if (isHungry(p)) out.push(`<div class="bq-note is-hungry"><img class="bq-nic" src="${QR_ART.hunger}" alt="" width="34" height="34"><span class="bq-ntx"><b>${esc(capFirst(p.hunger))}</b><small>Feed ${esc(p.name)}</small></span><span class="bq-nacts">${QR_FEED.map(([h, l]) => `<a class="bq-pill" href="${esc(h)}">${esc(l)}</a>`).join('')}</span></div>`);
+    return out.length ? `<div class="bq-notes">${out.join('')}</div>` : '';
   }
-  function qrMeters(p) {
-    const ratio = p.hpMax ? p.hp / p.hpMax : 0;
-    const hpc = ratio >= 0.75 ? '#3d9b47' : ratio >= 0.4 ? '#e0a91a' : '#d23c2c';
-    const hi = hungerAt(p.hunger);
-    const ticks = HUNGER.map((_, i) => `<i${i <= hi ? ` class="on"` : ''}></i>`).join('');
-    return {
-      health: `<span class="bqr-hbar" title="${p.hp} of ${p.hpMax}"><i style="width:${Math.max(4, Math.min(100, Math.round(ratio * 100)))}%;background:${hpc}"></i></span><span class="bqr-mv">${p.hp} / ${p.hpMax}</span>`,
-      hunger: `<span class="bqr-hunger" style="--c:${hungerColour(hi)}" title="${esc(p.hunger)} (${hi + 1} of ${HUNGER.length}: dying … very bloated)">${ticks}</span><span class="bqr-mv" style="color:${hungerColour(hi)}">${esc(p.hunger)}</span>`,
-    };
-  }
-  const years = (d) => (d >= 365 ? ` <small>(${Math.floor(d / 365)} year${Math.floor(d / 365) === 1 ? '' : 's'})</small>` : '');
-  const genderMark = (g) => (/^m/i.test(g) ? '<span class="bqr-g is-m" title="Male">♂</span>' : /^f/i.test(g) ? '<span class="bqr-g is-f" title="Female">♀</span>' : '');
+  const genderMark = (g) => (/^m/i.test(g) ? '<span class="bq-g is-m" title="Male">♂</span>' : /^f/i.test(g) ? '<span class="bq-g is-f" title="Female">♀</span>' : '');
   const QR_IC = {   // (20-unit line drawings, in the colour of whatever they're in)
-    lv: '<path d="M10 2.6l2.2 4.6 5 .7-3.6 3.5.9 5L10 14l-4.5 2.4.9-5-3.6-3.5 5-.7z"/>',
-    age: '<path d="M5.5 3h9M5.5 17h9M6.5 3c0 3.4 3.5 4.4 3.5 7s-3.5 3.6-3.5 7M13.5 3c0 3.4-3.5 4.4-3.5 7s3.5 3.6 3.5 7"/><path d="M8.2 15.6c.6-.9 1.2-1.3 1.8-1.3s1.2.4 1.8 1.3z" fill="currentColor" stroke="none"/>',
-    good: '<circle cx="10" cy="10" r="7.2"/><path d="M6.9 11.6c1.7 2.2 4.5 2.2 6.2 0"/><path d="M7.6 8h.01M12.4 8h.01" stroke-width="2.6"/>',
-    calm: '<circle cx="10" cy="10" r="7.2"/><path d="M7.2 12.4h5.6"/><path d="M7.6 8h.01M12.4 8h.01" stroke-width="2.6"/>',
-    low: '<circle cx="10" cy="10" r="7.2"/><path d="M6.9 13.4c1.7-2.2 4.5-2.2 6.2 0"/><path d="M7.6 8h.01M12.4 8h.01" stroke-width="2.6"/>',
-    hp: '<path d="M10 16.6s-6.3-3.8-6.3-8.4A3.5 3.5 0 0 1 10 6.3a3.5 3.5 0 0 1 6.3 1.9c0 4.6-6.3 8.4-6.3 8.4z"/>',
-    food: '<path d="M4.1 4.4c2.4-2.5 6.6-2.4 8.8.2 2 2.2 2 5.4.2 7.5l-1.1 1.1c-2.1 1.8-5.4 1.6-7.4-.4-2.4-2.4-2.6-6.2-.5-8.4z" fill="currentColor" fill-opacity=".22"/><path d="M12.3 12.3l2.5 2.5"/><path d="M14.2 16.4a1.4 1.4 0 1 0 2.2-1.7 1.4 1.4 0 1 0-1.7-2.2"/>',
     str: '<path d="M16.6 3.4v2.8L8.5 14.3l-2.8-2.8 8.1-8.1z"/><path d="M4.4 10.2l5.4 5.4M6.1 13.9 3.4 16.6"/>',
     def: '<path d="M10 2.8 4.3 5v4.6c0 3.6 2.4 6.3 5.7 7.6 3.3-1.3 5.7-4 5.7-7.6V5z"/><path d="M10 6v8.4"/>',
     mov: '<path d="M7.5 3.5h3.8v6l4.4 2c1 .5 1.6 1.4 1.6 2.4v1.6H6.6c-.6 0-1.1-.5-1.1-1.1V9.5"/><path d="M2.4 8.2h2.8M2 11.2h3.2M5.3 16.6h11.6"/>',
     int: '<path d="M9.5 4.6a2.6 2.6 0 0 0-4.5 1.6A2.8 2.8 0 0 0 3.6 11a2.8 2.8 0 0 0 2 4 2.6 2.6 0 0 0 3.9 1V4.6zM10.5 4.6a2.6 2.6 0 0 1 4.5 1.6 2.8 2.8 0 0 1 1.4 4.8 2.8 2.8 0 0 1-2 4 2.6 2.6 0 0 1-3.9 1V4.6z"/><path d="M6.6 8.6c.8.1 1.4.6 1.6 1.3M13.4 8.6c-.8.1-1.4.6-1.6 1.3M7 13c.6-.5 1.4-.6 2.1-.3M13 13c-.6-.5-1.4-.6-2.1-.3"/>',
   };
-  const qrIc = (k, cls) => `<svg class="bqr-ic${cls ? ` ${cls}` : ''}" viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${QR_IC[k]}</svg>`;
+  const qrIc = (k) => `<svg class="bq-ic is-${k}" viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${QR_IC[k]}</svg>`;
   const qrMoodTone = (m) => (/delight|ecstatic|joy|cheer|happy|great|wonderful|excited/i.test(m) && !/unhappy/i.test(m) ? 'is-good' : /content|fine|ok\b|alright|indifferent|so-so|moody|bored/i.test(m) ? 'is-calm' : 'is-low');
   const qrBorn = (p) => Date.now() - (p.ageH != null ? p.ageH * 3600e3 : p.age * DAY_MS);   // (when it was made)
   const qrYear = (p) => Number(nstOf(qrBorn(p)).day.slice(0, 4)) - 1998;   // (the Neopian year it was made in: Y1 is 1999)
-  const qrAge = (p) => (p.ageH != null && p.age < 1 ? `${p.ageH} hour${p.ageH === 1 ? '' : 's'}` : `${p.age.toLocaleString()} day${p.age === 1 ? '' : 's'}`) + ` (Y${qrYear(p)})`;
+  const qrAge = (p) => `${p.ageH != null && p.age < 1 ? `${p.ageH} hour${p.ageH === 1 ? '' : 's'}` : `${p.age.toLocaleString()} day${p.age === 1 ? '' : 's'}`} (Y${qrYear(p)})`;
   const qrAgeTitle = (p) => `${p.ageH != null ? `${p.ageH.toLocaleString()} hours` : `${p.age.toLocaleString()} days`} old: made in Y${qrYear(p)}, ${new Date(qrBorn(p)).toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' })}`;
   function qrStat(label, short, raw, href, title, ic) {   // (a battle stat: its number large where Neopets gives one, its word under it; its own little icon)
     const s = String(raw || '').trim(), m = /^(.*?)\s*\(([\d,]+)\)\s*$/.exec(s), word = (m ? m[1] : s).trim().toLowerCase(), num = m ? m[2] : '';
-    const inner = `<span class="bqr-st-l">${ic ? qrIc(ic, `is-${ic}`) : ''}${esc(short)}</span><b>${esc(num || capFirst(word) || '?')}</b>${num ? `<small>${esc(word)}</small>` : ''}`;
-    return href ? `<a class="bqr-st" href="${esc(href)}" title="${esc(title || label)}">${inner}</a>` : `<span class="bqr-st" title="${esc(`${label}: ${s}`)}">${inner}</span>`;
+    const inner = `<span class="bq-stl">${qrIc(ic)}${esc(short)}</span><b>${esc(num || capFirst(word) || '?')}</b>${num ? `<small>${esc(word)}</small>` : ''}`;
+    return href ? `<a class="bq-st" href="${esc(href)}" title="${esc(title || label)}">${inner}</a>` : `<span class="bq-st" title="${esc(`${label}: ${s}`)}">${inner}</span>`;
   }
-  function qrPetpet(p) {   // (the petpet Neopets' Quick Ref shows: its picture, and where it goes; read without the page running anything in it)
-    for (const h of p.extra) {
-      if (!/<img/i.test(h)) continue;
-      const d = new DOMParser().parseFromString(`<div>${h}</div>`, 'text/html'), img = d.querySelector('img'), a = d.querySelector('a');
-      if (img && img.getAttribute('src')) return { src: fullUrl(img.getAttribute('src')), href: a ? a.getAttribute('href') || '' : '', text: reClean(d.body.textContent) };
-    }
-    return null;
+  function qrBand(p) {   // (Neopets' stat strip, with its own pictures: level, hunger, health as a meter, mood)
+    const hi = hungerAt(p.hunger), r = p.hpMax ? p.hp / p.hpMax : 0, hpc = r >= 0.75 ? '#48c13a' : r >= 0.4 ? '#f2b818' : '#e5483a', tone = qrMoodTone(p.mood);
+    return `<div class="bq-band">
+        <span class="bq-bi" title="Level ${p.level}"><img src="${QR_ART.level}" alt="" width="24" height="24">Level ${p.level}</span>
+        <span class="bq-bi" title="${esc(`Hunger: ${p.hunger || '?'} (${hi + 1} of ${HUNGER.length}, from dying to very bloated)`)}"><img src="${QR_ART.hunger}" alt="" width="24" height="24"><span style="color:${hungerColour(hi)}">${esc(p.hunger || '?')}</span></span>
+        <span class="bq-bi" title="${esc(`Health: ${p.hp} of ${p.hpMax}`)}"><img src="${QR_ART.health}" alt="" width="24" height="24"><span class="bq-hp" style="--f:${Math.max(0, Math.min(100, Math.round(r * 100)))}%;--c:${hpc}">${p.hp} / ${p.hpMax}</span></span>
+        <span class="bq-bi bq-mood ${tone}" title="Mood"><img src="${QR_ART.mood}" alt="" width="24" height="24">${esc(p.mood || '?')}</span>
+      </div>`;
+  }
+  function qrPicBox(p, wide) {   // (its picture, a click from Customise; worn items and bigger at its corners, as Neopets has them)
+    const src = wide ? (p.pic || '').replace(/\/(\d+)\/4\.png$/, '/$1/5.png') : p.pic, w = p.worn ? p.worn.length : 0;   // (past 300 px, Neopets' 500-px picture: never one blown up)
+    return `<div class="bq-picbox">
+        <a class="bq-pic" href="${esc(p.links.customise)}" title="Customise ${esc(p.name)}"><img src="${esc(src || p.thumb)}" alt="${esc(p.name)}" loading="lazy" draggable="false"></a>
+        ${w ? `<button type="button" class="bq-corner is-worn" data-qw aria-haspopup="dialog" aria-expanded="false" title="What ${esc(p.name)} has on: ${w} item${w === 1 ? '' : 's'}"><img src="${QR_ART.worn}" alt="" width="20" height="20"><b>${w}</b></button>` : ''}
+        <button type="button" class="bq-corner is-grow" data-qg aria-pressed="${wide}" title="${wide ? `Back beside the others` : `${esc(p.name)} across the page, its picture big`}"><img src="${wide ? QR_ART.shrink : QR_ART.grow}" alt="" width="14" height="14"></button>
+      </div>`;
+  }
+  function qrFacts(p) {   // (the rest of what Neopets says about it: age, size, jobs, fishing, and the books NE has seen it read)
+    const row = (label, val, href, tip) => (val === '' || val == null ? '' : `<div${tip ? ` title="${esc(tip)}"` : ''}><dt>${esc(label)}</dt><dd>${href ? `<a href="${esc(href)}">${esc(val)}</a>` : esc(val)}</dd></div>`);
+    const bk = qr.books[p.name], books = bk && [bk.b != null ? `${bk.b.toLocaleString()}` : '', bk.t ? `${bk.t.toLocaleString()} Booktastic` : ''].filter(Boolean).join(' · ');
+    return `<dl class="bq-dl">${row('Age', qrAge(p), '', qrAgeTitle(p))}${row('Weight', p.weight)}${row('Height', p.height)}${row('Jobs done', p.jobs, p.links.jobs, 'Jobs done for the Faerieland Employment Agency')}${row('Fishing', p.fishing, p.links.fishing, 'Fishing skill: Underwater Fishing')}${books ? row('Books read', books, p.links.books, 'As NE last saw its Books Read page') : ''}</dl>`;
+  }
+  function qrPetpetRow(p) {   // (its petpet, and the petpet's own: Neopets' row, a visit away; none yet: the row all the same, saying so, the Petpet Shop a click away)
+    const pp = p.petpet;
+    if (!pp) return `<div class="bq-pp is-none">
+        <span class="bq-ppics"><span class="bq-ppempty" aria-hidden="true"></span></span>
+        <span class="bq-ppname"><span><small>Petpet</small><b>None yet</b></span><span class="bq-ppnote">${esc(p.name)} hasn’t got a petpet to keep it company</span></span>
+        <a class="bq-pill" href="/objects.phtml?type=shop&amp;obj_type=25">Petpet Shop</a>
+      </div>`;
+    return `<div class="bq-pp">
+        <span class="bq-ppics"><img src="${esc(pp.img)}" alt="" width="50" height="50" loading="lazy">${pp.p3img ? `<img src="${esc(pp.p3img)}" alt="" width="50" height="50" loading="lazy">` : ''}</span>
+        <span class="bq-ppname"><span><small>Petpet</small><b>${esc(pp.name)}</b></span>${pp.p3 ? `<span><small>Petpetpet</small><b>${esc(pp.p3)}</b></span>` : ''}</span>
+        ${pp.href ? `<a class="bq-pill" href="${esc(pp.href)}">Visit petpet</a>` : ''}
+      </div>`;
   }
   function qrCard(p) {
-    const m = qrMeters(p), pp = qrPetpet(p);
-    const N = encodeURIComponent(p.name);
-    const tint = qr.prefs.tint && p.tint;
-    return `<article class="bqr-card${p.active ? ' is-active' : ''}${tint ? ' is-tinted' : ''}" data-pet="${esc(p.name)}"${qr.prefs.sort === 'custom' ? ' draggable="true"' : ''}${tint ? ` style="${tintVars(p.tint)}"` : ''}>
-        <header class="popup-header__2020 bqr-card-head">
-          <h3><a href="/petlookup.phtml?pet=${N}">${esc(p.name)}</a></h3>
-          <span class="bqr-sub">${esc([p.colour, p.species].filter(Boolean).join(' '))} ${genderMark(p.gender)}</span>
-          ${p.active ? `<span class="bqr-badge">${GLYPH.star} Active</span>` : '<button type="button" class="button-default__2020 button-green__2020 bqr-make" data-qa="active">Make active</button>'}
+    const wide = qrWide(p), tint = qr.prefs.tint && p.tint;
+    return `<article class="bq-card${p.active ? ' is-active' : ''}${wide ? ' is-wide' : ''}${tint ? ' is-tinted' : ''}" data-pet="${esc(p.name)}"${qr.prefs.sort === 'custom' ? ' draggable="true"' : ''}${tint ? ` style="${tintVars(p.tint)}"` : ''}>
+        <header class="popup-header__2020 bq-head">
+          <h3><a href="${esc(p.links.lookup)}" title="${esc(p.name)}’s lookup">${esc(p.name)}</a></h3>
+          <span class="bq-sub">${esc([p.colour, p.species].filter(Boolean).join(' '))}${genderMark(p.gender)}</span>
+          ${p.active ? `<span class="bq-star is-on" title="${esc(p.name)} is your active pet"><img src="${QR_ART.on}" alt="" width="20" height="18"><span>Active</span></span>` : `<button type="button" class="bq-star" data-qa="active" title="Make ${esc(p.name)} your active pet"><img src="${QR_ART.off}" alt="" width="20" height="18"><span>Make active</span></button>`}
           <div class="popup-header-pattern__2020"></div>
         </header>
-        <div class="bqr-card-body">
-          <div class="bqr-picwrap"><a class="bqr-pic" href="/customise/?view=${N}" title="Customise ${esc(p.name)}"><img src="${esc(qrPicSrc(p))}" alt="${esc(p.name)}" loading="lazy"></a>${pp ? `<a class="bqr-petpet" href="${esc(pp.href || '#')}" title="${esc(pp.text || 'Its petpet')}"><img src="${esc(pp.src)}" alt="" loading="lazy"></a>` : ''}</div>
-          <div class="bqr-panel">
-            <div class="bqr-chips2"><span class="bqr-c2" title="Level">${qrIc('lv', 'is-lv')}<small>Lv</small>${p.level}</span><span class="bqr-c2" title="${esc(qrAgeTitle(p))}">${qrIc('age')}${qrAge(p)}</span>${p.mood ? `<span class="bqr-c2 bqr-mood ${qrMoodTone(p.mood)}" title="Mood">${qrIc(qrMoodTone(p.mood).slice(3))}${esc(p.mood)}</span>` : ''}</div>
-            <div class="bqr-meter"><span class="bqr-ml">${qrIc('hp', 'is-hp')}Health</span>${m.health}</div>
-            <div class="bqr-meter"><span class="bqr-ml">${qrIc('food', 'is-food')}Hunger</span>${m.hunger}</div>
-            <div class="bqr-stats4">${qrStat('Strength', 'Str', p.strength, '', '', 'str')}${qrStat('Defence', 'Def', p.defence, '', '', 'def')}${qrStat('Move', 'Move', p.move, '', '', 'mov')}${qrStat('Intelligence', 'Int', p.intelligence, p.books, `Intelligence: ${p.intelligence}. Books ${p.name} has read`, 'int')}</div>
-            ${p.extra.filter((h) => !/<img/i.test(h) || !pp).map((h) => `<div class="bqr-extra">${h}</div>`).join('')}
+        ${qrBand(p)}
+        ${qrNotes(p)}
+        <div class="bq-body">
+          ${qrPicBox(p, wide)}
+          <div class="bq-facts">
+            <div class="bq-stats">${qrStat('Strength', 'Str', p.strength, '', '', 'str')}${qrStat('Defence', 'Def', p.defence, '', '', 'def')}${qrStat('Movement', 'Move', p.move, '', '', 'mov')}${qrStat('Intelligence', 'Int', p.intelligence, p.links.books, `Intelligence: ${p.intelligence}. The books ${p.name} has read`, 'int')}</div>
+            ${qrFacts(p)}
+            ${wide ? `${qrPetpetRow(p)}<footer class="bq-acts">${qrActions(p)}</footer>` : ''}
           </div>
         </div>
-        ${qrNotes(p)}
-        <footer class="bqr-actions">${qrActions(p)}</footer>
+        ${wide ? '' : `${qrPetpetRow(p)}<footer class="bq-acts">${qrActions(p)}</footer>`}
       </article>`;
   }
   function qrRows(list) {
-    return `<table class="bqr-rows"><thead><tr><th>Pet</th><th>Level</th><th>Health</th><th>Hunger</th><th>Mood</th><th>Age</th><th></th></tr></thead><tbody>${list.map((p) => {
-      const m = qrMeters(p), N = encodeURIComponent(p.name);
-      const flags = [isSick(p) ? `<span class="bqr-flag is-sick" title="${esc(sickTitle(p))}">Sick</span>` : '', inLodge(p) ? `<span class="bqr-flag is-lodge">${esc(lodgeLeft((p.notices.find((x) => x.kind === 'lodge') || {}).text || '') || 'Neolodge')}</span>` : ''].join('');
+    const icon = (p, k) => { const a = qrActList(p).find((x) => x[0] === k); if (!a) return ''; const u = qrPicOf(a[3]); return `<a class="bq-ricon" href="${esc(a[2])}" title="${esc(a[5] || a[1])}">${u ? `<span class="ic" style="background-image:url('${esc(cssUrl(u))}')"></span>` : `<span class="ic gl">${GLYPH[a[4]] || GLYPH.spark}</span>`}</a>`; };
+    return `<div class="bq-rowsbox"><table class="bq-rows"><thead><tr><th>Pet</th><th>Level</th><th>Health</th><th>Hunger</th><th>Mood</th><th>Age</th><th>Battle stats</th><th></th></tr></thead><tbody>${list.map((p) => {
+      const hi = hungerAt(p.hunger), r = p.hpMax ? p.hp / p.hpMax : 0, hpc = r >= 0.75 ? '#48c13a' : r >= 0.4 ? '#f2b818' : '#e5483a';
+      const st = (short, label, raw) => { const s = String(raw || '').trim(), m = /^(.*?)\s*\(([\d,]+)\)\s*$/.exec(s); return `<span title="${esc(`${label}: ${s || '?'}`)}"><i>${short}</i>${esc(m ? m[2] : s || '?')}</span>`; };   // (its number where Neopets gives one, else its word)
       return `<tr data-pet="${esc(p.name)}"${p.active ? ' class="is-active"' : ''}>
-          <td><div class="bqr-who"><img src="${esc(p.thumb)}" alt=""><span><a href="/petlookup.phtml?pet=${N}"><b>${esc(p.name)}</b></a>${p.active ? ` <span class="bqr-badge is-small">${GLYPH.star} Active</span>` : ' <button type="button" class="bnp-linkbtn" data-qa="active">Make active</button>'}<small>${esc([p.colour, p.species].filter(Boolean).join(' '))} ${genderMark(p.gender)}</small>${flags}</span></div></td>
-          <td>${p.level}</td><td class="bqr-stack">${m.health}</td><td class="bqr-stack">${m.hunger}</td><td>${esc(p.mood)}</td><td class="bqr-stack" title="${esc(qrAgeTitle(p))}">${(() => { const a = qrAge(p), i = a.lastIndexOf(' ('); return `${qrIc('age')}${i > 0 ? `${a.slice(0, i)}<small>${a.slice(i + 1)}</small>` : a}`; })()}</td>
-          <td><div class="bqr-rowacts">${qrActions(p, true)}</div></td></tr>`;
-    }).join('')}</tbody></table>`;
+          <td><div class="bq-who"><img src="${esc(p.thumb)}" alt="" width="50" height="50"><span><a href="${esc(p.links.lookup)}"><b>${esc(p.name)}</b></a>${p.active ? `<span class="bq-rstar" title="Your active pet"><img src="${QR_ART.on}" alt="" width="16" height="14"></span>` : `<button type="button" class="bq-rstar is-off" data-qa="active" title="Make ${esc(p.name)} your active pet"><img src="${QR_ART.off}" alt="" width="16" height="14"></button>`}<small>${esc([p.colour, p.species].filter(Boolean).join(' '))}${genderMark(p.gender)}</small>${qrTags(p)}</span></div></td>
+          <td class="bq-rlv">${p.level}</td>
+          <td><span class="bq-hp is-row" style="--f:${Math.max(0, Math.min(100, Math.round(r * 100)))}%;--c:${hpc}">${p.hp} / ${p.hpMax}</span></td>
+          <td><span class="bq-ticks" style="--c:${hungerColour(hi)}" title="${esc(`${p.hunger} (${hi + 1} of ${HUNGER.length})`)}">${HUNGER.map((_, i) => `<i${i <= hi ? ' class="on"' : ''}></i>`).join('')}</span><small style="color:${hungerColour(hi)}">${esc(p.hunger)}</small></td>
+          <td class="bq-mood ${qrMoodTone(p.mood)}">${esc(p.mood)}</td>
+          <td title="${esc(qrAgeTitle(p))}">${(() => { const a = qrAge(p), i = a.lastIndexOf(' ('); return i > 0 ? `${esc(a.slice(0, i))}<small>${esc(a.slice(i + 2, -1))}</small>` : esc(a); })()}</td>
+          <td><div class="bq-rst">${st('Str', 'Strength', p.strength)}${st('Def', 'Defence', p.defence)}${st('Mov', 'Movement', p.move)}${st('Int', 'Intelligence', p.intelligence)}</div></td>
+          <td><div class="bq-racts">${QR_MAIN.map((k) => icon(p, k)).join('')}<span class="bq-more" data-pet="${esc(p.name)}"><button type="button" class="bq-ricon is-more" data-qm data-qmore aria-haspopup="menu" aria-expanded="false" title="More">•••</button></span></div></td></tr>`;
+    }).join('')}</tbody></table></div>`;
   }
+  async function petChangeSend(name) {   // (a pet made active as the page itself asks: Quick Ref's own way where its data gives one, else the old address)
+    if (qrCfg && qrCfg.changePetUrl && qrCfg.refCk && location.pathname === '/quickref.phtml') {
+      const r = await fetch(qrCfg.changePetUrl, { method: 'POST', credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: new URLSearchParams({ _ref_ck: qrCfg.refCk, new_active_pet: name }) });
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j || j.error) throw new Error((j && j.error) || 'not switched');
+      return;
+    }
+    const r = await fetch(`/process_changepet.phtml?new_active_pet=${encodeURIComponent(name)}`, { credentials: 'include' });
+    if (/login/i.test(new URL(r.url).pathname)) throw new Error('signed out');
+  }
+  async function qrMakeActive(name, el) {
+    if (qr.busy) return;
+    const p = qr.pets.find((x) => x.name === name), label = el.querySelector('h4, span') || el;
+    qr.busy = name;
+    el.classList.add('is-busy');
+    label.textContent = 'Switching…';
+    try {
+      await activate(name, p && p.pic);
+      qr.pets.forEach((x) => { x.active = x.name === name; });
+      qr.busy = null;
+      qrPaint();
+      qrJump(name);
+    } catch (_) { qr.busy = null; el.classList.remove('is-busy'); label.textContent = 'Couldn’t switch: try again'; }
+  }
+  async function qrCheckout(p, note) {   // (out of the Neolodge early, as Neopets' own Check Out Early? does it: on your press, after you say yes)
+    const acts = note.querySelector('.bq-nacts');
+    acts.innerHTML = '<span class="bq-nask">Checking out…</span>';
+    let err = '';
+    try {
+      const r = await fetch(qr.cfg.neolodgeCheckoutUrl, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ _ref_ck: qr.cfg.refCk, pet_name: p.name, source: 'quickref' }) });
+      const j = await r.json().catch(() => null);
+      if (!j || !j.success) err = j && j.error ? qrTxt(j.error) : 'The Neolodge couldn’t check it out just now.';
+    } catch (_) { err = 'The Neolodge didn’t answer. Try again in a moment.'; }
+    if (err) { acts.innerHTML = `<span class="bq-nask is-err">${esc(err)}</span><button type="button" class="bq-pill" data-qco="ask">Try again</button>`; return; }
+    p.lodge = null;
+    noteLodge(qr.pets);
+    qrPaint();
+  }
+  const qrFocus = (sel) => { const el = qr.app.querySelector(sel); if (el) el.focus({ preventScroll: true }); };   // (the control just pressed, found again after the page is drawn anew)
   async function qrClick(e) {
     const t = e.target instanceof Element ? e.target : null;
     if (!t) return;
     const swl = t.closest('[data-sw]');
     if (swl) { if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey && !e.button && !(swl.target && swl.target !== '_self')) { try { sessionStorage.setItem('bnp-sw', swl.dataset.sw); } catch (_) { /* (the Shop Wizard then just waits for its Search button) */ } } return; }   // (the Shop Wizard runs this search by itself when it opens)
-    const f = t.closest('[data-qf]');
-    if (f) { qr.prefs.show = f.dataset.qf === qr.prefs.show ? 'all' : f.dataset.qf; qrSave(); qrPaint(); return; }
-    const v = t.closest('[data-qv]');
-    if (v) { qr.prefs.view = v.dataset.qv; qrSave(); qrPaint(); return; }
-    const pz = t.closest('[data-qpic]');
-    if (pz) { qr.prefs.pic = pz.dataset.qpic; qrSave(); qrPaint(); const b = qr.app.querySelector(`[data-qpic="${pz.dataset.qpic}"]`); if (b) b.focus(); return; }
-    if (t.closest('[data-qt]')) { qr.prefs.tint = !qr.prefs.tint; qrSave(); if (qr.prefs.tint) qrTintsKept(); qrPaint(); if (qr.prefs.tint) qrTints(); return; }
-    if (t.closest('[data-qp]')) { qr.prefs.strip = qr.prefs.strip === false; qrSave(); qrPaint(); return; }
-    const j = t.closest('[data-qj]');
-    if (j) { qrMenuClose(); qrJump(j.closest('[data-pet]').dataset.pet); return; }
-    const mb = t.closest('[data-qm]');
-    if (mb) { const open = qrMenuAt && qrMenuAt.btn === mb; qrMenuClose(); if (!open) qrMenuOpen(mb.closest('[data-pet]'), mb.hasAttribute('data-qmore')); return; }
-    if (t.closest('[data-qu]')) { const s = qr.app.querySelector('.bqr-strip'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
-    const mk = t.closest('[data-qa="active"]');
-    if (mk) {
-      e.preventDefault();
-      if (mk.classList.contains('is-busy')) return;
-      const name = mk.closest('[data-pet]').dataset.pet;
-      const p = qr.pets.find((x) => x.name === name);
-      const label = mk.querySelector('h4') || mk;
-      mk.classList.add('is-busy');
-      mk.disabled = true;
-      label.textContent = 'Switching…';
-      try {
-        await activate(name, p && p.pic);
-        qr.pets.forEach((x) => { x.active = x.name === name; });
-        qrPaint();
-      } catch (_) { mk.classList.remove('is-busy'); mk.disabled = false; label.textContent = 'Couldn’t switch: try again'; }
+    const P = qr.prefs, d = (sel) => t.closest(sel);
+    let b;
+    if ((b = d('[data-qf]'))) { P.show = b.dataset.qf === P.show ? 'all' : b.dataset.qf; qrSave(); qrPaint(); return; }
+    if ((b = d('[data-qs]'))) { P.sort = b.dataset.qs; qrSave(); qrPaint(); qrFocus(`[data-qs="${P.sort}"]`); return; }
+    if ((b = d('[data-qv]'))) { P.view = b.dataset.qv; qrSave(); qrPaint(); qrFocus(`[data-qv="${P.view}"]`); return; }
+    if ((b = d('[data-qpic]'))) { P.pic = b.dataset.qpic; qrSave(); qrPaint(); qrFocus(`[data-qpic="${P.pic}"]`); return; }
+    if (d('[data-qt]')) { P.tint = !P.tint; qrSave(); if (P.tint) qrTintsKept(); qrPaint(); qrFocus('[data-qt]'); if (P.tint) qrTints(); return; }
+    if (d('[data-qp]')) { P.strip = P.strip === false; qrSave(); qrPaint(); qrFocus('[data-qp]'); return; }
+    if ((b = d('[data-qj]'))) { qrMenuClose(); qrJump(b.closest('[data-pet]').dataset.pet); return; }
+    if ((b = d('[data-qm]'))) { const open = qrMenuAt && qrMenuAt.btn === b; qrMenuClose(); if (!open) qrMenuOpen(b.closest('[data-pet]'), b.hasAttribute('data-qmore')); return; }
+    if (d('[data-qu]')) { const s = qr.app.querySelector('.bq-pets'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    if ((b = d('[data-qw]'))) { const open = qrWornAt && qrWornAt.btn === b; qrWornClose(); if (!open) qrWornOpen(b); return; }
+    if (d('[data-qwx]')) { qrWornClose(true); return; }
+    if ((b = d('[data-qneo]'))) {   // (Neopets' own, under ours: shown or put away again)
+      const on = document.documentElement.classList.toggle('bq-showneo');
+      b.textContent = on ? 'Hide Neopets’ own Quick Ref' : 'Neopets’ own Quick Ref';
+      b.setAttribute('aria-expanded', String(on));
+      const own = document.getElementById('quickref-app');
+      if (on && own) { qr.app.after(own); own.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      return;
     }
+    if ((b = d('[data-qg]'))) {   // (a card across the page or back beside the others: kept for that pet)
+      const name = b.closest('[data-pet]').dataset.pet, p = qr.pets.find((x) => x.name === name);
+      P.wide[name] = !qrWide(p);
+      qrSave();
+      qrPaint();
+      const card = $$('.bq-card[data-pet]', qr.app).find((x) => x.dataset.pet === name);
+      if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); const g = card.querySelector('[data-qg]'); if (g) g.focus({ preventScroll: true }); }
+      return;
+    }
+    if ((b = d('[data-qco]'))) {
+      const note = b.closest('.bq-note'), card = b.closest('[data-pet]'), p = card && qr.pets.find((x) => x.name === card.dataset.pet), acts = note && note.querySelector('.bq-nacts');
+      if (!p || !acts) return;
+      const k = b.dataset.qco;
+      if (k === 'ask') { acts.innerHTML = `<span class="bq-nask">Leave now? The nights left aren’t refunded.</span><button type="button" class="bq-pill is-danger" data-qco="go">Check out</button><button type="button" class="bq-pill" data-qco="no">Stay</button>`; acts.querySelector('[data-qco="no"]').focus(); }
+      else if (k === 'no') { acts.innerHTML = '<button type="button" class="bq-pill" data-qco="ask">Check out early</button>'; acts.querySelector('[data-qco]').focus(); }
+      else if (k === 'go') qrCheckout(p, note);
+      return;
+    }
+    const mk = d('[data-qa="active"]');
+    if (mk) { e.preventDefault(); qrMakeActive(mk.closest('[data-pet]').dataset.pet, mk); }
   }
-  function qrDrag(app) {   // ("My order": drag the cards, or the pets in the strip)
+  function qrDrag(app) {   // ("My order": drag the cards, or the pets at the top)
     let from = null;
-    const ITEMS = '.bqr-card, .bqr-tile';
+    const ITEMS = '.bq-card, .bq-tile';
     app.addEventListener('dragstart', (e) => {
-      const c = e.target instanceof Element && !e.target.closest('.bqr-petmenu') && e.target.closest('.bqr-card[draggable="true"], .bqr-tile[draggable="true"]');
+      const c = e.target instanceof Element && !e.target.closest('.bqr-petmenu, .bq-wornbox') && e.target.closest('.bq-card[draggable="true"], .bq-tile[draggable="true"]');
       if (!c) return;
       qrMenuClose();
       from = c.dataset.pet;
@@ -40394,7 +40747,7 @@
   function qrPage() {
     return `<div class="bnp-mhead"><h2>QuickRef</h2><span class="bnp-note">Quick Ref, better and in the beta look.</span></div>
       <div class="bnp-card">
-        <label class="bnp-switch"><input type="checkbox" data-feat="qr"${S.features.qr ? ' checked' : ''}><span>QuickRef<small>Every pet on one page: picture, level, age, health, hunger, mood and stats; what each one needs (food, a cure, Neolodge nights left) with where to go for it; every action; Make active; sorting or your own order; Pets at a glance at the top, which takes you to any pet; cards in each pet’s own colour; and a compact Rows view (Pets at a glance, the colours and the view are switched on the page itself). Off: Neopets’ own Quick Ref.</small></span></label>
+        <label class="bnp-switch"><input type="checkbox" data-feat="qr"${S.features.qr ? ' checked' : ''}><span>QuickRef<small>Neopets’ new Quick Ref, made better: every pet’s card with its stat strip, a health meter, battle stats, age, size, jobs, fishing and books read; what each one needs (food, a cure, its Neolodge stay to the minute, with Check out early) and where to go for it; what it has on; its petpet; every action, the main ones as buttons; the star to make it active; a card across the page with its picture big. Your Pets at the top shows only the hungry, sick or Neolodge ones in a click; sort or use your own order; cards in each pet’s own colour; picture sizes; a Rows view. Off: Neopets’ own Quick Ref.</small></span></label>
         <a class="button-default__2020 button-yellow__2020 bnp-small" href="/quickref.phtml">Open Quick Ref</a>
       </div>`;
   }
@@ -43882,7 +44235,7 @@
         : `background-color: ${clear(box.bg) ? 'transparent' : box.bg} !important; background-image: ${box.img} !important; background-size: ${box.size || 'auto'} !important; background-repeat: ${box.rep || 'repeat'} !important; background-position: ${box.pos || '0 0'} !important;`
       : `background: ${clear(box.bg) ? '#fff' : box.bg} !important;`;
     return `
-      html.bnp-oldwait body, html.bnp-qrwait td.content { visibility: hidden !important; }
+      html.bnp-oldwait body, html.bnp-qrwait :is(td.content, #quickref-app, #container__2020 > .pageDesc) { visibility: hidden !important; }
       html.bnp-old body { margin: 0 !important; }
       ${sameBg ? `html:not(.bnp-my).bnp-old body { margin: 0 !important; background-color: ${bgc || '#fff'} !important; background-image: ${bgi || 'none'} !important; background-size: ${bgs || 'auto'} !important; background-repeat: ${bgr || 'repeat'} !important; background-position: ${bgp || '0 0'} !important; background-attachment: ${bga || 'scroll'} !important; }` : ''}
       html.bnp-old #header, html.bnp-old #footer, html.bnp-old td.sidebar { display: none !important; }
@@ -44424,197 +44777,224 @@
     .bnp-pet small.bnp-pet-lv { display: block; margin-top: -1px; }
     .bnp-pet .bnp-tag { position: absolute; top: 5px; right: 5px; padding: 1px 6px; border-radius: 999px; background: color-mix(in srgb, currentColor 16%, transparent); font: 10px "MuseoSansRounded700", Arial, sans-serif; font-style: normal; }
     .bnp-pet .bnp-tag.is-hungry { background: #c0392b; color: #fff; }
-    /* QuickRef: cards in the theme's pop-up colours */
-    td.content .bqr-orig { display: none !important; }
-    .bqr { --bqr-head: #fed123; --bqr-headink: #363636; --bqr-line: color-mix(in srgb, var(--bqr-head) 70%, #000 8%); color: #363636; font: 14px/1.45 "MuseoSansRounded500", Arial, sans-serif; text-align: left; }
-    .bqr *, .bqr *::before, .bqr *::after { box-sizing: border-box; }
-    .bqr a { color: inherit; text-decoration: none; }
-    .bqr .bqr-title { margin: 0 0 10px; }
-    .bqr .bqr-title h1 { margin: auto; padding: 0; color: #363636; font: 26pt/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .5pt; }
-    .bqr-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; margin: 0 0 14px; }
-    .bqr-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-    @media (min-width: 860px) { .bqr-sum { flex-wrap: nowrap; } .bqr-chip, .bqr-tools > * { flex: none; white-space: nowrap; } }   /* (the bar itself still wraps: the options move to a line of their own together, never split) */
-    .bqr-chip { margin: 0; padding: 4px 12px; border: 2px solid var(--bqr-line); border-radius: 999px; background: #fff; color: #363636; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
-    .bqr-chip b { font-family: "MuseoSansRounded700", Arial, sans-serif; }
-    .bqr-chip.is-warn { border-color: #e2774f; }
-    .bqr-chip[aria-pressed="true"] { background: var(--bqr-head); color: var(--bqr-headink); }
-    .bqr-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 8px; min-width: 0; margin-left: auto; }   /* (more than fit beside the counts: a second line, at the right; never past the page's edge) */
-    .bqr-sortl { display: inline-flex; align-items: center; gap: 6px; color: #6f6a58; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
-    .bqr-sortl select { height: 30px; padding: 2px 8px; border: 1px solid #cfcbbd; border-radius: 8px; background: #fff; color: #363636; font: 13px "MuseoSansRounded500", Arial, sans-serif; cursor: pointer; }
-    .bqr-views { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid #e3dfd2; border-radius: 12px; background: #f3f0e6; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06); }
-    .bqr-views button { margin: 0; padding: 4px 12px 5px; border: 0; border-radius: 9px; background: none; color: #4a4536; font: 13px/1.2 "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; transition: background-color .12s, color .12s, box-shadow .12s; }
-    .bqr-views button:hover:not([aria-pressed="true"]) { background: rgba(255, 255, 255, .8); color: #2a2a2a; }
-    .bqr-views button[aria-pressed="true"] { background: var(--bqr-head); color: var(--bqr-headink); box-shadow: 0 2px 0 color-mix(in srgb, var(--bqr-head) 65%, #000), 0 1px 5px rgba(0, 0, 0, .12); }
-    .bqr-views button:focus-visible { outline: 2px solid color-mix(in srgb, var(--bqr-head) 70%, #000 15%); outline-offset: 1px; }
-    .bqr-tintbtn { margin: 0; padding: 4px 12px; border: 2px solid var(--bqr-line); border-radius: 999px; background: #fff; color: #363636; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
-    .bqr-tintbtn[aria-pressed="true"] { background: linear-gradient(90deg, #f7b2b2, #f9e29a, #b4e6b1, #a9d4f5, #d6b8f2); }
-    .bqr-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 16px; }
-    /* Pet colours: the card in its pet's colour; the theme's own pattern stays, taking the colour too */
-    .bqr .bqr-card.is-tinted { border-color: var(--bqr-tint-line); background: color-mix(in srgb, var(--bqr-tint) 7%, #fff); }
-    .bqr .bqr-card.is-tinted .bqr-card-head { background: var(--bqr-tint) !important; }
-    .bqr .bqr-card.is-tinted .bqr-card-head .popup-header-pattern__2020 { filter: grayscale(1) contrast(1.1); mix-blend-mode: soft-light; opacity: .9; }
-    .bqr .bqr-card.is-tinted .bqr-card-head h3, .bqr .bqr-card.is-tinted .bqr-card-head h3 a, .bqr .bqr-card.is-tinted .bqr-sub { color: var(--bqr-tint-ink) !important; text-shadow: var(--bqr-tint-shadow) !important; }
-    .bqr .bqr-card.is-tinted .bqr-actions { border-top-color: color-mix(in srgb, var(--bqr-tint) 28%, #fff); background: color-mix(in srgb, var(--bqr-tint) 11%, #fff); }
-    .bqr .bqr-card.is-tinted .bqr-pic img { background: color-mix(in srgb, var(--bqr-tint) 14%, #fff); }
-    .bqr .bqr-card.is-tinted.is-active { box-shadow: 0 0 0 3px color-mix(in srgb, var(--bqr-tint) 50%, transparent), 0 3px 12px rgba(0, 0, 0, .12); }
-    .bqr-card { display: flex; flex-direction: column; min-width: 0; border: 2px solid var(--bqr-line); border-radius: 15px; background: #fff; box-shadow: 0 3px 10px rgba(0, 0, 0, .08); }   /* (not clipped: a card's More menu opens over it) */
-    .bqr-card.is-active { box-shadow: 0 0 0 3px color-mix(in srgb, var(--bqr-head) 55%, transparent), 0 3px 12px rgba(0, 0, 0, .12); }
-    .bqr-cards.is-sortable .bqr-card { cursor: grab; }
-    .bqr-card.is-drag { opacity: .45; }
-    .bqr-card.drop-before { box-shadow: -4px 0 0 #2c5aa0; }
-    .bqr-card.drop-after { box-shadow: 4px 0 0 #2c5aa0; }
-    .bqr .bqr-card-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px !important; border-radius: 13px 13px 0 0 !important; overflow: hidden; text-align: left !important; }
-    .bqr .bqr-card-head h3 { flex: none; max-width: 62% !important; margin: 0 !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 21pt; line-height: 1.2; }
-    .bqr-sub { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--bqr-headink); font: 13px "MuseoSansRounded700", Arial, sans-serif; opacity: .85; }
-    .bqr-g { font-size: 15px; }
-    .bqr-g.is-m { color: #2c6fd1; } .bqr-g.is-f { color: #d1458f; }
-    .bqr-badge { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; background: rgba(255, 255, 255, .85); color: #6b5300; font: 12px "MuseoSansRounded700", Arial, sans-serif; }
-    .bqr-badge svg { width: 13px; height: 13px; color: #d9a400; }
-    .bqr-badge.is-small { padding: 1px 7px; background: #fff3c4; font-size: 11px; }
-    .bqr .bqr-make { flex: none; width: auto; margin: 0; padding: 2px 12px 5px; font-size: 11pt; }
-    .bqr-card-body { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px; padding: 12px 14px; }   /* (the facts beside the picture while there's room for them, under it when there isn't) */
-    .bqr-picwrap { position: relative; flex: none; width: 170px; max-width: 100%; }
-    .bqr-pic { display: block; box-sizing: border-box; width: 100%; aspect-ratio: 1; padding: 6px; border-radius: 12px; background: #f6f5f1; }   /* (the picture whole inside its rounded box: never a corner cut off) */
-    .bqr-petpet { position: absolute; right: -7px; bottom: -7px; display: block; box-sizing: border-box; width: 54px; height: 54px; padding: 3px; border: 2px solid var(--bqr-line); border-radius: 13px; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .15); }   /* (the petpet: on the picture's corner, a click away; a rounded square, so none of it is cut off) */
-    .bqr-petpet img { display: block; width: 100%; height: 100%; border-radius: 9px; object-fit: contain; }
-    .bqr-petpet:hover { transform: scale(1.06); }
-    .bqr.is-pic-big .bqr-petpet { right: -8px; bottom: -8px; width: 70px; height: 70px; }   /* (the petpet grows with the pet: at Bigger and Biggest, its full 80 px) */
-    .bqr.is-pic-bigger .bqr-petpet, .bqr.is-pic-biggest .bqr-petpet { right: -10px; bottom: -10px; width: 90px; height: 90px; }
-    .bqr-panel { flex: 1 1 210px; display: grid; gap: 8px; align-content: start; min-width: 0; }
-    .bqr-chips2 { display: flex; flex-wrap: wrap; gap: 5px; }
-    .bqr-c2 { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 999px; background: #f3f1ea; color: #3d3a2e; font: 12.5px/1.6 "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }
-    .bqr-c2 small { color: #8a8571; font: 10.5px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
-    .bqr-ic { flex: none; width: 13px; height: 13px; vertical-align: -2px; }
-    .bqr-c2 .bqr-ic { margin-right: -1px; color: #8a8571; }
-    .bqr-c2 .bqr-ic.is-lv { color: #d9a400; }
-    .bqr-mood .bqr-ic { width: 14px; height: 14px; color: currentColor; }
-    .bqr-ml { display: inline-flex; align-items: center; gap: 4px; }
-    .bqr-st-l { display: inline-flex; align-items: center; gap: 4px; }
-    .bqr-ic.is-hp { color: #d6455d; } .bqr-ic.is-food { color: #c87a2a; }
-    .bqr-ic.is-str { color: #c0392b; } .bqr-ic.is-def { color: #2c6fd1; } .bqr-ic.is-mov { color: #2a8a4a; } .bqr-ic.is-int { color: #8e5cc4; }
-    .bqr-mood.is-good { background: #e5f4e3; color: #2a6e2a; } .bqr-mood.is-calm { background: #f3f1ea; color: #6b6653; } .bqr-mood.is-low { background: #fde8ec; color: #a1234b; }
-    .bqr-meter { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
-    .bqr-meter .bqr-hunger { flex: 1 1 60px; display: flex; max-width: 142px; min-width: 60px; }   /* (the squares share the room there is) */
-    .bqr-meter .bqr-hunger i { flex: 1 1 0; width: auto; min-width: 3px; max-width: 10px; }
-    .bqr-ml { flex: none; width: 70px; color: #8a8571; font: 10.5px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
-    .bqr-meter .bqr-hbar { flex: 1 1 auto; width: auto; min-width: 60px; }
-    .bqr-mv { flex: none; font: 13px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }
-    .bqr-stats4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-    .bqr-st { display: grid; min-width: 0; padding: 5px 10px 6px; border: 1px solid #cdc6b0; border-radius: 10px; background: #fbfaf6; box-shadow: 0 2px 0 #e4dece; color: inherit; text-decoration: none !important; }   /* (a firm edge and a shelf under it, as Settings' cards: plain to see on a light card) */
-    a.bqr-st:hover { border-color: var(--bqr-line); background: #fffbe8; }
-    .bqr-st-l { color: #8a8571; font: 10px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
-    .bqr-st b { overflow: hidden; color: #262626; font: 18px/1.15 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-overflow: ellipsis; white-space: nowrap; }
-    .bqr-st small { overflow: hidden; color: #6b6653; font: 11.5px/1.3 "MuseoSansRounded500", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
-    .bqr .bqr-card.is-tinted .bqr-st { border-color: color-mix(in srgb, var(--bqr-tint) 40%, #cdc6b0); background: color-mix(in srgb, var(--bqr-tint) 5%, #fff); box-shadow: 0 2px 0 color-mix(in srgb, var(--bqr-tint) 20%, #e4dece); }
-    .bqr .bqr-card.is-tinted .bqr-c2:not(.bqr-mood) { background: color-mix(in srgb, var(--bqr-tint) 12%, #fff); }
-    .bqr-pic img { display: block; width: 100%; height: 100%; border-radius: 9px; object-fit: contain; }
-    .bqr-facts { flex: 1 1 200px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; align-content: start; min-width: 0; margin: 0; }
-    .bqr.is-pic-big .bqr-picwrap { width: 252px; }   /* (Big: its facts beside it) */
-    .bqr.is-pic-big .bqr-cards { grid-template-columns: repeat(auto-fill, minmax(min(490px, 100%), 1fr)); }
-    .bqr.is-pic-big .bqr-panel { flex-basis: 190px; }
-    .bqr.is-pic-bigger .bqr-picwrap { width: 332px; margin: 0 auto; }   /* (Bigger and Biggest: the picture on top, its facts under it, the four stats across) */
-    .bqr.is-pic-biggest .bqr-picwrap { width: 100%; max-width: 512px; margin: 0 auto; }
-    .bqr.is-pic-bigger .bqr-panel, .bqr.is-pic-biggest .bqr-panel { flex-basis: 100%; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 18px; }
-    .bqr.is-pic-bigger .bqr-panel > :not(.bqr-meter), .bqr.is-pic-biggest .bqr-panel > :not(.bqr-meter) { grid-column: 1 / -1; }
-    @media (max-width: 560px) { .bqr.is-pic-bigger .bqr-panel, .bqr.is-pic-biggest .bqr-panel { grid-template-columns: minmax(0, 1fr); } }
-    .bqr.is-pic-bigger .bqr-stats4, .bqr.is-pic-biggest .bqr-stats4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    @media (max-width: 560px) { .bqr.is-pic-bigger .bqr-stats4, .bqr.is-pic-biggest .bqr-stats4 { grid-template-columns: 1fr 1fr; } }
-    .bqr-picsz { gap: 8px; }
-    .bqr-facts > div { min-width: 0; }
-    .bqr-facts .bqr-wide { grid-column: 1 / -1; }
-    .bqr-facts dt { margin: 0; color: #8a8571; font: 10.5px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
-    .bqr-facts dd { display: flex; align-items: center; flex-wrap: wrap; gap: 0 8px; margin: 0; font: 14px "MuseoSansRounded700", Arial, sans-serif; }
-    .bqr-facts dd small { color: #8a8571; font: 12px "MuseoSansRounded500", Arial, sans-serif; }
-    .bqr-facts dd a { border-bottom: 1px dotted currentColor; }
-    .bqr-extra { font-size: 12.5px; }
-    .bqr-hbar { display: inline-block; width: 150px; height: 10px; border-radius: 6px; background: #ece8dc; overflow: hidden; }
-    .bqr-hbar i { display: block; height: 100%; border-radius: 6px; }
-    .bqr-hunger { display: inline-flex; gap: 2px; }
-    .bqr-hunger i { width: 10px; height: 10px; border-radius: 2px; background: #ece8dc; }
-    .bqr-hunger i.on { background: var(--c); }
-    .bqr-notes { display: grid; gap: 6px; padding: 0 14px 10px; }
-    .bqr-note { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 9px; padding: 5px 10px 5px 6px; border-radius: 10px; background: #f8f6ef; font-size: 12.5px; line-height: 1.4; }   /* (each notice one line: what it is, then what to do) */
-    .bqr-note b { font: 13px "MuseoSansRounded700", Arial, sans-serif; }
-    .bqr-note-tx { min-width: 0; }
-    .bqr .bqr-note .bqr-note-go { margin-left: auto; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
-    .bqr-note a { color: #2c5aa0; border-bottom: 1px solid rgba(44, 90, 160, .3); }
-    .bqr-pills { display: inline-flex; flex-wrap: wrap; gap: 5px; }
-    .bqr .bqr-note .bqr-gopill { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border: 1px solid rgba(0, 0, 0, .14); border-radius: 999px; background: #fff; box-shadow: 0 1px 0 rgba(0, 0, 0, .06); color: #363636; font: 12px "MuseoSansRounded700", Arial, sans-serif; text-decoration: none; white-space: nowrap; }   /* (Feed's places and Check out: pills) */
-    .bqr .bqr-note .bqr-gopill:hover { border-color: var(--bqr-line, #c9a227); background: #fffbe8; }
-    .bqr-note.is-hungry { background: #fdeee8; } .bqr-note.is-sick { background: #fde9ef; } .bqr-note.is-lodge { background: #ecf2fd; }
-    .bqr-note-ic { flex: none; width: 28px; height: 28px; background: center / contain no-repeat; }
-    .bqr .bqr-note .bqr-cure { display: inline-flex; align-items: center; gap: 8px; align-self: center; max-width: 100%; margin: 0 0 0 auto; padding: 2px 4px 2px 3px; border: 1px solid #f0c6d4; border-radius: 12px; background: #fff; color: #363636; transition: border-color .15s, box-shadow .15s; }
-    .bqr .bqr-note .bqr-cure:hover, .bqr .bqr-note .bqr-cure:focus-visible { border-color: #c4577b; box-shadow: 0 2px 8px rgba(161, 35, 75, .16); outline: none; }
-    .bqr-cure img { flex: none; width: 28px; height: 28px; }
-    .bqr-cure > span { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
-    .bqr-cure small { color: #9a6b7a; font: 10px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
-    .bqr .bqr-note .bqr-cure b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 14px "MuseoSansRounded700", Arial, sans-serif; }
-    .bqr-cure i { flex: none; display: inline-flex; align-items: center; gap: 5px; margin-left: 4px; padding: 4px 11px 4px 8px; border-radius: 999px; background: var(--bqr-head); color: var(--bqr-headink); font: normal 12px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }
-    .bqr-cure i span { width: 18px; height: 18px; background: center / contain no-repeat; }
-    .bqr-actions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: auto; padding: 9px 10px 10px; border-top: 1px solid #efeadb; border-radius: 0 0 13px 13px; background: #fbfaf6; }
-    .bqr-more { position: relative; display: inline-flex; }
-    .bqr-act.is-more { gap: 4px; padding: 3px 9px; cursor: pointer; }
-    .bqr-more .nav-dropdown__2020.bqr-petmenu { top: auto; bottom: calc(100% + 6px); }   /* (a card's More: upwards, over the card) */
-    .bqr-act { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px 3px 5px; border: 1px solid #e3dfd2; border-radius: 999px; background: #fff; color: #363636; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }
-    .bqr-act:hover { border-color: var(--bqr-line); background: #fffbe8; }
-    .bqr-act .ic { flex: none; display: grid; place-items: center; width: 22px; height: 22px; background: center / contain no-repeat; color: #6f6a58; }
-    .bqr-act .ic svg { width: 15px; height: 15px; }
-    .bqr-act.is-icon { padding: 3px; }
-    .bqr-rows { width: 100%; border-collapse: separate; border-spacing: 0; border: 2px solid var(--bqr-line); border-radius: 15px; overflow: hidden; background: #fff; font: 13.5px "MuseoSansRounded500", Arial, sans-serif; }
-    .bqr-rows th { padding: 8px; background: var(--bqr-head); color: var(--bqr-headink); font: 15px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-align: left; }
-    .bqr-rows td { padding: 8px; border-top: 1px solid #efeadb; font: 13.5px "MuseoSansRounded700", Arial, sans-serif; vertical-align: middle; }
-    .bqr-rows td.bqr-stack { white-space: nowrap; }   /* (rows: each meter with its value under it, so the table fits the middle column instead of stretching it) */
-    .bqr-rows td.bqr-stack .bqr-mv, .bqr-rows td.bqr-stack small { display: block; margin-top: 3px; color: #8a8571; font: 12px "MuseoSansRounded500", Arial, sans-serif; }
-    .bqr-rows td.bqr-stack .bqr-hbar { display: block; width: 80px; }
-    .bqr-rows td.bqr-stack .bqr-hunger { display: flex; }
-    .bqr-rows td.bqr-stack .bqr-hunger i { width: 6px; }
-    .bqr-rows tr.is-active td { background: #fffbe8; }
-    .bqr-who { display: flex; align-items: center; gap: 10px; }
-    .bqr-who img { flex: none; box-sizing: content-box; width: 50px; height: 50px; padding: 4px; border-radius: 6px; background: #f6f5f1; }
-    .bqr-who > span { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
-    .bqr-who small { flex-basis: 100%; color: #8a8571; font: 12px "MuseoSansRounded500", Arial, sans-serif; }
-    .bqr-flag { padding: 1px 7px; border-radius: 999px; font: 11px "MuseoSansRounded700", Arial, sans-serif; }
-    .bqr-flag.is-sick { background: #fde9ef; color: #a1234b; } .bqr-flag.is-lodge { background: #ecf2fd; color: #2c5aa0; }
-    .bqr-nowrap { white-space: nowrap; }
-    .bqr-nowrap .bqr-hbar { width: 80px; margin-right: 6px; }
-    .bqr-nowrap .bqr-hunger i { width: 6px; }
-    .bqr-nowrap .bqr-hunger { margin-right: 6px; }
-    .bqr-rowacts { display: flex; flex-wrap: wrap; gap: 3px; min-width: 150px; }
-    .bqr-none { padding: 18px; border: 2px dashed var(--bqr-line); border-radius: 15px; text-align: center; }
-    /* the pet strip */
-    .bqr-stripbtn[aria-pressed="true"] { background: var(--bqr-head); color: var(--bqr-headink); }
-    .bqr-strip { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 12px 10px; margin: 0 0 20px; scroll-margin-top: 84px; }
-    .bqr-tile { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 5px; border: 2px solid var(--bqr-line); border-radius: 12px; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .06); }
-    .bqr-tile.is-active { box-shadow: 0 0 0 3px color-mix(in srgb, var(--bqr-head) 55%, transparent), 0 2px 8px rgba(0, 0, 0, .1); }
-    .bqr-tile.is-tinted { border-color: var(--bqr-tint-line); }
-    .bqr-strip.is-sortable .bqr-tile { cursor: grab; }
-    .bqr-tile.is-drag { opacity: .45; }
-    .bqr-tile.drop-before { box-shadow: -4px 0 0 #2c5aa0; }
-    .bqr-tile.drop-after { box-shadow: 4px 0 0 #2c5aa0; }
-    .bqr-tile-top { display: flex; gap: 3px; }
-    .bqr .bqr-tile-pic { position: relative; top: 0; flex: none; box-sizing: content-box; width: 50px; height: 50px; margin: 0; padding: 3px; border: 0; border-radius: 8px; background: #f6f5f1; cursor: pointer; transition: top .15s, box-shadow .15s; }
-    .bqr .bqr-tile-pic:hover, .bqr .bqr-tile-pic:focus-visible { top: -2px; box-shadow: 0 3px 0 rgba(0, 0, 0, .16); outline: none; }
-    .bqr-tile-pic img { display: block; width: 50px; height: 50px; }
-    .bqr .bqr-tile-menu { flex: none; display: grid; place-items: center; width: 20px; height: 50px; margin: 0; padding: 0; border: 0; border-radius: 7px; background: var(--bqr-head); cursor: pointer; opacity: .9; }
-    .bqr .bqr-tile-menu::before { content: ""; border: 5px solid transparent; border-top: 6px solid var(--bqr-headink); border-bottom: 0; transition: transform .2s; }
-    .bqr .bqr-tile-menu:hover, .bqr .bqr-tile-menu:focus-visible, .bqr .bqr-tile-menu[aria-expanded="true"] { opacity: 1; outline: none; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--bqr-headink) 25%, transparent); }
-    .bqr .bqr-tile-menu[aria-expanded="true"]::before { transform: rotate(180deg); }
-    .bqr-tile.is-tinted .bqr-tile-menu { background: var(--bqr-tint); }
-    .bqr-tile.is-tinted .bqr-tile-menu::before { border-top-color: var(--bqr-tint-ink); }
-    .bqr-tile-star { position: absolute; z-index: 1; top: -8px; left: -8px; display: grid; place-items: center; width: 21px; height: 21px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); color: #d9a400; pointer-events: none; }
-    .bqr-tile-star svg { width: 14px; height: 14px; }
-    .bqr-tile-name { max-width: 73px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #4a4636; font: 11.5px/1.2 "MuseoSansRounded700", Arial, sans-serif; text-align: center; }
-    .bqr-pills { display: grid; gap: 3px; max-width: 73px; }
-    .bqr-pill { display: flex; align-items: center; justify-content: center; gap: 3px; padding: 2px 5px; border-radius: 999px; overflow: hidden; font: 10.5px/1.25 "MuseoSansRounded700", Arial, sans-serif; text-align: center; white-space: nowrap; }
-    .bqr-pill svg { flex: none; width: 10px; height: 10px; }
-    .bqr-pill.is-sick { background: #fde9ef; color: #a1234b; }
-    .bqr-pill.is-hunger { background: color-mix(in srgb, var(--c) 17%, #fff); color: color-mix(in srgb, var(--c) 80%, #000); }
-    .bqr-pill.is-lodge { background: #ecf2fd; color: #2c5aa0; }
-    .bqr-pill.is-lodge.is-near { background: #fdf6d0; color: #7d6400; }
-    .bqr-pill.is-lodge.is-soon { background: #fff0db; color: #a35a00; }
-    .bqr-pill.is-lodge.is-now { background: #fde4e1; color: #b0281c; }
-    .bqr-pill.is-move { font-style: italic; }
-    .nav-dropdown__2020.bqr-petmenu { position: absolute; z-index: 30; top: calc(100% - 2px); left: -4px; width: 200px; margin: 0; padding: 0 0 2px; border-radius: 6px; box-shadow: 0 8px 22px rgba(0, 0, 0, .3); text-align: left; overflow: visible; max-height: none; cursor: default; }
+    /* QuickRef: Neopets' new Quick Ref as the base (its cards, stat strip, star tab, picture corners, petpet row, icon buttons, Quick Links), NE's parts in it, in the theme's colours */
+    .bqr-orig { display: none !important; }
+    .bq { --bqr-head: #fed123; --bqr-headink: #363636; --bqr-line: color-mix(in srgb, var(--bqr-head) 78%, #000); --bq-h: var(--bqr-head); --bq-hi: var(--bqr-headink); padding: 4px 16px 26px; color: #363636; font: 14px/1.45 "MuseoSansRounded500", Arial, sans-serif; text-align: left; }
+    .bq, .bq-card, .bq-tile { --bq-ln: color-mix(in srgb, var(--bq-h) 76%, #000); --bq-band: color-mix(in srgb, var(--bq-h) 22%, #fff); --bq-bandln: color-mix(in srgb, var(--bq-h) 50%, #fff); --bq-soft: color-mix(in srgb, var(--bq-h) 8%, #fff); }   /* (each card works its shades out from its own colour: the theme's, or its pet's) */
+    .bq-card.is-tinted, .bq-tile.is-tinted { --bq-h: var(--bqr-tint); --bq-hi: var(--bqr-tint-ink); }
+    .bq *, .bq *::before, .bq *::after { box-sizing: border-box; }
+    .bq a { color: inherit; text-decoration: none; }
+    .bq .bqr-title { margin: 0 0 10px; }
+    .bq .bqr-title h1 { margin: auto; padding: 0; color: #363636; font: 26pt/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .5pt; }
+    /* Your Pets: Neopets' Quick Links, a full bar in the theme's header with the counts that show only those pets */
+    .bq-pets { position: relative; margin: 30px 0 16px; border: 2px solid var(--bq-ln); border-radius: 18px; background: radial-gradient(120% 90% at 50% 0%, #fff 0%, color-mix(in srgb, var(--bq-h) 9%, #fff) 55%, color-mix(in srgb, var(--bq-h) 16%, #fff) 100%); box-shadow: 0 3px 0 var(--bq-ln), 0 8px 18px rgba(0, 0, 0, .08); }   /* (a box of its own: lit from the top, the theme's tint at its edges) */
+    .bq .bq-plate { position: absolute !important; top: 0 !important; left: 50% !important; z-index: 2; display: grid !important; place-items: center; width: auto !important; min-width: 230px; height: 48px !important; margin: 0 !important; padding: 0 34px !important; border: 2px solid var(--bq-ln) !important; border-radius: 999px !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 3px 0 var(--bq-ln), 0 7px 16px rgba(0, 0, 0, .2) !important; color: var(--bq-hi); overflow: hidden; transform: translate(-50%, -55%); }   /* (its title on a nameplate in the theme's own header, set on the box's top edge) */
+    .bq .bq-plate h3 { position: relative; z-index: 2; top: -2px; margin: 0 !important; padding: 0 !important; color: inherit; font: 23pt/1 "Cafeteria", "Arial Bold", sans-serif !important; letter-spacing: .6pt; white-space: nowrap; -webkit-text-stroke: 6px var(--bq-tedge, rgba(255, 255, 255, .92)); paint-order: stroke fill; text-shadow: 0 2px 3px rgba(0, 0, 0, .18); }   /* (its words in the middle (Cafeteria sits low in its line), edged so they read on the pattern) */
+    .bq-platerim { position: absolute; z-index: 1; inset: 3px; border-radius: inherit; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .55), inset 0 10px 14px -10px rgba(255, 255, 255, .5); pointer-events: none; }   /* (a light rim inside the plate, and a little sheen at its top) */
+    .bq-tray { padding: 36px 16px 18px; }   /* (under the nameplate: the counts, then your pets) */
+    .bq-pets:not(.is-open) { width: fit-content; min-width: 320px; max-width: 100%; margin-left: auto; margin-right: auto; }   /* (folded: only as wide as its counts, in the middle (the user, 2026-11-02)) */
+    .bq-pets:not(.is-open) .bq-tray { padding: 36px 60px 14px; }
+    .bq .bq-pets:not(.is-open) .bq-fold { top: auto; bottom: 16px; }
+    .bq-counts { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px 8px; }
+    .bq-pets.is-open .bq-counts { margin-bottom: 14px; }
+    .bq .bq-count { display: inline-flex; align-items: center; gap: 6px; height: 36px; margin: 0; padding: 0 14px 0 5px; border: 1.5px solid color-mix(in srgb, var(--bq-h) 40%, #d6cfbd); border-radius: 999px; background: #fff; box-shadow: 0 2px 0 color-mix(in srgb, var(--bq-h) 34%, #d6cfbd); color: #3c3a30; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; cursor: pointer; transition: transform .12s, box-shadow .12s, background-color .12s; }
+    .bq .bq-count:hover:not([aria-pressed="true"]), .bq .bq-count:focus-visible { box-shadow: 0 3px 0 color-mix(in srgb, var(--bq-h) 34%, #d6cfbd), 0 5px 12px rgba(0, 0, 0, .12); outline: none; transform: translateY(-1px); }
+    .bq .bq-count[aria-pressed="true"] { border-color: var(--bq-ln); background: linear-gradient(color-mix(in srgb, var(--bq-h) 84%, #fff), var(--bq-h)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 2px 0 var(--bq-ln); color: var(--bq-hi); }   /* (the one shown: in the theme's colour) */
+    .bq-cpic { flex: none; display: grid; place-items: center; width: 26px; height: 26px; overflow: hidden; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .14); }
+    .bq-cpic img { display: block; width: 24px; height: 24px; object-fit: contain; }
+    .bq-count.is-all .bq-cpic img { width: 26px; height: 26px; object-fit: cover; }
+    .bq-count b { font: 17px/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    .bq-count.is-hungry b { color: #d4690a; } .bq-count.is-sick b { color: #c2185b; } .bq-count.is-lodge b { color: #2c6fd1; }
+    .bq .bq-count[aria-pressed="true"] b { color: inherit; }
+    .bq .bq-fold { position: absolute; z-index: 2; top: 10px; right: 12px; display: grid; place-items: center; width: 32px; height: 32px; margin: 0; padding: 0; border: 2px solid var(--bq-ln); border-radius: 50%; background: #fff; box-shadow: 0 2px 0 var(--bq-ln); cursor: pointer; }
+    .bq .bq-fold:hover, .bq .bq-fold:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--bq-h) 45%, transparent), 0 2px 0 var(--bq-ln); outline: none; }
+    .bq .bq-fold i { margin-top: 3px; border: 6px solid transparent; border-top: 8px solid #4a4636; border-bottom: 0; transition: transform .2s; }
+    .bq .bq-fold[aria-expanded="true"] i { margin-top: -3px; transform: rotate(180deg); }
+    .bq-strip { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 16px 12px; padding: 4px 0 0; }
+    .bq-tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100px; }
+    .bq-tbox { position: relative; padding: 4px; border-radius: 50%; background: linear-gradient(160deg, color-mix(in srgb, var(--bq-h) 72%, #fff), var(--bq-h) 45%, color-mix(in srgb, var(--bq-h) 72%, #000)); box-shadow: 0 3px 0 var(--bq-ln), 0 6px 14px rgba(0, 0, 0, .16); transition: transform .18s, box-shadow .18s; }   /* (a ring in its own colour, lit from above) */
+    .bq-tile:hover .bq-tbox, .bq-tile:focus-within .bq-tbox { box-shadow: 0 6px 0 var(--bq-ln), 0 12px 20px rgba(0, 0, 0, .2); transform: translateY(-3px); }
+    .bq-tile.is-active .bq-tbox { background: linear-gradient(160deg, #fff1a8, #f2c230 45%, #b8860b); box-shadow: 0 0 0 4px rgba(242, 194, 48, .3), 0 3px 0 #9a6f00, 0 6px 14px rgba(0, 0, 0, .18); }   /* (your active pet: in gold) */
+    .bq-tile.is-active:hover .bq-tbox, .bq-tile.is-active:focus-within .bq-tbox { box-shadow: 0 0 0 4px rgba(242, 194, 48, .35), 0 6px 0 #9a6f00, 0 12px 20px rgba(0, 0, 0, .2); }
+    .bq .bq-tpic { display: block; width: 80px; height: 80px; margin: 0; padding: 0; overflow: hidden; border: 3px solid #fff; border-radius: 50%; background: #fff; cursor: pointer; }
+    .bq .bq-tpic:focus-visible { outline: 3px solid color-mix(in srgb, var(--bq-h) 60%, #000); outline-offset: 3px; }
+    .bq-tpic img { display: block; width: 74px; height: 74px; border-radius: 50%; object-fit: cover; }
+    .bq-tstar { position: absolute; top: -2px; right: -4px; display: grid; place-items: center; width: 28px; height: 28px; border: 2px solid #f2c230; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, .3); pointer-events: none; }
+    .bq-tstar img { width: 17px; height: auto; }
+    .bq .bq-tmenu { position: absolute; right: -2px; bottom: 0; display: grid; place-items: center; width: 26px; height: 26px; margin: 0; padding: 0; border: 2px solid #fff; border-radius: 50%; background: color-mix(in srgb, var(--bq-h) 80%, #000); box-shadow: 0 2px 4px rgba(0, 0, 0, .35); cursor: pointer; }
+    .bq .bq-tmenu::before { content: ""; margin-top: 2px; border: 4px solid transparent; border-top: 6px solid #fff; border-bottom: 0; transition: transform .2s; }
+    .bq .bq-tmenu:hover, .bq .bq-tmenu:focus-visible, .bq .bq-tmenu[aria-expanded="true"] { box-shadow: 0 0 0 3px color-mix(in srgb, var(--bq-h) 45%, transparent), 0 2px 4px rgba(0, 0, 0, .35); outline: none; }
+    .bq .bq-tmenu[aria-expanded="true"]::before { margin-top: -2px; transform: rotate(180deg); }
+    .bq-tname { max-width: 100px; overflow: hidden; color: #2f2d26; font: 15px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+    .bq-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; max-width: 86px; }
+    .bq-tag { padding: 1px 7px 2px; border-radius: 999px; background: #8a8571; color: #fff; font: 10.5px/1.3 "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }
+    .bq-tag.is-sick { background: #c2185b; } .bq-tag.is-hungry { background: var(--c); } .bq-tag.is-lodge { background: #2c6fd1; }
+    .bq-tag.is-lodge.is-near { background: #a87b00; } .bq-tag.is-lodge.is-soon { background: #d4690a; } .bq-tag.is-lodge.is-now { background: #c0392b; } .bq-tag.is-move { font-style: italic; }
+    .bq-strip.is-sortable .bq-tile { cursor: grab; }
+    .bq-tile.is-drag { opacity: .45; }
+    .bq-tile.drop-before .bq-tbox { box-shadow: -6px 0 0 #2c5aa0; } .bq-tile.drop-after .bq-tbox { box-shadow: 6px 0 0 #2c5aa0; }
+    /* how they're sorted and shown: Neopets' shop chips (a bar with raised pills, the chosen one dark), in your theme's colours (the user, 2026-11-02: "in the same style but theme colors") */
+    .bq-tools { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 7px 16px; margin: 0 0 16px; padding: 7px 10px; border-radius: 8px; background: linear-gradient(var(--bq-h), color-mix(in srgb, var(--bq-h) 80%, #000)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 2px 0 color-mix(in srgb, var(--bq-h) 62%, #000); color: var(--bq-hi); }
+    .bq-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 5px; }
+    .bq-group.is-sort { flex-basis: 100%; justify-content: center; }   /* (the sorts a line of their own; how they're shown under it: never one chip left alone on a line) */
+    .bq-label { margin-right: 3px; color: inherit; font: 9pt "MuseoSansRounded700", "Museo Sans Rounded Bold", Arial, sans-serif; letter-spacing: .1em; opacity: .9; text-transform: uppercase; white-space: nowrap; }
+    .bq .bq-chip { margin: 0; padding: 4px 11px; border: 1px solid color-mix(in srgb, var(--bq-h) 55%, #000 45%); border-radius: 999px; background: linear-gradient(color-mix(in srgb, var(--bq-h) 68%, #fff), var(--bq-h)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), 0 2px 3px rgba(0, 0, 0, .25); color: var(--bq-hi); font: 10.5pt/1.2 "MuseoSansRounded700", "Museo Sans Rounded Bold", Arial, sans-serif; white-space: nowrap; cursor: pointer; }
+    .bq .bq-chip:hover, .bq .bq-chip:focus-visible { background: linear-gradient(color-mix(in srgb, var(--bq-h) 52%, #fff), color-mix(in srgb, var(--bq-h) 84%, #fff)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 4px 7px rgba(0, 0, 0, .3); outline: none; transform: translateY(-1px); }
+    .bq .bq-chip:active { box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35), 0 1px 1px rgba(0, 0, 0, .15); transform: translateY(1px); }
+    .bq .bq-chip.is-active { border-color: rgba(0, 0, 0, .45); background: linear-gradient(color-mix(in srgb, var(--bq-h) 50%, #000), color-mix(in srgb, var(--bq-h) 36%, #000)); color: #fff; text-shadow: 0 1px 1px rgba(0, 0, 0, .3); }   /* (chosen: the theme's colour dark, white words, as the shops' dark amber one) */
+    .bq .bq-chip.is-active:hover, .bq .bq-chip.is-active:focus-visible { background: linear-gradient(color-mix(in srgb, var(--bq-h) 58%, #000), color-mix(in srgb, var(--bq-h) 44%, #000)); }
+    /* the cards: Neopets' own, two to a row, a card across the page with its picture big */
+    .bq-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row dense; align-items: start; gap: 18px; }
+    .bq-card { position: relative; display: flex; flex-direction: column; min-width: 0; border: 2px solid var(--bq-ln); border-radius: 16px; background: #fff; box-shadow: 0 3px 0 var(--bq-ln), 0 6px 16px rgba(0, 0, 0, .07); scroll-margin-top: 84px; }   /* (not clipped: its menus and Worn open over it) */
+    .bq-card.is-wide { grid-column: 1 / -1; }
+    .bq-card.is-active { box-shadow: 0 0 0 3px #f2c230, 0 3px 0 var(--bq-ln), 0 8px 20px rgba(0, 0, 0, .12); }
+    .bq-cards.is-sortable .bq-card { cursor: grab; }
+    .bq-card.is-drag { opacity: .45; }
+    .bq-card.drop-before { box-shadow: -5px 0 0 #2c5aa0; } .bq-card.drop-after { box-shadow: 5px 0 0 #2c5aa0; }
+    .bq .bq-head { position: relative; color: var(--bq-hi); display: flex; align-items: center; gap: 10px; min-height: 48px; margin: 0; padding: 6px 14px !important; border-radius: 14px 14px 0 0 !important; overflow: hidden; text-align: left !important; }
+    .bq .bq-card.is-tinted .bq-head { background: var(--bq-h) !important; color: var(--bq-hi) !important; }
+    .bq .bq-card.is-tinted .bq-head .popup-header-pattern__2020 { filter: grayscale(1) contrast(1.1); mix-blend-mode: soft-light; opacity: .9; }
+    .bq .bq-head h3 { position: relative; z-index: 1; flex: 0 1 auto; min-width: 0; margin: 0 !important; overflow: hidden; color: inherit; font: 21pt/1.15 "Cafeteria", "Arial Bold", sans-serif !important; letter-spacing: .4pt; text-overflow: ellipsis; white-space: nowrap; }
+    .bq .bq-head h3 a { color: inherit !important; text-decoration: none !important; }
+    .bq .bq-head h3 a:hover { text-decoration: underline !important; }
+    .bq .bq-card.is-tinted .bq-head :is(h3, .bq-sub) { color: var(--bq-hi) !important; text-shadow: var(--bqr-tint-shadow) !important; }
+    .bq-sub { position: relative; z-index: 1; display: inline-flex; align-items: center; flex: 1 1 auto; min-width: 0; overflow: hidden; color: inherit; font: 13px "MuseoSansRounded700", Arial, sans-serif; opacity: .9; white-space: nowrap; }
+    .bq-g { flex: none; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-left: 6px; border-radius: 50%; background: #fff; font: 13px/1 Arial, sans-serif; text-shadow: none; }
+    .bq-g.is-m { color: #2c6fd1; } .bq-g.is-f { color: #d1458f; }
+    .bq .bq-star { position: relative; z-index: 1; flex: none; align-self: stretch; display: inline-flex; align-items: center; margin: -6px -14px -6px auto; padding: 0 12px 0 11px; border: 1px solid #d7d7d7; border-right: 0; border-radius: 24px 0 0 24px; background: #fff; box-shadow: -1px 1px 0 1px #a7a7a7; color: #4a4636; font: 13px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; cursor: pointer; }
+    .bq .bq-star img { width: 22px; height: auto; }
+    .bq .bq-star > span { max-width: 0; overflow: hidden; opacity: 0; transition: max-width .2s, margin .2s, opacity .2s; }
+    .bq .bq-star.is-on > span, .bq .bq-star:hover > span, .bq .bq-star:focus-visible > span, .bq .bq-star.is-busy > span { max-width: 160px; margin-left: 6px; opacity: 1; }
+    .bq .bq-star.is-on { color: #6b5300; cursor: default; }
+    .bq .bq-star:not(.is-on):hover, .bq .bq-star:not(.is-on):focus-visible { background: #fffbe6; outline: none; }
+    .bq .bq-star.is-busy { pointer-events: none; opacity: .85; }
+    /* the stat strip: Neopets' own pictures, a health meter */
+    .bq-band { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-around; gap: 6px 14px; padding: 6px 12px; border-bottom: 1px solid var(--bq-bandln); background: var(--bq-band); color: #262626; font: 13.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bq-bi { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .bq-bi > img { flex: none; width: 24px; height: 24px; }
+    .bq-hp { display: inline-block; min-width: 88px; padding: 2px 14px 3px; border: 1px solid #464646; border-radius: 2em; background: linear-gradient(90deg, var(--c) var(--f), #ece8de var(--f)); box-shadow: 0 1px 0 #464646; color: #111; font: 12.5px/1.25 "MuseoSansRounded700", Arial, sans-serif; text-align: center; }
+    .bq-mood.is-good { color: #2a7a2a; } .bq-mood.is-calm { color: #4d493b; } .bq-mood.is-low { color: #b0243f; }
+    /* what each pet needs: the Neolodge, a cure, food, with what to do */
+    .bq-notes { display: grid; gap: 6px; padding: 10px 12px 0; }
+    .bq-note { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 5px 8px 5px 5px; border: 1.5px solid #d8d2c0; border-radius: 12px; background: #faf8f2; }
+    .bq-note.is-lodge { border-color: #a9c3ee; background: #eef4fe; } .bq-note.is-lodge.is-soon { border-color: #efc188; background: #fff5e8; } .bq-note.is-lodge.is-now { border-color: #eea69c; background: #fdeeec; }
+    .bq-note.is-sick { border-color: #ecb0c4; background: #fdf0f4; } .bq-note.is-hungry { border-color: #efc188; background: #fff6ea; }
+    .bq-nic { flex: none; box-sizing: border-box; width: 38px; height: 38px; padding: 3px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .12), 0 1px 0 rgba(0, 0, 0, .1); object-fit: contain; }   /* (Neopets' notice pictures are drawn on white: on a white tile of their own, not a white square on the note) */
+    .bq-ntx { flex: 1 1 150px; display: grid; min-width: 0; line-height: 1.25; }
+    .bq-ntx b { font: 14px "MuseoSansRounded700", Arial, sans-serif; }
+    .bq-ntx small { color: #5c5747; font: 12px/1.35 "MuseoSansRounded500", Arial, sans-serif; }
+    .bq-nacts { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 5px; margin-left: auto; }
+    .bq-nask { color: #3c3a30; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; } .bq-nask.is-err { color: #a32a1d; }
+    .bq .bq-pill { display: inline-flex; align-items: center; height: 26px; margin: 0; padding: 0 12px; border: 1px solid rgba(0, 0, 0, .22); border-radius: 999px; background: #fff; box-shadow: 0 1px 0 rgba(0, 0, 0, .12); color: #363636; font: 12px "MuseoSansRounded700", Arial, sans-serif; text-decoration: none; white-space: nowrap; cursor: pointer; transition: background-color .12s, border-color .12s; }
+    .bq .bq-pill:hover, .bq .bq-pill:focus-visible { border-color: var(--bq-ln); background: var(--bq-h); color: var(--bq-hi); outline: none; }
+    .bq .bq-pill.is-danger { border-color: #9d2a1f; background: #c0392b; color: #fff; }
+    .bq .bq-pill.is-danger:hover, .bq .bq-pill.is-danger:focus-visible { background: #a93226; color: #fff; }
+    .bq .bq-cure { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px 0 2px; border: 1px solid #e3a3b9; border-radius: 999px; background: #fff; box-shadow: 0 1px 0 rgba(0, 0, 0, .1); color: #363636; font: 12px "MuseoSansRounded700", Arial, sans-serif; text-decoration: none; white-space: nowrap; }
+    .bq .bq-cure:hover, .bq .bq-cure:focus-visible { border-color: #b4426a; box-shadow: 0 2px 8px rgba(161, 35, 75, .2); outline: none; }
+    .bq-cure img { flex: none; width: 30px; height: 30px; }
+    /* the picture, its corners (worn items, bigger), and its facts */
+    .bq-body { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px 16px; padding: 14px; }
+    .bq-picbox { position: relative; flex: none; width: var(--pic, 160px); max-width: 100%; }
+    .bq[data-pic="s"] .bq-picbox { --pic: 128px; } .bq[data-pic="l"] .bq-picbox { --pic: 210px; }
+    .bq .bq-card.is-wide .bq-picbox { --pic: 300px; } .bq[data-pic="l"] .bq-card.is-wide .bq-picbox { --pic: 400px; }
+    .bq-pic { display: block; aspect-ratio: 1; overflow: hidden; border: 3px solid #fff; border-radius: 14px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .25), 0 2px 0 1px rgba(0, 0, 0, .25); }
+    .bq-pic img { display: block; width: 100%; height: 100%; border-radius: 11px; object-fit: contain; transition: transform .2s; }
+    .bq-pic:hover img { transform: scale(1.03); }
+    .bq .bq-corner { position: absolute; bottom: -7px; z-index: 2; display: grid; place-items: center; width: 32px; height: 32px; margin: 0; padding: 0; border: 2px solid var(--bq-ln); border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, .22); cursor: pointer; transition: transform .12s, box-shadow .12s; }
+    .bq .bq-corner.is-worn { left: -7px; } .bq .bq-corner.is-grow { right: -7px; }
+    .bq .bq-corner:hover, .bq .bq-corner:focus-visible, .bq .bq-corner[aria-expanded="true"] { box-shadow: 0 0 0 3px color-mix(in srgb, var(--bq-h) 50%, transparent), 0 2px 4px rgba(0, 0, 0, .22); outline: none; transform: scale(1.08); }
+    .bq-corner.is-worn img { width: 20px; height: 20px; } .bq-corner.is-grow img { width: 14px; height: 14px; }
+    .bq-corner b { position: absolute; top: -8px; right: -9px; min-width: 19px; padding: 1px 5px 0; border: 2px solid #fff; border-radius: 99px; background: var(--bq-h); color: var(--bq-hi); font: 11px/14px "Cafeteria", "Arial Bold", sans-serif; text-align: center; }
+    .bq-facts { flex: 1 1 230px; display: grid; align-content: start; gap: 10px; min-width: 0; }
+    .bq-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .bq-card.is-wide .bq-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .bq-card.is-wide .bq-facts > .bq-pp { margin: 0; }   /* (across the page: its petpet and buttons beside its big picture, no empty space under them) */
+    .bq-card.is-wide .bq-facts > .bq-acts { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; }
+    .bq-st { display: grid; min-width: 0; padding: 5px 10px 6px; border: 1px solid #cdc6b0; border-radius: 10px; background: #fbfaf6; box-shadow: 0 2px 0 #e4dece; color: inherit; text-decoration: none !important; }
+    .bq a.bq-st:hover, .bq a.bq-st:focus-visible { border-color: var(--bq-ln); background: var(--bq-soft); outline: none; }
+    .bq-stl { display: inline-flex; align-items: center; gap: 4px; color: #8a8571; font: 10px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+    .bq-st b { overflow: hidden; color: #262626; font: 18px/1.15 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-overflow: ellipsis; white-space: nowrap; }
+    .bq-st small { overflow: hidden; color: #6b6653; font: 11.5px/1.3 "MuseoSansRounded500", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .bq-ic { flex: none; width: 13px; height: 13px; }
+    .bq-ic.is-str { color: #c0392b; } .bq-ic.is-def { color: #2c6fd1; } .bq-ic.is-mov { color: #2a8a4a; } .bq-ic.is-int { color: #8e5cc4; }
+    .bq-dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; margin: 0; }
+    .bq-card.is-wide .bq-dl { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .bq-dl > div { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; padding: 3px 0 4px; border-bottom: 1px dotted #d6cfb9; }
+    .bq-card:not(.is-wide) .bq-dl > div:first-child { grid-column: 1 / -1; }   /* (its age, and the year it was made, in one line) */
+    .bq-dl dt { flex: none; margin: 0; color: #8a8571; font: 10.5px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+    .bq-dl dd { min-width: 0; margin: 0; overflow: hidden; font: 13px "MuseoSansRounded700", Arial, sans-serif; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+    .bq .bq-dl dd a { color: #2c5aa0; border-bottom: 1px dotted currentColor; }
+    /* its petpet: Neopets' row */
+    .bq-pp { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 14px 14px; padding: 6px 10px 6px 6px; border: 1.5px solid var(--bq-bandln); border-radius: 12px; background: var(--bq-soft); }
+    .bq-ppics { display: flex; gap: 5px; }
+    .bq-ppics img { display: block; width: 50px; height: 50px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .14); }
+    .bq-ppname { flex: 1 1 140px; display: grid; gap: 2px; min-width: 0; }
+    .bq-ppname > span { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+    .bq-ppname small { flex: none; color: #8a8571; font: 10.5px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+    .bq-ppname b { overflow: hidden; font: 14px "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+    .bq-pp.is-none { border-style: dashed; background: #fff; }   /* (no petpet yet: the same row, saying so) */
+    .bq-pp.is-none .bq-ppname b { color: #6b6653; }
+    .bq-ppempty { display: block; box-sizing: border-box; width: 50px; height: 50px; border: 2px dashed var(--bq-bandln); border-radius: 10px; background: var(--bq-soft); }
+    .bq-ppnote { color: #6b6653; font: 12px/1.35 "MuseoSansRounded500", Arial, sans-serif; }
+    .bq-note.is-train { border-color: #b9d6a5; background: #f1f8ec; } .bq-note.is-train.is-done { border-color: #e9cf7a; background: #fff8de; }
+    html.bq-showneo #quickref-app.bqr-orig { display: block !important; margin: 18px 16px 0; padding-top: 14px; border-top: 2px dashed #d6cfb9; }   /* (Neopets' own Quick Ref, asked for: under ours) */
+    .bq-foot { margin: 18px 0 0; text-align: center; }
+    /* its actions: Neopets' icon buttons, in the card's colour; the rest under More */
+    .bq-acts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin-top: auto; padding: 10px 12px 12px; border-top: 1.5px solid var(--bq-bandln); border-radius: 0 0 14px 14px; background: var(--bq-soft); }
+    .bq .bq-act { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 100%; min-width: 0; min-height: 60px; margin: 0; padding: 6px 4px 7px; border: 1px solid var(--bq-ln); border-radius: 12px; background: linear-gradient(color-mix(in srgb, var(--bq-h) 80%, #fff), var(--bq-h)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 2px 0 var(--bq-ln); color: var(--bq-hi); font: 12.5px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-align: center; text-decoration: none !important; cursor: pointer; transition: transform .12s, box-shadow .12s; }
+    .bq .bq-act:hover, .bq .bq-act:focus-visible, .bq .bq-act[aria-expanded="true"] { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 3px 0 var(--bq-ln), 0 5px 12px rgba(0, 0, 0, .16); outline: none; transform: translateY(-1px); }
+    .bq .bq-card.is-tinted .bq-act { text-shadow: var(--bqr-tint-shadow); }
+    .bq-act .ic { flex: none; width: 26px; height: 26px; background: center / contain no-repeat; }
+    .bq-act .ic.gl { display: grid; place-items: center; color: currentColor; }
+    .bq-act .ic.gl svg { width: 20px; height: 20px; }
+    .bq-act .ic.is-dots { font: bold 15px/26px Arial, sans-serif; letter-spacing: 1px; }
+    .bq-actl { max-width: 100%; overflow-wrap: anywhere; }
+    .bq-more { position: relative; display: flex; min-width: 0; }
+    .bq-acts .bq-more .nav-dropdown__2020.bqr-petmenu { top: auto; right: -4px; bottom: calc(100% + 6px); left: auto; }   /* (a card's More: upwards, over the card) */
+    /* Worn items: what it has on, over its picture */
+    .bq-wornbox { position: absolute; z-index: 32; bottom: 34px; left: -8px; width: 290px; max-width: calc(100vw - 32px); padding: 0 0 10px; border: 2px solid var(--bq-ln); border-radius: 14px; background: #fff; box-shadow: 0 10px 26px rgba(0, 0, 0, .25); cursor: default; }
+    .bq-wornhead { display: flex; align-items: center; gap: 8px; padding: 7px 8px 7px 12px; border-bottom: 1px solid var(--bq-bandln); border-radius: 12px 12px 0 0; background: var(--bq-band); }
+    .bq-wornhead b { flex: 1; min-width: 0; overflow: hidden; color: #262626; font: 16px/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-overflow: ellipsis; white-space: nowrap; }
+    .bq .bq-x { flex: none; display: grid; place-items: center; width: 26px; height: 26px; margin: 0; padding: 0 0 2px; border: 1px solid rgba(0, 0, 0, .2); border-radius: 50%; background: #fff; color: #444; font: 18px/1 Arial, sans-serif; cursor: pointer; }   /* (Arial: Cafeteria draws × as a star) */
+    .bq .bq-x:hover, .bq .bq-x:focus-visible { border-color: var(--bq-ln); background: var(--bq-h); color: var(--bq-hi); outline: none; }
+    .bq-wornbox ul { display: grid; gap: 3px; max-height: 300px; margin: 0; padding: 8px 10px; overflow: auto; list-style: none; }
+    .bq-wornbox li { display: flex; align-items: center; gap: 10px; margin: 0; padding: 3px; border-radius: 10px; }
+    .bq-wornbox li:nth-child(odd) { background: var(--bq-soft); }
+    .bq-wornbox li img { flex: none; width: 50px; height: 50px; border-radius: 8px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .12); }
+    .bq-wornbox li span { min-width: 0; font: 13px/1.3 "MuseoSansRounded700", Arial, sans-serif; }
+    .bq-wornfoot { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 0 10px; }
+    /* Rows: every pet in one table */
+    .bq-rowsbox { border: 2px solid var(--bq-ln); border-radius: 16px; background: #fff; box-shadow: 0 3px 0 var(--bq-ln); }
+    .bq-rows { width: 100%; border-collapse: separate; border-spacing: 0; font: 13.5px "MuseoSansRounded500", Arial, sans-serif; }
+    .bq-rows th { padding: 9px 10px; background: var(--bq-h); color: var(--bq-hi); font: 15px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-align: left; white-space: nowrap; }
+    .bq-rows th:first-child { border-top-left-radius: 14px; } .bq-rows th:last-child { border-top-right-radius: 14px; }
+    .bq-rows td { padding: 8px 10px; border-top: 1px solid #efeadb; font: 13.5px "MuseoSansRounded700", Arial, sans-serif; vertical-align: middle; }
+    .bq-rows tr.is-active td { background: #fffbe8; }
+    .bq-rows td small { display: block; margin-top: 3px; color: #8a8571; font: 12px "MuseoSansRounded500", Arial, sans-serif; }
+    .bq-rows td.bq-rlv { font: 17px "Cafeteria", "Arial Bold", sans-serif; }
+    .bq-who { display: flex; align-items: center; gap: 10px; }
+    .bq-who > img { flex: none; box-sizing: content-box; width: 50px; height: 50px; padding: 2px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .2), 0 2px 0 rgba(0, 0, 0, .15); }
+    .bq-who > span { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+    .bq-who small { flex-basis: 100%; display: inline-flex !important; align-items: center; margin: 0 !important; }
+    .bq-who .bq-tags { justify-content: flex-start; max-width: none; }
+    .bq .bq-rstar { display: inline-grid; place-items: center; width: 24px; height: 24px; margin: 0; padding: 0; border: 1px solid #d7d7d7; border-radius: 50%; background: #fff; }
+    .bq .bq-rstar.is-off { cursor: pointer; } .bq .bq-rstar.is-off:hover, .bq .bq-rstar.is-off:focus-visible { background: #fffbe6; outline: none; }
+    .bq-rstar img { width: 15px; height: auto; }
+    .bq-ticks { display: flex; gap: 2px; }
+    .bq-ticks i { width: 6px; height: 10px; border-radius: 2px; background: #ece8dc; } .bq-ticks i.on { background: var(--c); }
+    .bq-hp.is-row { min-width: 82px; }
+    .bq-rst { display: grid; grid-template-columns: repeat(2, minmax(0, auto)); gap: 2px 12px; font: 12.5px/1.35 "MuseoSansRounded700", Arial, sans-serif; }
+    .bq-rst span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bq-rst i { display: inline-block; min-width: 25px; margin-right: 4px; color: #8a8571; font: 10px "MuseoSansRounded700", Arial, sans-serif; font-style: normal; letter-spacing: .06em; text-transform: uppercase; }
+    .bq-racts { display: flex; flex-wrap: wrap; gap: 4px; min-width: 150px; }
+    .bq .bq-ricon { display: grid; place-items: center; width: 34px; height: 34px; margin: 0; padding: 0; border: 1px solid var(--bq-ln); border-radius: 10px; background: linear-gradient(color-mix(in srgb, var(--bq-h) 80%, #fff), var(--bq-h)); box-shadow: 0 2px 0 var(--bq-ln); color: var(--bq-hi); font: bold 12px Arial, sans-serif; cursor: pointer; }
+    .bq .bq-ricon:hover, .bq .bq-ricon:focus-visible, .bq .bq-ricon[aria-expanded="true"] { outline: none; transform: translateY(-1px); }
+    .bq-ricon .ic { width: 22px; height: 22px; background: center / contain no-repeat; }
+    .bq-ricon .ic.gl { display: grid; place-items: center; } .bq-ricon .ic.gl svg { width: 17px; height: 17px; }
+    .bq-rows .bq-more .nav-dropdown__2020.bqr-petmenu { right: -4px; left: auto; }
+    .bq-none { margin: 0; padding: 18px; border: 2px dashed var(--bq-ln); border-radius: 15px; background: #fff; text-align: center; }
+    /* the pets' own menus: the bar's dropdown, so the theme dresses it */
+    .nav-dropdown__2020.bqr-petmenu { position: absolute; z-index: 30; top: calc(100% - 2px); left: -4px; width: 210px; margin: 0; padding: 0 0 2px; border-radius: 6px; box-shadow: 0 8px 22px rgba(0, 0, 0, .3); text-align: left; overflow: visible; max-height: none; cursor: default; }
     .nav-dropdown__2020.bqr-petmenu.is-right { left: auto; right: -4px; }
     .nav-dropdown__2020.bqr-petmenu h5 { margin: 0; padding: 7px 10px 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 10.5px "MuseoSansRounded700", Arial, sans-serif; text-transform: uppercase; letter-spacing: .08em; opacity: .7; }
     .nav-dropdown__2020.bqr-petmenu a { display: block; color: inherit; outline: none; }
@@ -44624,17 +45004,39 @@
     .nav-dropdown__2020.bqr-petmenu .dropdown-icon { display: grid; place-items: center; min-height: 26px; }
     .nav-dropdown__2020.bqr-petmenu .dropdown-icon svg { width: 19px; height: 19px; }
     .nav-dropdown__2020.bqr-petmenu a.is-busy { pointer-events: none; opacity: .6; }
-    .bqr-card, .bqr-rows tr { scroll-margin-top: 84px; }
-    @keyframes bqr-flash { 30%, 65% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--bqr-head) 85%, #000 15%), 0 4px 16px rgba(0, 0, 0, .2); } }
-    @keyframes bqr-rowflash { 30%, 65% { background: color-mix(in srgb, var(--bqr-head) 35%, #fff); } }
-    .bqr-card.is-flash { animation: bqr-flash 1.6s ease; }
-    .bqr-rows tr.is-flash td { animation: bqr-rowflash 1.6s ease; }
-    .bqr .bqr-up { position: fixed; z-index: 60; right: 18px; bottom: 18px; display: flex; align-items: center; gap: 7px; margin: 0; padding: 7px 15px 8px 12px; border: 2px solid var(--bqr-line); border-radius: 999px; background: var(--bqr-head); color: var(--bqr-headink); box-shadow: 0 4px 14px rgba(0, 0, 0, .28); font: 13pt "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; cursor: pointer; }
-    .bqr .bqr-up[hidden] { display: none; }
-    .bqr .bqr-up i { border: 6px solid transparent; border-bottom: 7px solid currentColor; border-top: 0; }
-    .bqr .bqr-up:hover, .bqr .bqr-up:focus-visible { transform: translateY(-2px); outline: none; }
-    @media (prefers-reduced-motion: reduce) { .bqr-card.is-flash, .bqr-rows tr.is-flash td { animation: none; } }
-    @media (max-width: 560px) { .bqr-cards { grid-template-columns: 1fr; } .bqr-pic { margin: 0 auto; } }
+    .bq-rows tr { scroll-margin-top: 84px; }
+    @keyframes bqr-flash { 30%, 65% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--bq-h) 85%, #000 15%), 0 4px 16px rgba(0, 0, 0, .2); } }
+    @keyframes bqr-rowflash { 30%, 65% { background: color-mix(in srgb, var(--bq-h) 35%, #fff); } }
+    .bq-card.is-flash { animation: bqr-flash 1.6s ease; }
+    .bq-rows tr.is-flash td { animation: bqr-rowflash 1.6s ease; }
+    .bq .bq-up { position: fixed; z-index: 60; right: 18px; bottom: 18px; display: flex; align-items: center; gap: 7px; margin: 0; padding: 7px 15px 8px 12px; border: 2px solid var(--bq-ln); border-radius: 999px; background: var(--bq-h); color: var(--bq-hi); box-shadow: 0 4px 14px rgba(0, 0, 0, .28); font: 13pt "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; cursor: pointer; }
+    .bq .bq-up[hidden] { display: none; }
+    .bq .bq-up i { border: 6px solid transparent; border-bottom: 7px solid currentColor; border-top: 0; }
+    .bq .bq-up:hover, .bq .bq-up:focus-visible { outline: none; transform: translateY(-2px); }
+    @media (prefers-reduced-motion: reduce) { .bq-card.is-flash, .bq-rows tr.is-flash td { animation: none; } }
+    @media (max-width: 880px) { .bq-cards { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 600px) {
+      .bq { padding: 4px 8px 20px; }
+      .bq .bq-plate { min-width: 190px; padding: 0 24px !important; } .bq .bq-plate h3 { font-size: 20pt !important; } .bq .bq-fold { top: 8px; right: 8px; }
+      .bq-counts { gap: 6px; }
+      .bq-acts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .bq .bq-card.is-wide .bq-picbox { --pic: 100%; }
+      .bq-card.is-wide .bq-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .bq-card.is-wide .bq-dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    /* shared with the dailies board: its chips, view switch and toggles */
+    @media (min-width: 860px) { .bqr-sum { flex-wrap: nowrap; } .bqr-chip, .bqr-tools > * { flex: none; white-space: nowrap; } }   /* (the bar itself still wraps: the options move to a line of their own together, never split) */
+    .bqr-chip { margin: 0; padding: 4px 12px; border: 2px solid var(--bqr-line); border-radius: 999px; background: #fff; color: #363636; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
+    .bqr-chip b { font-family: "MuseoSansRounded700", Arial, sans-serif; }
+    .bqr-chip.is-warn { border-color: #e2774f; }
+    .bqr-chip[aria-pressed="true"] { background: var(--bqr-head); color: var(--bqr-headink); }
+    .bqr-views { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid #e3dfd2; border-radius: 12px; background: #f3f0e6; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06); }
+    .bqr-views button { margin: 0; padding: 4px 12px 5px; border: 0; border-radius: 9px; background: none; color: #4a4536; font: 13px/1.2 "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; transition: background-color .12s, color .12s, box-shadow .12s; }
+    .bqr-views button:hover:not([aria-pressed="true"]) { background: rgba(255, 255, 255, .8); color: #2a2a2a; }
+    .bqr-views button[aria-pressed="true"] { background: var(--bqr-head); color: var(--bqr-headink); box-shadow: 0 2px 0 color-mix(in srgb, var(--bqr-head) 65%, #000), 0 1px 5px rgba(0, 0, 0, .12); }
+    .bqr-views button:focus-visible { outline: 2px solid color-mix(in srgb, var(--bqr-head) 70%, #000 15%); outline-offset: 1px; }
+    .bqr-tintbtn { margin: 0; padding: 4px 12px; border: 2px solid var(--bqr-line); border-radius: 999px; background: #fff; color: #363636; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
+    .bqr-tintbtn[aria-pressed="true"] { background: linear-gradient(90deg, #f7b2b2, #f9e29a, #b4e6b1, #a9d4f5, #d6b8f2); }
     .bnp-notice { position: fixed; z-index: 2147482500; top: 78px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; width: max-content; max-width: min(720px, calc(100vw - 24px)); padding: 10px 12px 10px 16px; border: 2px solid rgba(0, 0, 0, .25); border-radius: 12px; background: #fffbe6; color: #363636; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); font: 13px/1.45 "MuseoSansRounded500", Arial, sans-serif; text-align: left; }
     .bnp-notice b { flex: none; font: 15px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
     .bnp-notice button:not(.button-default__2020) { flex: none; width: 26px; height: 26px; margin: 0; padding: 0; border: 0; border-radius: 6px; background: none; color: inherit; font: 20px/1 Arial, sans-serif; cursor: pointer; opacity: .6; }
@@ -48554,6 +48956,13 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.0', '2026-11-02', [
+      'Quick Ref: made over on Neopets’ new page, in your theme. Your Pets has round portraits, and counts that show only the hungry, sick or Neolodge pets',
+      'Quick Ref cards: a health meter, battle stats, what each pet has on, its petpet, training, its Neolodge stay to the minute (with Check out early), the cure and where to feed it',
+      'Side menu: the Quick Ref row is back, and My Pets opens the My Pets page again',
+      'Books Read, Booktastic and the Gourmet Club on Neopets’ new pages: your pets in a row, a List view, Pet Bookshelf and the shop; itemdb’s list carries on after a pause',
+      'NC Mall: Re-release no longer marks new things Neopets made ahead; this month’s NC Collectible shows in the menu with its tag. Stamp Album: your theme’s stamp beside New for your album',
+    ]],
     ['4.9.4', '2026-11-02', [
       'Trainer: choose a delay before the next course in Settings (no delay, or up to 5, 10, 15 or 30 minutes; 5 to start with): the next one starts at a random moment within it, and courses that end together are seen to together',
       'Avatars: the Altador Cup’s team avatars count as one in your totals, as you can have only one at a time; once yours is in, the other teams aren’t listed as still to get',
