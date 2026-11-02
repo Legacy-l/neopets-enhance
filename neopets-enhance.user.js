@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.8.2
+// @version      4.9
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -187,7 +187,7 @@
   // Requests Neopets takes only from one of its own pages (a theme saved in General Settings, a Neomail sent, a Neofriend request; it says
   // "directed to this page from the wrong place" otherwise): made from that page itself, opened unseen in a frame of NE's own with NE only
   // relaying there, so they carry that page as their referrer because they truly come from it. Already on that page: from here
-  function fromPageOk(p) { return /^\/(?:settings\/general\/|neomessages\.phtml|neofriend_requests\.phtml|shops\/wizard\.phtml)$/.test(p); }   // (the Shop Wizard's page: Price mode's searches come from it, as a person's do)
+  function fromPageOk(p) { return /^\/(?:settings\/general\/|neomessages\.phtml|neofriend_requests\.phtml|shops\/wizard\.phtml|island\/(?:fight_)?training\.phtml|quickstock\.phtml|browseshop\.phtml|safetydeposit\.phtml)$/.test(p); }   // (the Shop Wizard's page: Price mode's searches come from it, as a person's do)
   const fromHere = (page) => !ON_MALL && !FRAME && location.pathname + location.search === page;
   const fromPage = (page, u, o) => (fromHere(page) ? fetch(u, o) : wwwFetch(u, o, page));
   const fromPageHtml = (page) => (fromHere(page) ? Promise.resolve(document.documentElement.outerHTML) : wwwFetch(page, { page: 1 }, page).then((r) => r.text()));   // (the page as it is there: nothing asked for again)
@@ -1775,7 +1775,7 @@
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, tillLog: true, tpSales: true, auSales: true,
     scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: true, oldBtns: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldGalleries: false, oldShops: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
-    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
+    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trBuy: true, trSdb: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, tone: '', vol: 100, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,   // (tone: '' each its own, or one of the sounds for all; vol: how loud, 5 to 100)
@@ -7631,11 +7631,8 @@
     if (go) go.classList.add('button-default__2020', 'button-yellow__2020', 'bnp-train-btn');
     paint();
   }
-  function trainPage() {   // (a school's Status page: its pets as cards, the ones waiting for you first; Neopets' own buttons on them)
-    const school = TRAIN_SCHOOLS[location.pathname];
-    if (!school || !/(^|&)type=status(&|$)/.test(location.search.slice(1)) || document.querySelector('[data-bnp="train"]')) return;
-    const tbl = [...document.querySelectorAll('table')].find((t) => [...t.querySelectorAll(':scope > tbody > tr > td[colspan="2"] > b')].some((b) => /\(Level \d+\) is /.test(b.textContent)));   // (the table of pets, however the old page nests it)
-    if (!tbl) return;
+  const trainTable = (root) => [...root.querySelectorAll('table')].find((t) => [...t.querySelectorAll(':scope > tbody > tr > td[colspan="2"] > b')].some((b) => /\(Level \d+\) is /.test(b.textContent)));   // (a Status page's table of pets, however the old page nests it)
+  function trainRows(tbl) {   // (each pet in it: name, level, course, state and stats, with its own cells)
     const pets = [];
     for (const tr of tbl.querySelectorAll(':scope > tbody > tr, :scope > tr')) {
       const h = tr.querySelector('td[colspan="2"] b'), m = h && /^(.+?) \(Level (\d+)\) is (?:currently studying (.+)|not on a course)$/.exec(h.textContent.replace(/\s+/g, ' ').trim());
@@ -7650,7 +7647,16 @@
       p.kind = /Course Finished/i.test(t) ? 'done' : /not been paid/i.test(t) ? 'pay' : /Time till course finishes/i.test(t) ? 'busy' : p.study ? 'busy' : 'free';
       p.left = (/Time till course finishes\s*:?\s*(.+?)(?:$|\s{2})/i.exec(t) || [])[1] || '';
     }
+    return pets;
+  }
+  function trainPage() {   // (a school's Status page: its pets as cards, the ones waiting for you first; Neopets' own buttons on them)
+    const school = TRAIN_SCHOOLS[location.pathname];
+    if (!school || !/(^|&)type=status(&|$)/.test(location.search.slice(1)) || document.querySelector('[data-bnp="train"]')) return;
+    const tbl = trainTable(document);
+    if (!tbl) return;
+    const pets = trainRows(tbl);
     if (!pets.length) return;
+    if (trOn() && trSchoolOf(location.pathname)) { try { trSeen({ [trSchoolOf(location.pathname)]: trPets(document, trSchoolOf(location.pathname)) }); } catch (e) { report(e); } }   // (Trainer mode: your pets as this page has them, for its list, before the cards take the table apart)
     const order = { done: 0, pay: 1, busy: 2, free: 3 }, n = (k) => pets.filter((p) => p.kind === k).length;
     const box = document.createElement('div');
     box.className = 'bnp-train';
@@ -7674,6 +7680,7 @@
       const cells = [p.cell, ...p.more.flatMap((tr) => [...tr.cells])];   // (its words' cell, and any row more of its own)
       for (const td of cells) for (const x of [...td.childNodes]) if (x.nodeType === 1 && (x.matches('form, table, img, [data-bnp="it"]') || x.querySelector('form, img') || (x.matches('b') && !/Course Finished/i.test(x.textContent)))) acts.append(x);   // (Neopets' own: the codestone's name and picture, Pay, Cancel, Complete Course!)
       for (const td of cells) for (let x = trainLoose(td, acts); x; x = trainLoose(td, acts)) acts.append(x);   // (and anything else of Neopets' you'd press, wherever it is)
+      trainPayBtn(acts);
       for (const b of acts.querySelectorAll('input[type="submit"]')) b.classList.add('button-default__2020', /cancel/i.test(b.value) ? 'button-red__2020' : /complete/i.test(b.value) ? 'button-green__2020' : 'button-yellow__2020', 'bnp-train-btn');
       grid.append(card);
     }
@@ -7697,6 +7704,777 @@
     a.before(line);
     for (let n = a; n;) { const nx = n === z ? null : n.nextSibling; line.append(n); n = nx; }
     return line;
+  }
+  function trainPayBtn(acts) {   // (a "click here to pay" link made a Pay button under the codestones, and Cancel's words set apart below it: at the Ninja school the two sat a line apart. Neopets' own link either way, its href and Cancel's "Are you SURE?" as they were)
+    const href = (x) => (x.getAttribute('href') || '').replace(/&amp;/g, '&');
+    const pay = [...acts.querySelectorAll('a[href]')].find((x) => /[?&]type=pay(&|$)/.test(href(x)) && !x.closest('[data-bnp="it"]'));
+    if (!pay) return;
+    const was = pay.closest('.bnp-train-line'), row = document.createElement('div');
+    row.className = 'bnp-train-pay';
+    pay.className = 'button-default__2020 button-yellow__2020 bnp-train-btn bnp-train-paybtn';
+    pay.textContent = 'Pay';
+    row.append(pay);
+    if (was && !/cancel/i.test(was.textContent) && !was.querySelector('a[href], input, button, img, form')) was.remove();   // ("This course has not been paid for yet": the card's top says so already)
+    const cancel = [...acts.querySelectorAll('a[href]')].find((x) => /[?&]type=cancel(&|'|$)/.test(href(x)));
+    if (!cancel) { acts.append(row); return; }
+    const block = (n) => n && n.nodeType === 1 && /^(P|DIV|CENTER|TABLE|FORM)$/.test(n.nodeName);
+    let top = cancel;
+    while (top.parentNode !== acts && !block(top.parentNode)) top = top.parentNode;
+    const par = top.parentNode;
+    let start = top;
+    while (start.previousSibling && !block(start.previousSibling) && start.previousSibling.nodeName !== 'BR') start = start.previousSibling;   // (from "To cancel this course" on, Neopets' warning too)
+    const box = document.createElement('div'), mark = document.createComment('');
+    box.className = 'bnp-train-cancel';
+    start.before(mark);
+    for (let n = start; n;) { const nx = n.nextSibling; if (n !== start && block(n)) break; box.append(n); n = nx; }
+    const trim = (el, end) => { for (let n = end ? el.lastChild : el.firstChild; n && (n.nodeName === 'BR' || (n.nodeType === 3 && !n.textContent.trim())); n = end ? el.lastChild : el.firstChild) n.remove(); };
+    trim(box, false); trim(box, true);
+    if (par === acts) { mark.replaceWith(row, box); return; }
+    mark.remove(); trim(par, true);
+    par.after(row, box);
+    if (!par.textContent.trim() && !par.querySelector('img, a, input, form')) par.remove();
+  }
+  // ---- Trainer mode ----
+  // (the user, 2026-11-01: "add Trainer Mode on training schools and the ability to start courses and buy codestones for the user, plus
+  // ability to select stats for multiple pets at once and for the trainer"; it "runs by itself on school pages", buys for you ("courses
+  // are quite spaced out, as long as done properly this is a very mild function"), has active hours, and is "optional and disabled by
+  // default with a warning in settings to use at your own risk"). Switched on, while you're looking at a page of the Mystery Island or
+  // Ninja school in your hours, each pet you've given goals goes one step on: a finished course completed, the next course started toward
+  // its goals, the codestones it asks for counted in your inventory and the missing ones bought from the cheapest shop under your
+  // limits, then paid. One step at a time with a person's moment between, each made as Neopets' own page makes it (its form or link,
+  // sent from that page opened unseen in NE's frame); the Status page is what it believes. It never cancels a course
+  const TR_SCHOOLS = {
+    mi: { path: '/island/training.phtml', name: 'Mystery Island', long: 'the Mystery Island Training School', max: 'trMaxTan', def: 15000 },
+    ninja: { path: '/island/fight_training.phtml', name: 'the Ninja school', long: 'the Secret Ninja Training School', max: 'trMaxRed', def: 75000 },
+  };
+  const TR_COURSE = { str: 'Strength', def: 'Defence', mov: 'Agility', hp: 'Endurance', lv: 'Level' };
+  const TR_STATS = ['str', 'def', 'mov', 'hp'];
+  const TR_NAME = { str: 'Strength', def: 'Defence', mov: 'Agility', hp: 'HP', lv: 'Level' };
+  const TR_KEY = { Strength: 'str', Defence: 'def', Agility: 'mov', Endurance: 'hp', Level: 'lv' };
+  const TR_STOP = new Error('stopped');
+  const trOn = () => !!S.features.trainer && !!nclMe() && MAIN_HOST && !FRAME;
+  const trSchoolOf = (path) => Object.keys(TR_SCHOOLS).find((k) => TR_SCHOOLS[k].path === path) || '';
+  const trGoalsKey = () => dkey().replace(/^dlog/, 'trgoals');   // (this account's pets' goals, by name: { n, on, g: { str, def, mov, hp, lv } }, each 0 none, -1 as high as allowed (Level: when it's needed), or up to that number)
+  const trLogKey = () => dkey().replace(/^dlog/, 'trlog');   // (what it's done and seen: its lines, today's spending, each school's pets as last read, courses Neopets wouldn't start, notes, the Wizard's wait, the last round)
+  const trGoals = () => { const v = get(trGoalsKey(), null); return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; };
+  const trHasGoal = (x) => !!(x && x.on !== false && x.g && Object.values(x.g).some(Boolean));
+  function trLog() {
+    const v = get(trLogKey(), null) || {}, o = (x) => (x && typeof x === 'object' && !Array.isArray(x) ? x : {});
+    return { lines: Array.isArray(v.lines) ? v.lines : [], spent: v.spent && v.spent.d ? v.spent : { d: '', np: 0 }, seen: o(v.seen), block: o(v.block), note: o(v.note), wizUntil: Number(v.wizUntil) || 0, last: Number(v.last) || 0, failed: !!v.failed, paused: !!v.paused };
+  }
+  const trLogPut = (L) => set(trLogKey(), L);
+  const trDay = (t = new Date()) => `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+  const trSpent = (L = trLog()) => (L.spent.d === trDay() ? Number(L.spent.np) || 0 : 0);
+  const trNum = (k, d) => { const n = Math.round(Number(String(S.features[k] ?? '').replace(/[^\d.]/g, ''))); return n > 0 ? n : d; };
+  const trNp = (n) => `${Number(n).toLocaleString()} NP`;
+  function trSay(t, k = '') {   // (a line in its log, the newest first; eighty kept)
+    const L = trLog();
+    L.lines.unshift({ at: Date.now(), t, k });
+    L.lines = L.lines.slice(0, 80);
+    trLogPut(L);
+    trPaint();
+  }
+  function trNote(p, t) {   // (where a pet stands when there's nothing to do for it: said once, not every round)
+    const L = trLog();
+    if ((L.note[p.lc] || '') === t) return;
+    if (t) L.note[p.lc] = t; else delete L.note[p.lc];
+    trLogPut(L);
+    if (t) trSay(`${p.name}: ${t}`);
+  }
+
+  // Active hours: by your computer's clock, on the days you choose. Hours that run past midnight belong to the day they started on
+  const trMin = (s, d) => { const m = /^(\d{1,2}):(\d{2})/.exec(String(s || '')); return m ? Math.min(1439, Number(m[1]) * 60 + Number(m[2])) : d; };
+  function trHoursOk(t = new Date()) {
+    const f = S.features;
+    if (!f.trHours) return true;
+    const a = trMin(f.trFrom, 540), b = trMin(f.trTo, 1260), m = t.getHours() * 60 + t.getMinutes();
+    const inside = a === b || (a < b ? m >= a && m < b : m >= a || m < b), day = a > b && m < b ? (t.getDay() + 6) % 7 : t.getDay();
+    return inside && f[`trD${day}`] !== false;
+  }
+  function trHoursNext(t = new Date()) {   // (when they next start: the first minute inside them, a week ahead at most)
+    const x = new Date(t.getTime());
+    x.setSeconds(0, 0);
+    for (let i = 0; i < 8 * 1440; i++) { x.setMinutes(x.getMinutes() + 1); if (trHoursOk(x)) return x; }
+    return null;
+  }
+  function trWhen(ms) {   // (a time as you'd say it: "3:42 pm", "tomorrow 9:00 am", "Sat 9:00 am")
+    const d = new Date(ms), now = new Date(), clock = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase(), tm = new Date(now.getTime() + 864e5);
+    if (d.toDateString() === now.toDateString()) return clock;
+    if (d.toDateString() === tm.toDateString()) return `tomorrow ${clock}`;
+    return `${d.toLocaleDateString([], { weekday: 'short' })} ${clock}`;
+  }
+  const trClockOf = (s, d) => { const m = trMin(s, d), x = new Date(); x.setHours(Math.floor(m / 60), m % 60, 0, 0); return x.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase(); };
+
+  // A school's Status page read: each pet's state and stats, the stones its course asks for, when it ends, and its cells for Neopets' own buttons
+  function trPets(doc, s) {
+    const tbl = trainTable(doc), n = (x) => Number(String(x || '').replace(/\D/g, '')) || 0;
+    if (!tbl) return [];
+    return trainRows(tbl).map((p) => {
+      const cells = [p.cell, ...p.more.flatMap((tr) => [...tr.cells])].filter(Boolean), txt = reClean(cells.map((c) => c.textContent).join(' '));
+      const st = (k) => n((new RegExp(`${k}\\s*:\\s*([\\d,]+)`, 'i').exec(p.stats) || [])[1]), hp = /Hp\s*:\s*([\d,]+)\s*\/\s*([\d,]+)/i.exec(p.stats) || [];
+      const t = /Time till course finishes\s*:?\s*(?:(\d+)\s*hrs?)?[,\s]*(?:(\d+)\s*min(?:ute)?s?)?[,\s]*(?:(\d+)\s*sec(?:ond)?s?)?/i.exec(txt);
+      const left = t && (t[1] || t[2] || t[3]) ? ((Number(t[1]) || 0) * 3600 + (Number(t[2]) || 0) * 60 + (Number(t[3]) || 0)) * 1000 : 0;
+      const stones = cells.flatMap((c) => [...c.querySelectorAll('b')]).map((b) => reClean(b.textContent)).filter((x) => /\b(?:codestone|dubloon)\b/i.test(x));
+      return { name: p.name, lc: p.name.toLowerCase(), s, lv: Number(p.lv) || 0, str: st('Str'), def: st('Def'), mov: st('Mov'), hp: n(hp[1]), hpMax: n(hp[2]), kind: p.kind, study: p.study, stones, end: left ? Date.now() + left : 0, cells };
+    });
+  }
+  function trAct(p, type) {   // (Neopets' own way to do it for this pet, from its Status cell: its form's fields in their order, or its link; null when there's none)
+    const base = `https://www.neopets.com${TR_SCHOOLS[p.s].path}`, re = new RegExp(`[?&]type=${type}(?:&|$)`);
+    for (const td of p.cells) {
+      for (const f of td.querySelectorAll('form')) {
+        if (![...f.querySelectorAll('input[name="type"]')].some((i) => i.value === type)) continue;
+        const body = new URLSearchParams();
+        for (const i of f.querySelectorAll('input[name]')) if (!/^(?:submit|button|image)$/i.test(i.type)) body.append(i.name, i.value);
+        const u = new URL(f.getAttribute('action') || '', base);
+        return (f.getAttribute('method') || 'get').toLowerCase() === 'post' ? { url: u.pathname, method: 'POST', body } : { url: `${u.pathname}?${body}`, method: 'GET', body: null };
+      }
+      for (const a of td.querySelectorAll('a[href]')) {
+        const h = (a.getAttribute('href') || '').replace(/&amp;/g, '&');
+        if (/^javascript:/i.test(h) || !re.test(h)) continue;
+        const u = new URL(h, base);
+        return { url: u.pathname + u.search, method: 'GET', body: null };
+      }
+    }
+    return null;
+  }
+  function trOut(url, doc) { if (/\/login\b/.test(new URL(url || location.href, location.href).pathname) || doc.querySelector('form[action*="login"] input[type="password"]')) throw new Error('Log in to Neopets, and it carries on'); }
+  let trLeaving = false;   // (this page on its way out: a request cut short by that isn't a failure)
+  async function trPage(path, again = true) {   // (one of Neopets' pages read as it is now; not answering, asked once more a moment later)
+    let r;
+    try { r = await fetch(path, { credentials: 'include' }); } catch (e) { if (!again || trLeaving) throw e; await wtSleep(2500 + Math.random() * 1500); return trPage(path, false); }
+    if (!r.ok) throw new Error(`Neopets didn’t answer just now (${r.status})`);
+    const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+    trOut(r.url, doc);
+    return doc;
+  }
+  async function trSend(from, a) {   // (one of Neopets' own requests, sent from its page in NE's frame as that page sends it: { ok, url, doc })
+    const r = await fromPage(from, a.url, a.method === 'POST' ? { method: 'POST', credentials: 'include', body: a.body } : { method: 'GET', credentials: 'include' });
+    const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+    trOut(r.url, doc);
+    return { ok: r.ok, url: r.url || '', doc };
+  }
+  function trWords(doc) {   // (what Neopets' answer says, in a line: its own words, the school's name and links left out)
+    const c = (doc.querySelector('td.content') || doc.body || doc.documentElement).cloneNode(true);
+    for (const x of c.querySelectorAll('script, style, noscript, form, select, table')) x.remove();
+    for (const x of c.querySelectorAll('center')) if (x.querySelector('a[href*="type="]')) x.remove();
+    return reClean(c.textContent).replace(/^(?:Mystery Island Training School|Secret Ninja Training School|Swashbuckling Academy)\s*/i, '').slice(0, 160);
+  }
+  const trGain = (doc) => { const m = /[^.!]*(?:increase|gain|went up|grown|stronger|now has)[^.!]*[.!]/i.exec(trWords(doc)); return m ? reClean(m[0]) : ''; };
+  const trSig = (p) => [p.lv, p.str, p.def, p.mov, p.hpMax].join('/');
+  const trBlocked = (p) => { const b = trLog().block[p.lc]; return b && b.sig === trSig(p) && Array.isArray(b.c) ? b.c : []; };
+  function trBlock(p, c) {   // (a course Neopets wouldn't start: not asked for again till the pet's stats change)
+    const L = trLog(), b = L.block[p.lc] && L.block[p.lc].sig === trSig(p) ? L.block[p.lc] : { sig: trSig(p), c: [] };
+    if (!b.c.includes(c)) b.c.push(c);
+    L.block[p.lc] = b;
+    trLogPut(L);
+  }
+  // The course to take next toward a pet's goals: its lowest goal stat that can be trained now (Str, Def and Mov up to
+  // twice its level, once its level is half its HP; HP up to three times its level), else its Level when that's what the others wait
+  // for. { c: '' } when there's nothing: why says whether every goal's reached or it's stuck
+  function trNext(p, g, blocked = []) {
+    const lv = p.lv, cap = { str: 2 * lv, def: 2 * lv, mov: 2 * lv, hp: 3 * lv }, half = lv >= Math.ceil(p.hpMax / 2), cur = { str: p.str, def: p.def, mov: p.mov, hp: p.hpMax };
+    const no = (k) => blocked.includes(TR_COURSE[k]);
+    const open = TR_STATS.filter((k) => g[k] && (g[k] < 0 || cur[k] < g[k]));   // ("as high as allowed" is never reached: there's always the next level)
+    const can = open.filter((k) => !no(k) && (k === 'hp' ? cur.hp < cap.hp : half && cur[k] < cap[k])).sort((a, b) => cur[a] - cur[b] || TR_STATS.indexOf(a) - TR_STATS.indexOf(b));   // (the lowest first: the user, 2026-11-01)
+    if (can.length) return { c: TR_COURSE[can[0]] };
+    const lvWant = (g.lv < 0 && open.length > 0) || (g.lv > 0 && lv < g.lv);
+    if (lvWant && !no('lv') && !(p.s === 'mi' && lv >= 250)) return { c: 'Level' };
+    if (!open.length && !(g.lv > 0 && lv < g.lv)) return { c: '', why: 'Every goal reached' };
+    return { c: '', why: g.lv ? 'Neopets wouldn’t start the courses its goals need just now' : 'Its goals need a higher level, and Level is off in them' };
+  }
+  async function trInv() {   // ({ have: name → how many, n: how many items }: your inventory's NP items, from Quick Stock's own list as its page asks for it)
+    const have = new Map();
+    let n = 0;
+    for (let pg = 1; pg <= 3; pg++) {
+      const r = await fromPage('/quickstock.phtml', `/np-templates/ajax/quickstock/get_items.php?page=${pg}&per_page=50&filter=np&sort=recent&stack=1`, { method: 'GET', credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const j = await r.json().catch(() => null);
+      if (!j || !j.success || !Array.isArray(j.items)) throw new Error('Your inventory couldn’t be read just now');
+      for (const it of j.items) { const k = reClean(it.name).toLowerCase(), c = Number(it.count) || 1; have.set(k, (have.get(k) || 0) + c); n += c; }
+      if (pg >= (Number(j.total_pages) || 1)) break;
+      await wtSleep(1800 + Math.random() * 1400);
+    }
+    return { have, n };
+  }
+  async function trFromSdb(run, short, room) {   // (the stones missing that are in your SDB, taken out to your inventory as its own page does: its search for each, then its Move to Inventory for them all at once. Your PIN asked for: left to you, and said. name → how many came out)
+    const took = new Map(), page = '/safetydeposit.phtml', H = { 'Content-Type': 'application/json', 'x-requested-with': 'XMLHttpRequest' };
+    await trStep(run, 'Looking in your SDB…');
+    const html = await fromPageHtml(page), ck = (/"refCk"\s*:\s*"([^"]*)"/.exec(html) || [])[1] || '';
+    if (!ck) { wwwShut(page); trSay('Your SDB couldn’t be read just now: it buys what’s missing instead', 'warn'); return took; }
+    if (/"pinRequired"\s*:\s*true/.test(html)) { wwwShut(page); trNote({ lc: '_sdbpin', name: 'Your SDB' }, 'it asks for your PIN to take things out, so the trainer leaves it to you'); return took; }
+    trNote({ lc: '_sdbpin', name: 'Your SDB' }, '');
+    const moves = [];
+    let left = room;
+    for (const x of short) {
+      if (left <= 0) break;
+      await trStep(run, `Looking for ${x.n} in your SDB…`);
+      const r = await fromPage(page, '/np-templates/ajax/safetydeposit/get-items.php', { method: 'POST', credentials: 'include', headers: H, body: JSON.stringify({ page: 1, per_page: 30, search: x.n, category: '', sort: 'name_asc', rarity_min: null, rarity_max: null, view_filter: 'np', _ref_ck: ck }) });
+      const j = await r.json().catch(() => null), it = j && j.success && j.data && Array.isArray(j.data.items) ? j.data.items.find((i) => reClean(i.obj_name).toLowerCase() === x.n.toLowerCase()) : null;
+      const q = it ? Math.min(Number(it.amount) || 0, x.miss, left) : 0;
+      if (q > 0) { moves.push({ obj_info_id: it.obj_info_id, quantity: q, n: x.n }); left -= q; }
+    }
+    if (moves.length) {
+      const list = moves.map((m) => `${m.quantity} ${m.n}${m.quantity > 1 ? 's' : ''}`).join(', ');
+      await trStep(run, `Taking ${list} out of your SDB…`);
+      const r = await fromPage(page, '/np-templates/ajax/safetydeposit/move-items.php', { method: 'POST', credentials: 'include', headers: H, body: JSON.stringify({ moves: moves.map((m) => ({ obj_info_id: m.obj_info_id, quantity: m.quantity, action: 'inventory' })), pin: '', _ref_ck: ck }) });
+      const j = await r.json().catch(() => null);
+      if (j && j.success) {
+        for (const m of moves) { took.set(m.n.toLowerCase(), m.quantity); run.sdb[m.n.toLowerCase()] = (run.sdb[m.n.toLowerCase()] || 0) + m.quantity; }
+        trSay(`Took ${list} out of your SDB`, 'ok');
+        try { wtSdbChange(moves.map((m) => ({ n: m.n, dq: -m.quantity }))); } catch (e) { report(e); }   // (what your SDB's worth is counted at follows)
+      } else if (j && /pin/i.test(String(j.error || ''))) trNote({ lc: '_sdbpin', name: 'Your SDB' }, 'it asks for your PIN to take things out, so the trainer leaves it to you');
+      else trSay(`Your SDB didn’t move them${j && j.message ? `: “${reClean(String(j.message)).slice(0, 120)}”` : ''}`, 'warn');
+    }
+    wwwShut(page);
+    return took;
+  }
+  async function trBuy(run, name, want, max) {   // (up to want of one stone, from the cheapest shops at or under max, through each shop's own Buy: how many it got. run.noBuy says why it stopped buying)
+    let src = itPremium() && !run.sswBusy ? 'ssw' : 'sw';
+    const all = [], said = (e) => String((e && e.message) || e).replace(/[\s.!]+$/, '');
+    for (let k = 0; k < (src === 'ssw' ? 1 : 2); k++) {   // (the Shop Wizard shows a few shops a search: twice, for a fairer cheapest)
+      await trStep(run, `Looking for ${want > 1 ? `${want} ${name}s` : `a ${name}`}${src === 'ssw' ? '' : ' (Shop Wizard)'}…`);
+      try { all.push(...await shopPmAsk(name, src)); } catch (e) {
+        if (e && e.busy && src === 'ssw') { run.sswBusy = true; trSay(`${said(e)}. Looking with the Shop Wizard instead`, 'warn'); src = 'sw'; k = -1; continue; }   // (the Super Shop Wizard's break isn't the Shop Wizard's)
+        if (e && e.busy) { const L = trLog(); L.wizUntil = Date.now() + 3600e3; trLogPut(L); run.noBuy = `${said(e)}. Buying waits an hour, till ${trWhen(L.wizUntil)}`; return 0; }
+        if (!all.length) { trSay(`${name}: ${String((e && e.message) || e)}`, 'warn'); return 0; }
+      }
+    }
+    const offers = [...new Map(all.filter((o) => o.href).sort((a, b) => a.price - b.price).map((o) => [o.owner, o])).values()];
+    if (!offers.length) { trSay(`No shop has a ${name} just now`, 'warn'); return 0; }
+    let got = 0;
+    for (const o of offers.slice(0, 4)) {
+      if (o.price > max) { trSay(`The cheapest ${name} is ${trNp(o.price)}, over your ${trNp(max)} limit`, 'warn'); break; }
+      let u;
+      try { u = new URL(o.href, 'https://www.neopets.com'); } catch (_) { continue; }
+      if (u.pathname !== '/browseshop.phtml') continue;
+      const shop = u.pathname + u.search, oii = u.searchParams.get('buy_obj_info_id') || '';
+      await trStep(run, `Opening a shop with a ${name} at ${trNp(o.price)}…`);
+      const doc = new DOMParser().parseFromString(await fromPageHtml(shop), 'text/html');
+      const btn = [...doc.querySelectorAll('.bsp-item__buy[data-buy-url]')].find((b) => reClean(b.getAttribute('data-name')).toLowerCase() === name.toLowerCase() && (!oii || ((b.closest('[data-oii]') || { getAttribute: () => oii }).getAttribute('data-oii') === oii)));
+      const price = btn ? shopNum(btn.getAttribute('data-price')) : 0, npa = doc.getElementById('npanchor');
+      let np = npa ? shopNum(npa.textContent) : Infinity;
+      if (!btn || !price || price > max) { wwwShut(shop); continue; }   // (sold meanwhile, or dearer now: the next shop)
+      while (got < want) {
+        if (np < price) { run.noBuy = `Not enough Neopoints on hand for a ${name} (${trNp(price)})`; wwwShut(shop); return got; }
+        if (trSpent() + price > trNum('trMaxDay', 2000000)) { run.noBuy = `Today’s buying limit (${trNp(trNum('trMaxDay', 2000000))}) is reached`; wwwShut(shop); return got; }
+        await trStep(run, `Buying a ${name} for ${trNp(price)}…`);
+        const url = btn.getAttribute('data-buy-url'), r = await fromPage(shop, `${url}${url.includes('?') ? '&' : '?'}ajax=1`, { method: 'GET', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const j = await r.json().catch(() => null);
+        if (j && j.success) {
+          got++;
+          np -= price;
+          const L = trLog();
+          L.spent = { d: trDay(), np: trSpent(L) + price };
+          trLogPut(L);
+          trSay(`Bought a ${name} for ${trNp(price)}`, 'buy');
+          run.bought.push({ n: name.toLowerCase(), np: price });
+          if (!(Number(j.remaining) > 0)) break;
+          continue;
+        }
+        const why = reClean((j && j.message) || `Neopets said no (${r.status})`);
+        if (/maximum of \d+ items|carry/i.test(why)) { run.noBuy = 'Your inventory is full (50 items): make room, and it buys the rest'; wwwShut(shop); return got; }
+        if (/neopoints|afford/i.test(why)) { run.noBuy = `Not enough Neopoints on hand for a ${name}`; wwwShut(shop); return got; }
+        trSay(`${name}: “${why}”`, 'warn');   // (sold out, or the shop's changed: the next shop)
+        break;
+      }
+      wwwShut(shop);
+      if (got >= want) break;
+    }
+    return got;
+  }
+
+  // A round, for every pet with goals. By itself on a school page in your hours, when there's something to do; or when you press Run now
+  let trBusy = null, trElsewhere = false, trTimer = 0, trNextAt = 0, trNextWhy = '';
+  async function trStep(run, doing) {   // (a person's moment before the next thing; only while this tab's in front, in your hours (unless you pressed Run now), and not stopped)
+    if (run.n++) { await untilShown(); await wtSleep(2600 + Math.random() * 2400); }
+    await untilShown();
+    if (run.stop || !trOn() || (!run.manual && trLog().paused)) throw TR_STOP;   // (paused: nothing more, Check now's round apart)
+    if (!run.manual && !trHoursOk()) { run.why = 'hours'; throw TR_STOP; }
+    if (doing) { run.doing = doing; trPaint(); }
+  }
+  async function trRun(manual) {   // (never two tabs at once: the one that has the browser's lock on it)
+    if (trBusy || !trOn() || (!manual && (!trHoursOk() || trLog().paused))) return;
+    const go = async () => {
+      const run = trBusy = { stop: false, manual: !!manual, n: 0, doing: 'Starting…', why: '', did: 0, noBuy: '', hist: [], bought: [], sdb: {} };
+      let failed = false;
+      trElsewhere = false;
+      clearTimeout(trTimer);
+      trPaint();
+      try { await trRound(run); if (manual && !run.did) trSay('Looked: nothing to do just now'); }
+      catch (e) {
+        if (e === TR_STOP) { if (run.why === 'hours') trSay('Your active hours ended: it carries on when they start again'); else if (run.stop) trSay('Stopped'); }
+        else if (!trLeaving) {
+          const m = String((e && e.message) || e), net = /failed to fetch|networkerror|load failed|no answer|didn.t open|didn.t answer/i.test(m), at = String(run.doing || '').replace(/…$/, '');
+          failed = true;
+          trSay(`${at && at !== 'Starting' ? `${at}: ` : ''}${net ? 'Neopets didn’t answer just now. It tries again on your next school page' : m}`, 'err');
+          report(e);
+        }
+      } finally {
+        trBusy = null;
+        try { trHistAdd(run.hist); } catch (e) { report(e); }
+        if (!trLeaving) {
+          const L = trLog();
+          L.last = Date.now();
+          L.failed = failed;
+          trLogPut(L);
+          trPaint();
+          trSetupPaint();
+          trPlan(180000);
+        }
+      }
+    };
+    if (!(navigator.locks && navigator.locks.request)) return go();
+    return navigator.locks.request('bnp-trainer', { ifAvailable: true }, async (lock) => { if (!lock) { trElsewhere = true; trPaint(); setTimeout(() => { trElsewhere = false; trPlan(180000); }, 90000); return; } await go(); });
+  }
+  async function trRound(run) {
+    const G = trGoals(), mine = Object.entries(G).filter(([, x]) => trHasGoal(x)).map(([lc, x]) => ({ lc, ...x }));
+    const st = {}, said = new Map();
+    const read = async (s) => { await trStep(run, `Reading ${TR_SCHOOLS[s].name}’s Status…`); st[s] = trPets(await trPage(`${TR_SCHOOLS[s].path}?type=status`), s); trSeen(st); };
+    const at = (lc) => { const all = Object.values(st).map((l) => (l || []).find((p) => p.lc === lc)).filter(Boolean); return all.find((p) => p.kind !== 'free') || all.find((p) => p.s === (p.lv >= 250 ? 'ninja' : 'mi')) || all[0] || null; };
+    if (!mine.length) return;   // (no pet chosen: nothing at all)
+    for (const s of Object.keys(TR_SCHOOLS)) await read(s);
+    const redo = new Set(), done = [];
+    for (const m of mine) {   // (finished courses: completed)
+      const p = at(m.lc), a = p && p.kind === 'done' ? trAct(p, 'complete') : null;
+      if (!a) continue;
+      await trStep(run, `Completing ${p.name}’s ${p.study || ''} course…`);
+      const r = await trSend(`${TR_SCHOOLS[p.s].path}?type=status`, a);
+      done.push({ p, gain: trGain(r.doc), why: /[?&]type=status/.test(r.url) ? '' : trWords(r.doc) });
+      redo.add(p.s);
+    }
+    for (const s of redo) await read(s);
+    for (const d of done) {   // (what Status says now is what happened)
+      const q = at(d.p.lc);
+      if (q && q.kind !== 'done') { const g = trGainOf(d.p, q); run.did++; run.hist.push({ k: 'done', at: Date.now(), lc: d.p.lc, n: d.p.name, s: d.p.s, c: d.p.study || '', g }); trSay(`${d.p.name}: ${d.p.study ? `${d.p.study} ` : ''}course completed${trGainWords(g) ? `: ${trGainWords(g)}` : d.gain ? `: ${d.gain}` : ''}`, 'ok'); }
+      else trSay(`${d.p.name}: Neopets didn’t complete the course${d.why ? `: “${d.why}”` : ''}`, 'warn');
+    }
+    redo.clear();
+    const forms = {}, tried = [];
+    for (const m of mine) {   // (pets on no course: the next course toward their goals, through the Courses page's own form)
+      const p0 = at(m.lc);
+      if (!p0 || p0.kind !== 'free') continue;
+      const s = p0.lv >= 250 ? 'ninja' : 'mi', p = { ...((st[s] || []).find((x) => x.lc === m.lc) || p0), s }, nx = trNext(p, m.g, trBlocked(p));
+      if (!nx.c) { trNote(p, nx.why); continue; }
+      const from = `${TR_SCHOOLS[s].path}?type=courses`;
+      if (!forms[s]) { await trStep(run, `Opening ${TR_SCHOOLS[s].name}’s Courses…`); forms[s] = new DOMParser().parseFromString(await fromPageHtml(from), 'text/html'); }
+      const f = [...forms[s].querySelectorAll('form')].find((x) => [...x.querySelectorAll('input[name="type"]')].some((i) => i.value === 'start'));
+      const opt = f && [...f.querySelectorAll('select[name="pet_name"] option')].find((o) => o.value.toLowerCase() === m.lc);
+      if (!f || !opt) { trNote(p, `not on ${TR_SCHOOLS[s].name}’s Courses list`); continue; }
+      if (/too advanced|too young|can(?:no|’|')t|not able/i.test(opt.textContent)) { trNote(p, reClean(opt.textContent.slice(opt.textContent.indexOf('-') + 1))); continue; }
+      const body = new URLSearchParams();
+      for (const el of f.querySelectorAll('input[name], select[name]')) if (!/^(?:submit|button|image)$/i.test(el.type)) body.append(el.name, el.name === 'course_type' ? nx.c : el.name === 'pet_name' ? opt.value : el.value);
+      await trStep(run, `Starting ${p.name}’s ${nx.c} course…`);
+      const r = await trSend(from, { url: new URL(f.getAttribute('action') || '', `https://www.neopets.com${TR_SCHOOLS[s].path}`).pathname, method: 'POST', body });
+      tried.push({ p, c: nx.c, why: /[?&]type=status/.test(r.url) ? '' : trWords(r.doc) });   // (sent back to Status: its words aren't an answer)
+      redo.add(s);
+    }
+    for (const s of redo) await read(s);
+    for (const t of tried) {   // (what Status says now is what happened)
+      const q = at(t.p.lc);
+      if (q && q.kind !== 'free') { run.did++; trNote(q, ''); trSay(`${t.p.name}: started ${q.study || t.c} at ${TR_SCHOOLS[q.s].name}`, 'ok'); continue; }
+      trBlock(t.p, t.c);
+      trSay(`${t.p.name}: Neopets didn’t start ${t.c}${t.why ? `: “${t.why}”` : ''}`, 'warn');
+    }
+    redo.clear();
+    const due = mine.map((m) => at(m.lc)).filter((p) => p && p.kind === 'pay' && p.stones.length);
+    if (!due.length) return;
+    const need = new Map();   // (the stones every course waiting asks for)
+    for (const p of due) for (const n of p.stones) { const k = n.toLowerCase(), was = need.get(k); need.set(k, { n, s: p.s, c: (was ? was.c : 0) + 1 }); }
+    await trStep(run, 'Counting your codestones…');
+    const inv = await trInv(), have = inv.have;
+    let room = 50 - inv.n;
+    const missing = [...need.entries()].map(([k, x]) => ({ ...x, miss: Math.max(0, x.c - (have.get(k) || 0)) })).filter((x) => x.miss);
+    if (missing.length && S.features.trSdb !== false && room > 0) {
+      const took = await trFromSdb(run, missing, room);
+      for (const x of missing) { const t = took.get(x.n.toLowerCase()) || 0; if (t) { have.set(x.n.toLowerCase(), (have.get(x.n.toLowerCase()) || 0) + t); x.miss -= t; room -= t; } }
+    }
+    const short = missing.filter((x) => x.miss > 0);
+    if (short.length) {
+      const L = trLog(), list = short.map((x) => `${x.miss} ${x.n}${x.miss > 1 ? 's' : ''}`).join(', ');
+      if (S.features.trBuy === false) trSay(`Missing ${list}: buying is off in Settings`, 'warn');
+      else if (L.wizUntil > Date.now()) trSay(`Missing ${list}: the Shop Wizard asked for a break, till ${trWhen(L.wizUntil)}`, 'warn');
+      else {
+        for (const x of short) {
+          if (room <= 0) { run.noBuy = 'Your inventory is full (50 items): make room, and it buys the rest'; break; }
+          const got = await trBuy(run, x.n, Math.min(x.miss, room), trNum(TR_SCHOOLS[x.s].max, TR_SCHOOLS[x.s].def));
+          have.set(x.n.toLowerCase(), (have.get(x.n.toLowerCase()) || 0) + got);
+          room -= got;
+          if (run.noBuy) break;
+        }
+        if (run.noBuy) trSay(run.noBuy, 'warn');
+      }
+    }
+    const paid = [];
+    for (const p of due) {   // (each course whose stones are all here: paid, in your pets' order)
+      const want = new Map();
+      for (const n of p.stones) want.set(n.toLowerCase(), (want.get(n.toLowerCase()) || 0) + 1);
+      if ([...want].some(([k, c]) => (have.get(k) || 0) < c)) { trNote(p, `waiting for ${p.stones.join(', ')}`); continue; }
+      for (const [k, c] of want) have.set(k, have.get(k) - c);
+      const a = trAct(p, 'pay');
+      if (!a) continue;
+      await trStep(run, `Paying for ${p.name}’s ${p.study || ''} course…`);
+      const r = await trSend(`${TR_SCHOOLS[p.s].path}?type=status`, a);
+      said.set(p.lc, /[?&]type=status/.test(r.url) ? '' : trWords(r.doc));
+      paid.push(p);
+      redo.add(p.s);
+    }
+    for (const s of redo) await read(s);
+    for (const p of paid) {
+      const q = at(p.lc);
+      if (q && q.kind === 'busy') {
+        run.did++;
+        trNote(q, '');
+        trSay(`${p.name}: paid; ${q.study || 'its course'} ends ${q.end ? trWhen(q.end) : 'soon'}`, 'ok');
+        const st = p.stones.map((n) => { const k = n.toLowerCase(), i = run.bought.findIndex((x) => x.n === k); if (i >= 0) return { n, how: 'buy', np: run.bought.splice(i, 1)[0].np }; if (run.sdb[k] > 0) { run.sdb[k]--; return { n, how: 'sdb', np: 0 }; } return { n, how: 'inv', np: 0 }; });   // (each stone, where it came from: bought this round, out of your SDB, or already yours)
+        run.hist.push({ k: 'pay', at: Date.now(), lc: p.lc, n: p.name, s: p.s, c: q.study || p.study || '', st });
+      }
+      else trSay(`${p.name}: Neopets didn’t take the payment${said.get(p.lc) ? `: “${said.get(p.lc)}”` : ''}`, 'warn');
+    }
+    const own = run.hist.filter((e) => e.k === 'pay').flatMap((e) => e.st).filter((s) => s.how !== 'buy');
+    if (own.length) {   // (your own stones' worth, at itemdb's price: History's "about")
+      try { const pr = await wtPrices([...new Set(own.map((s) => s.n))]); for (const s of own) { const r = pr[s.n]; if (r && r.p > 0) s.np = r.p; } } catch (e) { report(e); }
+    }
+  }
+  function trSeen(st) {   // (each school's pets as just read: for Goals, the next round, and the training reminders)
+    const L = trLog(), all = get('train', {}) || {};
+    for (const [s, list] of Object.entries(st)) {
+      L.seen[s] = { at: Date.now(), pets: (list || []).map(({ name, lc, lv, str, def, mov, hpMax, kind, study, stones, end }) => ({ name, lc, lv, str, def, mov, hpMax, kind, study, stones, end })) };
+      for (const k of Object.keys(all)) if (all[k].school === TR_SCHOOLS[s].long) delete all[k];
+      for (const p of list || []) if (p.kind === 'busy' && p.end) all[`${TR_SCHOOLS[s].path}:${p.name}`] = { pet: p.name, school: TR_SCHOOLS[s].long, end: p.end, href: `${TR_SCHOOLS[s].path}?type=status` };
+    }
+    trLogPut(L);
+    set('train', all);
+  }
+  function trSeenPets() {   // (your pets as each school last showed them, one each: the school it's on a course at, else the one for its level)
+    const L = trLog(), by = new Map();
+    for (const [s, x] of Object.entries(L.seen)) for (const p of (x && x.pets) || []) {
+      const was = by.get(p.lc), mineHere = p.kind !== 'free' || s === (p.lv >= 250 ? 'ninja' : 'mi');
+      if (!was || (mineHere && !(was.kind !== 'free'))) by.set(p.lc, { ...p, s });
+    }
+    return [...by.values()];
+  }
+  function trDue(stale) {   // (something for it to do, as it last saw things: a course to complete or pay, one ended, a pet with goals and no course; stale: or no look in ten minutes, on opening a page)
+    const L = trLog(), G = trGoals(), now = Date.now();
+    if (!Object.values(G).some(trHasGoal)) return false;   // (no pet chosen: nothing by itself, ever)
+    if (stale && (now - L.last > 10 * 60000 || L.failed)) return true;
+    return trSeenPets().some((p) => trHasGoal(G[p.lc]) && (p.kind === 'done' || (p.kind === 'pay' && !L.note[p.lc]) || (p.kind === 'busy' && p.end && p.end <= now) || (p.kind === 'free' && !L.note[p.lc])));
+  }
+  function trPlan(gap = 180000, stale = false) {   // (the next round on this page: when there's something to do, but not sooner than gap after the last; else soon after a course of a pet with goals ends. Moved to your hours)
+    clearTimeout(trTimer);
+    trNextAt = 0;
+    if (!trOn() || !trSchoolOf(location.pathname)) return;
+    if (trLog().paused) { trPaint(); return; }   // (paused: no round of its own till you resume)
+    const G = trGoals(), now = Date.now(), ends = trSeenPets().filter((p) => trHasGoal(G[p.lc]) && p.kind === 'busy' && p.end > now).map((p) => p.end);
+    const L = trLog(), due = trDue(stale), end = ends.length ? Math.min(...ends) + 20000 + Math.random() * 60000 : 0;
+    const wiz = L.wizUntil > now && trSeenPets().some((p) => trHasGoal(G[p.lc]) && p.kind === 'pay') ? L.wizUntil + 30000 + Math.random() * 60000 : 0;   // (a course waiting on stones the Wizard wouldn't look for: when its break is over)
+    let at = due ? Math.max(now + 2000 + Math.random() * 2000, L.last + gap) : Math.min(end || Infinity, wiz || Infinity);   // (a round that left something undone (a payment Neopets didn't take): the next a few minutes on, never straight after)
+    if (at === Infinity) at = 0;
+    trNextWhy = due || !at ? '' : at === wiz ? 'wiz' : 'end';
+    if (at && !trHoursOk(new Date(at))) { const nx = trHoursNext(new Date(at)); at = nx ? nx.getTime() + Math.random() * 90000 : 0; }
+    trNextAt = at;
+    if (at) trTimer = setTimeout(() => { untilShown().then(() => trRun(false)).catch(report); }, Math.min(Math.max(at - now, 1500), 2 ** 31 - 1));
+    trPaint();
+  }
+
+  // The Trainer: a link of its own among the school's (the user: "fix the trainer button to look like the others, and leave all the
+  // trainer stuff to the 'trainer' button, and leave the courses/status pages as they were"). Pressed, the page you're on shows the
+  // Trainer in place of its own words (#trainer; Back, or any of the school's links, and they're back): its head says what it's doing
+  // (Run now / Stop, Settings); under it, Your pets: a card for each, as the Status page draws them, its four stats as big tiles. A tile
+  // clicked is that stat trained, for that pet alone; its "up to" a number if you like. The one on a course now says so, and the one it
+  // takes next; the ones trained first. And Log. It still runs by itself on any of the school's pages you're looking at, its link's dot
+  // saying how it is. With no pet chosen it does nothing by itself
+  let trTab = 'pets', trFinding = false, trFlashMsg = null, trEditT = 0, trAddOpen = null, trNevOpen = false;
+  const TR_SHORT = { str: 'Str', def: 'Def', mov: 'Mov', hp: 'HP', lv: 'Level' };
+  const TR_TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const trAny = () => Object.values(trGoals()).some(trHasGoal);
+  const trViewOn = () => trOn() && location.hash === '#trainer';
+  function trainerPage() {
+    if (FRAME || !trSchoolOf(location.pathname)) return;
+    if (!trainerPage.ear) {
+      trainerPage.ear = true;
+      addEventListener('pagehide', () => { trLeaving = true; });
+      addEventListener('beforeunload', () => { trLeaving = true; });
+      addEventListener('pageshow', () => { trLeaving = false; });
+      addEventListener('hashchange', trViewApply);
+      document.addEventListener('visibilitychange', trPaint);
+      setInterval(() => { if (!document.hidden) trPaint(); }, 30000);
+      setInterval(trTick, 1000);
+    }
+    trViewApply();
+    if (!trOn()) return;
+    trPlan(45000, true);
+  }
+  function trainerFeature() {   // (switched on or off, or its hours or limits changed: this page as it is now)
+    if (FRAME || !trSchoolOf(location.pathname)) return;
+    if (!trOn() && trBusy) trBusy.stop = true;
+    trViewApply();
+    if (trOn()) trPlan(0, true); else clearTimeout(trTimer);
+  }
+  function trViewApply() {   // (the Trainer in place of the page's own words, or the page as it is; its link among the school's)
+    document.documentElement.classList.toggle('bnp-trview', trViewOn());
+    trChip();
+    trBand();
+  }
+  function trFlash(t, undo) {   // (a word in the band about what you just did, for a few seconds; Undo when it can be)
+    trFlashMsg = { t, undo, at: Date.now() };
+    trPaint();
+    setTimeout(() => { if (trFlashMsg && Date.now() - trFlashMsg.at >= 7900) { trFlashMsg = null; trPaint(); } }, 8000);
+  }
+  function trChip() {   // (its link, as the school's own are: lit while the Trainer's shown)
+    const nav = document.querySelector('.bnp-train-nav');
+    let a = document.querySelector('.bnp-tr-chip');
+    if (!trOn() || !nav) { if (a) a.remove(); return; }
+    if (!a) {
+      a = document.createElement('a');
+      a.className = 'bnp-train-tab bnp-tr-chip';
+      a.href = '#trainer';
+      a.innerHTML = '<b>Trainer</b><i class="bnp-tr-chipdot" aria-hidden="true"></i>';
+      const leave = nav.querySelector('.is-leave');
+      if (leave) leave.before(a); else nav.append(a);
+    }
+    const on = trViewOn(), here = new URLSearchParams(location.search).get('type') || '';
+    for (const x of nav.querySelectorAll('a.bnp-train-tab')) {   // (the page you're on lit, as the school's links have it; the Trainer instead while it's shown)
+      const t = x === a ? null : (/type=(\w+)/.exec(x.getAttribute('href') || '') || [])[1] || '';
+      if (x === a ? on : !on && t && t === here) x.setAttribute('aria-current', 'page'); else x.removeAttribute('aria-current');
+    }
+    trChipPaint();
+  }
+  function trState() {   // ({ state, cls }: what it's doing, said in a line)
+    const run = trBusy, now = Date.now();
+    if (run) return { state: `${run.doing || 'Working…'}${document.hidden ? ' (paused while this tab’s in the back)' : ''}`, cls: 'is-run' };
+    if (trElsewhere) return { state: 'Working in another tab', cls: 'is-run' };
+    if (!trAny()) return { state: 'No pet chosen yet: click the stats a pet should train', cls: 'is-idle' };
+    if (trLog().paused) return { state: 'It starts, pays for and completes nothing till you resume', cls: 'is-paused' };
+    if (!trHoursOk()) { const nx = trHoursNext(); return { state: `Resting outside your active hours${nx ? `: back ${trWhen(nx.getTime())}` : ''}`, cls: 'is-rest' }; }
+    if (trNextAt > now + 5000) return { state: `Next round ${trWhen(trNextAt)}${trNextWhy === 'end' ? ', as a course ends' : trNextWhy === 'wiz' ? ', when the Wizard’s break is over' : ''}`, cls: 'is-wait' };
+    if (trNextAt) return { state: 'Starting in a moment…', cls: 'is-wait' };
+    return { state: 'Nothing to do just now', cls: 'is-idle' };
+  }
+  function trChipPaint() {   // (its link's dot: green working or waiting for a course, amber resting, red when its last step went wrong; none with nothing to do)
+    const a = document.querySelector('.bnp-tr-chip');
+    if (!a) return;
+    const { state, cls } = trState(), last = trLog().lines[0], err = !trBusy && last && last.k === 'err';
+    a.classList.remove('is-run', 'is-wait', 'is-rest', 'is-err', 'is-idle', 'is-paused');
+    a.classList.add(err ? 'is-err' : cls);
+    a.title = `Trainer${cls === 'is-paused' ? ' (paused)' : ''}: ${err ? last.t : state}`;
+  }
+  function trBand() {
+    let band = document.querySelector('[data-bnp="trainer"]');
+    if (!trViewOn()) { if (band) band.remove(); return; }
+    const nav = document.querySelector('.bnp-train-nav');
+    if (!band) {
+      band = document.createElement('section');
+      band.className = 'bnp-tr';
+      band.setAttribute('data-bnp', 'trainer');
+      band.setAttribute('aria-label', 'Trainer');
+      band.innerHTML = '<div class="bnp-tr-top"></div><div class="bnp-tr-view"></div>';
+      if (nav) nav.after(band);
+      else { const c = document.querySelector('td.content'); if (!c) return; c.prepend(band); }
+      band.addEventListener('click', trClick);
+      band.addEventListener('change', trChange);
+      band.addEventListener('focusout', () => setTimeout(trPaint, 0));   // (a number typed in: the cards drawn again once you're out of it)
+    }
+    trPaint();
+  }
+  // History: each course it completes (what the pet gained, from Status before and after) and each it pays for (its stones: bought, at
+  // what they cost; from your SDB or inventory, at itemdb's price, marked as about that). Kept per account, the newest 600
+  const trHistKey = () => dkey().replace(/^dlog/, 'trhist');
+  const trHist = () => { const v = get(trHistKey(), null); return { ev: v && Array.isArray(v.ev) ? v.ev : [] }; };
+  function trHistAdd(list) { if (!list || !list.length) return; const H = trHist(); H.ev.push(...list); H.ev = H.ev.slice(-600); set(trHistKey(), H); }
+  const trGainOf = (a, b) => { const g = {}; for (const [k, v] of [['str', b.str - a.str], ['def', b.def - a.def], ['mov', b.mov - a.mov], ['hp', b.hpMax - a.hpMax], ['lv', b.lv - a.lv]]) if (v > 0) g[k] = v; return g; };
+  const trGainWords = (g) => Object.entries(g || {}).map(([k, v]) => `${TR_SHORT[k]} +${v}`).join(', ');
+  let trHistRange = 'month';
+  function trHistHtml() {
+    const span = { week: 7 * 864e5, month: 30 * 864e5, all: Infinity }[trHistRange], now = Date.now(), ev = trHist().ev.filter((e) => now - e.at <= span);
+    const chips = `<span class="bnp-tr-range" role="group" aria-label="How far back">${[['week', 'Last 7 days'], ['month', 'Last 30 days'], ['all', 'All of it']].map(([k, l]) => `<button type="button" data-trrange="${k}" aria-pressed="${trHistRange === k}">${l}</button>`).join('')}</span>`;
+    if (!ev.length) return `<div class="bnp-tr-hhead">${chips}</div><p class="bnp-tr-empty">Nothing ${trHistRange === 'all' ? 'yet' : 'in that time'}: each course it completes and pays for is kept here, with what the pet gained and what it cost.</p>`;
+    const done = ev.filter((e) => e.k === 'done'), paid = ev.filter((e) => e.k === 'pay'), stones = paid.flatMap((e) => e.st || []);
+    const sum = (l) => l.reduce((a, s) => a + (Number(s.np) || 0), 0), bought = stones.filter((s) => s.how === 'buy'), own = stones.filter((s) => s.how !== 'buy');
+    const pts = done.reduce((a, e) => a + TR_STATS.reduce((b, k) => b + ((e.g || {})[k] || 0), 0), 0), lvs = done.reduce((a, e) => a + ((e.g || {}).lv || 0), 0);
+    const tile = (label, big, small) => `<div class="bnp-tr-sumtile"><span>${label}</span><b>${big}</b><small>${small}</small></div>`;
+    const by = new Map();
+    for (const e of ev) {
+      const p = by.get(e.lc) || { n: e.n, s: e.s, courses: 0, g: {}, stones: 0, np: 0, est: 0, at: 0 };
+      if (e.k === 'done') { p.courses++; for (const [k, v] of Object.entries(e.g || {})) p.g[k] = (p.g[k] || 0) + v; }
+      if (e.k === 'pay') for (const s of e.st || []) { p.stones++; if (s.how === 'buy') p.np += Number(s.np) || 0; else p.est += Number(s.np) || 0; }
+      p.at = Math.max(p.at, e.at);
+      by.set(e.lc, p);
+    }
+    const pets = [...by.values()].sort((a, b) => b.courses - a.courses || b.at - a.at);
+    const card = (p) => `<article class="bnp-tr-hcard">
+      <header><img src="https://pets.neopets.com/cpn/${encodeURIComponent(p.n)}/1/2.png" alt="" width="52" height="52" loading="lazy"><span><b>${esc(p.n)}</b><small>${p.courses} course${p.courses === 1 ? '' : 's'} completed · ${p.stones} codestone${p.stones === 1 ? '' : 's'} used</small></span></header>
+      <div class="bnp-tr-gains">${[...TR_STATS, 'lv'].map((k) => `<span class="${p.g[k] ? 'is-up' : ''}"><small>${TR_SHORT[k]}</small><b>${p.g[k] ? `+${p.g[k]}` : '0'}</b></span>`).join('')}</div>
+      <p class="bnp-tr-hcost">${p.np ? `<b>${trNp(p.np)}</b> spent` : 'Nothing bought'}${p.est ? ` · <span title="Codestones from your SDB or inventory, at itemdb’s price">≈ ${trNp(p.est)} of your own codestones</span>` : ''}</p>
+    </article>`;
+    const rows = ev.slice().sort((a, b) => b.at - a.at).slice(0, 40).map((e) => {
+      const st = e.st || [], np = sum(st), est = st.some((s) => s.how !== 'buy' && s.np);
+      const what = e.k === 'done' ? `<span class="bnp-tr-hdone">Completed</span> ${esc(trGainWords(e.g) || 'no gain read')}` : `<span class="bnp-tr-hpaid">Paid</span> ${esc(st.map((s) => `${s.n}${s.how === 'buy' ? ' (bought)' : s.how === 'sdb' ? ' (from your SDB)' : ' (yours)'}`).join(', '))}`;
+      return `<tr><td>${esc(trWhen(e.at))}</td><td>${esc(e.n)}</td><td>${esc(e.c || '')}</td><td>${what}</td><td class="is-num">${e.k === 'pay' && np ? `${est ? '≈ ' : ''}${np.toLocaleString()}` : ''}</td></tr>`;
+    }).join('');
+    return `<div class="bnp-tr-hhead">${chips}</div>
+      <div class="bnp-tr-sum">${tile('Courses completed', done.length, `${paid.length} paid for`)}${tile('Stat points gained', `+${pts}`, lvs ? `and ${lvs} level${lvs === 1 ? '' : 's'}` : 'no levels yet')}${tile('Neopoints spent', trNp(sum(bought)), `on ${bought.length} codestone${bought.length === 1 ? '' : 's'} bought`)}${tile('Codestones used', stones.length, own.length ? `${own.length} your own${sum(own) ? `, ≈ ${trNp(sum(own))}` : ''}` : 'all bought')}</div>
+      <h5 class="bnp-tr-sec bnp-tr-hsec"><span>By pet</span><b>${pets.length}</b></h5>
+      <div class="bnp-tr-hcards">${pets.map(card).join('')}</div>
+      <h5 class="bnp-tr-sec bnp-tr-hsec"><span>Recent</span><small>the newest 40</small></h5>
+      <div class="bnp-tr-hwrap"><table class="bnp-tr-htable"><thead><tr><th>When</th><th>Pet</th><th>Course</th><th>What happened</th><th class="is-num">NP</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  function trSetupPaint() { trPaint(); }
+  function trPaint() {
+    trChipPaint();
+    const band = document.querySelector('[data-bnp="trainer"]');
+    if (!band) return;
+    const top = band.querySelector('.bnp-tr-top'), view = band.querySelector('.bnp-tr-view');
+    const L = trLog(), G = trGoals(), run = trBusy, f = S.features, any = trAny(), { state, cls } = trState();
+    const hours = f.trHours ? `Active ${trClockOf(f.trFrom, 540)} to ${trClockOf(f.trTo, 1260)}` : 'Active any time', last = L.lines[0];
+    const tabBtn = (k, label) => `<button type="button" class="bnp-tr-tab" role="tab" data-trtab="${k}" aria-selected="${trTab === k}">${label}</button>`;
+    const n = trHerePets().filter((p) => trHasGoal(G[p.lc])).length;
+    const [mk, ml, mt] = !any ? ['off', 'Not running', 'No pet chosen yet'] : L.paused ? ['paused', 'Paused', 'Paused: Resume, and it carries on'] : ['on', 'Running', run || trElsewhere ? 'Working now' : 'On: it carries on by itself, course after course'];
+    top.innerHTML = `<div class="bnp-tr-head"><b class="bnp-tr-title">Trainer</b><span class="bnp-tr-mode is-${mk}${run || trElsewhere ? ' is-busy' : ''}" title="${esc(mt)}"><i aria-hidden="true"></i>${ml}</span><span class="bnp-tr-state ${cls}" role="status">${esc(state)}</span>
+      <span class="bnp-tr-acts">${any ? (L.paused ? '<button type="button" class="button-default__2020 button-yellow__2020 bnp-tr-btn" data-tr="resume" title="It carries on: courses started, paid for and completed by itself again">Resume</button>' : `<button type="button" class="bnp-tr-pill" data-tr="pause" title="${run ? 'Pause: this round stops after its step, and no more till you resume' : 'Pause: nothing started, paid for or completed till you resume (your pets’ stats stay chosen)'}">Pause</button>`) : ''}<button type="button" class="bnp-tr-pill" data-tr="run"${run || trElsewhere || !any ? ' disabled' : ''} title="${any ? 'A round now: whatever’s due done at once, whatever the time' : 'Choose a stat for a pet first'}">Check now</button><button type="button" class="bnp-tr-pill" data-tr="settings" title="Its hours, your SDB and its buying limits, in Neopets Enhance’s Settings">Settings</button></span></div>
+      <p class="bnp-tr-sub"><span>${esc(hours)}</span><span>${f.trBuy === false ? 'Buying off' : `Bought today: ${trNp(trSpent(L))} of ${trNp(trNum('trMaxDay', 2000000))}`}</span>${last ? `<span class="bnp-tr-lastline is-${esc(last.k || 'plain')}">${esc(trWhen(last.at))}: ${esc(last.t)}</span>` : ''}</p>
+      ${trFlashMsg ? `<p class="bnp-tr-flash" role="status"><span>${esc(trFlashMsg.t)}</span>${trFlashMsg.undo ? '<button type="button" class="bnp-tr-pill" data-tr="undo">Undo</button>' : ''}</p>` : ''}
+      <div class="bnp-tr-tabs" role="tablist">${tabBtn('pets', `Your pets${n ? ` <b>${n} training</b>` : ''}`)}${tabBtn('hist', 'History')}${tabBtn('log', `Log${L.lines.length ? ` <b>${Math.min(L.lines.length, 40)}</b>` : ''}`)}</div>`;
+    if (view.contains(document.activeElement) && document.activeElement.matches('input')) return;   // (a number being typed: left as it is till you're out of it)
+    view.innerHTML = trTab === 'log' ? trLogHtml(L) : trTab === 'hist' ? trHistHtml() : trBoardHtml(L, G);
+  }
+  const trLogHtml = (L) => (L.lines.length ? `<ol class="bnp-tr-log">${L.lines.slice(0, 40).map((x) => `<li class="${x.k ? `is-${esc(x.k)}` : ''}"><time>${esc(trWhen(x.at))}</time><span>${esc(x.t)}</span></li>`).join('')}</ol>` : '<p class="bnp-tr-empty">Nothing yet: each step it takes is written here.</p>');
+  function trLeft(ms) {   // ("3:58:41", "4:07": a course's time left, as a clock counting down)
+    const t = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = String(t % 60).padStart(2, '0');
+    return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+  }
+  function trTick() {   // (each second, while you can see it: every course's time left counts down; one reaching nothing, its card says it's finished)
+    if (document.hidden) return;
+    const now = Date.now();
+    let up = false;
+    for (const t of document.querySelectorAll('[data-bnp="trainer"] .bnp-tr-cd')) { const ms = Number(t.dataset.end) - now; t.textContent = trLeft(ms); if (ms <= 0) up = true; }
+    if (up) trPaint();
+  }
+  function trIn(ms) { const m = Math.max(1, Math.round(ms / 60000)), h = Math.floor(m / 60); return h ? `${h} h${m % 60 ? ` ${m % 60} min` : ''}` : `${m} min`; }
+  function trWhere(p, x, L) {   // ([tone, words]: where a pet stands)
+    const note = L.note[p.lc] || '', on = trHasGoal(x), now = Date.now();
+    if (p.kind === 'busy' && p.end && p.end <= now) return ['done', `${p.study || 'Its course'} finished${on ? ': completed on the next round' : ''}`];   // (its time's up since Status was read)
+    if (p.kind === 'busy') return ['busy', `On ${p.study || 'a course'}${p.end ? `, ends ${trWhen(p.end)}` : ''}`, p.end];
+    if (p.kind === 'pay') return ['pay', on ? (/^waiting for/.test(note) ? `${p.study}: ${note}` : `${p.study}: paid for on the next round`) : `${p.study}: not paid for yet`];
+    if (p.kind === 'done') return ['done', `${p.study || 'Its course'} finished${on ? ': completed on the next round' : ''}`];
+    if (!on) return ['off', 'Not training: click a stat to train it'];
+    if (note === 'Every goal reached') return ['goal', 'Every stat it’s training has reached its number'];
+    return ['free', note ? `No course: ${note}` : 'Its next course starts on the next round'];
+  }
+  function trCard(p, G, L) {   // (a pet, as the Status page draws it: its four stats big, each a button to train it or not)
+    const x = G[p.lc], on = trHasGoal(x), g = on ? x.g : {}, s = p.lv >= 250 ? 'ninja' : 'mi';
+    const cur = p.kind !== 'free' ? TR_KEY[p.study] || '' : '', nx = on && p.kind === 'free' ? TR_KEY[trNext({ ...p, s }, g, trBlocked(p)).c] || '' : '';
+    const caps = trainCaps({ lv: p.lv, str: p.str, def: p.def, mov: p.mov, hpMax: p.hpMax }), val = { str: p.str, def: p.def, mov: p.mov, hp: p.hpMax }, [tone, where, end] = trWhere(p, x, L);
+    const tile = (k) => {
+      const sel = !!g[k], cap = caps[k].cap, pct = cap ? Math.min(100, Math.round((val[k] / cap) * 100)) : 0, wait = k !== 'hp' && !caps.half;
+      const room = wait ? `lvl ${caps.needLv} first` : val[k] >= cap ? 'at max' : `max ${cap.toLocaleString()}`, why = wait ? `${TR_NAME[k]} waits for level ${caps.needLv} (half its HP)` : val[k] >= cap ? `${TR_NAME[k]} is as high as level ${p.lv} allows` : `${TR_NAME[k]} can go up to ${cap.toLocaleString()} at level ${p.lv}`;
+      return `<div class="bnp-tr-tile${sel ? ' is-sel' : ''}${k === cur ? ' is-now' : k === nx ? ' is-next' : ''}${wait || val[k] >= cap ? ' is-full' : ''}">
+        <button type="button" class="bnp-tr-tbtn" data-trt="${esc(p.lc)}:${k}" aria-pressed="${sel}" title="${esc(`${sel ? `Training ${p.name}’s ${TR_NAME[k]}: click to stop` : `Click to train ${p.name}’s ${TR_NAME[k]}`}. ${why}`)}">
+          <span class="bnp-tr-tl">${TR_SHORT[k]}${k === cur ? '<em class="is-now">now</em>' : k === nx ? '<em class="is-next">next</em>' : ''}</span>
+          <b>${Number(val[k]).toLocaleString()}</b><i class="bnp-tr-bar" style="--p:${pct}%"></i><small>${esc(room)}</small>
+          <span class="bnp-tr-check" aria-hidden="true">${TR_TICK}</span>
+        </button>
+        ${sel ? `<label class="bnp-tr-upto" title="Stop training it at this number; empty, no limit"><span>to</span><input type="number" min="1" max="99999" step="1" inputmode="numeric" data-trlim="${esc(p.lc)}:${k}" value="${g[k] > 0 ? g[k] : ''}" placeholder="any" aria-label="${esc(`${p.name}’s ${TR_NAME[k]}: train up to (empty for no limit)`)}"></label>` : ''}
+      </div>`;
+    };
+    return `<article class="bnp-tr-card is-${tone}${on ? ' is-on' : ''}">${on ? '' : `<button type="button" class="bnp-tr-nevbtn" data-trnever="${esc(p.lc)}" title="${esc(`Never train ${p.name}: put it in Never train, out of the way`)}" aria-label="${esc(`Never train ${p.name}`)}">${TR_EYEOFF}</button>`}
+      <header class="bnp-tr-chead"><img src="https://pets.neopets.com/cpn/${encodeURIComponent(p.name)}/1/2.png" alt="" width="64" height="64" loading="lazy"><span class="bnp-tr-cname"><b>${esc(p.name)}</b><span><i class="bnp-tr-lv${cur === 'lv' ? ' is-now' : nx === 'lv' ? ' is-next' : ''}" title="${esc(cur === 'lv' ? 'On a Level course now' : nx === 'lv' ? 'Its level is trained next: the stats it trains are waiting for it' : 'Its level: trained when the stats it trains are waiting for it')}">Level ${p.lv}${cur === 'lv' ? '<em>now</em>' : nx === 'lv' ? '<em>next</em>' : ''}</i><small class="bnp-tr-school">${on ? trSchoolIc(trPetSchool({ ...p, s: p.s })) : ''}${trPetSchool({ ...p, s: p.s }) === 'ninja' ? 'Ninja school' : 'Mystery Island'}</small></span></span>${on ? `<button type="button" class="bnp-tr-pill bnp-tr-cstop" data-trstop="${esc(p.lc)}" title="${esc(`Take ${p.name} out of training (a course it’s on goes on)`)}">Remove</button>` : ''}</header>
+      <div class="bnp-tr-tiles">${TR_STATS.map(tile).join('')}</div>
+      <p class="bnp-tr-where"><i class="bnp-tr-dot" aria-hidden="true"></i><span>${esc(where)}${end ? ` <span class="bnp-tr-cdw">(<time class="bnp-tr-cd" data-end="${end}">${trLeft(end - Date.now())}</time> left)</span>` : ''}</span></p>
+    </article>`;
+  }
+  const trNeverKey = () => dkey().replace(/^dlog/, 'trnever');   // (pets put in Never train: name by key)
+  const trNever = () => { const v = get(trNeverKey(), null); return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; };
+  const TR_EYEOFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c5.5 0 9 5.5 9 7 0 .7-.8 2.3-2.3 3.8M6.3 6.3C4.2 7.8 3 10.1 3 12c0 1.5 3.5 7 9 7 1.7 0 3.2-.5 4.5-1.2"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+  const trPetSchool = (p) => (p.kind !== 'free' && p.s ? p.s : p.lv >= 250 ? 'ninja' : 'mi');   // (where it trains: the school it's on a course at, else the one for its level)
+  const trHerePets = () => { const here = trSchoolOf(location.pathname); return trSeenPets().filter((p) => !here || trPetSchool(p) === here); };   // (the pets this school's page is for)
+  function trSchoolIc(s) {   // (the school's master, small, as he stands by its title)
+    const ic = TRAIN_ICONS[TR_SCHOOLS[s].path];
+    if (!ic) return '';
+    const [u, W, H, x, y, w, h, white] = ic, k = 22 / h, px = (v) => `${Math.round(v * k * 10) / 10}px`;
+    return `<i class="bnp-tr-schoolic" aria-hidden="true" style="width:${px(w)};background-image:url('${esc(cssUrl(u))}');background-size:${px(W)} ${px(H)};background-position:-${px(x)} -${px(y)}${white ? ';mix-blend-mode:multiply' : ''}"></i>`;
+  }
+  function trBoardHtml(L, G) {
+    const here = trSchoolOf(location.pathname), all = trSeenPets(), pets = trHerePets(), away = all.length - pets.length, other = here === 'ninja' ? 'mi' : 'ninja';
+    const elsewhere = away ? `<p class="bnp-tr-elsewhere"><span>${away === 1 ? 'One more pet trains' : `${away} more pets train`} at ${TR_SCHOOLS[other].long.replace(/^the /, 'the ')}${here === 'ninja' ? ' (under level 250)' : ' (level 250 and up)'}.</span><a class="bnp-tr-pill" href="${TR_SCHOOLS[other].path}#trainer">Its Trainer</a></p>` : '';
+    if (!all.length) return `<div class="bnp-tr-empty"><p>${trFinding ? 'Finding your pets on the schools’ Status pages…' : 'Your pets come from the schools’ Status pages.'}</p>${trFinding ? '' : '<button type="button" class="button-default__2020 button-yellow__2020 bnp-tr-btn" data-tr="find">Find my pets</button>'}</div>`;
+    const order = { done: 0, pay: 1, free: 2, busy: 3 };
+    const on = pets.filter((p) => trHasGoal(G[p.lc])).sort((a, b) => order[a.kind] - order[b.kind] || (a.end || 0) - (b.end || 0) || a.name.localeCompare(b.name));
+    const never = trNever(), nev = pets.filter((p) => never[p.lc] && !trHasGoal(G[p.lc])).sort((a, b) => a.name.localeCompare(b.name));
+    const off = pets.filter((p) => !trHasGoal(G[p.lc]) && !never[p.lc]).sort((a, b) => b.lv - a.lv || a.name.localeCompare(b.name));
+    const nevPanel = nev.length ? `<section class="bnp-tr-panel is-never${trNevOpen ? ' is-open' : ''}"><button type="button" class="bnp-tr-sec bnp-tr-addhead" data-tr="never" aria-expanded="${trNevOpen}"><i class="bnp-tr-nevic" aria-hidden="true">${TR_EYEOFF}</i><span>Never train</span><b>${nev.length}</b><small>${trNevOpen ? 'out of the way: Bring back, and a pet’s with the others again' : `${nev.length === 1 ? 'a pet' : `${nev.length} pets`} kept out of the way: show ${nev.length === 1 ? 'it' : 'them'}`}</small><i class="bnp-tr-caret" aria-hidden="true"></i></button>${trNevOpen ? `<div class="bnp-tr-nevlist">${nev.map((p) => `<span class="bnp-tr-nevpet"><img src="https://pets.neopets.com/cpn/${encodeURIComponent(p.name)}/1/2.png" alt="" width="40" height="40" loading="lazy"><span><b>${esc(p.name)}</b><small>Level ${p.lv}</small></span><button type="button" class="bnp-tr-pill" data-trback="${esc(p.lc)}">Bring back</button></span>`).join('')}</div>` : ''}</section>` : '';
+    if (!pets.length) return `<div class="bnp-tr-empty"><p>None of your pets trains at ${TR_SCHOOLS[here].long} just now${here === 'ninja' ? ': it takes pets of level 250 and up' : ''}.</p></div>${elsewhere}`;
+    const every = (k) => pets.filter((p) => !nev.includes(p)).every((p) => trHasGoal(G[p.lc]) && G[p.lc].g[k]);
+    return `<div class="bnp-tr-quick"><span>Every pet:</span>${TR_STATS.map((k) => `<button type="button" class="bnp-tr-qchip" data-trevery="${k}" aria-pressed="${every(k)}" title="${esc(every(k) ? `Stop training ${TR_NAME[k]} on every pet` : `Train ${TR_NAME[k]} on every pet`)}">${TR_NAME[k]}</button>`).join('')}<small>or click the stats on each pet. It trains the lowest of a pet’s first, and its level when they’re waiting for it.</small></div>
+      ${on.length ? `<section class="bnp-tr-panel is-train"><h5 class="bnp-tr-sec"><span>Training</span><b>${on.length}</b><small>${L.paused ? 'paused: Resume, and it carries on with these' : 'it carries on with these by itself, course after course'}</small></h5><div class="bnp-tr-cards">${on.map((p) => trCard(p, G, L)).join('')}</div></section>` : ''}
+      ${off.length ? (() => { const open = trAddOpen == null ? !on.length : trAddOpen; return `<section class="bnp-tr-panel is-add${open ? ' is-open' : ''}"><button type="button" class="bnp-tr-sec bnp-tr-addhead" data-tr="add" aria-expanded="${open}">${on.length ? '<i class="bnp-tr-plus" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></i>' : ''}<span>${on.length ? 'Add pets' : 'Your pets'}</span><b>${off.length}</b><small>${open ? 'click a stat a pet should train, and it joins the pets training' : `${off.length === 1 ? 'a pet' : `${off.length} pets`} not training: show ${off.length === 1 ? 'it' : 'them'}`}</small><i class="bnp-tr-caret" aria-hidden="true"></i></button>${open ? `<div class="bnp-tr-cards is-off">${off.map((p) => trCard(p, G, L)).join('')}</div>` : ''}</section>`; })() : ''}
+      ${nevPanel}${elsewhere}`;
+  }
+  async function trFind() {   // (your pets, from both schools' Status pages: when you ask, never by itself)
+    if (trFinding) return;
+    trFinding = true;
+    trPaint();
+    try { const st = {}; for (const s of Object.keys(TR_SCHOOLS)) { st[s] = trPets(await trPage(`${TR_SCHOOLS[s].path}?type=status`), s); await wtSleep(1500 + Math.random() * 1200); } trSeen(st); } catch (e) { if (!trLeaving) trFlash('Neopets didn’t answer just now: try again in a moment'); report(e); }
+    trFinding = false;
+    trPaint();
+  }
+  function trSet(changes) {   // (goals changed: [lc, stat, value] each, value 0 off, -1 no limit, or a number; a pet with none left isn't trained. What they were, for Undo. The next round a few seconds on, so several clicks come first)
+    const G = trGoals(), L = trLog(), pets = trSeenPets(), was = {};
+    for (const [lc, k, v] of changes) {
+      if (!(lc in was)) was[lc] = G[lc] ? JSON.parse(JSON.stringify(G[lc])) : null;
+      const p = pets.find((x) => x.lc === lc), x = G[lc] && G[lc].on !== false ? G[lc] : { n: p ? p.name : lc, on: true, g: { str: 0, def: 0, mov: 0, hp: 0, lv: -1 } };
+      x.g = { str: 0, def: 0, mov: 0, hp: 0, lv: -1, ...x.g, [k]: v };
+      if (TR_STATS.some((s) => x.g[s])) G[lc] = x; else delete G[lc];
+      delete L.note[lc];
+      delete L.block[lc];
+    }
+    set(trGoalsKey(), G);
+    trLogPut(L);
+    clearTimeout(trEditT);
+    trEditT = setTimeout(() => trPlan(0), 6000);
+    trNextAt = trAny() ? Date.now() + 6000 : 0;
+    return () => { const H = trGoals(); for (const [lc, x] of Object.entries(was)) { if (x) H[lc] = x; else delete H[lc]; } set(trGoalsKey(), H); trPlan(0); trPaint(); };
+  }
+  function trClick(e) {
+    const b = e.target.closest('button');
+    if (!b || b.disabled) return;
+    const k = b.dataset.tr;
+    if (k === 'run') { clearTimeout(trEditT); trRun(true).catch(report); return; }
+    if (k === 'pause' || k === 'resume') {   // (paused: kept, for every tab; a round under way stops after its step)
+      const L = trLog();
+      L.paused = k === 'pause';
+      trLogPut(L);
+      if (L.paused && trBusy) { trBusy.stop = true; trBusy.doing = 'Pausing after this step…'; }
+      trSay(L.paused ? 'Paused' : 'Resumed');
+      trPlan(0);
+      trPaint();
+      return;
+    }
+    if (k === 'add') { trAddOpen = b.getAttribute('aria-expanded') !== 'true'; trPaint(); return; }
+    if (k === 'never') { trNevOpen = !trNevOpen; trPaint(); return; }
+    if (b.dataset.trnever || b.dataset.trback) {   // (a pet put in Never train, or brought back from it)
+      const lc = b.dataset.trnever || b.dataset.trback, N = trNever(), was = N[lc], p = trSeenPets().find((x) => x.lc === lc), name = p ? p.name : lc;
+      if (b.dataset.trnever) N[lc] = name; else delete N[lc];
+      set(trNeverKey(), N);
+      trFlash(b.dataset.trnever ? `${name} is in Never train now` : `${name} is back with your other pets`, () => { const M = trNever(); if (was) M[lc] = was; else delete M[lc]; set(trNeverKey(), M); trPaint(); });
+      return;
+    }
+    if (k === 'find') { trFind().catch(report); return; }
+    if (k === 'undo') { const u = trFlashMsg && trFlashMsg.undo; trFlashMsg = null; if (u) u(); trPaint(); return; }
+    if (k === 'settings') { openHub('otherpages'); setTimeout(() => { const el = hub && hub.main.querySelector('[data-feat="trainer"]'); if (el) el.closest('.bnp-card').scrollIntoView({ block: 'start' }); }, 60); return; }
+    if (b.dataset.trtab) { trTab = b.dataset.trtab; trPaint(); return; }
+    if (b.dataset.trrange) { trHistRange = b.dataset.trrange; trPaint(); return; }
+    if (b.dataset.trt) { const [lc, s] = b.dataset.trt.split(':'), x = trGoals()[lc], was = trHasGoal(x) ? x.g[s] : 0; if (!trHasGoal(x)) trAddOpen = true; trSet([[lc, s, was ? 0 : -1]]); trPaint(); return; }   // (a pet added from Add pets: the panel stays open for the next)   // (a stat clicked: trained with no limit, or not)
+    if (b.dataset.trstop) { const lc = b.dataset.trstop, p = trSeenPets().find((x) => x.lc === lc), undo = trSet(TR_STATS.map((s) => [lc, s, 0])); trFlash(`${p ? p.name : 'That pet'} isn’t trained any more`, undo); return; }
+    if (b.dataset.trevery) {   // (a stat for every pet: on for all, or off for all when they all have it)
+      const s = b.dataset.trevery, G = trGoals(), never = trNever(), pets = trHerePets().filter((p) => !never[p.lc] || trHasGoal(G[p.lc])), off = pets.every((p) => trHasGoal(G[p.lc]) && G[p.lc].g[s]);
+      const undo = trSet(pets.filter((p) => off || !(trHasGoal(G[p.lc]) && G[p.lc].g[s])).map((p) => [p.lc, s, off ? 0 : -1]));
+      trFlash(off ? `${TR_NAME[s]} isn’t trained on any pet now` : `Every pet trains ${TR_NAME[s]} now`, undo);
+    }
+  }
+  function trChange(e) {   // (a pet's "up to": a number, or empty for no limit)
+    const t = e.target;
+    if (!t.matches('[data-trlim]')) return;
+    const [lc, s] = t.dataset.trlim.split(':'), n = Math.round(Number(String(t.value).replace(/[^\d]/g, '')));
+    trSet([[lc, s, n > 0 ? n : -1]]);
   }
   function trainDone() {   // (Complete Course!'s answer: a scrap of a page, made a page of Neopets', with the ways back)
     const m = /^\/(island|pirates)\/process_(training|academy|fight_training)\.phtml$/.exec(location.pathname);
@@ -26737,7 +27515,7 @@
       for (const a of doc.querySelectorAll('a[href*="browseshop.phtml"]')) {
         let u = null;
         try { u = new URL(a.getAttribute('href'), location.origin); } catch (_) { continue; }
-        offers.push({ owner: (u.searchParams.get('owner') || '').toLowerCase(), price: shopNum(u.searchParams.get('buy_cost_neopoints')) });
+        offers.push({ owner: (u.searchParams.get('owner') || '').toLowerCase(), price: shopNum(u.searchParams.get('buy_cost_neopoints')), href: a.getAttribute('href') || '' });
       }
       return doc;
     };
@@ -26750,7 +27528,7 @@
       if (!j || typeof j !== 'object') throw new Error('The Super Shop Wizard gave an answer NE couldn’t read');
       const d = j.data || {};
       says = reClean(String(d.error || '').replace(/<[^>]*>/g, ' '));   // (its words as the page shows them: the SSW puts its error in as HTML)
-      if (Array.isArray(d.prices) && Array.isArray(d.owners) && d.prices.length) d.prices.forEach((p, k) => offers.push({ owner: String(d.owners[k] || '').toLowerCase(), price: shopNum(p) }));
+      if (Array.isArray(d.prices) && Array.isArray(d.owners) && d.prices.length) d.prices.forEach((p, k) => offers.push({ owner: String(d.owners[k] || '').toLowerCase(), price: shopNum(p), href: ((/href=["']([^"']+)["']/.exec(String((Array.isArray(d.links) && d.links[k]) || '')) || [])[1] || '').replace(/&amp;/g, '&') }));
       else doc = fromLinks(String(j.html || ''));   // (no prices: what it says is in its html, as its page shows it ("Whoa there, too many searches!…" comes so, with data's lists empty))
     } else {   // (the Shop Wizard: one section of shops a search)
       const o = { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' }, body: wizParam({ type: 'process_wizard', feedset: '0', shopwizard: name, table: 'shop', criteria: 'exact', min_price: '0', max_price: '999999' }) };
@@ -42257,6 +43035,25 @@
       ['otherpages', `<div class="bnp-card"><h4>Home page</h4>
         ${sw('hpLevel', 'Your pets on one line', 'Every pet on the home page stands on the same line, its name under it level with the others’. Neopets puts a pet that’s taller than it is wide lower than the rest; NE draws it a little smaller instead, never lower.')}
       </div>`],
+      ['otherpages', `<div class="bnp-card"><h4>Training schools</h4>
+        ${sw('trainer', 'Trainer mode', 'On a page of the Mystery Island or Ninja school, it trains the pets you give goals to by itself, one step at a time with a person’s pause between: a finished course completed, the next course started toward each pet’s goals, the codestones it asks for bought from the cheapest shop when your inventory hasn’t got them (under your limits below), then paid. Its band on the school’s pages says what it’s doing, with Stop; its Trainer button there gives your pets their goals. It never cancels a course, and works only in the tab you’re looking at.')}
+        <div class="bnp-trrisk" role="note"><i aria-hidden="true">${WARN_SVG}</i><p><b>Use at your own risk.</b> Once you choose stats for a pet, Trainer mode acts on your account by itself: it starts and pays for courses, takes codestones out of your SDB and spends your Neopoints in other players’ shops. It goes slowly, like a person, and only while you’re on a school’s page, but Neopets’ rules don’t allow automating the site. With no pet chosen it does nothing; switch it off here to have no Trainer at all.</p></div>
+        <div class="bnp-trsub" data-needs="trainer"${f.trainer ? '' : ' hidden'}>
+          ${sw('trHours', 'Active hours', 'It works only between these times (your computer’s clock), on the days lit. Outside them its band says when it’s back; Run now still works when you press it.')}
+          <div class="bnp-trsub" data-needs="trHours"${f.trHours ? '' : ' hidden'}>
+            <label class="bnp-f"><span>From</span><input type="time" data-feat="trFrom" value="${esc(f.trFrom || '09:00')}"></label>
+            <label class="bnp-f"><span>To</span><input type="time" data-feat="trTo" value="${esc(f.trTo || '21:00')}"></label>
+            <div class="bnp-f"><span>Days</span><span class="bnp-trdays">${[1, 2, 3, 4, 5, 6, 0].map((d) => `<label class="bnp-trday"><input type="checkbox" data-feat="trD${d}"${f[`trD${d}`] !== false ? ' checked' : ''}><span>${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]}</span></label>`).join('')}</span></div>
+          </div>
+          ${sw('trSdb', 'Take codestones out of your SDB first', 'Before it buys any, the ones a course needs that are in your Safety Deposit Box come out to your inventory, as your SDB’s own Move to Inventory does it. If your SDB asks for your PIN to take things out, it leaves them to you and says so.')}
+          ${sw('trBuy', 'Buy the codestones it needs', 'Only what your inventory (and your SDB) hasn’t got, from the cheapest shop the Shop Wizard finds (the Super Shop Wizard with Premium), never over the limits here. It stops buying when your inventory holds 50 items, you’re short of Neopoints, or the Wizard asks for a break, and says so. Off: it waits for you to bring them.')}
+          <div class="bnp-trsub" data-needs="trBuy"${f.trBuy !== false ? '' : ' hidden'}>
+            <label class="bnp-f"><span>Most for a codestone</span><span class="bnp-trnp"><input type="number" min="1" step="100" inputmode="numeric" data-feat="trMaxTan" value="${trNum('trMaxTan', 15000)}">NP</span></label>
+            <label class="bnp-f"><span>Most for a red codestone</span><span class="bnp-trnp"><input type="number" min="1" step="500" inputmode="numeric" data-feat="trMaxRed" value="${trNum('trMaxRed', 75000)}">NP</span></label>
+            <label class="bnp-f"><span>Most a day, in all</span><span class="bnp-trnp"><input type="number" min="1" step="1000" inputmode="numeric" data-feat="trMaxDay" value="${trNum('trMaxDay', 2000000)}">NP</span></label>
+          </div>
+        </div>
+      </div>`],
       ['otherpages', `<div class="bnp-card"><h4>Styling Studio</h4>
         ${sw('ssAvail', 'An Available tab: every style, species A–Z', 'A fourth tab beside Restyle with everything the Studio has right now: each species with its styles’ pictures and names, the newest first, New and Limited marked, and Prismatics too. Find a species or style, show only New or Limited, or only species you have. Pick one and the Studio’s own window opens for its species, to choose the pet and the token. NE reads three species at a time, the ones in sight first, only while you’re on the tab, and keeps the lists for 12 hours.')}
       </div>`],
@@ -42292,6 +43089,7 @@
       if (k === 'scView') { if (S.features.scView) scPage(); else scOff(); }
       if (k === 'ssAvail') { if (S.features.ssAvail) ssPage(); else ssOff(); }
       if (k === 'hpLevel') hpLevel();
+      if (k === 'trainer' || /^tr[A-Z]/.test(k)) trainerFeature();
       if (k === 'hubPal') hubPal();
       if (k === 'lookup9999') lookup9999();
       if (k === 'boardPal') boardPal();
@@ -42309,6 +43107,7 @@
       if (/^ncl/.test(k)) nclSettingsChanged(k);
       if (/^tp/.test(k) && tpOn()) { try { tpApply(); tpPaint(); } catch (e) { report(e); } }   // (the Trading Post open here: as you've set it, at once)
       if (t.type !== 'text') { const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep; }
+      if (k === 'trainer' && S.features.trainer) hubWarn('[data-feat="trainer"]', '<b>Trainer mode is on.</b> On a school’s page, press its Trainer button to give your pets goals; it starts from there.');
     }, t.type === 'text' ? 400 : 0);
   }
 
@@ -45829,9 +46628,204 @@
     .bnp-train-acts br { display: none; }
     .bnp-train-acts .bnp-train-line { flex: 1 1 100%; margin: 2px 0; text-align: center; }   /* (a line of Neopets' words with a link or button in it, kept whole) */
     .bnp-train-btn { width: auto !important; min-width: 92px; margin: 2px !important; padding: 6px 22px 7px !important; font-size: 16px !important; }
+    .bnp-train-acts .bnp-train-pay { flex: 1 1 100%; margin: 6px 0 0; text-align: center; }
+    .bnp-train-acts a.bnp-train-paybtn { display: inline-block; min-width: 150px; margin: 0 !important; padding: 7px 28px 9px !important; font-size: 17px !important; font-weight: 400 !important; color: #363636 !important; text-align: center; text-decoration: none !important; }   /* (Neopets' own Pay's ink, not the link's blue) */
+    .bnp-train-acts .bnp-train-cancel { flex: 1 1 100%; margin: 12px 0 0; padding-top: 10px; border-top: 2px dashed rgba(0, 0, 0, .14); color: #57524a; font-size: 13px; text-align: center; }   /* (Cancel's words, well apart from Pay) */
+    .bnp-train-cancel > font, .bnp-train-cancel > i { display: block; margin-top: 3px; }
     .bnp-train-acts input.bnp-train-btn[value*="Complete" i] { min-width: 0; min-height: 40px; margin: 0 !important; padding: 7px 24px 9px !important; font-size: 17px !important; }
     .bnp-traindone .bnp-coco-head h1 { font-size: 28px; }
     .bnp-train-res { font: 17px "MuseoSansRounded500", Arial, sans-serif; }
+    html.bnp-trview td.content > :not(.bnp-train-nav):not(.bnp-train-title):not([data-bnp="trainer"]):not(script):not(style) { display: none !important; }   /* (the Trainer shown: the page's own words out of sight, its title and links kept) */
+    .bnp-tr-chipdot { display: none; width: 8px; height: 8px; margin-left: 6px; border: 1.5px solid rgba(255, 255, 255, .85); border-radius: 50%; vertical-align: 1px; }   /* (the Trainer's link: how it is, at a glance) */
+    .bnp-tr-chip.is-run .bnp-tr-chipdot, .bnp-tr-chip.is-wait .bnp-tr-chipdot { display: inline-block; background: #3f9a2e; }
+    .bnp-tr-chip.is-run .bnp-tr-chipdot { animation: bnp-tr-pulse 1.4s ease-in-out infinite; }
+    .bnp-tr-chip.is-rest .bnp-tr-chipdot, .bnp-tr-chip.is-paused .bnp-tr-chipdot { display: inline-block; background: #e0a800; }
+    .bnp-tr-chip.is-err .bnp-tr-chipdot { display: inline-block; background: #c0392b; }
+    .bnp-tr { margin: 0 0 16px; padding: 12px 14px 14px; border: 2px solid #e2ddcd; border-radius: 14px; background: #fff; color: #2a2a2a; font: 14px/1.4 "MuseoSansRounded500", Arial, sans-serif; text-align: left; }   /* (Trainer mode's band, under a school's links) */
+    .bnp-tr-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+    .bnp-tr-title { font: 700 19px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-tr-state { display: flex; flex: 1 1 240px; align-items: center; gap: 8px; min-width: 0; color: #57524a; }
+    .bnp-tr-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #c9c2ad; }
+    .bnp-tr-state.is-run { color: #1d5e1a; font-family: "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-tr-state.is-run .bnp-tr-dot { background: #3f9a2e; box-shadow: 0 0 0 3px rgba(63, 154, 46, .22); animation: bnp-tr-pulse 1.4s ease-in-out infinite; }
+    .bnp-tr-state.is-wait .bnp-tr-dot { background: #3f9a2e; }
+    .bnp-tr-state.is-rest { color: #8a5a00; } .bnp-tr-state.is-rest .bnp-tr-dot { background: #e0a800; }
+    @keyframes bnp-tr-pulse { 50% { box-shadow: 0 0 0 6px rgba(63, 154, 46, 0); } }
+    @media (prefers-reduced-motion: reduce) { .bnp-tr-state.is-run .bnp-tr-dot { animation: none; } }
+    .bnp-tr-mode { display: inline-flex; flex: none; align-items: center; gap: 7px; height: 26px; padding: 0 12px 0 10px; border: 1px solid #c9c2ad; border-radius: 999px; background: #f3f0e8; color: #6f6a58; font: 13px "MuseoSansRounded700", Arial, sans-serif; }   /* (Running / Paused / Not running: the trainer's own state, apart from the step it's on) */
+    .bnp-tr-mode i { width: 9px; height: 9px; border-radius: 50%; background: #b8b09a; }
+    .bnp-tr-mode.is-on { border-color: #9fce93; background: #eef8ec; color: #1d5e1a; } .bnp-tr-mode.is-on i { background: #3f9a2e; }
+    .bnp-tr-mode.is-on.is-busy i { animation: bnp-tr-pulse 1.4s ease-in-out infinite; box-shadow: 0 0 0 3px rgba(63, 154, 46, .22); }
+    .bnp-tr-mode.is-paused { border-color: #e0c26a; background: #fff4d6; color: #7a5200; } .bnp-tr-mode.is-paused i { border-radius: 1px; width: 8px; background: none; border-left: 3px solid #b07d00; border-right: 3px solid #b07d00; box-sizing: border-box; }
+    .bnp-tr-state.is-paused { color: #7a5200; }
+    .bnp-tr-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-left: auto; }
+    .bnp-tr .bnp-tr-btn { width: auto !important; min-width: 0 !important; height: 32px; margin: 0 !important; padding: 0 18px !important; font-size: 15px !important; }
+    .bnp-tr-pill { display: inline-flex; align-items: center; height: 30px; margin: 0; padding: 0 14px; border: 1px solid #b8b09a; border-radius: 999px; background: #faf9f5; box-shadow: 0 2px 0 #ddd6c3; color: #363636; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
+    .bnp-tr-pill:hover, .bnp-tr-pill:focus-visible { background: #fff3c4; outline: none; }
+    .bnp-tr-pill:disabled { opacity: .5; cursor: default; }
+    .bnp-tr-sub { display: flex; flex-wrap: wrap; gap: 2px 0; margin: 6px 0 0; color: #6f6a58; font-size: 12.5px; }
+    .bnp-tr-sub > span:not(:first-child)::before { content: "·"; margin: 0 7px; color: #b8b09a; }
+    .bnp-tr-lastline { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-tr-lastline.is-warn { color: #9a5200; } .bnp-tr-lastline.is-err { color: #b0301f; } .bnp-tr-lastline.is-ok { color: #2f6e28; }
+    .bnp-tr-flash { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 8px 0 0; padding: 6px 8px 6px 12px; border-radius: 10px; background: #fff8db; color: #4a3b00; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-tr-flash .bnp-tr-pill { height: 26px; font-size: 12px; }
+    .bnp-tr-tabs { display: flex; gap: 6px; margin: 12px 0 0; padding: 10px 0 0; border-top: 2px solid #eee8d8; }
+    .bnp-tr-tab { display: inline-flex; align-items: center; gap: 7px; height: 32px; margin: 0; padding: 0 15px; border: 1px solid rgba(161, 104, 0, .35); border-radius: 999px; background: linear-gradient(#f5c030, #e8a41d); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), 0 2px 3px rgba(100, 60, 0, .2); color: #4a3a00; font: 14px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }   /* (the school's own chips' look) */
+    .bnp-tr-tab:hover, .bnp-tr-tab:focus-visible { background: linear-gradient(#fdd040, #f5c030); outline: none; }
+    .bnp-tr-tab[aria-selected="true"] { border-color: rgba(28, 20, 0, .4); background: linear-gradient(#7a5500, #5a3d00); color: #fff; text-shadow: 0 1px 1px rgba(0, 0, 0, .3); }
+    .bnp-tr-tab b { padding: 0 7px; border-radius: 999px; background: rgba(255, 255, 255, .55); color: #4a3a00; font-size: 12px; text-shadow: none; }
+    .bnp-tr-tab[aria-selected="true"] b { background: rgba(255, 255, 255, .22); color: #fff; }
+    .bnp-tr-view { margin-top: 12px; }
+    .bnp-tr-empty { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0; padding: 14px; border: 2px dashed #e2ddcd; border-radius: 12px; color: #6f6a58; }
+    .bnp-tr-empty p { margin: 0; }
+    .bnp-tr-quick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 4px; padding: 8px 10px; border-radius: 12px; background: #faf8f2; }   /* (a stat for every pet at once) */
+    .bnp-tr-quick > span { font: 13px "MuseoSansRounded700", Arial, sans-serif; color: #4a4536; }
+    .bnp-tr-quick small { flex: 1 1 220px; color: #6f6a58; font-size: 12px; }
+    .bnp-tr-qchip { display: inline-flex; align-items: center; height: 28px; margin: 0; padding: 0 12px; border: 1px solid #c9b98a; border-radius: 999px; background: #fff; color: #4a3a00; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
+    .bnp-tr-qchip:hover, .bnp-tr-qchip:focus-visible { background: #fff3c4; outline: none; }
+    .bnp-tr-qchip[aria-pressed="true"] { border-color: #4a3300; background: #7a5500; color: #fff; }
+    .bnp-tr-panel { margin-top: 12px; border-radius: 14px; }   /* (Training and Add pets: each its own panel, never one run of cards) */
+    .bnp-tr-panel.is-train { padding: 0 10px 10px; border: 2px solid #b9dcb0; background: #f3faf0; }
+    .bnp-tr-panel.is-add { border: 2px dashed #d3c79f; background: #faf7ee; }
+    .bnp-tr-panel.is-add.is-open { padding: 0 10px 10px; }
+    .bnp-tr-sec { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0; color: #57524a; font: 700 12.5px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .6px; text-transform: uppercase; }
+    .bnp-tr-sec b { padding: 0 8px; border-radius: 999px; background: #fff; color: #4a4536; font-size: 12px; letter-spacing: 0; }
+    .bnp-tr-sec small { flex: 1 1 200px; color: #6f6a58; font: 12px "MuseoSansRounded500", Arial, sans-serif; letter-spacing: 0; text-transform: none; }
+    .bnp-tr-panel.is-train > .bnp-tr-sec { margin: 0 -10px 10px; padding: 8px 12px; border-radius: 12px 12px 0 0; background: #e2f1dc; color: #1d5e1a; }
+    .bnp-tr-panel.is-train > .bnp-tr-sec small { color: #3c6e35; }
+    .bnp-tr-addhead { width: 100%; padding: 10px 12px; border: 0; border-radius: 12px; background: none; text-align: left; cursor: pointer; }
+    .bnp-tr-panel.is-add.is-open > .bnp-tr-addhead { margin: 0 -10px 10px; width: calc(100% + 20px); border-radius: 12px 12px 0 0; background: #f1ecdd; }
+    .bnp-tr-addhead:hover, .bnp-tr-addhead:focus-visible { background: #f1ecdd; outline: none; }
+    .bnp-tr-caret { width: 0; height: 0; margin-left: auto; border-style: solid; border-width: 6px 5px 0; border-color: #8a7a4a transparent transparent; transition: transform .15s; }
+    .bnp-tr-addhead[aria-expanded="true"] .bnp-tr-caret { transform: rotate(180deg); }
+    .bnp-tr-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+    @media (max-width: 760px) { .bnp-tr-cards { grid-template-columns: 1fr; } }
+    .bnp-tr-card { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 2px solid #e2ddcd; border-left-width: 6px; border-radius: 14px; background: #fff; }   /* (a pet: as the Status page's cards, its state down its left edge) */
+    .bnp-tr-card.is-busy { border-left-color: #3f9a2e; } .bnp-tr-card.is-pay { border-left-color: #e0a800; } .bnp-tr-card.is-done { border-left-color: #3b7dd8; } .bnp-tr-card.is-goal { border-left-color: #2f7d29; } .bnp-tr-card.is-free { border-left-color: #c9b98a; }
+    .bnp-tr-cards.is-off .bnp-tr-card { border-style: dashed; border-left-width: 2px; background: #fff; }
+    .bnp-tr-chead { display: flex; align-items: center; gap: 10px; }
+    .bnp-tr-chead img { flex: none; width: 64px; height: 64px; border-radius: 12px; background: #f4f1e8; }
+    .bnp-tr-cname { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+    .bnp-tr-cname > b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 18px/1.25 "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-tr-cname > span { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; margin-top: 2px; }
+    .bnp-tr-lv { display: inline-flex; align-items: center; gap: 5px; padding: 0 9px; border-radius: 999px; background: #2f7d29; color: #fff; font: 700 12px/1.6 "MuseoSansRounded700", Arial, sans-serif; font-style: normal; }
+    .bnp-tr-lv em { padding: 0 5px; border-radius: 999px; background: #fff; color: #2f7d29; font: 700 9.5px/1.5 "MuseoSansRounded700", Arial, sans-serif; font-style: normal; text-transform: uppercase; letter-spacing: .3px; }
+    .bnp-tr-lv.is-now { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #2f7d29; }
+    .bnp-tr-lv.is-next em { background: none; border: 1px solid #fff; color: #fff; }
+    .bnp-tr-cname small { color: #6f6a58; font-size: 12px; }
+    .bnp-tr-school { display: inline-flex; align-items: center; gap: 5px; }
+    .bnp-tr-schoolic { flex: none; height: 22px; margin: -3px 0; background-repeat: no-repeat; }   /* (its school's master, small, as by the school's title) */
+    .bnp-tr-plus { display: inline-flex; flex: none; width: 18px; height: 18px; padding: 3px; border-radius: 50%; background: #7a5500; color: #fff; box-sizing: border-box; }
+    .bnp-tr-plus svg { display: block; width: 100%; height: 100%; }
+    .bnp-tr-elsewhere { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 12px 0 0; padding: 8px 12px; border-radius: 12px; background: #f6f3ea; color: #57524a; font-size: 13px; }   /* (the pets the other school's Trainer is for) */
+    .bnp-tr-elsewhere a.bnp-tr-pill { height: 26px; color: #363636 !important; font-size: 12px; text-decoration: none !important; }
+    .bnp-tr-cstop { flex: none; height: 26px; padding: 0 11px; font-size: 12px; }
+    .bnp-tr-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .bnp-tr-tile { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .bnp-tr-tbtn { position: relative; display: flex; flex-direction: column; align-items: center; width: 100%; margin: 0; padding: 6px 4px 12px; border: 2px solid transparent; border-radius: 11px; background: #f6f3ea; color: #2a2a2a; font: inherit; cursor: pointer; transition: border-color .12s, background .12s; }   /* (a stat: click it to train it) */
+    .bnp-tr-tbtn:hover { border-color: #c9b98a; background: #fffbea; }
+    .bnp-tr-tbtn:focus-visible { outline: 3px solid rgba(254, 209, 35, .65); outline-offset: 1px; }
+    .bnp-tr-tl { display: flex; align-items: center; gap: 4px; font: 700 11.5px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .4px; text-transform: uppercase; color: #6f6a58; }
+    .bnp-tr-tl em { padding: 0 5px; border-radius: 999px; font: 700 9.5px/1.5 "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .3px; font-style: normal; }
+    .bnp-tr-tl em.is-now { background: #2f7d29; color: #fff; }
+    .bnp-tr-tl em.is-next { border: 1px solid #b07d00; color: #8a5a00; }
+    .bnp-tr-tbtn > b { font: 700 21px "MuseoSansRounded700", Arial, sans-serif; line-height: 1.15; font-variant-numeric: tabular-nums; }
+    .bnp-tr-tbtn > small { max-width: 100%; overflow: hidden; color: #8a8470; font-size: 10.5px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-tr-bar { position: absolute; left: 7px; right: 7px; bottom: 5px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--bar, #c9c3b3) var(--p), #e6e1d4 var(--p)); }
+    .bnp-tr-check { position: absolute; top: -7px; right: -7px; display: none; width: 20px; height: 20px; padding: 3px; border: 2px solid #fff; border-radius: 50%; background: #7a5500; color: #fff; box-sizing: border-box; }
+    .bnp-tr-check svg { display: block; width: 100%; height: 100%; }
+    .bnp-tr-tile.is-sel .bnp-tr-tbtn { border-color: #7a5500; background: #fff8db; }
+    .bnp-tr-tile.is-sel .bnp-tr-check { display: block; }
+    .bnp-tr-tile.is-sel .bnp-tr-bar { --bar: #d79b00; }
+    .bnp-tr-tile.is-now .bnp-tr-tbtn { border-color: #2f7d29; background: #eef8ec; }
+    .bnp-tr-tile.is-now .bnp-tr-bar { --bar: #3f9a2e; }
+    .bnp-tr-tile.is-now .bnp-tr-check { background: #2f7d29; }
+    .bnp-tr-tile.is-full:not(.is-now) .bnp-tr-tbtn > b { color: #8a8475; }
+    .bnp-tr-cards.is-off .bnp-tr-tbtn { background: #f4f1ea; }
+    .bnp-tr-upto { display: flex; align-items: center; gap: 4px; height: 26px; margin: 0; padding: 0 2px 0 8px; border: 1px solid #d8cfae; border-radius: 8px; background: #fff; color: #8a7a4a; font: 11px "MuseoSansRounded700", Arial, sans-serif; box-sizing: border-box; cursor: text; }   /* (the number it stops at: "to [ ]") */
+    .bnp-tr-upto:focus-within { border-color: #b07d00; box-shadow: 0 0 0 3px rgba(254, 209, 35, .4); }
+    .bnp-tr-upto input { flex: 1; width: 100%; min-width: 0; height: 22px; margin: 0; padding: 0 2px; border: 0; background: none; color: #2a2a2a; font: 13px "MuseoSansRounded700", Arial, sans-serif; outline: none; -moz-appearance: textfield; }
+    .bnp-tr-upto input::-webkit-inner-spin-button, .bnp-tr-upto input::-webkit-outer-spin-button { margin: 0; -webkit-appearance: none; }
+    .bnp-tr-upto input::placeholder { color: #a39d8a; font-family: "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-tr-where { display: flex; align-items: center; gap: 8px; margin: 0; padding-top: 7px; border-top: 1px solid #eee8d8; font-size: 13px; }
+    .bnp-tr-card.is-busy .bnp-tr-where .bnp-tr-dot { background: #3f9a2e; } .bnp-tr-card.is-pay .bnp-tr-where .bnp-tr-dot { background: #e0a800; } .bnp-tr-card.is-done .bnp-tr-where .bnp-tr-dot { background: #3b7dd8; } .bnp-tr-card.is-goal .bnp-tr-where .bnp-tr-dot { background: #2f7d29; }
+    .bnp-tr-card.is-pay .bnp-tr-where { color: #7a5200; }
+    .bnp-tr-cdw { color: #57524a; white-space: nowrap; }
+    .bnp-tr-cd { color: #1d5e1a; font-family: "MuseoSansRounded700", Arial, sans-serif; font-variant-numeric: tabular-nums; }   /* (the time left, ticking) */
+    .bnp-tr-cards.is-off .bnp-tr-where { color: #8a8470; }
+    .bnp-tr-hhead { display: flex; justify-content: flex-end; margin: 0 0 10px; }   /* (History: how far back; its sums; each pet; the newest) */
+    .bnp-tr-range { display: inline-flex; gap: 4px; }
+    .bnp-tr-range button { height: 28px; margin: 0; padding: 0 12px; border: 1px solid #c9b98a; border-radius: 999px; background: #fff; color: #4a3a00; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
+    .bnp-tr-range button:hover, .bnp-tr-range button:focus-visible { background: #fff3c4; outline: none; }
+    .bnp-tr-range button[aria-pressed="true"] { border-color: #4a3300; background: #7a5500; color: #fff; }
+    .bnp-tr-sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    @media (max-width: 760px) { .bnp-tr-sum { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .bnp-tr-sumtile { display: flex; flex-direction: column; align-items: center; padding: 10px 6px; border-radius: 12px; background: #f6f3ea; text-align: center; }
+    .bnp-tr-sumtile span { color: #6f6a58; font: 700 11.5px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .4px; text-transform: uppercase; }
+    .bnp-tr-sumtile b { font: 700 24px "MuseoSansRounded700", Arial, sans-serif; line-height: 1.2; font-variant-numeric: tabular-nums; }
+    .bnp-tr-sumtile small { color: #6f6a58; font-size: 12px; }
+    .bnp-tr-hsec { margin: 16px 0 8px; }
+    .bnp-tr-hsec b { background: #eeeae0; }
+    .bnp-tr-card { position: relative; }
+    .bnp-tr-nevbtn { position: absolute; top: -9px; left: -9px; z-index: 1; display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin: 0; padding: 5px; border: 2px solid #d3c79f; border-radius: 50%; background: #fff; color: #8a8470; box-shadow: 0 1px 2px rgba(0, 0, 0, .12); box-sizing: border-box; cursor: pointer; }   /* (Never train: in a card's corner) */
+    .bnp-tr-nevbtn svg { display: block; width: 100%; height: 100%; }
+    .bnp-tr-nevbtn:hover, .bnp-tr-nevbtn:focus-visible { border-color: #8a7a4a; background: #fff3c4; color: #4a3a00; outline: none; }
+    .bnp-tr-panel.is-never { border: 2px solid #ddd8ca; background: #f3f1ec; }
+    .bnp-tr-panel.is-never.is-open { padding: 0 10px 10px; }
+    .bnp-tr-panel.is-never.is-open > .bnp-tr-addhead { margin: 0 -10px 10px; width: calc(100% + 20px); border-radius: 12px 12px 0 0; background: #e9e5db; }
+    .bnp-tr-panel.is-never .bnp-tr-addhead:hover, .bnp-tr-panel.is-never .bnp-tr-addhead:focus-visible { background: #e9e5db; }
+    .bnp-tr-nevic { display: inline-flex; flex: none; width: 18px; height: 18px; color: #8a8470; }
+    .bnp-tr-nevic svg { width: 100%; height: 100%; }
+    .bnp-tr-nevlist { display: flex; flex-wrap: wrap; gap: 8px; }
+    .bnp-tr-nevpet { display: inline-flex; align-items: center; gap: 8px; padding: 5px 6px 5px 5px; border: 1px solid #ddd8ca; border-radius: 12px; background: #fff; }
+    .bnp-tr-nevpet img { width: 40px; height: 40px; border-radius: 9px; background: #f4f1e8; }
+    .bnp-tr-nevpet > span { display: flex; flex-direction: column; min-width: 0; }
+    .bnp-tr-nevpet b { font: 700 14px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-tr-nevpet small { color: #8a8470; font-size: 11.5px; }
+    .bnp-tr-nevpet .bnp-tr-pill { height: 26px; padding: 0 10px; font-size: 12px; }
+    .bnp-tr-hsec small { flex: 0 1 auto; }
+    .bnp-tr-hcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+    .bnp-tr-hcard { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 2px solid #e2ddcd; border-radius: 14px; background: #fff; }
+    .bnp-tr-hcard header { display: flex; align-items: center; gap: 10px; }
+    .bnp-tr-hcard header img { flex: none; width: 52px; height: 52px; border-radius: 11px; background: #f4f1e8; }
+    .bnp-tr-hcard header span { display: flex; flex-direction: column; min-width: 0; }
+    .bnp-tr-hcard header b { font: 700 17px/1.25 "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-tr-hcard header small { color: #6f6a58; font-size: 12px; }
+    .bnp-tr-gains { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+    .bnp-tr-gains span { display: flex; flex-direction: column; align-items: center; padding: 4px 2px; border-radius: 9px; background: #f6f3ea; }
+    .bnp-tr-gains small { color: #6f6a58; font: 700 10.5px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .4px; text-transform: uppercase; }
+    .bnp-tr-gains b { color: #a39d8a; font: 700 17px "MuseoSansRounded700", Arial, sans-serif; font-variant-numeric: tabular-nums; }
+    .bnp-tr-gains span.is-up { background: #eef8ec; } .bnp-tr-gains span.is-up b { color: #1d5e1a; }
+    .bnp-tr-hcost { margin: 0; padding-top: 7px; border-top: 1px solid #eee8d8; color: #57524a; font-size: 12.5px; }
+    .bnp-tr-hwrap { overflow-x: auto; border: 2px solid #e2ddcd; border-radius: 12px; }
+    .bnp-tr-htable { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .bnp-tr-htable th { padding: 7px 10px; background: #f6f3ea; color: #6f6a58; font: 700 11px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .4px; text-align: left; text-transform: uppercase; white-space: nowrap; }
+    .bnp-tr-htable td { padding: 6px 10px; border-top: 1px solid #f0ebde; vertical-align: top; }
+    .bnp-tr-htable tbody tr:nth-child(even) td { background: #fcfbf7; }
+    .bnp-tr-htable td:first-child { color: #8a8470; white-space: nowrap; }
+    .bnp-tr-htable .is-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .bnp-tr-hdone, .bnp-tr-hpaid { display: inline-block; margin-right: 4px; padding: 0 7px; border-radius: 999px; font: 700 11px/1.6 "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-tr-hdone { background: #e2f1dc; color: #1d5e1a; } .bnp-tr-hpaid { background: #fff1c9; color: #7a5200; }
+    .bnp-tr-log { margin: 0; padding: 0; list-style: none; }
+    .bnp-tr-log li { display: flex; align-items: baseline; gap: 8px; margin: 0; padding: 3px 0; border-bottom: 1px solid #f3efe4; font-size: 13px; }
+    .bnp-tr-log li::before { content: ""; flex: none; align-self: center; width: 8px; height: 8px; border-radius: 50%; background: #c9c2ad; }
+    .bnp-tr-log li.is-ok::before { background: #3f8f3a; } .bnp-tr-log li.is-buy::before { background: #e0a800; } .bnp-tr-log li.is-warn::before { background: #e07b00; } .bnp-tr-log li.is-err::before { background: #c0392b; }
+    .bnp-tr-log time { flex: none; min-width: 64px; color: #8a8470; font-variant-numeric: tabular-nums; }
+    .bnp-hub .bnp-trrisk { display: flex; align-items: flex-start; gap: 10px; margin: 4px 0 10px; padding: 10px 12px; border: 2px solid #e0a800; border-radius: 12px; background: #fff8dc; color: #4a3b00; font: 13.5px/1.45 "MuseoSansRounded500", Arial, sans-serif; }   /* (Settings: Trainer mode's own risk, always in sight) */
+    .bnp-hub .bnp-trrisk i { flex: none; width: 20px; height: 20px; margin-top: 1px; color: #b07d00; }
+    .bnp-hub .bnp-trrisk i svg { width: 20px; height: 20px; }
+    .bnp-hub .bnp-trrisk p { flex: 1; margin: 0; }
+    .bnp-hub .bnp-trsub { margin: 2px 0 6px 14px; padding-left: 12px; border-left: 3px solid #eee8d8; }
+    .bnp-hub .bnp-trsub[hidden] { display: none; }
+    .bnp-hub .bnp-trsub input[type="time"], .bnp-hub .bnp-trsub input[type="number"] { width: 130px; height: 32px; margin: 0; padding: 4px 9px; border: 1px solid #cfcbbd; border-radius: 8px; background: #fff; color: #363636; font: 14.31px "MuseoSansRounded500", Arial, sans-serif; box-sizing: border-box; }
+    .bnp-hub .bnp-trsub input:focus { outline: none; border-color: #9a9581; box-shadow: 0 0 0 3px rgba(254, 209, 35, .45); }
+    .bnp-hub .bnp-trnp { display: inline-flex; align-items: center; gap: 6px; }
+    .bnp-hub .bnp-trdays { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+    .bnp-hub .bnp-trday { position: relative; display: inline-flex; cursor: pointer; }
+    .bnp-hub .bnp-trday input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .bnp-hub .bnp-trday span { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border: 1px solid #cfcbbd; border-radius: 999px; background: #fff; color: #6f6a58; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-trday input:checked + span { border-color: #2f7d29; background: #2f7d29; color: #fff; }
+    .bnp-hub .bnp-trday input:focus-visible + span { box-shadow: 0 0 0 3px rgba(254, 209, 35, .55); }
     .bnp-lotto { margin: 4px 0 14px; color: #2a2a2a; font: 14px "MuseoSansRounded500", "Museo Sans Rounded", Arial, sans-serif; }
     .bnp-lotto h2 { margin: 0 0 4px; font: 26px "Cafeteria", "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-lotto h3 { margin: 14px 0 6px; font: 18px "Cafeteria", "MuseoSansRounded700", Arial, sans-serif; }
@@ -47313,6 +48307,13 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.9', '2026-11-02', [
+      'Trainer mode at the Mystery Island and Ninja schools: a Trainer link with their own shows your pets as cards; click a stat on a pet and it trains it, the lowest of them first, course after course by itself while you’re on a school page',
+      'Trainer mode: finished courses completed, the next ones started, codestones taken out of your SDB and the rest bought from the cheapest shop under your limits, then paid',
+      'Trainer mode: Running or Paused, Check now, active hours, a live countdown on each course, History (each pet’s gains, NP spent, codestones used), Log, and Never train for pets to leave out',
+      'Trainer mode is on with nothing chosen: it does nothing till you pick a stat. Its hours, SDB and buying limits are in Settings › Other pages › Training schools',
+      'Secret Ninja Training School: a Pay button in place of “click here to pay”, apart from Cancel',
+    ]],
     ['4.8.2', '2026-11-01', [
       'Closet: a big closet shows its items as they’re read, and your last list at once while it’s read again; a visit cut short goes on from where it stopped',
       'Neoboards: a topic that looks for new posts every 30 seconds or every minute stops after 30 minutes away from Neopets (an hour otherwise); back on Neopets in any tab, every tab looks as often as you’ve set again',
@@ -47898,7 +48899,7 @@
     setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 4000 + Math.random() * 12000);   // (the Turmaculus' due hours, if they're needed: a moment after the page, not at once)
     document.addEventListener('visibilitychange', () => { if (document.hidden) return; clearTimeout(turmacRead.t); turmacRead.t = setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 3000 + Math.random() * 6000); });
     try { startKeep(); } catch (e) { report(e); }
-    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, labPage, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
+    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, labPage, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
     themeAfter(themeChanged);   // (an old page, its theme's sheets still coming: everything of ours dressed again once they're in)
     whenLoaded(() => { setTimeout(() => { try { boxFootNote(); } catch (e) { report(e); } }, 900); try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } setTimeout(() => { updCheck(false).catch(report); try { updSeen(); } catch (e) { report(e); } }, 1500); try { const w = myWorn(), sw = w && themeData().sw[myLive(w).base]; if (w && (!sw || sw.v !== 7)) themeSwatches(); } catch (e) { report(e); } });   // (a theme of yours: its base's sheet read, if it hasn't been yet)   // (a random event Neopets adds a moment later; theme pictures for the tab)
     if (document.getElementById('navtop__2020') || document.getElementById('navbottom__2020')) startOnce();

@@ -1,9 +1,9 @@
 {
- "version": "4.8.2",
- "date": "2026-11-01",
+ "version": "4.9",
+ "date": "2026-11-02",
  "notes": [
-  "Big closets show their items as they’re read, and your last list at once",
-  "A closet visit cut short goes on from where it stopped",
-  "Boards stop looking sooner while you’re away, and pick up in every tab when you’re back"
+  "Trainer mode: click a stat on a pet at the training schools, and it trains it by itself",
+  "Its History: each pet’s gains, NP spent and codestones used",
+  "The Ninja school’s Pay is a button now, apart from Cancel"
  ]
 }
