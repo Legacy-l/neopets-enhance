@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      4.9.1
+// @version      4.9.2
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -7760,7 +7760,7 @@
   const trHasGoal = (x) => !!(x && x.on !== false && x.g && Object.values(x.g).some(Boolean));
   function trLog() {
     const v = get(trLogKey(), null) || {}, o = (x) => (x && typeof x === 'object' && !Array.isArray(x) ? x : {});
-    return { lines: Array.isArray(v.lines) ? v.lines : [], spent: v.spent && v.spent.d ? v.spent : { d: '', np: 0 }, seen: o(v.seen), block: o(v.block), note: o(v.note), wizUntil: Number(v.wizUntil) || 0, last: Number(v.last) || 0, failed: !!v.failed, paused: !!v.paused };
+    return { lines: Array.isArray(v.lines) ? v.lines : [], spent: v.spent && v.spent.d ? v.spent : { d: '', np: 0 }, seen: o(v.seen), block: o(v.block), note: o(v.note), wizUntil: Number(v.wizUntil) || 0, last: Number(v.last) || 0, failed: !!v.failed, paused: !!v.paused, edited: Number(v.edited) || 0 };
   }
   const trLogPut = (L) => set(trLogKey(), L);
   const trDay = (t = new Date()) => `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
@@ -7853,6 +7853,9 @@
     trOut(r.url, doc);
     return { ok: r.ok, url: r.url || '', doc };
   }
+  async function trTry(from, a) {   // (one of the trainer's own steps, its answer lost on the way: not the round's end. Status, read after, says whether it happened; never sent twice)
+    try { return await trSend(from, a); } catch (e) { if (e === TR_STOP || trLeaving || /log in/i.test(String((e && e.message) || ''))) throw e; report(e); return { ok: false, url: '', doc: null, lost: true }; }
+  }
   function trWords(doc) {   // (what Neopets' answer says, in a line: its own words, the school's name and links left out)
     const c = (doc.querySelector('td.content') || doc.body || doc.documentElement).cloneNode(true);
     for (const x of c.querySelectorAll('script, style, noscript, form, select, table')) x.remove();
@@ -7927,11 +7930,12 @@
     wwwShut(page);
     return took;
   }
+  const trA = (n) => (/^[aeiou]/i.test(String(n)) ? 'an' : 'a');   // ("an Eo Codestone", "a Zei Codestone")
   async function trBuy(run, name, want, max) {   // (up to want of one stone, from the cheapest shops at or under max, through each shop's own Buy: how many it got. run.noBuy says why it stopped buying)
     let src = itPremium() && !run.sswBusy ? 'ssw' : 'sw';
     const all = [], said = (e) => String((e && e.message) || e).replace(/[\s.!]+$/, '');
     for (let k = 0; k < (src === 'ssw' ? 1 : 2); k++) {   // (the Shop Wizard shows a few shops a search: twice, for a fairer cheapest)
-      await trStep(run, `Looking for ${want > 1 ? `${want} ${name}s` : `a ${name}`}${src === 'ssw' ? '' : ' (Shop Wizard)'}…`);
+      await trStep(run, `Looking for ${want > 1 ? `${want} ${name}s` : `${trA(name)} ${name}`}${src === 'ssw' ? '' : ' (Shop Wizard)'}…`);
       try { all.push(...await shopPmAsk(name, src)); } catch (e) {
         if (e && e.busy && src === 'ssw') { run.sswBusy = true; trSay(`${said(e)}. Looking with the Shop Wizard instead`, 'warn'); src = 'sw'; k = -1; continue; }   // (the Super Shop Wizard's break isn't the Shop Wizard's)
         if (e && e.busy) { const L = trLog(); L.wizUntil = Date.now() + 3600e3; trLogPut(L); run.noBuy = `${said(e)}. Buying waits an hour, till ${trWhen(L.wizUntil)}`; return 0; }
@@ -7939,7 +7943,7 @@
       }
     }
     const offers = [...new Map(all.filter((o) => o.href).sort((a, b) => a.price - b.price).map((o) => [o.owner, o])).values()];
-    if (!offers.length) { trSay(`No shop has a ${name} just now`, 'warn'); return 0; }
+    if (!offers.length) { trSay(`No shop has ${trA(name)} ${name} just now`, 'warn'); return 0; }
     let got = 0;
     for (const o of offers.slice(0, 4)) {
       if (o.price > max) { trSay(`The cheapest ${name} is ${trNp(o.price)}, over your ${trNp(max)} limit`, 'warn'); break; }
@@ -7947,16 +7951,16 @@
       try { u = new URL(o.href, 'https://www.neopets.com'); } catch (_) { continue; }
       if (u.pathname !== '/browseshop.phtml') continue;
       const shop = u.pathname + u.search, oii = u.searchParams.get('buy_obj_info_id') || '';
-      await trStep(run, `Opening a shop with a ${name} at ${trNp(o.price)}…`);
+      await trStep(run, `Opening a shop with ${trA(name)} ${name} at ${trNp(o.price)}…`);
       const doc = new DOMParser().parseFromString(await fromPageHtml(shop), 'text/html');
       const btn = [...doc.querySelectorAll('.bsp-item__buy[data-buy-url]')].find((b) => reClean(b.getAttribute('data-name')).toLowerCase() === name.toLowerCase() && (!oii || ((b.closest('[data-oii]') || { getAttribute: () => oii }).getAttribute('data-oii') === oii)));
       const price = btn ? shopNum(btn.getAttribute('data-price')) : 0, npa = doc.getElementById('npanchor');
       let np = npa ? shopNum(npa.textContent) : Infinity;
       if (!btn || !price || price > max) { wwwShut(shop); continue; }   // (sold meanwhile, or dearer now: the next shop)
       while (got < want) {
-        if (np < price) { run.noBuy = `Not enough Neopoints on hand for a ${name} (${trNp(price)})`; wwwShut(shop); return got; }
+        if (np < price) { run.noBuy = `Not enough Neopoints on hand for ${trA(name)} ${name} (${trNp(price)})`; wwwShut(shop); return got; }
         if (trSpent() + price > trNum('trMaxDay', 2000000)) { run.noBuy = `Today’s buying limit (${trNp(trNum('trMaxDay', 2000000))}) is reached`; wwwShut(shop); return got; }
-        await trStep(run, `Buying a ${name} for ${trNp(price)}…`);
+        await trStep(run, `Buying ${trA(name)} ${name} for ${trNp(price)}…`);
         const url = btn.getAttribute('data-buy-url'), r = await fromPage(shop, `${url}${url.includes('?') ? '&' : '?'}ajax=1`, { method: 'GET', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
         const j = await r.json().catch(() => null);
         if (j && j.success) {
@@ -7965,14 +7969,14 @@
           const L = trLog();
           L.spent = { d: trDay(), np: trSpent(L) + price };
           trLogPut(L);
-          trSay(`Bought a ${name} for ${trNp(price)}`, 'buy');
+          trSay(`Bought ${trA(name)} ${name} for ${trNp(price)}`, 'buy');
           run.bought.push({ n: name.toLowerCase(), np: price });
           if (!(Number(j.remaining) > 0)) break;
           continue;
         }
         const why = reClean((j && j.message) || `Neopets said no (${r.status})`);
         if (/maximum of \d+ items|carry/i.test(why)) { run.noBuy = 'Your inventory is full (50 items): make room, and it buys the rest'; wwwShut(shop); return got; }
-        if (/neopoints|afford/i.test(why)) { run.noBuy = `Not enough Neopoints on hand for a ${name}`; wwwShut(shop); return got; }
+        if (/neopoints|afford/i.test(why)) { run.noBuy = `Not enough Neopoints on hand for ${trA(name)} ${name}`; wwwShut(shop); return got; }
         trSay(`${name}: “${why}”`, 'warn');   // (sold out, or the shop's changed: the next shop)
         break;
       }
@@ -7994,7 +7998,7 @@
   async function trRun(manual) {   // (never two tabs at once: the one that has the browser's lock on it)
     if (trBusy || !trOn() || (!manual && (!trHoursOk() || trLog().paused))) return;
     const go = async () => {
-      const run = trBusy = { stop: false, manual: !!manual, n: 0, doing: 'Starting…', why: '', did: 0, noBuy: '', hist: [], bought: [], sdb: {} };
+      const run = trBusy = { stop: false, manual: !!manual, n: 0, doing: 'Starting…', why: '', did: 0, noBuy: '', hist: [], bought: [], sdb: {}, began: Date.now(), mine: [] };
       let failed = false;
       trElsewhere = false;
       clearTimeout(trTimer);
@@ -8018,7 +8022,7 @@
           trLogPut(L);
           trPaint();
           trSetupPaint();
-          trPlan(180000);
+          trPlan(L.edited > run.began ? 0 : 180000);   // (pets chosen or changed while it ran: the next round straight after, for them)
         }
       }
     };
@@ -8027,6 +8031,7 @@
   }
   async function trRound(run) {
     const G = trGoals(), mine = Object.entries(G).filter(([, x]) => trHasGoal(x)).map(([lc, x]) => ({ lc, ...x }));
+    run.mine = mine.map((m) => m.lc);
     const st = {}, said = new Map();
     const read = async (s) => { await trStep(run, `Reading ${TR_SCHOOLS[s].name}’s Status…`); st[s] = trPets(await trPage(`${TR_SCHOOLS[s].path}?type=status`), s); trSeen(st); };
     const at = (lc) => { const all = Object.values(st).map((l) => (l || []).find((p) => p.lc === lc)).filter(Boolean); return all.find((p) => p.kind !== 'free') || all.find((p) => p.s === (p.lv >= 250 ? 'ninja' : 'mi')) || all[0] || null; };
@@ -8037,8 +8042,8 @@
       const p = at(m.lc), a = p && p.kind === 'done' ? trAct(p, 'complete') : null;
       if (!a) continue;
       await trStep(run, `Completing ${p.name}’s ${p.study || ''} course…`);
-      const r = await trSend(`${TR_SCHOOLS[p.s].path}?type=status`, a);
-      done.push({ p, gain: trGain(r.doc), why: /[?&]type=status/.test(r.url) ? '' : trWords(r.doc) });
+      const r = await trTry(`${TR_SCHOOLS[p.s].path}?type=status`, a);
+      done.push({ p, gain: r.doc ? trGain(r.doc) : '', why: r.lost ? 'no answer came back just now' : /[?&]type=status\b/.test(r.url) ? '' : trWords(r.doc) });
       redo.add(p.s);
     }
     for (const s of redo) await read(s);
@@ -8055,7 +8060,17 @@
       const s = p0.lv >= 250 ? 'ninja' : 'mi', p = { ...((st[s] || []).find((x) => x.lc === m.lc) || p0), s }, nx = trNext(p, m.g, trBlocked(p));
       if (!nx.c) { trNote(p, nx.why); continue; }
       const from = `${TR_SCHOOLS[s].path}?type=courses`;
-      if (!forms[s]) { await trStep(run, `Opening ${TR_SCHOOLS[s].name}’s Courses…`); forms[s] = new DOMParser().parseFromString(await fromPageHtml(from), 'text/html'); }
+      if (forms[s] === false) continue;   // (its Courses page didn't open this round)
+      if (!forms[s]) {
+        await trStep(run, `Opening ${TR_SCHOOLS[s].name}’s Courses…`);
+        try { forms[s] = new DOMParser().parseFromString(await fromPageHtml(from), 'text/html'); } catch (e) {
+          if (e === TR_STOP || trLeaving) throw e;
+          report(e);
+          forms[s] = false;
+          trSay(`${TR_SCHOOLS[s].name}’s Courses page didn’t open just now: its courses start on the next round`, 'warn');
+          continue;
+        }
+      }
       const f = [...forms[s].querySelectorAll('form')].find((x) => [...x.querySelectorAll('input[name="type"]')].some((i) => i.value === 'start'));
       const opt = f && [...f.querySelectorAll('select[name="pet_name"] option')].find((o) => o.value.toLowerCase() === m.lc);
       if (!f || !opt) { trNote(p, `not on ${TR_SCHOOLS[s].name}’s Courses list`); continue; }
@@ -8063,14 +8078,15 @@
       const body = new URLSearchParams();
       for (const el of f.querySelectorAll('input[name], select[name]')) if (!/^(?:submit|button|image)$/i.test(el.type)) body.append(el.name, el.name === 'course_type' ? nx.c : el.name === 'pet_name' ? opt.value : el.value);
       await trStep(run, `Starting ${p.name}’s ${nx.c} course…`);
-      const r = await trSend(from, { url: new URL(f.getAttribute('action') || '', `https://www.neopets.com${TR_SCHOOLS[s].path}`).pathname, method: 'POST', body });
-      tried.push({ p, c: nx.c, why: /[?&]type=status/.test(r.url) ? '' : trWords(r.doc) });   // (sent back to Status: its words aren't an answer)
+      const r = await trTry(from, { url: new URL(f.getAttribute('action') || '', `https://www.neopets.com${TR_SCHOOLS[s].path}`).pathname, method: 'POST', body });
+      tried.push({ p, c: nx.c, lost: !!r.lost, why: r.lost || /[?&]type=status\b/.test(r.url) ? '' : trWords(r.doc) });   // (sent back to Status: its words aren't an answer)
       redo.add(s);
     }
     for (const s of redo) await read(s);
     for (const t of tried) {   // (what Status says now is what happened)
       const q = at(t.p.lc);
       if (q && q.kind !== 'free') { run.did++; trNote(q, ''); trSay(`${t.p.name}: started ${q.study || t.c} at ${TR_SCHOOLS[q.s].name}`, 'ok'); continue; }
+      if (t.lost) { trSay(`${t.p.name}: no answer came back for its ${t.c} course just now; the next round sees to it`, 'warn'); continue; }   // (not a refusal: the same course is tried again)
       trBlock(t.p, t.c);
       trSay(`${t.p.name}: Neopets didn’t start ${t.c}${t.why ? `: “${t.why}”` : ''}`, 'warn');
     }
@@ -8112,8 +8128,8 @@
       const a = trAct(p, 'pay');
       if (!a) continue;
       await trStep(run, `Paying for ${p.name}’s ${p.study || ''} course…`);
-      const r = await trSend(`${TR_SCHOOLS[p.s].path}?type=status`, a);
-      said.set(p.lc, /[?&]type=status/.test(r.url) ? '' : trWords(r.doc));
+      const r = await trTry(`${TR_SCHOOLS[p.s].path}?type=status`, a);
+      said.set(p.lc, r.lost ? 'no answer came back just now' : /[?&]type=status\b/.test(r.url) ? '' : trWords(r.doc));
       paid.push(p);
       redo.add(p.s);
     }
@@ -8379,7 +8395,11 @@
     if (p.kind === 'done') return ['done', `${p.study || 'Its course'} finished${on ? ': completed on the next round' : ''}`];
     if (!on) return ['off', 'Not training: click a stat to train it'];
     if (note === 'Every goal reached') return ['goal', 'Every stat it’s training has reached its number'];
-    return ['free', note ? `No course: ${note}` : 'Its next course starts on the next round'];
+    if (note) return ['free', `No course: ${note}`];
+    if (trBusy && !(trBusy.mine || []).includes(p.lc)) return ['free', 'Its next course starts right after this round'];
+    const blk = trBlocked(p);
+    if (blk.length) return ['free', `Neopets wouldn’t start ${blk.join(' or ')} just now: the next round tries another`];
+    return ['free', 'Its next course starts on the next round'];
   }
   function trCard(p, G, L) {   // (a pet, as the Status page draws it: its four stats big, each a button to train it or not)
     const x = G[p.lc], on = trHasGoal(x), g = on ? x.g : {}, s = p.lv >= 250 ? 'ninja' : 'mi';
@@ -8440,6 +8460,7 @@
   }
   function trSet(changes) {   // (goals changed: [lc, stat, value] each, value 0 off, -1 no limit, or a number; a pet with none left isn't trained. What they were, for Undo. The next round a few seconds on, so several clicks come first)
     const G = trGoals(), L = trLog(), pets = trSeenPets(), was = {};
+    L.edited = Date.now();
     for (const [lc, k, v] of changes) {
       if (!(lc in was)) was[lc] = G[lc] ? JSON.parse(JSON.stringify(G[lc])) : null;
       const p = pets.find((x) => x.lc === lc), x = G[lc] && G[lc].on !== false ? G[lc] : { n: p ? p.name : lc, on: true, g: { str: 0, def: 0, mov: 0, hp: 0, lv: -1 } };
@@ -48333,6 +48354,11 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['4.9.2', '2026-11-02', [
+      'Trainer: pets you choose while a round is going start straight after it, not minutes later, and their cards say so meanwhile',
+      'Trainer: a step whose answer from Neopets gets lost no longer ends the round; the rest goes on, and the next round sees to that pet',
+      'Trainer: courses ending together are all completed, started and paid in one round; a pet Neopets wouldn’t start a course for says so on its card',
+    ]],
     ['4.9.1', '2026-11-02', [
       'Fixes: the Trainer’s pet pictures load every time: each is kept as the board updates, tried again when Neopets’ picture server is slow, with the pet’s letter on a soft tile till it’s in',
     ]],

@@ -1,7 +1,8 @@
 {
- "version": "4.9.1",
+ "version": "4.9.2",
  "date": "2026-11-02",
  "notes": [
-  "The Trainer’s pet pictures load every time now"
+  "Trainer: pets chosen during a round start right after it",
+  "Trainer: a lost answer from Neopets no longer stops a round"
  ]
 }
