@@ -1,8 +1,7 @@
 {
- "version": "5.1.2",
+ "version": "5.1.3",
  "date": "2026-11-02",
  "notes": [
-  "SDB Read to a pet: show Books, Booktastic or both",
-  "Buy Mode: stop after a number bought"
+  "Buy Mode and Read to a pet keep going when their window is closed, shown on the page"
  ]
 }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.1.2
+// @version      5.1.3
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -32207,6 +32207,32 @@
       bar.append(p);
     }
   }
+  function runChip(id, o) {   // (a run whose window is closed, on the page: what it's doing, how far, and a click brings its window back; finished, a × too. o null: gone. o = { win, icon, title, text, busy, pct, tip, open, dismiss })
+    let c = document.querySelector(`[data-bnp="${id}"]`);
+    if (!o) { if (c) c.remove(); return; }
+    if (!c) {
+      c = document.createElement('div');
+      c.setAttribute('data-bnp', id);
+      c.setAttribute('role', 'status');
+      c.addEventListener('click', (e) => { const t = e.target instanceof Element ? e.target : null; if (!t) return; if (t.closest('[data-runchip="x"]')) { if (c.__x) c.__x(); } else if (t.closest('[data-runchip="go"]') && c.__go) c.__go(); });
+      document.body.append(c);
+    }
+    c.__go = o.open;
+    c.__x = o.dismiss;
+    for (const v of ['--bnp-accent', '--bnp-accent-text']) { const x = o.win ? o.win.style.getPropertyValue(v) : ''; if (x) c.style.setProperty(v, x); else c.style.removeProperty(v); }   // (its window's theme colours)
+    const pct = Math.max(3, Math.min(100, Math.round(o.pct || 0))), sig = JSON.stringify([o.title, o.text, o.busy, pct]);
+    if (c.dataset.sig === sig) return;
+    c.dataset.sig = sig;
+    c.className = `bnp-runchip ${o.busy ? 'is-busy' : 'is-done'}`;
+    c.innerHTML = `<button type="button" class="bnp-runchip-go" data-runchip="go" title="${esc(o.tip || 'Open it')}"><span class="bnp-runchip-ic">${o.busy ? o.icon || '' : '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.5l3.6 3.6 7.4-8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'}</span><span class="bnp-runchip-tx"><b>${esc(o.title)}</b><small>${esc(o.text)}</small></span></button>${o.busy ? '' : '<button type="button" class="bnp-runchip-x" data-runchip="x" title="Dismiss" aria-label="Dismiss">×</button>'}<span class="bnp-runchip-track" aria-hidden="true"><i style="width:${pct}%"></i></span>`;
+  }
+  function sdrChip() {   // (Read to a pet at work, or just done, while its window is closed)
+    if (!sdr) return;
+    const run = sdr.run, busy = !!(run && !run.over);
+    if (sdr.win.classList.contains('open') || !run || (!busy && !sdr.unseen)) { runChip('sdrchip', null); return; }
+    const n = run.read || 0, text = busy ? `Reading ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()} to ${sdr.pet}${run.at && run.at.st === 'now' ? `: ${run.at.name}` : ''}` : n ? `Done: ${n.toLocaleString()} ${n === 1 ? 'book' : 'books'} read to ${sdr.pet}` : `Done: nothing read to ${sdr.pet}`;
+    runChip('sdrchip', { win: sdr.win, icon: COL_IC.books, title: 'Read to a pet', text, busy, pct: busy ? 100 * run.i / Math.max(1, run.n) : 100, tip: 'Open Read to a pet', open: sdrShow, dismiss: () => { sdr.unseen = false; sdrChip(); } });
+  }
   function sdrOpen(src) {
     if (!sdrOn()) return;
     styles();
@@ -32228,8 +32254,9 @@
       win.addEventListener('error', (e) => { const t = e.target; if (t instanceof HTMLImageElement && t.dataset.fb && t.getAttribute('src') !== t.dataset.fb) t.src = t.dataset.fb; }, true);
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sdr && sdr.win.classList.contains('open')) { e.preventDefault(); sdrClose(); } });
       sdr = { win, veil, pet: '', src: 'sel', state: 'pick', books: [], had: null, err: '', run: null, pin: '', scan: null };
+      addEventListener('beforeunload', (e) => { if (sdr && sdr.run && !sdr.run.over) { e.preventDefault(); e.returnValue = ''; } });   // (leaving the page ends its reading: asked first)
     }
-    if (sdr.run && !sdr.run.over) { sdrShow(); return; }   // (reading: the window as it is)
+    if (sdr.run && (!sdr.run.over || sdr.unseen)) { sdrShow(); return; }   // (reading, or done while it was closed: the window as it is)
     const pets = sdrPets();
     let pet = '';
     try { pet = localStorage.getItem(SDR_PET) || ''; } catch (_) { /* */ }
@@ -32239,20 +32266,21 @@
     if (pet) sdrCheck().catch(report);
   }
   function sdrShow() {
+    sdr.unseen = false;
     themeWin(sdr.win);
     sdr.veil.classList.add('open');
     sdr.win.classList.add('open');
     sdrPaint();
+    sdrChip();
     const f = sdr.win.querySelector('[data-sdrpet][aria-checked="true"]') || sdr.win.querySelector('[data-sdrpet]') || sdr.win.querySelector('[data-sdr="x"]');
     if (f) f.focus({ preventScroll: true });
   }
   function sdrClose() {
     if (!sdr || !sdr.win.classList.contains('open')) return;
-    if (sdr.run && !sdr.run.over) sdr.run.stop = true;   // (closed while reading: it stops after the book it's on)
-    if (sdr.scan) sdr.scan.stop = true;
-    sdr.pin = '';
+    if (!(sdr.run && !sdr.run.over)) { if (sdr.scan) sdr.scan.stop = true; sdr.pin = ''; }   // (reading carries on, shown on the page, with its PIN for this run; anything else let go. Stop stops it)
     sdr.win.classList.remove('open');
     sdr.veil.classList.remove('open');
+    sdrChip();
     const b = $('[data-bnp="sdrbtn"]') || $('[data-bnp="sdrpill"]');
     if (b) b.focus({ preventScroll: true });
   }
@@ -32376,6 +32404,7 @@
     run.over = true;
     run.at = null;
     sdr.state = 'done';
+    if (!sdr.win.classList.contains('open')) { sdr.unseen = true; sdr.pin = ''; }   // (done while its window was closed: said on the page; the PIN let go)
     for (const b of sdr.books) if (b.st === 'now') b.st = 'wait';
     if (sdr.had && run.read) { for (const b of sdr.books) if (b.st === 'read') { sdr.had.ids.add(b.id); sdr.had.keys.add(colImgKey(b.it.obj_filename)); if (sdrBt(b)) sdr.had.bt++; else sdr.had.n++; } }   // (what it's read now, without asking again)
     sdrPaint();
@@ -32424,7 +32453,9 @@
     return `<label class="bnp-sdr-row${b.on ? '' : ' is-off'}${st ? ` is-${st}` : ''}"${b.st === 'now' ? ' data-sdrnow' : ''}>${can ? `<input type="checkbox" data-sdrbook="${esc(b.id)}"${b.on ? ' checked' : ''}${b.arch ? ' disabled' : ''}>` : ''}<span class="bnp-sdr-bk">${pic ? `<img src="${esc(pic)}" alt="" width="40" height="40" loading="lazy">` : ''}</span><span class="bnp-sdr-nm"><b>${esc(b.name)}</b>${why}</span>${sdrKindOf() === 'all' && sdrBt(b) ? '<i class="bnp-sdr-bt">Booktastic</i>' : ''}${mark}</label>`;
   }
   function sdrPaint() {
-    if (!sdr || !sdr.win.classList.contains('open')) return;
+    if (!sdr) return;
+    sdrChip();
+    if (!sdr.win.classList.contains('open')) return;
     const body = sdr.win.querySelector('[data-sdr-body]'), y = (sdr.win.querySelector('.bnp-sdr-list') || { scrollTop: 0 }).scrollTop, pets = sdrPets(), run = sdr.run, busy = !!(run && !run.over), picked = sdrPicked().length;
     const chips = pets.length ? pets.map((p) => `<button type="button" class="bnp-sdr-chip" role="radio" aria-checked="${sdr.pet === p}" data-sdrpet="${esc(p)}"${busy ? ' disabled' : ''}><img src="${esc(sdrHead(p))}" data-fb="${esc(`https://pets.neopets.com/cpn/${encodeURIComponent(p)}/1/1.png`)}" alt="" width="44" height="44"><b>${esc(p)}</b></button>`).join('') : '<p class="bnp-sdr-note">Neopets didn’t list your pets on this page: reload it, then try again.</p>';
     const src = (picked && !busy) || sdr.src === 'sel' ? `<div class="bnp-sdr-src" role="group" aria-label="Which books"><button type="button" data-sdrsrc="sel" aria-pressed="${sdr.src === 'sel'}"${busy || !picked ? ' disabled' : ''}>Selected in your SDB${picked ? ` (${picked.toLocaleString()})` : ''}</button><button type="button" data-sdrsrc="all" aria-pressed="${sdr.src === 'all'}"${busy ? ' disabled' : ''}>Every book in your SDB</button></div>` : '';   // (only when books are selected in its own list: otherwise every book, ticked here)
@@ -32443,7 +32474,7 @@
         const left = sdr.books.filter((b) => b.st === 'wait').length, nos = sdr.books.filter((b) => b.st === 'no').length, kept = sdr.books.filter((b) => b.st === 'kept').length;
         head = run.over
           ? `<div class="bnp-sdr-sum is-done"><b>${run.read ? `${run.read.toLocaleString()} ${noun(run.read)} read to ${esc(sdr.pet)}` : `Nothing read to ${esc(sdr.pet)}`}</b>${nos ? `<span>${nos.toLocaleString()} not read: Neopets’ reason is beside ${nos === 1 ? 'it' : 'each'}</span>` : ''}${kept ? `<span>${kept.toLocaleString()} Archive ${kept === 1 ? 'book isn’t' : 'books aren’t'} read: ${kept === 1 ? 'it goes' : 'they go'} in your Archive Bookshelf</span>` : ''}${left ? `<span>${run.pinStop ? `Stopped: ${esc(run.pinStop)}` : run.netStop ? 'Stopped: Neopets didn’t answer twice in a row' : 'Stopped'}. ${left.toLocaleString()} still to read ${left === 1 ? 'is' : 'are'} still selected</span>` : ''}</div>`
-          : `<div class="bnp-sdr-sum"><b>Reading ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()} to ${esc(sdr.pet)}</b><span>${run.at ? esc(run.at.name) : ''}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
+          : `<div class="bnp-sdr-sum"><b>Reading ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()} to ${esc(sdr.pet)}</b><span>${run.at && run.at.st === 'now' ? esc(run.at.name) : ''}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
       } else head = todo.length ? `<div class="bnp-sdr-sum"><b>${todo.length.toLocaleString()} ${noun(todo.length)} ${esc(sdr.pet)} hasn’t read</b>${done.filter((b) => !b.arch).length ? `<span>${done.filter((b) => !b.arch).length.toLocaleString()} it has read already ${done.filter((b) => !b.arch).length === 1 ? 'is' : 'are'} left out</span>` : ''}${done.some((b) => b.arch) ? `<span>${done.filter((b) => b.arch).length.toLocaleString()} Archive ${done.filter((b) => b.arch).length === 1 ? 'book isn’t' : 'books aren’t'} read</span>` : ''}${todo.length > 1 ? `<span class="bnp-sdr-tick"><label class="bnp-sdr-sortby"><span>Sort</span><select data-sdrsort aria-label="Sort the books">${[['cheap', 'Cheapest first'], ['dear', 'Priciest first'], ['name', 'A to Z']].map(([v, l]) => `<option value="${v}"${by === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label><button type="button" class="bnp-sdr-lb" data-sdr="all">All</button><button type="button" class="bnp-sdr-lb" data-sdr="none">None</button><span class="bnp-upto" title="Ticks the ones itemdb prices at or under this, and unticks the rest"><label><span>Up to</span><input type="text" inputmode="numeric" autocomplete="off" data-sdrupto value="${esc(((() => { try { return Number(localStorage.getItem('bnp-sdr-upto')) || 0; } catch (_) { return 0; } })() || 5000).toLocaleString())}" aria-label="Tick the ones up to this many Neopoints">NP</label><button type="button" class="bnp-sdr-lb" data-sdr="upto">Tick</button></span></span>` : ''}</div>`
         : `<div class="bnp-sdr-sum is-done"><b>${shown.length ? `${esc(sdr.pet)} has read ${shown.length === 1 ? 'it' : `all ${shown.length.toLocaleString()}`} already` : sdr.books.length ? `No ${noun(2)} ${sdr.src === 'all' ? 'in your SDB' : 'selected'}` : sdr.src === 'all' ? 'No books in your SDB' : 'No books selected'}</b>${!shown.length && sdr.books.length ? `<span>Show ${k === 'bt' ? 'Books' : 'Booktastic'} or All for the others.</span>` : shown.length && sdr.src === 'sel' ? '<span>Choose another pet, or look through every book in your SDB.</span>' : ''}</div>`;
       const rows = `${todo.map((b) => sdrRowHtml(b, can)).join('')}${done.length ? `${todo.length ? `<p class="bnp-sdr-sep">Left out: ${done.some((b) => !b.arch) ? `the ones ${esc(sdr.pet)} has read${can ? ' (tick one to read it anyway)' : ''}` : ''}${done.some((b) => !b.arch) && done.some((b) => b.arch) ? ', and ' : ''}${done.some((b) => b.arch) ? 'Archive books, which aren’t read' : ''}</p>` : ''}${done.map((b) => sdrRowHtml(b, can)).join('')}` : ''}`;
@@ -32544,13 +32575,18 @@
       win.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.matches('[data-bmupto]')) { e.preventDefault(); bmUpTo(); } });
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && bm && bm.win.classList.contains('open') && !(e.target instanceof HTMLInputElement && e.target.matches('[data-bmfind]') && e.target.value)) { e.preventDefault(); bmClose(); } });
       bm = { win, veil, kind: '', pet: '', rows: [], run: null, q: '', note: '' };
+      addEventListener('beforeunload', (e) => { if (bm && bm.run && !bm.run.over) { e.preventDefault(); e.returnValue = ''; } });   // (leaving the page ends a run: asked first)
     }
-    if (!(bm.run && !bm.run.over)) {   // (a run under way: the window as it is)
+    if (!(bm.run && (!bm.run.over || bm.unseen))) {   // (a run under way, or done while it was closed: the window as it is)
       const L = bmList(kind);
       Object.assign(bm, { kind, pet: kind === 'stamps' ? '' : (col && col.pet) || '', q: '', note: '', run: null, unread: L ? L.unread : 0, partial: !!(L && L.partial), missing: !L });
       bm.rows = (L ? L.rows : []).map((r, i) => ({ ...r, i, on: false, st: '', why: '', paid: 0 })).sort((a, b) => ((a.guide || Infinity) - (b.guide || Infinity)) || a.name.localeCompare(b.name));
       bm.rows.forEach((r, i) => { r.i = i; });
     }
+    bmShow();
+  }
+  function bmShow() {   // (the window again as it is: a run under way, or what the last one did)
+    bm.unseen = false;
     themeWin(bm.win);
     bm.veil.classList.add('open');
     bm.win.classList.add('open');
@@ -32558,11 +32594,25 @@
     const x = bm.win.querySelector('[data-bm="x"]');
     if (x) x.focus({ preventScroll: true });
   }
+  function bmChip() {   // (Buy Mode at work, or just done, while its window is closed: on the page, a click opens it again)
+    if (!bm) return;
+    const run = bm.run, busy = !!(run && !run.over);
+    if (bm.win.classList.contains('open') || !run || (!busy && !bm.unseen)) { runChip('bmchip', null); return; }
+    let text;
+    if (busy) {
+      const u = run.use, U = u && u.sdb ? BM_SDB : bmUse();
+      text = run.looking ? 'Looking at what you have' : run.waitUntil ? `Waiting out the ${bmWiz(run.src)}’s break, till about ${bmAt(run.waitUntil)}` : run.pause ? 'Paused: open it to Resume' : u && U ? `${U.doing} ${u.sending ? (u.n === 1 ? 'it' : `all ${u.n.toLocaleString()}`) : `${Math.min(u.i + 1, u.n).toLocaleString()} of ${u.n.toLocaleString()}`}${U.to(bm.pet)}` : `Buying ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()}${run.at && run.at.st === 'now' ? `: ${run.at.name}` : ''}`;
+    } else {
+      const got = bm.rows.filter((r) => r.st === 'got' && !r.mine).length;
+      text = got ? `Done: bought ${got.toLocaleString()} for ${bmNp(run.spent)}` : 'Done: nothing bought';
+    }
+    runChip('bmchip', { win: bm.win, icon: BM_CART, title: 'Buy Mode', text, busy, pct: busy ? 100 * run.i / Math.max(1, run.n) : 100, tip: 'Open Buy Mode', open: bmShow, dismiss: () => { bm.unseen = false; bmChip(); } });
+  }
   function bmClose() {
     if (!bm || !bm.win.classList.contains('open')) return;
-    if (bm.run && !bm.run.over) { bm.run.stop = true; bm.run.pause = false; }   // (closed while buying: it stops after what it's doing)
-    bm.win.classList.remove('open');
+    bm.win.classList.remove('open');   // (a run carries on, shown on the page: Stop stops it)
     bm.veil.classList.remove('open');
+    bmChip();
   }
   const bmMark = { got: ['read', '✓', 'Bought'], over: ['ask', '!', 'Over your limit'], none: ['kept', '–', 'Not in a shop'], no: ['no', '!', 'Not bought'], now: ['now', '', 'Buying'] };
   function bmRowHtml(r, busy) {
@@ -32572,7 +32622,9 @@
     return `<label class="bnp-sdr-row${r.on ? '' : ' is-off'}${m ? ` is-${m[0]}` : ''}" data-bmr="${r.i}"><input type="checkbox" data-bmrow="${r.i}"${r.on ? ' checked' : ''}${busy || r.st === 'got' ? ' disabled' : ''}><span class="bnp-sdr-bk"><img src="${esc(r.img)}" alt="" width="40" height="40" loading="lazy"></span><span class="bnp-sdr-nm"><b>${esc(r.name)}</b>${small}</span>${m ? `<i class="bnp-sdr-st is-${m[0]}" title="${esc(m[2])}">${m[1]}</i>` : ''}</label>`;
   }
   function bmPaint() {
-    if (!bm || !bm.win.classList.contains('open')) return;
+    if (!bm) return;
+    bmChip();
+    if (!bm.win.classList.contains('open')) return;
     const body = bm.win.querySelector('[data-bm-body]'), y = (body.querySelector('.bnp-sdr-list') || { scrollTop: 0 }).scrollTop, P = bmP(), run = bm.run, busy = !!(run && !run.over), what = bmWhat(bm.kind, bm.pet), wiz = bmWiz(P.src), ban = bmBanned(P.src);
     const seg = (v, l, dis, tip) => `<button type="button" data-bmsrc="${v}" aria-pressed="${P.src === v}"${dis ? ' disabled' : ''}${tip ? ` title="${esc(tip)}"` : ''}>${l}</button>`;
     const set = `<div class="bnp-bm-set">
@@ -32605,13 +32657,14 @@
       if (!run.over && run.looking) return '<div class="bnp-sdr-sum" data-bmsum><b>Looking at what you have</b><span>Your inventory and your SDB, so nothing’s bought twice</span></div>';
       const u = run.use, U = u && u.sdb ? BM_SDB : bmUse();
       if (!run.over && u && U) { const more = run.ending ? 0 : run.n - run.i; return `<div class="bnp-sdr-sum" data-bmsum><b>${U.doing} ${u.sending ? (u.n === 1 ? 'it' : `all ${u.n.toLocaleString()}`) : `${Math.min(u.i + 1, u.n).toLocaleString()} of ${u.n.toLocaleString()}`}${esc(U.to(bm.pet))}</b><span>${esc(u.sending ? 'Quick Stock’s Submit pressed' : u.name || (u.qs ? 'Opening Quick Stock' : ''))}</span><span>${u.qs ? 'With Quick Stock, in one go · ' : ''}${run.useOnly ? 'From your inventory, one at a time' : more > 0 ? `Then back to buying: ${more.toLocaleString()} of ${run.n.toLocaleString()} left` : 'Then it’s done'} · spent ${esc(bmNp(run.spent))}</span><div class="bnp-sdr-track"><i style="width:${u.sending ? 100 : Math.max(4, Math.round(100 * u.i / Math.max(1, u.n)))}%"></i></div></div>`; }   // (its own progress while it's at it)
-      if (!run.over) return `<div class="bnp-sdr-sum" data-bmsum><b>${run.waitUntil ? 'Waiting out the wizard’s break' : run.pause ? 'Paused' : `Buying ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()}`}</b><span>${run.at && !run.reading ? esc(run.at.name) : ''}</span><span>Spent ${esc(bmNp(run.spent))} of your ${esc(bmNp(run.budget))}${run.stopAt ? ` · bought ${run.bought.toLocaleString()} of ${run.stopAt.toLocaleString()}` : ''}${Number.isFinite(run.room) ? ` · inventory ${Math.max(0, 50 - run.room)} of 50` : ''}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
+      if (!run.over) return `<div class="bnp-sdr-sum" data-bmsum><b>${run.waitUntil ? 'Waiting out the wizard’s break' : run.pause ? 'Paused' : `Buying ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()}`}</b><span>${run.at && run.at.st === 'now' && !run.reading ? esc(run.at.name) : ''}</span><span>Spent ${esc(bmNp(run.spent))} of your ${esc(bmNp(run.budget))}${run.stopAt ? ` · bought ${run.bought.toLocaleString()} of ${run.stopAt.toLocaleString()}` : ''}${Number.isFinite(run.room) ? ` · inventory ${Math.max(0, 50 - run.room)} of 50` : ''}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
       const unread = bmUnread();
       return `<div class="bnp-sdr-sum is-done" data-bmsum><b>${got.length ? `Bought ${got.length.toLocaleString()} for ${esc(bmNp(run.spent))}` : 'Nothing bought'}${run.read && bmUse() ? ` · ${run.read.toLocaleString()} ${esc(bmUse().done(bm.pet))}` : ''}${run.sdb ? ` · ${run.sdb.toLocaleString()} put in your SDB` : ''}${mine ? ` · ${mine.toLocaleString()} you had already` : ''}</b>${unread.length ? `<span class="bnp-sdr-tick"><button type="button" class="bnp-sdr-lb" data-bm="readnow">${esc(bmUse().now(unread.length === 1 ? 'one' : unread.length.toLocaleString(), bm.pet))}</button></span>` : ''}${why ? `<span>${esc(why === 'budget' ? 'Your budget for this run is used up.' : why === 'count' ? `Stopped at your limit of ${run.stopAt.toLocaleString()} bought: the rest are still ticked.` : why === 'ban' ? `Stopped while the ${bmWiz(run.src)} was on its break.` : why)}</span>` : run.stop ? '<span>Stopped.</span>' : ''}<span>${(() => { const left = got.filter((r) => !r.read && !r.sdb).length; return left ? (left === got.length ? 'They’re in your inventory. ' : `${left.toLocaleString()} still in your inventory. `) : ''; })()}Tick more and Start again any time.</span></div>`;
     }
     return `<div class="bnp-sdr-sum" data-bmsum><b>${bm.rows.length.toLocaleString()} listed</b><span>${on.length.toLocaleString()} ticked${stop && on.length > stop ? ` · it stops after ${stop.toLocaleString()} bought` : ''}${guide ? ` · itemdb’s guide ≈ ${esc(bmNp(guide))}` : ''}</span><span class="bnp-sdr-tick"><input type="search" class="bnp-bm-find" data-bmfind placeholder="Find…" aria-label="Find one by name" value="${esc(bm.q)}"${busy ? ' disabled' : ''}><button type="button" class="bnp-sdr-lb" data-bm="all">All</button><button type="button" class="bnp-sdr-lb" data-bm="none">None</button><span class="bnp-upto" title="Ticks the ones itemdb prices at or under this, and unticks the rest (of those in sight). Only a guide: Buy Mode goes by the shops’ prices, never over your most"><label><span>Up to</span><input type="text" inputmode="numeric" autocomplete="off" data-bmupto value="${esc((bmNumOk(saJson(BM_KEY, {}).upto, 0) || bmP().max).toLocaleString())}"${busy ? ' disabled' : ''} aria-label="Tick the ones up to this many Neopoints">NP</label><button type="button" class="bnp-sdr-lb" data-bm="upto"${busy ? ' disabled' : ''}>Tick</button></span></span></div>`;
   }
   function bmSumPaint() {
+    bmChip();
     const s = bm.win.querySelector('[data-bmsum]');
     if (s) { const f = s.querySelector('[data-bmfind]'), had = f && document.activeElement === f; s.outerHTML = bmSumHtml(); if (had) { const n = bm.win.querySelector('[data-bmfind]'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } } }
     bmFootPaint();
@@ -32941,7 +32994,7 @@
     const run = bm.run;
     Object.assign(run, { over: false, stop: false, pause: false, why: '', useOnly: true, full: false });
     bmPaint();
-    try { await bmReadPending(run); } finally { run.over = true; run.useOnly = false; bmPaint(); }
+    try { await bmReadPending(run); } finally { run.over = true; run.useOnly = false; if (!bm.win.classList.contains('open')) bm.unseen = true; bmPaint(); }
   }
   async function bmRun() {
     if (!bm || (bm.run && !bm.run.over)) return;
@@ -33011,6 +33064,7 @@
     run.over = true;
     run.at = null;
     for (const r of bm.rows) if (r.st === 'now') r.st = '';
+    if (!bm.win.classList.contains('open')) bm.unseen = true;   // (done while its window was closed: said on the page till it's looked at)
     bmPaint();
   }
   // ═══════════════════════════════════════════════════════════════════════════
@@ -47555,6 +47609,24 @@
     .bnp-sdr-kinds .bnp-sdr-src button { display: inline-flex; align-items: center; gap: 7px; }
     .bnp-sdr-kinds .bnp-sdr-src small { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: rgba(0, 0, 0, .07); font-size: 11.5px; line-height: 1.35; text-align: center; }
     .bnp-sdr-kinds .bnp-sdr-src button[aria-pressed="true"] small { background: color-mix(in srgb, var(--bnp-accent-text) 22%, transparent); }
+    .bnp-runchip { position: fixed; z-index: 2147482600; left: 16px; bottom: 16px; display: flex; align-items: stretch; max-width: min(380px, calc(100vw - 32px)); overflow: hidden; border: 1px solid color-mix(in srgb, var(--bnp-accent, #d9a420) 62%, #000); border-radius: 14px; background: linear-gradient(color-mix(in srgb, var(--bnp-accent, #d9a420) 80%, #fff), var(--bnp-accent, #d9a420)); color: var(--bnp-accent-text, #2a2a2a); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 2px 0 color-mix(in srgb, var(--bnp-accent, #d9a420) 55%, #000), 0 4px 14px rgba(0, 0, 0, .2); transition: transform .12s ease, box-shadow .12s ease; }
+    .bnp-runchip:hover, .bnp-runchip:focus-within { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 3px 0 color-mix(in srgb, var(--bnp-accent, #d9a420) 55%, #000), 0 5px 12px rgba(0, 0, 0, .16); }
+    html.bnp-side-pinned .bnp-runchip { left: calc(var(--bnp-side-w, 280px) + 16px); }   /* (beside the left side's pinned panel) */
+    .bnp-runchip-go { display: flex; align-items: center; gap: 10px; min-width: 0; margin: 0; padding: 8px 15px 11px 9px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+    .bnp-runchip-go:focus-visible { outline: 2px solid currentColor; outline-offset: -4px; border-radius: 12px; }
+    .bnp-runchip-ic { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: rgba(255, 255, 255, .3); box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, .1); }
+    .bnp-runchip-ic svg { width: 17px; height: 17px; }
+    .bnp-runchip.is-busy .bnp-runchip-ic { animation: bnp-runchip-beat 1.8s ease-in-out infinite; }
+    @keyframes bnp-runchip-beat { 50% { background: rgba(255, 255, 255, .52); } }
+    @media (prefers-reduced-motion: reduce) { .bnp-runchip.is-busy .bnp-runchip-ic { animation: none; } }
+    .bnp-runchip-tx { display: grid; gap: 1px; min-width: 0; }
+    .bnp-runchip-tx b { font: 16px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    .bnp-runchip-tx small { overflow: hidden; font: 12px/1.3 "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; opacity: .92; }
+    .bnp-runchip-x { flex: none; width: 34px; margin: 0; padding: 0 0 3px; border: 0; border-left: 1px solid color-mix(in srgb, var(--bnp-accent, #d9a420) 60%, #000 25%); background: none; color: inherit; font: 20px/1 Arial, sans-serif; cursor: pointer; }
+    .bnp-runchip-x:hover, .bnp-runchip-x:focus-visible { background: rgba(255, 255, 255, .22); outline: none; }
+    .bnp-runchip-track { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(0, 0, 0, .14); }
+    .bnp-runchip-track i { display: block; height: 100%; background: rgba(255, 255, 255, .85); transition: width .35s ease; }
+    .bnp-runchip.is-done .bnp-runchip-track { display: none; }
     .bnp-sdr-bt { flex: none; padding: 2px 9px; border-radius: 999px; background: #ece5f6; color: #4c3a72; font: 11px/1.4 "MuseoSansRounded700", Arial, sans-serif; font-style: normal; }   /* (a Booktastic book, when both kinds show: Kreludor's purple) */
     .bnp-sdr-go { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 11px 0 7px; border: 1.5px solid #ddd6c2; border-radius: 999px; background: #fff; color: #363636 !important; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; text-decoration: none !important; }
     .bnp-sdr-go:hover { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #777); }
@@ -50140,6 +50212,9 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.1.3', '2026-11-02', [
+      'Buy Mode and the SDB’s Read to a pet: closing the window (or clicking outside it) no longer stops them, only Stop does. A chip on the page shows what it’s doing, says when it’s done, and opens the window again. Leaving the page mid-run asks first',
+    ]],
     ['5.1.2', '2026-11-02', [
       'Safety Deposit Box: Read to a pet shows All, Books or Booktastic books (each counts for its own award), with how many your pet hasn’t read. Only the ones shown are read, and the count at the top follows',
       'Buy Mode: Stop after a number bought, so ticking by price can’t buy more than you meant. The rest stay ticked for next time',
