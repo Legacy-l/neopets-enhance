@@ -1,9 +1,10 @@
 {
- "version": "5.1.4",
- "date": "2026-11-02",
+ "version": "5.1.5",
+ "date": "2026-11-03",
  "notes": [
-  "Buy Mode: lighter with long lists (150 at a time)",
-  "Buy Mode: sturdier SDB step and inventory handling",
-  "Read to a pet: fixes"
+  "Dailies: a Prizes tab on the board",
+  "Kiko Pop: playable without Flash",
+  "Dailies bar: ‹ › arrows",
+  "Quick Ref: Your Pets folds into its nameplate"
  ]
 }

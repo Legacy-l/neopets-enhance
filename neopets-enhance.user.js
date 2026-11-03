@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.1.4
+// @version      5.1.5
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -702,6 +702,26 @@
       ],
     },
 
+    // never: visiting the page · a difficulty pressed (only its answer counts) · the "already played" pop-up's words, which every page has (only its opening as the page loads) · clicks in the game
+    kpop: {
+      kind: 'daily',
+      tries: { base: 1, premium: 1 },
+      ajax: [
+        { u: /^\/worlds\/kiko\/kpop\/ajax\/prize\.php/, post: null, when: (d) => !!d && d.success === true,
+          means: 'done', until: DP.mid, count: null, log: (d) => DP.clip(`won ${DP.strip((d.prize && d.prize.name) || 'a prize')}${d.avatar ? ' · the Kiko Pop avatar' : ''}`) },
+        { u: /^\/worlds\/kiko\/kpop\/ajax\/miss\.php/, post: null, when: (d) => !!d && d.success === true,
+          means: 'done', until: DP.mid, count: null, log: () => 'missed' },
+        { u: /^\/worlds\/kiko\/kpop\/ajax\/difficulty\.php/, post: null, when: (d) => !!d && d.success === true,
+          means: 'done', until: DP.mid, count: null, log: null },   // (picked: today's go, thrown or not (Neopets says no to another pick); the prize is logged from its own answer, earKpop)
+        { u: /^\/worlds\/kiko\/kpop\/ajax\/difficulty\.php/, post: null, when: (d) => !!d && d.success === false && d.category === false,
+          means: 'done', until: DP.mid, count: null, log: null },   // (Neopets' no: already played today)
+      ],
+      page: [
+        { u: /^\/worlds\/kiko\/kpop\/(?:index\.phtml)?(?:\?.*)?$/, method: 'any', sel: null, inText: false, re: /function popupAlready\(\)/, when: (m, doc) => kpopAlready(doc),
+          means: 'done', until: DP.mid, count: null, log: null },   // (the page opens Neopets' "You've already played today" as it loads)
+      ],
+    },
+
     // never: visiting the page · the roll press
     dice: {
       kind: 'daily',
@@ -716,6 +736,8 @@
             const how = /I won, as planned!/.test(t) ? 'lost' : 'rolled';
             return DP.clip([r ? `${how} ${r[1]} vs ${r[2]}` : how, lost ? `pet lost ${lost[1]} level${lost[1] === '1' ? '' : 's'}` : ''].filter(Boolean).join(' · '));
           } },
+        { u: /^\/worlds\/deadlydice\.phtml/, method: 'any', sel: null, inText: true, re: /Your roll:\s*\d+[\s\S]{0,400}?von Roo's roll:\s*\d+/, when: null,
+          means: 'done', until: DP.mid, count: null, log: (m, doc) => DAILY_PROOF.dice.page[0].log(m, doc) },   // (any page showing today's two rolls: a win or a draw may say other words than a loss's, and a later visit shows them again)
       ],
     },
 
@@ -1066,18 +1088,6 @@
       page: [],
     },
 
-    // never: opening the page (drop the v flag) · clicks in the game
-    kpop: {
-      kind: 'daily',
-      tries: { base: 1, premium: 1 },
-      ajax: [
-        { u: /\/worlds\/kiko\/kpop\/ajax\/difficulty\.php/, post: null, when: (d) => !!d && d.success === true,
-          means: 'done', until: DP.mid, count: null, log: (d) => `difficulty ${d.difficulty} · category ${d.category}` },
-        { u: /\/worlds\/kiko\/kpop\/ajax\/difficulty\.php/, post: null, when: (d) => !!d && d.success === false && d.category === false,
-          means: 'done', until: DP.mid, count: null, log: null },   // (already played today; Neopets shows nothing)
-      ],
-      page: [],
-    },
 
     // never: visiting the page (drop the v flag) · a prizeclaimed answer with no beginroll heard in the same page load · the slt=2 frame's getslotstate answer "Trudy Daily: Load failed" · clicks (the spin happens in the frame's canvas)
     trudy: {
@@ -1798,7 +1808,7 @@
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, tillLog: true, tpSales: true, auSales: true,
     scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: true, oldBtns: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldGalleries: false, oldShops: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
-    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
+    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, kpopPlay: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, tone: '', vol: 100, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,   // (tone: '' each its own, or one of the sounds for all; vol: how loud, 5 to 100)
@@ -2708,7 +2718,7 @@
   // ═══════════════════════════════════════════════════════════════════════════
   // The Dailies board: every daily you keep, at a glance. What's ready, what's coming up and when, what's done
   // ═══════════════════════════════════════════════════════════════════════════
-  let board = null, boardTick = 0, boardAsk = false, boardArrange = false, boardSure = '', boardUndo = null;   // (boardSure: Restore the default or No sections, asked once more; boardUndo: { kind, before }, its Undo for a few seconds)
+  let board = null, boardTick = 0, boardAsk = false, boardArrange = false, boardSure = '', boardUndo = null, boardTab = 'board', boardPz = { id: '', q: '' };   // (boardTab: Your dailies or Prizes; boardPz: the Prizes tab's chip and find box)   // (boardSure: Restore the default or No sections, asked once more; boardUndo: { kind, before }, its Undo for a few seconds)
   const boardPrefs = () => ({ view: 'tiles', show: 'all', group: 'mine', size: 'xs', readyFirst: true, folded: [], names: true, ...(get('dboard', null) || {}) });
   const setBoardPrefs = (patch) => { set('dboard', { ...boardPrefs(), ...patch }); paintBoard(); };
   function openBoard() {
@@ -2786,6 +2796,7 @@
       if (e.key === 'Enter' && e.target instanceof Element && e.target.matches('[data-gname]')) e.target.blur();
     });
     win.addEventListener('click', boardClick);
+    win.addEventListener('input', (e) => { const t = e.target; if (!(t instanceof HTMLInputElement) || !t.matches('[data-bpzfind]')) return; boardPz.q = t.value; const l = board.body.querySelector('.bnb-pzbody'); if (l) l.innerHTML = boardPzListHtml(); });   // (the Prizes tab's find box: only its list drawn again, the typing kept)
     win.addEventListener('change', (e) => {
       const t = e.target;
       if (!(t instanceof Element)) return;
@@ -2804,6 +2815,37 @@
   }
   const STATE_RANK = { ready: 0, closed: 1, wait: 2, later: 2, done: 3, locked: 4, off: 5 };
   const byState = (a, b) => STATE_RANK[a.st.s] - STATE_RANK[b.st.s] || ((a.st.s === 'wait' || a.st.s === 'later') ? (a.st.next || 9e15) - (b.st.next || 9e15) : 0);
+  const boardPrizeList = () => (get(dkey().replace(/^dlog/, 'dprize'), []) || []).filter((x) => Array.isArray(x) && x[0] && Number(x[1]) > 0).sort((a, b) => b[1] - a[1]);   // (what each daily gave you, as Neopets said it: the newest first)
+  function boardTabsHtml() {   // (the board's two tabs: your dailies, and what they've given you)
+    const n = boardPrizeList().filter((x) => nstOf(x[1]).day === nstDay()).length;
+    return `<div class="bnp-subtabs bnb-tabs" role="tablist" aria-label="The board"><button type="button" role="tab" data-btab="board" aria-selected="${boardTab !== 'prizes'}">Your dailies</button><button type="button" role="tab" data-btab="prizes" aria-selected="${boardTab === 'prizes'}" title="What your dailies have given you, day by day">Prizes${n ? ` <b>${n} today</b>` : ''}</button></div>`;
+  }
+  function boardPrizesHtml() {   // (the Prizes tab: a head with the totals and a find box, chips for the dailies in it, then the list by day)
+    const all = boardPrizeList(), today = nstDay();
+    if (!all.length) return '<div class="bnb-main"><p class="bnb-empty">Nothing here yet. As you do your dailies, what each one gives you is kept here, in Neopets’ own words: a wheel’s prize, a quest’s reward, the Lottery’s tickets.</p></div>';
+    const ids = new Map();
+    for (const x of all) ids.set(x[0], (ids.get(x[0]) || 0) + 1);
+    if (boardPz.id && !ids.has(boardPz.id)) boardPz.id = '';
+    const name = (id) => { const d = dailyById(id); return d ? d.label : id; };
+    const chip = (id, label, n) => `<button type="button" class="bqr-chip bnb-chip" data-bpz="${esc(id)}" aria-pressed="${boardPz.id === id}">${esc(label)} <b>${n}</b></button>`;
+    const week = all.filter((x) => Date.now() - x[1] < 7 * DAY_MS).length, day0 = all.filter((x) => nstOf(x[1]).day === today).length;
+    return `<div class="bnb-pzband">
+      <div class="bnb-pzhead"><p class="bnb-pzsum"><b>${day0.toLocaleString()}</b> today · <b>${week.toLocaleString()}</b> in the last 7 days · <b>${all.length.toLocaleString()}</b> kept in all <small>(the newest 300, on this computer)</small></p>
+        <input type="search" class="bnb-pzfind" data-bpzfind placeholder="Find a prize…" aria-label="Find a prize" value="${esc(boardPz.q)}"></div>
+      <div class="bnb-chips bnb-pzchips">${chip('', 'All', all.length)}${[...ids].sort((a, b) => b[1] - a[1] || name(a[0]).localeCompare(name(b[0]))).map(([id, n]) => chip(id, name(id), n)).join('')}</div></div>
+      <div class="bnb-main bnb-pz bnb-pzbody">${boardPzListHtml(all)}</div>`;
+  }
+  function boardPzListHtml(all = boardPrizeList()) {   // (by NST day, newest first: each row its daily's picture and name, Neopets' words, and the time)
+    const q = boardPz.q.trim().toLowerCase(), today = nstDay(), yday = nstOf(Date.now() - DAY_MS).day;
+    const name = (id) => { const d = dailyById(id); return d ? d.label : id; };
+    const list = all.filter((x) => (!boardPz.id || x[0] === boardPz.id) && (!q || `${x[2]} ${name(x[0])}`.toLowerCase().includes(q)));
+    if (!list.length) return `<p class="bnb-empty">${q ? 'Nothing kept matches that.' : 'Nothing kept for that one.'}</p>`;
+    const days = new Map();
+    for (const x of list) { const k = nstOf(x[1]).day; if (!days.has(k)) days.set(k, []); days.get(k).push(x); }
+    const dayName = (k) => { if (k === today) return 'Today'; if (k === yday) return 'Yesterday'; const [y, m, d] = k.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' }); };
+    return [...days].map(([k, rows]) => `<section class="bnb-sec"><h4 class="bnb-sechead is-edit"><span class="bnb-sect">${esc(dayName(k))}</span><span class="bnb-secn">${rows.length}</span></h4>
+      <ul class="bnb-pzlist">${rows.map(([id, at, text]) => { const d = dailyById(id), ic = d ? dailyIcon(d) : ''; return `<li class="bnb-pzrow"><span class="bnb-pzic">${ic ? `<img src="${esc(ic)}" alt="" loading="lazy" draggable="false">` : ''}</span>${d && safeHref(d.href) ? `<a class="bnb-pzname" href="${esc(d.href)}" title="${esc(`Go to ${d.label}`)}">${esc(d.label)}</a>` : `<span class="bnb-pzname">${esc(name(id))}</span>`}<span class="bnb-pzwhat">${esc(capFirst(String(text || '')))}</span><time title="${esc(`${dayName(k)}, NST`)}">${esc(fmtNst(at))}</time></li>`; }).join('')}</ul></section>`).join('');
+  }
   function boardSection(key, title, items, now, prefs, extra = '') {   // (a section: its name folds it, and opens its ready ones; while arranging, its name and place can change)
     const mine = key.startsWith('g:') || key === 'rest';
     if (!items.length && !(boardArrange && mine)) return '';
@@ -2892,6 +2934,7 @@
   }
   function paintBoard() {
     if (!board || !board.win.classList.contains('open')) return;
+    if (boardTab === 'prizes' && !boardArrange) { board.day = nstDay(); board.body.innerHTML = `${boardTabsHtml()}${boardPrizesHtml()}`; return; }   // (what your dailies gave you: its own tab)
     const now = Date.now(), prefs = boardPrefs();
     if (!Array.isArray(prefs.folded)) prefs.folded = [];
     const all = trackedDailies().map((d) => ({ d, st: dailyState(d, now) }));
@@ -2922,7 +2965,7 @@
     }
     const openN = g.ready.length, first = g.ready[0], tab = S.features.dailyTab ? ' target="_blank" rel="noopener"' : '';
     const startTip = !first ? '' : openN > 1 ? `${first.d.label} first${S.features.dailyRun ? ': the bar on its page takes you on to the next' : ''}` : first.d.label;
-    board.body.innerHTML = `
+    board.body.innerHTML = `${boardArrange ? '' : boardTabsHtml()}
       <div class="bnb-sum">
         ${all.length ? `<div class="bnb-ring${allDone ? ' is-full' : ''}" style="--p:${pct}"><b>${doneN}</b><small>of ${counted}</small></div>` : ''}
         <div class="bnb-sumtext">
@@ -3151,6 +3194,10 @@
     if (bopts && !t.closest('[data-b="opts"]')) boptsClose();   // (a click anywhere else on the board shuts its options, and a daily's own settings)
     if (boardSure && !t.closest(`[data-b="${boardSure}"]`)) { const rb = board.body.querySelector(`[data-b="${boardSure}"]`); if (rb) { rb.classList.remove('is-sure'); rb.textContent = boardSure === 'nosec' ? 'No sections' : 'Restore the default'; } boardSure = ''; }   // (anywhere else: not asked any more)
     if (dedit && dedit.host === board.win && !t.closest('[data-dedit]')) deditClose();
+    const bt = t.closest('[data-btab]');
+    if (bt) { if (boardTab !== bt.dataset.btab) { boardTab = bt.dataset.btab; boptsClose(); paintBoard(); } const f = board.body.querySelector(`[data-btab="${bt.dataset.btab}"]`); if (f) f.focus({ preventScroll: true }); return; }   // (Your dailies, or Prizes)
+    const pz = t.closest('[data-bpz]');
+    if (pz) { boardPz.id = pz.dataset.bpz === boardPz.id ? '' : pz.dataset.bpz; paintBoard(); const f = board.body.querySelector(`[data-bpz="${CSS.escape(pz.dataset.bpz)}"]`); if (f) f.focus({ preventScroll: true }); return; }   // (one daily's, or all)
     const b = t.closest('[data-b]');
     const prefs = boardPrefs();
     if (boardArrange && t.closest('.bnb-go')) { e.preventDefault(); return; }   // (arranging: the tiles stay put to be dragged)
@@ -3314,7 +3361,7 @@
     const st = dailyState(runHere, now), sts = list.map((d) => dailyState(d, now).s);
     const total = sts.filter((x) => x !== 'locked' && x !== 'off').length, done = sts.filter((x) => x === 'done' || x === 'wait').length;   // (as the board counts them)
     const queue = dailyOrderMine() ? [...list.slice(i + 1), ...list.slice(0, Math.max(0, i))].filter((d) => d.id !== runHere.id && dailyReady(d, now)) : dailyOrdered(list.filter((d) => d.id !== runHere.id && dailyReady(d, now)), now);   // (the ready ones after this one, in your order)
-    const k = Math.max(0, queue.findIndex((d) => d.id === runPick)), next = queue[k];   // (Skip moves along them here, without leaving the page)
+    const k = Math.max(0, queue.findIndex((d) => d.id === runPick)), next = queue[k];   // (the arrows move along them here, without leaving the page)
     const finished = S.features.dailyRunAuto !== false && list.length > 0 && list.every((d) => dailyTimely(d) || ['done', 'locked', 'off'].includes(dailyState(d, now).s));   // (every daily done for today: the timelies never keep it open)
     if (finished && !bar) return;   // (all done before this page: no bar)
     if (!bar) {
@@ -3330,7 +3377,12 @@
         if (b.dataset.run === 'board') openBoard();
         if (b.dataset.run === 'x') { bar.dataset.closed = '1'; bar.hidden = true; runRoom(); }
         if (b.dataset.run === 'tick' && runHere) dailyMark(runHere.id, b.getAttribute('aria-pressed') === 'true' ? { undo: true } : { full: true });   // (done here, by hand)
-        if ((b.dataset.run === 'skip' || b.dataset.run === 'back') && b.dataset.to) { runPick = b.dataset.to; paintRunBar(); const again = bar.querySelector(`[data-run="${b.dataset.run}"]`) || bar.querySelector('[data-run="skip"]'); if (again) again.focus(); }   // (the next one along, or the one before: nothing opened)
+        if (b.dataset.run === 'fwd' || b.dataset.run === 'back') runStep(b.dataset.run);   // (the one after, or the one before: nothing opened)
+      });
+      bar.addEventListener('keydown', (e) => {   // (← and → on the arrows or the Next pill: along them, as the arrows go)
+        if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || e.altKey || e.ctrlKey || e.metaKey || !(e.target instanceof Element) || !e.target.closest('.bnp-run-go')) return;
+        e.preventDefault();
+        runStep(e.key === 'ArrowLeft' ? 'back' : 'fwd', e.target.matches('.bnp-run-next'));
       });
       document.body.append(bar);
       themeRun(bar);
@@ -3338,11 +3390,11 @@
     const nowText = st.s === 'done' ? 'Done ✓' : st.s === 'wait' ? `Done ✓ · again in ${fmtLeft(st.next - now)}` : st.s === 'ready' ? (st.count ? st.text : st.closes ? `To do: ${fmtLeft(st.closes - now)} left` : 'To do') : stateMid(runHere, st, now);   // (where this one is)
     bar.classList.toggle('is-done', st.s === 'done' || st.s === 'wait');
     const ticked = st.s === 'done' || st.s === 'wait', canTick = st.s !== 'locked' && st.s !== 'off';
-    const counted = list.filter((d) => !['locked', 'off'].includes(dailyState(d, now).s)), back = k > 0 ? queue[k - 1] : null, after = queue.length > 1 ? queue[(k + 1) % queue.length] : null;
+    const counted = list.filter((d) => !['locked', 'off'].includes(dailyState(d, now).s)), many = queue.length > 1, back = many ? queue[(k - 1 + queue.length) % queue.length] : null, after = many ? queue[(k + 1) % queue.length] : null;   // (the ones either side of Next: round from the last to the first, both ways)
     bar.innerHTML = `<span class="bnp-run-ic" style="${esc(icoCss(dailyIcon(runHere)))}"></span>
       <span class="bnp-run-now"><b>${esc(runHere.label)}</b><small>${esc(nowText)} · ${done} of ${total} done today</small></span>
       ${canTick ? `<button type="button" class="bnp-run-tick" data-run="tick" aria-pressed="${ticked}" title="${ticked ? 'Untick it' : 'Done here? Tick it'}" aria-label="${esc(runHere.label)}: ${ticked ? 'untick' : 'tick as done'}"></button>` : ''}
-      ${next ? `<span class="bnp-run-go">${back ? `<button type="button" class="bnp-run-step" data-run="back" data-to="${esc(back.id)}" title="${esc(`Back to ${back.label}`)}" aria-label="${esc(`Back to ${back.label}`)}"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M7.5 2.5 4 6l3.5 3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}<a class="bnp-run-next" href="${esc(next.href)}" data-dgo="${esc(next.id)}" title="${esc(`${next.label}: ${stateLong(next, dailyState(next, now), now)}`)}"><span class="bnp-run-nic" style="${esc(icoCss(dailyIcon(next)))}"></span><span class="bnp-run-nx"><small>Next${queue.length > 1 ? ` <em>${k + 1}/${queue.length}</em>` : ''}</small><b>${esc(next.label)}</b></span><i aria-hidden="true">›</i></a>${after ? `<button type="button" class="bnp-run-skip" data-run="skip" data-to="${esc(after.id)}" title="${esc(`Skip it for now: ${after.label} instead (nothing is opened)`)}" aria-label="${esc(`Skip ${next.label}: show ${after.label}`)}">Skip<svg viewBox="0 0 14 12" width="13" height="11" aria-hidden="true"><path d="M2.5 2.5 6 6l-3.5 3.5M7.5 2.5 11 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}</span>`
+      ${next ? `<span class="bnp-run-go">${back ? runArrow('back', back) : ''}<a class="bnp-run-next" href="${esc(next.href)}" data-dgo="${esc(next.id)}" title="${esc(`${next.label}: ${stateLong(next, dailyState(next, now), now)}`)}"><span class="bnp-run-nic" style="${esc(icoCss(dailyIcon(next)))}"></span><span class="bnp-run-nx"><small>Next${many ? ` <em>${k + 1}/${queue.length}</em>` : ''}</small><span class="bnp-run-nn"><b>${esc(next.label)}</b>${many ? queue.filter((d) => d !== next).map((d) => `<i aria-hidden="true">${esc(d.label)}</i>`).join('') : ''}</span></span>${many ? '' : '<i aria-hidden="true">›</i>'}</a>${after ? runArrow('fwd', after) : ''}</span>`
         : '<span class="bnp-run-all">All your ready ones are done ✓</span>'}
       <button type="button" class="bnp-run-b" data-run="board" title="The Dailies board: all of them" aria-label="The Dailies board"><i style="${esc(icoCss(iconOf(FOLDERS.dailies.icon)))}"></i></button><button type="button" class="bnp-run-x" data-run="x" title="Hide it on this page" aria-label="Hide it on this page">×</button>
       <span class="bnp-run-segs" aria-hidden="true">${counted.map((d) => { const x = dailyState(d, now).s; return `<i class="${x === 'done' || x === 'wait' ? 'is-done' : ''}${d.id === runHere.id ? ' is-here' : ''}"></i>`; }).join('')}</span>`;   // (how far you are today: a segment for each, the ones done filled, this one ringed)
@@ -3353,6 +3405,15 @@
       setTimeout(() => { if (!bar.isConnected) return; bar.dataset.closed = '1'; bar.hidden = true; runRoom(); }, 6000);
     }
     runRoom();
+  }
+  const runArrow = (way, d) => `<button type="button" class="bnp-run-step" data-run="${way}" data-to="${esc(d.id)}" title="${esc(`${way === 'back' ? 'Back to' : 'On to'} ${d.label}`)}" aria-label="${esc(`${way === 'back' ? 'Back to' : 'On to'} ${d.label}`)}"><svg viewBox="0 0 12 12" width="13" height="13" aria-hidden="true"><path d="${way === 'back' ? 'M7.5 2.5 4 6l3.5 3.5' : 'M4.5 2.5 8 6l-3.5 3.5'}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;   // (‹ or › beside Next: the ready one before or after it shown there)
+  function runStep(way, pill) {   // (Next along the ready ones, 'fwd' or 'back': nothing opened. The focus stays on the arrow, or on the pill)
+    const bar = $('[data-bnp="run"]'), b = bar && bar.querySelector(`[data-run="${way}"]`);
+    if (!b || !b.dataset.to) return;
+    runPick = b.dataset.to;
+    paintRunBar();
+    const again = bar.querySelector(pill ? '.bnp-run-next' : `[data-run="${way}"]`);
+    if (again) again.focus();
   }
   function runRoom() {   // (how tall the bar is, for what sits in the same corner to stand above it: NeoChat's round button and its alerts)
     const bar = $('[data-bnp="run"]'), root = document.documentElement, on = !!bar && !bar.hidden && !bar.dataset.closed;
@@ -6331,6 +6392,115 @@
     };
     if (!pill()) { const o = new MutationObserver(() => { if (pill()) o.disconnect(); }); o.observe(document.documentElement, { childList: true }); }
   }
+  function KPOP_GAME() {   // (runs in Kiko Pop's page itself, before its own script: the Flash game it calls, stood in for. Neopets' own buttons, asks and prize pop-up do the rest; NE's card hears each step in "bnp-kpop" events)
+    if (window.__bnpKpop) return;
+    window.__bnpKpop = 1;
+    const tell = (o) => { try { document.dispatchEvent(new CustomEvent('bnp-kpop', { detail: JSON.stringify(o) })); } catch (_) { /* */ } };
+    const words = (t) => String(t || '').replace(/<[^>]*>/g, '').trim();
+    const game = { play1: (c) => tell({ k: 'play', d: 1, c }), play2: (c) => tell({ k: 'play', d: 2, c }), play3: (c) => tell({ k: 'play', d: 3, c }), speak: (t) => tell({ k: 'say', t: words(t) }), speakAsian: (t) => tell({ k: 'say', t: words(t) }), unspeak: () => tell({ k: 'say', t: '' }) };
+    try {   // (what the page's getSwf('kikopop') finds: a game that answers, unless a real one (Ruffle's, say) is there and does)
+      Object.defineProperty(document, 'kikopop', { configurable: true, get: () => { const real = document.getElementById('kikopop'); return real && typeof real.play1 === 'function' ? real : game; } });
+    } catch (_) { /* */ }
+    document.addEventListener('bnp-kpop-do', (e) => {   // (NE's card asks: a difficulty through the page's own difficultyConfirm (Easy asks first, as ever); the throw through its own getResult, as the game called it when a dart popped a balloon; or its own "already played")
+      let o = null;
+      try { o = JSON.parse(e.detail); } catch (_) { return; }
+      const d = Number(o && o.d) || 0, W = window;
+      try {
+        if (o.k === 'already') { if (typeof W.popupAlready === 'function') W.popupAlready(); return; }
+        if (!(d >= 1 && d <= 3)) return;
+        if (o.k === 'pick' && typeof W.difficultyConfirm === 'function') W.difficultyConfirm(d);
+        else if (o.k === 'throw' && typeof W.getResult === 'function') W.getResult(d, true);
+      } catch (_) { /* */ }
+    });
+  }
+  const KPOP_PATH = /^\/worlds\/kiko\/kpop\/(?:index\.phtml)?$/;
+  function kpopEar() {   // (the very start of Kiko Pop's page: its Flash game stood in for, before its own script runs)
+    if (FRAME || !MAIN_HOST || S.features.kpopPlay === false || !KPOP_PATH.test(location.pathname) || document.getElementById('bnp-kpop-game')) return;
+    const sc = document.createElement('script');
+    sc.id = 'bnp-kpop-game';
+    sc.textContent = `(${KPOP_GAME.toString()})();`;
+    (document.head || document.documentElement).append(sc);
+  }
+  function earKpop(h) {   // (Kiko Pop's prize, heard as Neopets gives it: in the daily's log, and its avatar in your collection; whoever threw, NE's card or another script)
+    if (!/^\/worlds\/kiko\/kpop\/ajax\/prize\.php/.test(h.u || '')) return;
+    let j = null;
+    try { j = JSON.parse(h.text); } catch (_) { return; }
+    if (!j || j.success !== true) return;
+    const name = DP.strip((j.prize && j.prize.name) || '');
+    dailyPrize('kpop', `won ${name || 'a prize'}`);
+    if (j.avatar && S.features.avatars) avGot('https://images.neopets.com/neoboards/avatars/kikopop.gif');
+  }
+  function kpopAlready(doc = document) {   // (Kiko Pop's page opening Neopets' "You've already played today" as it loads: its ready step calls popupAlready(), which it doesn't on a new day)
+    return [...doc.scripts].some((sc) => { const t = sc.textContent || '', i = t.lastIndexOf('$(document).ready('); return i >= 0 && t.includes('function popupAlready') && /\bpopupAlready\(\);/.test(t.slice(i)); });
+  }
+  function kpopPage() {   // (Kiko Pop without Flash: Neopets' own difficulty buttons in a card where the game was, then a throw; its own asks, words and prize pop-up)
+    if (FRAME || S.features.kpopPlay === false || !KPOP_PATH.test(location.pathname)) return;
+    const game = document.getElementById('game');
+    if (!game || game.querySelector('[data-bnp="kpop"]') || kpopAlready()) return;   // (already played today: Neopets' own pop-up says so)
+    const other = () => !!document.querySelector('#diffbuttons, #kikofix');   // (another script plays it for you: left to it)
+    if (other()) return;
+    styles();
+    const tell = (o) => document.dispatchEvent(new CustomEvent('bnp-kpop-do', { detail: JSON.stringify(o) }));
+    const card = document.createElement('div');
+    card.className = 'bnp-kpop';
+    card.setAttribute('data-bnp', 'kpop');
+    card.innerHTML = `<div class="bnp-kpop-pick"></div>
+      <div class="bnp-kpop-throw" hidden><p class="bnp-kpop-say" aria-live="polite"></p><button type="button" class="button-default__2020 button-green__2020 bnp-kpop-go" disabled>Elvin draws the curtain…</button><div class="bnp-kpop-prize"></div></div>
+      <p class="bnp-kpop-note">Neopets’ dart game was Flash, so NE stands in for it here: every throw pops a balloon.</p>`;
+    game.prepend(card);
+    document.documentElement.classList.add('bnp-kpop-on');
+    const pick = card.querySelector('.bnp-kpop-pick'), throwBox = card.querySelector('.bnp-kpop-throw'), say = card.querySelector('.bnp-kpop-say'), go = card.querySelector('.bnp-kpop-go');
+    const form = document.getElementById('difficultyForm');
+    if (form) {   // (Neopets' own: its question and its three buttons)
+      pick.append(form);
+      for (const b of form.querySelectorAll('[onclick]')) { b.setAttribute('role', 'button'); b.tabIndex = 0; }
+    } else {   // (none on the page: the same three, by the page's own looks, each through its difficultyConfirm)
+      pick.innerHTML = `<div class="bnp-kpop-ask" role="img" aria-label="What level of balloon-popping difficulty would you like today?"></div><div class="bnp-kpop-diffs">${[[1, 'buttonEasy', 'Easy and effortless'], [2, 'buttonMedium', 'Standard: I can take it'], [3, 'buttonHard', 'Super crazy hard']].map(([d, c, l]) => `<div class="button220" role="button" tabindex="0" data-kpd="${d}" aria-label="${l}" title="${l}"><div class="${c}"></div></div>`).join('')}</div>`;
+      pick.addEventListener('click', (e) => { const b = e.target.closest('[data-kpd]'); if (b) tell({ k: 'pick', d: Number(b.dataset.kpd) }); });
+    }
+    pick.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[role="button"]')) { e.preventDefault(); e.target.click(); } });
+    const prizeBtn = document.getElementById('prizeButton');
+    if (prizeBtn) card.querySelector('.bnp-kpop-prize').append(prizeBtn);   // (Neopets' Reveal Prize: shown by its own getResult, here in the card)
+    let picked = 0;
+    const back = (msg) => { picked = 0; throwBox.hidden = true; pick.hidden = false; if (form) form.style.display = ''; say.textContent = ''; card.querySelector('.bnp-kpop-note').textContent = msg; };
+    document.addEventListener('bnp-kpop', (e) => {
+      let o = null;
+      try { o = JSON.parse(e.detail); } catch (_) { return; }
+      if (!o || other()) return;
+      if (o.k === 'say') { say.innerHTML = o.t ? `<b>Elvin</b> “${esc(o.t)}”` : ''; return; }   // (Elvin's own words, as the game would have said them)
+      if (o.k !== 'play' || picked) return;
+      picked = Number(o.d) || 0;
+      pick.hidden = true;
+      throwBox.hidden = false;
+      setTimeout(() => { if (picked && go.disabled && !go.dataset.thrown) { go.disabled = false; go.textContent = 'Throw your dart'; go.focus({ preventScroll: true }); } }, 2200 + Math.random() * 2200);   // (a moment, as the game gave you to aim)
+    });
+    go.addEventListener('click', () => {
+      if (!picked || go.disabled) return;
+      go.disabled = true;
+      go.dataset.thrown = '1';
+      go.textContent = 'Your dart flies…';
+      setTimeout(() => tell({ k: 'throw', d: picked }), 700 + Math.random() * 1100);
+    });
+    document.addEventListener('bnp-heard', (e) => {   // (Neopets' answers: what the page itself doesn't say without its game)
+      let h = null, j = null;
+      try { h = JSON.parse(e.detail); } catch (_) { return; }
+      const m = h && /^\/worlds\/kiko\/kpop\/ajax\/(difficulty|prize|miss)\.php/.exec(h.u || '');
+      if (!m) return;
+      try { j = JSON.parse(h.text); } catch (_) { j = null; }
+      if (m[1] === 'difficulty') {
+        if (j && j.success === false && j.category === false) { back('You’ve already played today: come back tomorrow for another throw.'); pick.hidden = true; tell({ k: 'already' }); }
+        else if (!j || !j.success) back(`Neopets didn’t take that${DP.failLog(j) ? `: ${DP.failLog(j)}` : ''}. Try again in a moment.`);
+        return;
+      }
+      if (m[1] === 'prize') {
+        go.hidden = true;
+        if (!(j && j.success)) say.textContent = `Neopets didn’t give a prize${DP.failLog(j) ? `: ${DP.failLog(j)}` : ''}.`;
+      }
+    });
+    const o = new MutationObserver(() => { if (other()) { o.disconnect(); card.remove(); document.documentElement.classList.remove('bnp-kpop-on'); } });   // (your other script came after: it plays, NE steps back)
+    o.observe(document.body, { childList: true, subtree: true });
+    setTimeout(() => o.disconnect(), 15000);
+  }
   function TRUDY_KEEP() {   // (runs in Trudy's game frame itself, before the game: every frame it asks for goes through here. In sight, the browser draws them as ever; out of sight while a spin waits for its claim, a steady beat draws them, so the reels stop and the game claims its prize)
     if (window.__bnpKeep) return;
     window.__bnpKeep = 1;
@@ -6890,6 +7060,13 @@
     td.append(card, old);
     if (back) { card.append(back); const b = back.querySelector('input[type="submit"]'); if (b) setTimeout(() => b.focus({ preventScroll: true }), 60); }   // (Enter: back to Krawk Island)
   }
+  function ddCame() {   // (TEMPORARY, 2026-11-03: the user sees a roll straight from the bar, night after night. How this result page came: its own first page's roll button (NE's form ear saw the POST, not yet read: this runs before notePageDaily), its first page some other way, or a link from another page. Out once it's known)
+    let sent = '', from = '';
+    try { const v = JSON.parse(sessionStorage.getItem('bnp-dsub') || 'null'); if (v && v.u === location.pathname + location.search && Date.now() - (Number(v.at) || 0) < 120000) sent = v.m; } catch (_) { /* */ }
+    try { const u = new URL(document.referrer); from = u.origin === location.origin ? u.pathname : 'another site'; } catch (_) { from = ''; }
+    if (from === '/worlds/deadlydice.phtml') return sent === 'POST' ? 'from its first page, by its roll button' : 'from its first page, but not by a click NE saw';
+    return `${from ? `from ${from}` : 'with no page before it (typed in, or a bookmark)'}, by a link: no first page came first`;
+  }
   function deadlyDice() {
     if (FRAME || location.pathname !== '/worlds/deadlydice.phtml') return;
     const td = document.querySelector('td.content');
@@ -6908,7 +7085,8 @@
       card.innerHTML = `<div class="bnp-dd-head"><img class="bnp-dd-roo" src="${esc(`${NPI}worlds/deadlydice/vrw.gif`)}" alt="Count von Roo" width="200" height="200"><div class="bnp-dd-side"><h2>Deadly Dice</h2><b class="bnp-dd-verdict ${lost ? 'is-lost' : won ? 'is-won' : 'is-draw'}">${lost ? 'You lost' : won ? 'You won' : 'A draw'}</b>
         <div class="bnp-dd-dice"><figure>${dice[0] ? `<img src="${esc(dice[0])}" alt="" width="64" height="64">` : ''}<figcaption>You<b>${a}</b></figcaption></figure><span class="bnp-dd-vs">vs</span><figure>${dice[1] ? `<img src="${esc(dice[1])}" alt="" width="64" height="64">` : ''}<figcaption>von Roo<b>${b}</b></figcaption></figure></div></div></div>
         ${words.map((w) => `<p class="bnp-dd-said">${esc(w)}</p>`).join('')}
-        <p class="bnp-dd-next">Done for today · it opens again at ${esc(fmtNst(next))} NST, for an hour</p>`;
+        <p class="bnp-dd-next">Done for today · it opens again at ${esc(fmtNst(next))} NST, for an hour</p>
+        <p class="bnp-dd-came">How this page came: ${esc(ddCame())}</p>`;
       const c0 = td.querySelector('center');
       if (c0) { c0.before(card); c0.classList.add('bnp-dd-old'); if (back) card.append(back); }
       return;
@@ -8984,6 +9162,7 @@
       try { earAvatar(d); } catch (err) { report(err); }
       try { earTrudy(d); } catch (err) { report(err); }
       try { earLab(d); } catch (err) { report(err); }
+      try { earKpop(d); } catch (err) { report(err); }
       try { dailyHeard(d); } catch (err) { report(err); }
     });
   }
@@ -32671,8 +32850,16 @@
   function bmToolsHtml(busy) {   // (Find, All, None and Up to: before a run, and after it to tick more)
     return `<span class="bnp-sdr-tick"><input type="search" class="bnp-bm-find" data-bmfind placeholder="Find…" aria-label="Find one by name" value="${esc(bm.q)}"${busy ? ' disabled' : ''}><button type="button" class="bnp-sdr-lb" data-bm="all">All</button><button type="button" class="bnp-sdr-lb" data-bm="none">None</button><span class="bnp-upto" title="Ticks the ones itemdb prices at or under this, and unticks the rest (of those in sight). Only a guide: Buy Mode goes by the shops’ prices, never over your most"><label><span>Up to</span><input type="text" inputmode="numeric" autocomplete="off" data-bmupto value="${esc((bmNumOk(saJson(BM_KEY, {}).upto, 0) || bmP().max).toLocaleString())}"${busy ? ' disabled' : ''} aria-label="Tick the ones up to this many Neopoints">NP</label><button type="button" class="bnp-sdr-lb" data-bm="upto"${busy ? ' disabled' : ''}>Tick</button></span></span>`;
   }
+  function bmGuideText(on, stop) {   // ("1,160 ticked, about 3,612,400 NP by itemdb’s guide · it stops after 300 bought, about 934,900 NP · 12 have no itemdb price": every ticked one, then the limit's first ones, in the order it buys)
+    const sum = (list) => list.reduce((n, r) => n + (r.guide > 0 ? r.guide : 0), 0), all = sum(on), none = on.filter((r) => !(r.guide > 0)).length;
+    const cut = stop && on.length > stop ? on.slice(0, stop) : null, part = cut ? sum(cut) : 0;
+    const bits = [`${on.length.toLocaleString()} ticked${all ? `, about ${bmNp(all)} by itemdb’s guide` : ''}`];
+    if (cut) bits.push(`it stops after ${stop.toLocaleString()} bought${part ? `, about ${bmNp(part)}` : ''}`);
+    if (none && on.length) bits.push(none === on.length ? 'none has an itemdb price' : `${none.toLocaleString()} ${none === 1 ? 'has' : 'have'} no itemdb price, not counted`);
+    return bits.join(' · ');
+  }
   function bmSumHtml() {
-    const run = bm.run, busy = !!(run && !run.over), on = bm.rows.filter((r) => r.on), stop = bmP().stop, guide = (stop && on.length > stop ? on.slice(0, stop) : on).reduce((s, r) => s + r.guide, 0);   // (with a limit: the guide for the ones it'll buy first)
+    const run = bm.run, busy = !!(run && !run.over), on = bm.rows.filter((r) => r.on), stop = bmP().stop;
     if (run) {
       const got = bm.rows.filter((r) => r.st === 'got' && !r.mine && r.by === run), mine = bm.rows.filter((r) => r.mine && r.by === run).length, why = run.why;   // (this run's own)
       if (!run.over && run.looking) return '<div class="bnp-sdr-sum" data-bmsum><b>Looking at what you have</b><span>Your inventory and your SDB, so nothing’s bought twice</span></div>';
@@ -32682,7 +32869,7 @@
       const unread = bmUnread();
       return `<div class="bnp-sdr-sum is-done" data-bmsum><b>${got.length ? `Bought ${got.length.toLocaleString()} for ${esc(bmNp(run.spent))}` : 'Nothing bought'}${run.read && bmUse() ? ` · ${run.read.toLocaleString()} ${esc(bmUse().done(bm.pet))}` : ''}${run.sdb ? ` · ${run.sdb.toLocaleString()} put in your SDB` : ''}${mine ? ` · ${mine.toLocaleString()} you had already` : ''}</b>${unread.length ? `<span class="bnp-sdr-tick"><button type="button" class="bnp-sdr-lb" data-bm="readnow">${esc(bmUse().now(unread.length === 1 ? 'one' : unread.length.toLocaleString(), bm.pet))}</button></span>` : ''}${why ? `<span>${esc(why === 'budget' ? 'Your budget for this run is used up.' : why === 'count' ? `Stopped at your limit of ${run.stopAt.toLocaleString()} bought: the rest are still ticked.` : why === 'ban' ? `Stopped while the ${bmWiz(run.src)} was on its break.` : why)}</span>` : run.stop ? '<span>Stopped.</span>' : ''}<span>${(() => { const left = got.filter((r) => !r.read && !r.sdb && !r.gone).length; return left ? (left === got.length ? 'They’re in your inventory. ' : `${left.toLocaleString()} still in your inventory. `) : ''; })()}Tick more and Start again any time.</span>${bmToolsHtml(false)}</div>`;
     }
-    return `<div class="bnp-sdr-sum" data-bmsum><b>${bm.rows.length.toLocaleString()} listed</b><span>${on.length.toLocaleString()} ticked${stop && on.length > stop ? ` · it stops after ${stop.toLocaleString()} bought` : ''}${guide ? ` · itemdb’s guide ≈ ${esc(bmNp(guide))}` : ''}</span>${bmToolsHtml(busy)}</div>`;
+    return `<div class="bnp-sdr-sum" data-bmsum><b>${bm.rows.length.toLocaleString()} listed</b><span>${esc(bmGuideText(on, stop))}</span>${bmToolsHtml(busy)}</div>`;
   }
   function bmSumPaint() {
     bmChip();
@@ -37135,12 +37322,15 @@
       n.hungry ? count('hungry', 'Hungry', n.hungry, P.show === 'hungry' ? 'Every pet again' : 'Only the ones that need feeding') : '',
       n.sick ? count('sick', 'Sick', n.sick, P.show === 'sick' ? 'Every pet again' : 'Only the sick ones') : '',
       n.lodge ? count('lodge', 'Neolodge', n.lodge, P.show === 'lodge' ? 'Every pet again' : 'Only the ones at the Neolodge') : ''].join('');
-    return `<section class="bq-pets${open ? ' is-open' : ''}" aria-label="Your pets">
+    if (!open) return `<section class="bq-pets is-bar" aria-label="Your pets">
+        <div class="popup-header__2020 bq-plate"><h3>Your Pets</h3><div class="bq-counts" role="group" aria-label="Show">${counts}</div><button type="button" class="bq-fold" data-qp aria-expanded="false" title="Show your pets"><i></i></button><div class="popup-header-pattern__2020"></div></div>
+      </section>`;   // (folded: no box, one nameplate with its counts and the button that opens it again in it (the user, 2026-11-03))
+    return `<section class="bq-pets is-open" aria-label="Your pets">
         <div class="popup-header__2020 bq-plate"><h3>Your Pets</h3><div class="popup-header-pattern__2020"></div></div>
-        <button type="button" class="bq-fold" data-qp aria-expanded="${open}" title="${open ? 'Fold your pets away' : 'Show your pets'}"><i></i></button>
+        <button type="button" class="bq-fold" data-qp aria-expanded="true" title="Fold your pets away"><i></i></button>
         <div class="bq-tray">
           <div class="bq-counts" role="group" aria-label="Show">${counts}</div>
-          ${open ? qrStrip(shown) : ''}
+          ${qrStrip(shown)}
         </div>
       </section>`;
   }
@@ -44492,6 +44682,9 @@
             ${sw('quietWheels', 'The wheels start quiet', 'Every wheel’s spin, without its sound. A Sound pill in the page’s corner turns it on for that visit.')}
             ${sw('quietKpop', 'Kiko Pop starts quiet', 'Play it as ever, without its sound. Its Sound pill turns it on for that visit.')}
           </div>
+          <div class="bnp-card"><h4>Games without Flash</h4>
+            ${sw('kpopPlay', 'Kiko Pop, played on its page', 'Its dart game was Flash: pick how hard, then Throw your dart (every throw pops a balloon). Neopets’ own buttons, asks and prize pop-up do the rest.')}
+          </div>
           <div class="bnp-card"><h4>In your menus</h4>
             ${sw('ticks', 'In a Dailies folder, show where each one is', 'If you’d like your dailies in a menu too, put a Dailies folder on any item (a menu’s page here › the item › Folder): each shows ready, how long to wait, or ✓ done.')}
           </div>
@@ -45929,9 +46122,13 @@
     .bq .bq-plate h3 { position: relative; z-index: 2; top: -1px; max-width: none !important; margin: 0 !important; padding: 0 !important; color: inherit; font: 22pt/1 "Cafeteria", "Arial Bold", sans-serif !important; letter-spacing: .5pt; white-space: nowrap; -webkit-text-stroke: 3px var(--bq-tedge, rgba(255, 255, 255, .92)); paint-order: stroke fill; text-shadow: 0 2px 0 color-mix(in srgb, var(--bq-h) 45%, #000); }   /* (in the middle: Neopets caps a header's h3 at 90% less 65px for a pop-up's X, which pushed these words 11px right; a thin edge, a little depth) */
     .bq .bq-plate .popup-header-pattern__2020 { opacity: .22; -webkit-mask-image: linear-gradient(90deg, #000, transparent 30%, transparent 70%, #000); mask-image: linear-gradient(90deg, #000, transparent 30%, transparent 70%, #000); }   /* (the theme's pattern only faintly, at its ends) */
     .bq-tray { padding: 36px 16px 18px; }   /* (under the nameplate: the counts, then your pets) */
-    .bq-pets:not(.is-open) { width: fit-content; min-width: 320px; max-width: 100%; margin-left: auto; margin-right: auto; }   /* (folded: only as wide as its counts, in the middle (the user, 2026-11-02)) */
-    .bq-pets:not(.is-open) .bq-tray { padding: 36px 60px 14px; }
-    .bq .bq-pets:not(.is-open) .bq-fold { top: auto; bottom: 16px; }
+    .bq-pets.is-bar { width: fit-content; max-width: 100%; margin: -8px auto 18px; border: 0; background: none; box-shadow: none; }   /* (folded: no box, the nameplate alone, in the middle, its counts and the button that opens it in it (the user, 2026-11-03: "it could all fit into the Your Pets pill"). Pulled up into the room Neopets leaves under its links bar: as much space over it as under it ("lessen this blank space above")) */
+    .bq .bq-pets.is-bar .bq-plate { position: relative !important; top: auto !important; left: auto !important; display: flex !important; align-items: center; gap: 14px; min-width: 0; height: auto !important; min-height: 56px; padding: 9px 11px 9px 28px !important; overflow: visible; transform: none; }
+    .bq-pets.is-bar .bq-plate .popup-header-pattern__2020 { border-radius: inherit; }
+    .bq-pets.is-bar .bq-counts { position: relative; z-index: 2; flex-wrap: nowrap; gap: 7px; }
+    .bq .bq-pets.is-bar .bq-count { border-color: color-mix(in srgb, var(--bq-h) 60%, #000 25%); box-shadow: 0 2px 0 color-mix(in srgb, var(--bq-h) 55%, #000 45%); }   /* (on the nameplate: a darker edge, so each stands out from it) */
+    .bq .bq-pets.is-bar .bq-count[aria-pressed="true"] { border: 2px solid #fff; background: linear-gradient(color-mix(in srgb, var(--bq-h) 70%, #fff), color-mix(in srgb, var(--bq-h) 88%, #fff)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--bq-h) 45%, #000 55%); }   /* (the one shown: ringed in white, then dark, pressed in: never lost in the nameplate's own colour) */
+    .bq .bq-pets.is-bar .bq-fold { position: relative; top: auto; right: auto; bottom: auto; flex: none; }
     .bq-counts { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px 8px; }
     .bq-pets.is-open .bq-counts { margin-bottom: 14px; }
     .bq .bq-count { display: inline-flex; align-items: center; gap: 6px; height: 36px; margin: 0; padding: 0 14px 0 5px; border: 1.5px solid color-mix(in srgb, var(--bq-h) 40%, #d6cfbd); border-radius: 999px; background: #fff; box-shadow: 0 2px 0 color-mix(in srgb, var(--bq-h) 34%, #d6cfbd); color: #3c3a30; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; cursor: pointer; transition: transform .12s, box-shadow .12s, background-color .12s; }
@@ -46166,6 +46363,7 @@
     @media (max-width: 600px) {
       .bq { padding: 4px 8px 20px; }
       .bq .bq-plate { min-width: 190px; padding: 0 24px !important; } .bq .bq-plate h3 { font-size: 20pt !important; } .bq .bq-fold { top: 8px; right: 8px; }
+      .bq .bq-pets.is-bar .bq-plate { flex-wrap: wrap; justify-content: center; gap: 8px 10px; border-radius: 28px !important; padding: 9px 12px !important; } .bq-pets.is-bar .bq-counts { flex-wrap: wrap; justify-content: center; order: 2; flex-basis: 100%; } .bq .bq-pets.is-bar .bq-fold { order: 1; }   /* (narrow: the title and its open button, the counts under them, still in the nameplate) */
       .bq-counts { gap: 6px; }
       .bq-acts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .bq .bq-card.is-wide .bq-picbox { --pic: 100%; }
@@ -48925,6 +49123,26 @@
     .bnp-droo-res b { font: 700 16px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-droo-res span { color: #4d4a3f; }
     .bnp-droo-old { display: none !important; }
+    .bnp-board .bnb-tabs { flex: none; margin: 0; padding: 10px 18px; border-bottom: 1px solid #ece8dc; }   /* (Your dailies · Prizes: the board's own band) */
+    .bnp-board .bnb-pzband { flex: none; padding: 12px 18px 10px; border-bottom: 1px solid #f0ece0; background: color-mix(in srgb, var(--bnp-accent) 12%, #fff); }
+    .bnp-board .bnb-tabs button b { margin-left: 4px; padding: 0 7px; border-radius: 999px; background: rgba(0, 0, 0, .08); font: 11.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-board .bnb-tabs button[aria-selected="true"] b { background: rgba(255, 255, 255, .55); }
+    .bnb-pzhead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; margin: 0 0 10px; }
+    .bnp-board .bnb-pzsum { flex: 1 1 auto; width: auto; max-width: none; margin: 0; color: #5b5646; font: 13.5px "MuseoSansRounded500", Arial, sans-serif; text-align: left; }
+    .bnb-pzsum b { color: #2b2b2b; font-family: "MuseoSansRounded700", Arial, sans-serif; } .bnb-pzsum small { color: #8a8571; font-size: 12px; }
+    .bnp-board .bnb-pzfind { width: 220px; max-width: 100%; height: 32px; margin: 0; padding: 0 13px; border: 2px solid #e3dfd2; border-radius: 999px; background: #fff; color: #2b2b2b; font: 13.5px "MuseoSansRounded500", Arial, sans-serif; box-sizing: border-box; }
+    .bnp-board .bnb-pzfind:focus { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #000 15%); outline: none; }
+    .bnp-board .bnb-pzchips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
+    .bnp-board.bnp-has-pal .bnb-pzbody { padding-bottom: calc(var(--bnp-pal-rise, 0px) + 22px); }
+    .bnb-pzlist { display: grid; gap: 5px; margin: 6px 0 16px; padding: 0; list-style: none; }
+    .bnb-pzrow { display: grid; grid-template-columns: 36px minmax(120px, 190px) minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 5px 12px 5px 6px; border: 1.5px solid #ece7d5; border-radius: 12px; background: #fff; }
+    .bnb-pzic { display: grid; place-items: center; width: 36px; height: 36px; }
+    .bnb-pzic img { max-width: 36px; max-height: 36px; object-fit: contain; }
+    .bnp-board .bnb-pzname { overflow: hidden; color: #2b2b2b; font: 15px/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-board a.bnb-pzname:hover { text-decoration: underline; }
+    .bnb-pzwhat { color: #3c3a30; font: 13.5px/1.35 "MuseoSansRounded500", Arial, sans-serif; overflow-wrap: anywhere; }
+    .bnb-pzrow time { color: #8a8571; font: 12.5px "MuseoSansRounded500", Arial, sans-serif; white-space: nowrap; }
+    @media (max-width: 600px) { .bnb-pzrow { grid-template-columns: 36px minmax(0, 1fr) auto; } .bnb-pzwhat { grid-column: 2 / -1; } }
     .bnp-dd { max-width: 560px; margin: 6px auto 14px; padding: 14px 18px; border: 2px solid rgba(0, 0, 0, .12); border-radius: 16px; background: #fff; color: #2a2a2a; font: 14px "MuseoSansRounded500", Arial, sans-serif; text-align: center; }
     .bnp-dd.is-warn { max-width: 520px; padding: 10px 16px; border-color: #e8b800; background: #fffbea; }
     .bnp-dd.is-warn p { margin: 0 0 8px; }
@@ -48944,7 +49162,22 @@
     .bnp-dd-vs { color: #8a8571; font: 18px "Cafeteria", Arial, sans-serif; }
     .bnp-dd-said { margin: 6px 0; }
     .bnp-dd-next { margin: 8px 0 6px; color: #6f6a58; font-size: 13px; }
+    .bnp-dd-came { margin: 2px 0 6px; color: #8a8571; font-size: 11.5px; }   /* (temporary: how the page came) */
     .bnp-dd form { margin: 6px 0 0; text-align: center; }
+    .bnp-kpop { max-width: 560px; margin: 6px auto 14px; padding: 16px 18px 12px; border: 2px solid #5aa6d2; border-radius: 16px; background: linear-gradient(#eef9fe, #d3eefa); box-shadow: 0 3px 0 #9ccbe4; color: #24485c; font: 14px "MuseoSansRounded500", Arial, sans-serif; text-align: center; }   /* (Kiko Pop where its Flash game was: Kiko Lake's water, in a frame) */
+    html.bnp-kpop-on #game .flashRIP__2020 { display: none !important; }   /* (Neopets' "no Flash" notice: it plays without it now) */
+    html.bnp-kpop-on .bnp-kpop #difficultyForm { position: static; display: block; width: auto; margin: 0 auto; }   /* (Neopets' own question and buttons, in the card; its showGame hides them once you've picked) */
+    .bnp-kpop #difficultyForm [onclick], .bnp-kpop-diffs > [data-kpd] { margin: 0 auto 8px; cursor: pointer; }
+    .bnp-kpop [role="button"]:focus-visible { outline: 3px solid #1d6fa5; outline-offset: 2px; border-radius: 12px; }
+    .bnp-kpop-ask { width: 370px; max-width: 100%; height: 80px; margin: 0 auto 8px; background: url(https://images.neopets.com/games/dart/headers/instructions.png) center / contain no-repeat; }   /* (Neopets' own question: "What level of balloon-popping difficulty would you like today?") */
+    .bnp-kpop-diffs { display: flex; flex-direction: column; align-items: center; }
+    .bnp-kpop-say { min-height: 1.4em; margin: 2px 0 14px; color: #1f4d66; font: 16px/1.4 "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-kpop-say b { margin-right: 4px; font: 18px "Cafeteria", Arial, sans-serif; letter-spacing: .3pt; }
+    .bnp-kpop [hidden] { display: none !important; }   /* (over a 2020 button's own display) */
+    .bnp-kpop .bnp-kpop-go { width: auto; min-width: 220px; height: 44px; margin: 0 auto; padding: 0 28px; font-size: 18px; }
+    .bnp-kpop .bnp-kpop-go:disabled { opacity: .7; cursor: default; }
+    html.bnp-kpop-on .bnp-kpop #prizeButton { position: static; margin: 4px auto 0; }   /* (Neopets' Reveal Prize, in the card, once its getResult shows it) */
+    .bnp-kpop-note { margin: 12px 0 0; color: #4f6b78; font-size: 12px; }
     input.bnp-dd-back { display: block !important; margin: 4px auto 0 !important; width: fit-content !important; padding: 6px 20px !important; font-size: 15px !important; }
     .bnp-dd-old { display: none !important; }
     .bnp-bob-hide { display: none !important; }
@@ -49095,18 +49328,20 @@
     .bnp-run-now b { overflow: hidden; max-width: 200px; color: #2b2b2b; font: 17px/1.15 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-overflow: ellipsis; white-space: nowrap; }
     .bnp-run-now small { color: #6f6a58; font: 12px "MuseoSansRounded500", Arial, sans-serif; white-space: nowrap; }
     .bnp-run.is-done .bnp-run-now small { color: #2b8a27; }
-    .bnp-run-go { display: inline-flex; align-items: center; gap: 5px; margin-left: 4px; }   /* (Next, with Skip after it and back before it) */
+    .bnp-run-go { display: inline-flex; align-items: center; gap: 6px; margin-left: 4px; }   /* (Next, with ‹ before it and › after it) */
     .bnp-run .bnp-run-next { display: inline-flex; align-items: center; gap: 8px; padding: 4px 13px 4px 4px; border: 1px solid color-mix(in srgb, var(--bnp-accent) 60%, #000 25%); border-radius: 999px; background: linear-gradient(color-mix(in srgb, var(--bnp-accent) 86%, #fff), var(--bnp-accent)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 2px 0 color-mix(in srgb, var(--bnp-accent) 60%, #000 25%); color: var(--bnp-accent-text); text-decoration: none; white-space: nowrap; transition: transform .12s, filter .12s; }
     .bnp-run .bnp-run-next:hover, .bnp-run .bnp-run-next:focus-visible { filter: brightness(1.06); outline: none; transform: translateY(-1px); }
     .bnp-run-nic { flex: none; width: 34px; height: 34px; border-radius: 50%; background: #fff center / 26px no-repeat; box-shadow: 0 0 0 2px rgba(255, 255, 255, .5); }
     .bnp-run-nx { display: grid; min-width: 0; line-height: 1.1; }
     .bnp-run-nx small { font: 10px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .08em; opacity: .85; text-transform: uppercase; }
     .bnp-run-nx small em { margin-left: 3px; font-style: normal; letter-spacing: .02em; opacity: .9; }
-    .bnp-run-nx b { overflow: hidden; max-width: 180px; font: 16px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-overflow: ellipsis; }
+    .bnp-run-nn { display: grid; }   /* (every ready one's name in one spot, all but this one unseen: the pill is as wide as the longest, so the arrows stay put as you go along) */
+    .bnp-run-nn > b, .bnp-run-nn > i { grid-area: 1 / 1; overflow: hidden; max-width: 180px; font: 16px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-run-nn > i { visibility: hidden; }
     .bnp-run-next > i { font-style: normal; font-size: 22px; line-height: .8; }
-    .bnp-run .bnp-run-skip { display: inline-flex; align-items: center; gap: 4px; height: 30px; margin: 0; padding: 0 10px 0 12px; border: 1.5px solid #d3ccb7; border-radius: 999px; background: #fff; box-shadow: 0 2px 0 #e4dece; color: #4a4636; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; transition: transform .12s; }   /* (Skip: the next one along shown here, nothing opened) */
-    .bnp-run .bnp-run-step { display: grid; place-items: center; width: 30px; height: 30px; margin: 0; padding: 0; border: 1.5px solid #d3ccb7; border-radius: 50%; background: #fff; box-shadow: 0 2px 0 #e4dece; color: #4a4636; cursor: pointer; transition: transform .12s; }
-    .bnp-run .bnp-run-skip:hover, .bnp-run .bnp-run-skip:focus-visible, .bnp-run .bnp-run-step:hover, .bnp-run .bnp-run-step:focus-visible { border-color: color-mix(in srgb, var(--bnp-accent) 65%, #000 15%); background: color-mix(in srgb, var(--bnp-accent) 22%, #fff); outline: none; transform: translateY(-1px); }
+    .bnp-run .bnp-run-step { flex: none; display: grid; place-items: center; width: 32px; height: 32px; margin: 0 0 2px; padding: 0; border: 1.5px solid #d3ccb7; border-radius: 50%; background: linear-gradient(#fff, #f3efe4); box-shadow: inset 0 1px 0 #fff, 0 2px 0 #ddd6c4; color: #4a4636; cursor: pointer; transition: transform .12s, box-shadow .12s; }   /* (‹ and ›: round, raised a little) */
+    .bnp-run .bnp-run-step:hover, .bnp-run .bnp-run-step:focus-visible { border-color: color-mix(in srgb, var(--bnp-accent) 65%, #000 15%); background: linear-gradient(color-mix(in srgb, var(--bnp-accent) 12%, #fff), color-mix(in srgb, var(--bnp-accent) 30%, #fff)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 3px 0 color-mix(in srgb, var(--bnp-accent) 55%, #000 20%); color: #2b2b2b; outline: none; transform: translateY(-1px); }
+    .bnp-run .bnp-run-step:active { box-shadow: inset 0 1px 0 #fff, 0 1px 0 #ddd6c4; transform: translateY(1px); }
     .bnp-run-all { color: #2b8a27; font: 13px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }
     .bnp-run .bnp-run-x { flex: none; margin: 0; padding: 4px 6px; border: 0; border-radius: 8px; background: none; color: #6f6a58; font: 16px/1 Arial, sans-serif; cursor: pointer; }
     .bnp-run .bnp-run-x:hover { background: #f1eee3; color: #222; }
@@ -49124,7 +49359,7 @@
     .bnp-run-segs i.is-done { background: #3cb043; }
     .bnp-run-segs i.is-here { background: color-mix(in srgb, var(--bnp-accent) 80%, #000 12%); }   /* (the one you're on: the theme's colour; green with a dark edge once it's done) */
     .bnp-run-segs i.is-here.is-done { background: #3cb043; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .35); }
-    @media (max-width: 760px) { .bnp-run { left: 8px; right: 8px; bottom: 74px; max-width: none; } .bnp-run-now b { max-width: 110px; } .bnp-run-nx b { max-width: 110px; } .bnp-run .bnp-run-skip { padding: 0 8px; font-size: 0; gap: 0; } }   /* (narrow: Skip as its arrows) */
+    @media (max-width: 760px) { .bnp-run { left: 8px; right: 8px; bottom: 74px; max-width: none; } .bnp-run-now b { max-width: 110px; } .bnp-run-nn > b, .bnp-run-nn > i { max-width: 110px; } }
     /* Go to…: Neopets' pop-up look, high on the page, the list under the box */
     .bnp-go { --bnp-accent: #fed123; --bnp-accent-text: #363636; position: fixed; z-index: 2147483001; left: 50%; top: 9vh; transform: translateX(-50%); display: none; flex-direction: column; width: min(600px, calc(100vw - 24px)); max-height: min(640px, 82vh); overflow: hidden; border: var(--bnp-border, 3px solid #4d4d4d); border-radius: 15px; background: #fff; box-shadow: 0 14px 44px rgba(0, 0, 0, .45); box-sizing: border-box; color: #363636; font: 14px/1.35 "MuseoSansRounded500", Arial, sans-serif; text-align: left; letter-spacing: normal; text-transform: none; }
     .bnp-go.open { display: flex; }
@@ -50256,6 +50491,13 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.1.5', '2026-11-03', [
+      'Dailies: the board has a Prizes tab, with what each daily gave you day by day, a chip for each daily and a find box',
+      'Dailies bar: ‹ and › either side of Next go through the ready dailies both ways, and the arrows stay put as you go (Skip is gone)',
+      'Kiko Pop: playable again without Flash. Pick how hard, then Throw your dart: Neopets’ own Reveal Prize and pop-up show what you won',
+      'Quick Ref: folded, Your Pets is one nameplate with its counts and ▼ in it, and less space above it',
+      'Fixes: Deadly Dice counts a win or a draw too, so the bar stops offering it once you’ve rolled. Buy Mode’s estimate covers everything ticked, then what it stops after',
+    ]],
     ['5.1.4', '2026-11-02', [
       'Buy Mode: its list shows 150 at a time (Show 150 more), so long lists stay quick. Find, All, None and Up to still go by every one, and stay after a run to tick more',
       'Buy Mode: putting what it bought in your SDB with Quick Stock takes a few seconds, tries again if Quick Stock doesn’t open, and says why if it can’t',
@@ -50779,7 +51021,7 @@
     if (document.documentElement) { fn(); return; }
     const o = new MutationObserver(() => { if (document.documentElement) { o.disconnect(); fn(); } });
     o.observe(document, { childList: true });
-  })(() => { for (const f of [barLook, boxEarly, nclPinEarly, pinRowsEarly, tpEarly, tpSalesEar, invEar, sdbEar, qsAllEar, pageEar, dailyFormEar, quietEar, cocoEarly, fishEarly, myEarly, tabsMark, dockMark, shopMin, srEarly, nbEarly, stEarly, nmEarly, nmSentEarly, smEarly, cuEarly, colEarly, saEarly, cloEarly, galEarly, shopEarly, mallEarly, pinAdEarly, pageWait, waitStyle, navEarly]) { try { f(); } catch (e) { report(e); } } });
+  })(() => { for (const f of [barLook, boxEarly, nclPinEarly, pinRowsEarly, tpEarly, tpSalesEar, invEar, sdbEar, qsAllEar, pageEar, dailyFormEar, quietEar, kpopEar, cocoEarly, fishEarly, myEarly, tabsMark, dockMark, shopMin, srEarly, nbEarly, stEarly, nmEarly, nmSentEarly, smEarly, cuEarly, colEarly, saEarly, cloEarly, galEarly, shopEarly, mallEarly, pinAdEarly, pageWait, waitStyle, navEarly]) { try { f(); } catch (e) { report(e); } } });
   // ═══════════════════════════════════════════════════════════════════════════
   // The page at its very start
   // ═══════════════════════════════════════════════════════════════════════════
@@ -50901,7 +51143,7 @@
     setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 4000 + Math.random() * 12000);   // (the Turmaculus' due hours, if they're needed: a moment after the page, not at once)
     document.addEventListener('visibilitychange', () => { if (document.hidden) return; clearTimeout(turmacRead.t); turmacRead.t = setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 3000 + Math.random() * 6000); });
     try { startKeep(); } catch (e) { report(e); }
-    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, sdrBoot, labPage, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
+    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, sdrBoot, labPage, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, kpopPage, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
     themeAfter(themeChanged);   // (an old page, its theme's sheets still coming: everything of ours dressed again once they're in)
     whenLoaded(() => { setTimeout(() => { try { boxFootNote(); } catch (e) { report(e); } }, 900); try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } setTimeout(() => { updCheck(false).catch(report); try { updSeen(); } catch (e) { report(e); } }, 1500); try { const w = myWorn(), sw = w && themeData().sw[myLive(w).base]; if (w && (!sw || sw.v !== 7)) themeSwatches(); } catch (e) { report(e); } });   // (a theme of yours: its base's sheet read, if it hasn't been yet)   // (a random event Neopets adds a moment later; theme pictures for the tab)
     if (document.getElementById('navtop__2020') || document.getElementById('navbottom__2020')) startOnce();
