@@ -1,9 +1,9 @@
 {
- "version": "5.2",
+ "version": "5.2.1",
  "date": "2026-11-03",
  "notes": [
-  "Kadoatery: made over, with its times, Auto refresh and alerts",
-  "Kadoatery: Buy and feed, your count and trophy",
-  "Lottery: updates itself at the 4 am draw"
+  "Price mode and the SDB selector keep going in another tab",
+  "What it’s worth: hide unsearchable items, a price range",
+  "Older pages: a lighter colour wash"
  ]
 }

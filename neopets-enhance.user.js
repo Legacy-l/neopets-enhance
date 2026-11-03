@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.2
+// @version      5.2.1
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -28871,6 +28871,8 @@
   const SHOP_PM_RUN = 'bnp-shop-pmrun', SHOP_PM_PER = 30;   // (a whole-shop run, kept in this tab; Neopets shows 30 items a page)
   const shopPmAllowed = () => S.features.shopPm !== false;   // (Settings › Your shop › Price mode on Shop Stock)
   function shopPmSrc() { const s = shopP().pmSrc || (itPremium() ? 'ssw' : 'sw'); return s === 'ssw' && itPremium() ? 'ssw' : 'sw'; }   // (the Super Shop Wizard only with Premium: then the one used unless you choose otherwise, as it sees every shop)
+  const shopPmBg = () => shopP().pmBg !== false;   // (keeps going while you're in another tab, as Buy Mode does; off: waits till this tab's in sight)
+  const shopPmShown = () => (shopPmBg() ? Promise.resolve() : untilShown());
   function shopPmTimes() { const n = Number(shopP().pmTimes); return [1, 3, 5].includes(n) ? n : 3; }   // (the Shop Wizard shows one section of shops a search: asked this many times an item)
   function shopPmUnder() { const u = String(shopP().pmUnder || '1'); return TP_UNDERS.some(([v]) => v === u) ? u : '1'; }
   const shopPmWaits = () => shopP().pmWait !== false;   // (wait out a wizard's "come back later": on unless you turn it off)
@@ -28892,7 +28894,7 @@
     return hours && age < hours * 36e5 ? v : null;
   }
   const shopPmWiz = (src) => (src === 'ssw' ? 'The Super Shop Wizard' : 'The Shop Wizard');
-  const shopPmSleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
+  const shopPmSleep = (ms) => bmSleep(ms);   // (a worker's timer: on time in a tab out of sight too)
   const shopPmHalt = () => { const pm = shop.pm; return pm.stop || pm.forget || !pm.on || !shopPmAllowed(); };   // (Stop, Forget it, Price mode switched off here or in Settings)
   function shopPmRunGet() { try { const r = JSON.parse(sessionStorage.getItem(SHOP_PM_RUN) || 'null'); if (r && Date.now() - (r.at || 0) > 864e5) { sessionStorage.removeItem(SHOP_PM_RUN); return null; } return r && r.v === 1 && r.done ? r : null; } catch (_) { return null; } }   // (a run left a day: forgotten)
   function shopPmRunSet(r) { try { if (r) { r.at = Date.now(); sessionStorage.setItem(SHOP_PM_RUN, JSON.stringify(r)); } else sessionStorage.removeItem(SHOP_PM_RUN); } catch (_) { /* (storage full or blocked: this page's part still runs) */ } }
@@ -28942,6 +28944,7 @@
       <label class="bnp-shop-pmtimes" title="The Shop Wizard shows one section of shops a search: the lowest of this many searches is taken"${src === 'ssw' ? ' hidden' : ''}><span>Searches each</span><select data-shop-pmtimes aria-label="Shop Wizard searches for each item">${[1, 3, 5].map((n) => `<option value="${n}"${shopPmTimes() === n ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
       <label class="bnp-shop-pmunder"><span>Just under by</span><select data-shop-pmunder aria-label="Just under the lowest by">${TP_UNDERS.map(([v, , l]) => `<option value="${v}"${under === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
       <label class="bnp-shop-pmwait" title="When the wizard says to come back later: wait till just after the top of the hour, when it lets you search again, and carry on (at a moment in that hour’s first five minutes)"><input type="checkbox" data-shop-pmwait${shopPmWaits() ? ' checked' : ''}><span>Wait out a ban</span></label>
+      <label class="bnp-shop-pmwait bnp-shop-pmbg" title="Keeps going while you’re in another tab. Off: it waits till this tab’s in sight again, then carries on"><input type="checkbox" data-shop-pmbg${shopPmBg() ? ' checked' : ''}><span>In another tab too</span></label>
       <label class="bnp-shop-pmskip" title="Items Price mode looked up lately are left as they are: no search and no change (an item the Super Shop Wizard won’t search is left a week)"><span>Skip</span><select data-shop-pmskip aria-label="Skip items priced lately">${SHOP_PM_SKIPS.map(([h, l]) => `<option value="${h}"${shopPmSkip() === h ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label></div>
       <div class="bnp-shop-pmact"><span class="bnp-shop-pmsay" data-shop-pmsay aria-live="polite"></span>
       <span class="bnp-shop-pmonly" role="group" aria-label="Which items">${SHOP_PM_ONLY.map(([k, l]) => `<button type="button" data-shop-pmonly="${k}" aria-pressed="${shopPmOnly() === k}">${l}</button>`).join('')}</span>
@@ -28958,6 +28961,7 @@
       if (t.matches('[data-shop-pmunder]')) shopPSet('pmUnder', t.value);
       if (t.matches('[data-shop-pmtimes]')) shopPSet('pmTimes', Number(t.value));
       if (t.matches('[data-shop-pmskip]')) { shopPSet('pmSkip', Number(t.value)); shopPmPaint(); }   // (rows left alone now, or looked up again)
+      if (t.matches('[data-shop-pmbg]')) shopPSet('pmBg', t.checked);   // (a run under way goes by it from its next step)
       if (t.matches('[data-shop-pmwait]')) { shopPSet('pmWait', t.checked); if (shop.pm.run) { shop.pm.run.wait = t.checked; shopPmRunSet(shop.pm.run); } }   // (a run under way goes by it from now)
     });
     return s;
@@ -29095,7 +29099,7 @@
     const times = src === 'ssw' ? 1 : times0 || shopPmTimes(), all = [];
     let done = 0, busy = false;
     for (let k = 0; k < times; k++) {
-      if (k) { await untilShown(); await shopPmSleep(2200 + Math.random() * 1400); }   // (searching again: a person's moment)
+      if (k) { await shopPmShown(); await shopPmSleep(2200 + Math.random() * 1400); }   // (searching again: a person's moment)
       try { all.push(...await shopPmAsk(name, src)); done += 1; } catch (e) { if (!all.length) throw e; busy = !!e.busy; break; }
       if (shopPmHalt() && k < times - 1) break;
     }
@@ -29147,8 +29151,8 @@
     let waits = 0, cants = [];
     Object.assign(pm, { stop: false, why: '', msg: '', whyMsg: '' });
     for (let i = 0; i < rows.length; i++) {
-      if (document.hidden) { pm.msg = 'Carrying on when this tab is in sight…'; shopPmSay(); }
-      await untilShown();
+      if (document.hidden && !shopPmBg()) { pm.msg = 'Carrying on when this tab is in sight…'; shopPmSay(); }
+      await shopPmShown();
       pm.msg = '';
       if (shopPmHalt()) { pm.why = 'stop'; break; }
       const name = rows[i].dataset.name || '';
@@ -29250,7 +29254,7 @@
     pm.msg = `Page ${run.page} of ${run.pages}: sending its new prices with Update…`;
     shopPmSay();
     await shopPmSleep(1000 + Math.random() * 1500);
-    await untilShown();
+    await shopPmShown();
     if (shopPmHalt()) { shopPmPause(run, 'stop'); return; }
     Object.assign(run, { step: 'sent', go: Date.now() });   // (Neopets' old way, a page of its own, comes back here and carries on)
     shopPmRunSet(run);
@@ -29289,7 +29293,7 @@
     shopPmRunSet(run);
     shopPmSay();
     await shopPmSleep(1200 + Math.random() * 1800);
-    await untilShown();
+    await shopPmShown();
     if (shopPmHalt()) { shopPmPause(run, 'stop'); return; }
     run.go = Date.now();
     shopPmRunSet(run);
@@ -32467,6 +32471,9 @@
   const wtKeepSet = (k, v) => { try { localStorage.setItem(acctKey('bnp-worth'), JSON.stringify({ ...wtKeep(), [k]: v })); } catch (_) { /* */ } };
   const wtNum = (t) => Number(String(t || '').replace(/[^\d]/g, '')) || 0;
   const wtSleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
+  const wtNsKey = () => `wtnossw@${nclMe() || '-'}`;   // (your SDB's items the Super Shop Wizard can't search: no trade or no sell, as your SDB says)
+  const wtNsGet = () => { const v = get(wtNsKey(), []); return new Set(Array.isArray(v) ? v : []); };
+  function wtNsAdd(names) { if (!names.length) return; const s0 = wtNsGet(), n0 = s0.size; for (const n of names) if (n) s0.add(n); if (s0.size !== n0) set(wtNsKey(), [...s0].slice(-6000)); }
   function wtKey() {
     const p = location.pathname;
     return p === '/inventory.phtml' ? 'inventory' : p === '/safetydeposit.phtml' ? 'safetydeposit' : p === '/closet.phtml' ? 'closet' : /^\/gallery\/(index\.phtml)?$/.test(p) ? 'gallery' : '';
@@ -32483,6 +32490,7 @@
       const ncPool = wtPool() === 'nc';   // (its NC items, shown apart: each one NC, whatever its type says)
       for (const tr of $$('table.sdb-table tbody tr')) {
         const info = tr.querySelector('.sdb-item-info'), name = info && info.querySelector('.sdb-item-name');
+        if (name && /\(no (?:trade|sell)\)/i.test(info.textContent)) wtNsAdd([reClean(name.textContent)]);   // (its own "(no trade)": the Super Shop Wizard can't search it)
         if (name) add(name.textContent, qty(tr.querySelector('.sdb-qty-cell') || tr.querySelector('.sdb-item-qty-mobile')), { nc: ncPool || /Type:\s*Neocash/i.test(info.textContent), img: (tr.querySelector('img.sdb-item-img') || {}).src });
       }
       for (const it of $$('.sdb-grid .sdb-grid-item')) {
@@ -32780,9 +32788,20 @@
     if (key === 'inventory' && (wtInvNc() ? 'nc' : 'np') !== tab) { const k = kept[tab === 'nc' ? 'inventory:nc' : 'inventory']; return { d: k && k.whole ? k : null, whole: null, here: null, other: true }; }
     return { d: here, whole: null, here };
   }
-  const wtFocusKey = (el) => { for (const k of ['data-wt', 'data-wttab', 'data-wthow', 'data-wtpick']) if (el.hasAttribute(k)) return `[${k}="${CSS.escape(el.getAttribute(k))}"]`; return ''; };   // (the control that had the keyboard, found again after a redraw)
+  const wtFocusKey = (el) => { for (const k of ['data-wt', 'data-wttab', 'data-wthow', 'data-wtpick', 'data-wtfilt']) if (el.hasAttribute(k)) return `[${k}="${CSS.escape(el.getAttribute(k))}"]`; return ''; };   // (the control that had the keyboard, found again after a redraw)
+  function wtCantLoad() {   // (what the Super Shop Wizard turned away when Price mode asked, kept a week: once a window)
+    if (!wt || wt.cantAsked) return;
+    wt.cantAsked = true;
+    idbGet(shopPmSeenKey()).then((v) => {
+      if (!wt) return;
+      const old = Date.now() - 8 * 864e5;
+      wt.cant = new Set(Object.entries(v || {}).filter(([, r]) => r && r.cant && r.src === 'ssw' && r.at > old).map(([k]) => k));
+      if (S.features.wtNoSsw) wtWinPaint();
+    }).catch(() => {});
+  }
   function wtWinPaint() {
     if (!wt || !wt.win || !wt.win.classList.contains('open')) return;
+    wtCantLoad();
     const key = wt.key, paged = WT_PAGED.has(key), kept = wtKeep(), s = wt.sum, c = wt.count, tab = wt.tab === 'nc' ? 'nc' : 'np', nc = tab === 'nc';
     const { d: src, whole, here, other, part } = wtSrc(tab, kept), place = wt.own ? `Your ${WT_NAME[key]}` : 'This gallery';
     const npN = (d) => Math.max(0, (d.items || 0) - ((d.nc && d.nc.n) || 0));
@@ -32833,11 +32852,14 @@
     let lists = '';
     if (!nc) {
       const whole2 = key === 'safetydeposit' && whole && src === whole ? whole : null, led = whole2 && whole2.whole ? wtLedList(`${whole2.at}|${whole2.upd || ''}`, whole2.at) : null;   // (the whole SDB: every row it has, not its first 50)
-      const sortK = S.features.wtSort || 'value', full = !led && s && src === here ? s.list : null, list = (led || full || (src ? src.top || [] : [])).slice().sort(wtSortBy(sortK));   // (this page as it is: every row, not only its 50 most valuable)
+      const sortK = S.features.wtSort || 'value', full = !led && s && src === here ? s.list : null, listAll = (led || full || (src ? src.top || [] : [])).slice().sort(wtSortBy(sortK));
+      const hideNs = !!S.features.wtNoSsw, from = Number(S.features.wtFrom) || 0, upTo = Number(S.features.wtTo) || 0, nsSet = hideNs ? wtNsGet() : null, cant = wt.cant || new Set();
+      const list = listAll.filter((it) => (!hideNs || !(nsSet.has(it.n) || cant.has(it.n))) && (!from || (it.p || 0) >= from) && (!upTo || (it.p != null && it.p <= upTo))), hid = listAll.length - list.length;   // (your filters: ones the SSW can't search away; priced from … to …)
+      const filt = `<div class="bnp-wt-filt"><label class="bnp-wt-fchk" title="No trade or no sell, as your SDB says, or turned away by the Super Shop Wizard when Price mode asked: it can’t find them in anyone’s shop"><input type="checkbox" data-wtfilt="ns"${hideNs ? ' checked' : ''}><span>Hide ones the SSW can’t search</span></label><span class="bnp-wt-frange"><span>Priced</span><input type="text" inputmode="numeric" data-wtfilt="from" value="${from ? from.toLocaleString() : ''}" placeholder="from" aria-label="Priced from (NP)"><span>to</span><input type="text" inputmode="numeric" data-wtfilt="to" value="${upTo ? upTo.toLocaleString() : ''}" placeholder="any" aria-label="Priced up to (NP)"><span>NP</span></span>${hid ? `<span class="bnp-wt-fhid">${hid.toLocaleString()} hidden<button type="button" class="bnp-wt-pb is-sm" data-wt="unfilt">Show all</button></span>` : ''}</div>`;   // (this page as it is: every row, not only its 50 most valuable)
       const cap = Math.max(wt.full ? 50 : 10, wt.show || 10), shown = list.slice(0, cap), one = sortK === 'each' || sortK === 'cheap', fig = (it) => (one ? it.p : it.t) || 0, most = list.reduce((m, x) => Math.max(m, fig(x)), 1);   // (in order of each one's price: one's price shown, a stack noted, never its total)
       const rows = shown.map((it) => li(it, `${pic(it.img)}<span class="bnp-wt-n">${it.slug ? `<a href="https://itemdb.com.br/item/${esc(encodeURIComponent(it.slug))}" target="_blank" rel="noopener" title="${esc(`${it.n} on itemdb`)}">${esc(it.n)}</a>` : `<span>${esc(it.n)}</span>`}${it.q > 1 || it.r != null ? `<small>${[it.q > 1 ? (one ? `Qty: ${it.q.toLocaleString()}` : `${it.q.toLocaleString()} × ${npShort(it.p)} NP`) : '', it.r != null ? `r${it.r}` : ''].filter(Boolean).join(' · ')}</small>` : ''}<i class="bnp-wt-bar" aria-hidden="true"><i style="width:${Math.max(2, Math.min(100, Math.round(100 * fig(it) / most)))}%"></i></i></span>${one ? `<b class="bnp-wt-v" title="${esc(it.q > 1 ? `${Math.round(it.p).toLocaleString()} NP each · ${it.q.toLocaleString()} of them, ${Math.round(it.t).toLocaleString()} NP in all` : `${Math.round(it.p).toLocaleString()} NP`)}">${it.q > 1 ? '<small>each</small>' : ''}${npShort(it.p)} NP</b>` : `<b class="bnp-wt-v" title="${esc(`${Math.round(it.t).toLocaleString()} NP`)}">${npShort(it.t)} NP</b>`}`)).join('');   // (its value once; a stack's how many × each (in order of each one's price: one's price, "each" before a stack's, its Qty under its name); the bar: beside the first's)
       const title = sortK === 'each' ? 'Highest price each' : sortK === 'rarity' ? 'Rarest' : sortK === 'cheap' ? 'Lowest price each' : 'Most valuable';
-      if (rows) lists += `<section>${head(`${title}${pg}`, shown)}<div class="bnp-wt-sorts" role="group" aria-label="In order of">${WT_SORTS.map(([v, l]) => `<button type="button" class="bnp-wt-pb is-sm" data-wtsort="${v}" aria-pressed="${sortK === v}">${l}</button>`).join('')}</div><ol class="bnp-wt-top${can ? ' is-pick' : ''}">${rows}</ol></section>`;
+      if (rows || hid) lists += `<section>${head(`${title}${pg}`, shown)}<div class="bnp-wt-sorts" role="group" aria-label="In order of">${WT_SORTS.map(([v, l]) => `<button type="button" class="bnp-wt-pb is-sm" data-wtsort="${v}" aria-pressed="${sortK === v}">${l}</button>`).join('')}</div>${filt}${rows ? '' : '<p class="bnp-wt-sub bnp-wt-fnone">None of them fit your filters.</p>'}<ol class="bnp-wt-top${can ? ' is-pick' : ''}">${rows}</ol></section>`;
       if (list.length > shown.length || cap > 10) lists += `<div class="bnp-wt-morerow">${list.length > shown.length ? `<button type="button" class="bnp-wt-pb" data-wt="more">${cap <= 10 ? `Show more (${Math.min(list.length, 50)})` : `Show ${Math.min(50, list.length - shown.length).toLocaleString()} more`}</button>` : ''}${cap > 10 && !wt.full ? '<button type="button" class="bnp-wt-pb" data-wt="fewer">Fewer</button>' : ''}<span class="bnp-wt-count">${shown.length.toLocaleString()} of ${list.length.toLocaleString()}</span></div>`;
       if (src && src.none) lists += `<details class="bnp-wt-noneb"><summary>${src.none.toLocaleString()} without an itemdb price</summary><p>${esc((src.noneNames || []).join(', '))}${src.none > (src.noneNames || []).length ? '…' : ''}</p></details>`;
     } else {
@@ -32910,7 +32932,8 @@
     const sw = wt.pool && wt.pool !== tab ? `<p class="bnp-wt-picknote">Your SDB switches to its ${tab === 'nc' ? 'NC' : 'NP'} items first: Neopets keeps the two apart, and switching starts a fresh selection there.</p>` : '';
     return `${out}${out ? '<hr class="bnp-wt-pickhr">' : ''}<div class="bnp-wt-pickrow"><b>${set.size.toLocaleString()} selected</b><span class="bnp-wt-how" role="group" aria-label="How many of each"><button type="button" data-wthow="all" aria-pressed="${wt.pickHow !== 'one'}">All of each</button><button type="button" data-wthow="one" aria-pressed="${wt.pickHow === 'one'}">1 of each</button></span>
       <span class="bnp-wt-pickgo"><button type="button" class="bnp-wt-pb" data-wt="clear">Clear</button><button type="button" class="button-default__2020 button-yellow__2020" data-wt="select">Select in your SDB</button></span></div>
-      <p class="bnp-wt-picknote">NE selects them in your SDB’s own list with “Move to Inventory” chosen; you press its Confirm to take them out.</p>${sw}`;
+      <p class="bnp-wt-picknote">NE selects them in your SDB’s own list with “Move to Inventory” chosen; you press its Confirm to take them out.</p>${sw}
+      <label class="bnp-wt-bgchk" title="Off: it waits while you’re in another tab, and carries on when you’re back (Buy Mode and Read to a pet go by this too)"><input type="checkbox" data-wtbg${bmP().bg ? ' checked' : ''}><span>Keep going in a background tab</span></label>`;
   }
   function wtPickPaint() {   // (the bar and each list's Select all, without redrawing the lists)
     if (!wt || !wt.win) return;
@@ -32933,6 +32956,17 @@
   function wtWinChange(e) {
     const i = e.target instanceof Element && e.target.matches('input[data-wtpick]') ? e.target : null;
     if (i && wt) wtPickSet(i);
+    const f = e.target instanceof Element ? e.target.closest('[data-wtfilt]') : null;
+    if (f && wt) {   // (a filter: kept, the list drawn again)
+      const k = f.dataset.wtfilt;
+      if (k === 'ns') S.features.wtNoSsw = !!f.checked;
+      else { const v = Math.floor(Number(String(f.value).replace(/[\s,]/g, ''))); S.features[k === 'from' ? 'wtFrom' : 'wtTo'] = Number.isFinite(v) && v > 0 ? v : ''; }
+      saveNow();
+      wt.show = 10;
+      wtWinPaint();
+    }
+    const g = e.target instanceof Element && e.target.matches('[data-wtbg]') ? e.target : null;
+    if (g) bmPSet('bg', g.checked);   // (Buy Mode, Read to a pet and this go by it alike)
   }
   function wtGoConfirm() {   // (the window away, and Neopets' own Confirm in its drawer pointed at)
     wt.picked = null;
@@ -32952,6 +32986,7 @@
     if (tb) { const t = tb.dataset.wttab === 'nc' ? 'nc' : 'np'; if (wt.tab !== t) { wt.tab = t; wt.more = false; wt.show = 10; wt.toTop = true; wtWinPaint(); } return; }
     const so = e.target instanceof Element ? e.target.closest('[data-wtsort]') : null;
     if (so) { S.features.wtSort = so.dataset.wtsort; saveNow(); wtWinPaint(); return; }   // (the list's order: kept)
+    if (el.closest('[data-wt="unfilt"]')) { S.features.wtNoSsw = false; S.features.wtFrom = ''; S.features.wtTo = ''; saveNow(); wtWinPaint(); return; }   // (every one again)
     const po = e.target instanceof Element ? e.target.closest('[data-wtpools]') : null;
     if (po) { S.features.wtPools = po.dataset.wtpools; saveNow(); wtWinPaint(); return; }   // (what the next count reads: kept)
     const how = el.closest('[data-wthow]');
@@ -32981,7 +33016,7 @@
       const r = await fetch(`/np-templates/ajax/closet/get-items.php?${new URLSearchParams({ page, per_page: 90, search: '', category: '' })}`, { credentials: 'include' });   // (as the closet's own page asks: no other headers)
       const d = await r.json().catch(() => null);
       if (!d || !d.success) throw new Error('Neopets didn’t give the closet’s items just now: try again in a moment.');
-      return { items: (d.items || []).map((i) => ({ n: reClean(i.obj_name), q: Math.max(1, Number(i.qty) || 1), nc: !!i.is_nc, pb: !!i.is_paintbrush, img: i.image_url || '' })), pages: Number(d.total_pages) || 1, total: Number(d.total) || 0, qty: Number(d.total_qty) || null };
+      return { items: (d.items || []).map((i) => ({ n: reClean(i.obj_name), q: Math.max(1, Number(i.qty) || 1), nc: !!i.is_nc, pb: !!i.is_paintbrush, img: i.image_url || '', ns: !!(i.is_notrade || i.is_nosell) })), pages: Number(d.total_pages) || 1, total: Number(d.total) || 0, qty: Number(d.total_qty) || null };
     }
     const ck = (PAGE.__sdbData && PAGE.__sdbData.refCk) || '';
     if (!ck) throw new Error('Your SDB’s page didn’t load all the way: open it again, then count.');
@@ -32989,7 +33024,7 @@
     const d = await r.json().catch(() => null);
     if (!d || !d.success || !d.data) throw new Error('Neopets didn’t give your SDB’s items just now: try again in a moment.');
     const pg = d.data.pagination || {};
-    return { items: (d.data.items || []).map((i) => ({ n: reClean(i.obj_name), q: Math.max(1, Number(i.amount) || 1), nc: !!i.is_nc || pool === 'nc', pb: false, img: i.obj_filename ? `https://images.neopets.com/items/${i.obj_filename}.gif` : '', id: i.obj_info_id })), pages: Number(pg.total_pages) || 1, total: Number(pg.total_items) || 0, qty: pg.total_qty != null ? Number(pg.total_qty) : null };
+    return { items: (d.data.items || []).map((i) => ({ n: reClean(i.obj_name), q: Math.max(1, Number(i.amount) || 1), nc: !!i.is_nc || pool === 'nc', pb: false, img: i.obj_filename ? `https://images.neopets.com/items/${i.obj_filename}.gif` : '', id: i.obj_info_id, ns: !!(i.is_notrade || i.is_nosell) })), pages: Number(pg.total_pages) || 1, total: Number(pg.total_items) || 0, qty: pg.total_qty != null ? Number(pg.total_qty) : null };
   }
   async function wtCountHere() {   // (the Gallery: all of it on its page — priced when you ask, a hundred at a time a moment apart; kept till you ask again)
     if (!wt || wt.pricing) return;
@@ -33019,19 +33054,20 @@
       if (!fits) for (const pool of POOLS) {
         me.pool = pool;
         for (let p = 1; ; p++) {
-          while (document.hidden && !me.stop) { if (!me.paused) { me.paused = true; wtWinPaint(); } await wtSleep(800); }
+          while (document.hidden && !bmP().bg && !me.stop) { if (!me.paused) { me.paused = true; wtWinPaint(); } await bmSleep(800); }   // (in a background tab too, unless you've turned that off)
           if (me.paused) { me.paused = false; wtWinPaint(); }
           if (me.stop) throw new Error('stopped');
           const r = await wtFetch(key, pool, p);
           items.push(...r.items);
+          if (key === 'safetydeposit') wtNsAdd(r.items.filter((x) => x.ns).map((x) => x.n));   // (no trade / no sell: the Super Shop Wizard can't search them)
           if (p === 1) { pools[pool || 'all'] = { items: r.total, qty: r.qty }; me.pages += r.pages; }
           me.read++;
           wtPillPaint();
           wtWinPaint();
           if (p >= r.pages || !r.items.length) break;
-          await wtSleep(3000 + Math.random() * 2000);
+          await bmSleep(3000 + Math.random() * 2000);
         }
-        if (pool === 'np' && POOLS.includes('nc')) await wtSleep(3000 + Math.random() * 2000);   // (and between the NP items and the NC ones)
+        if (pool === 'np' && POOLS.includes('nc')) await bmSleep(3000 + Math.random() * 2000);   // (and between the NP items and the NC ones)
       }
       if (!fits && choice !== 'both') {   // (one pool counted: the other as last counted, from the SDB's own record)
         const led = await idbGet(wtLedKey()).catch(() => null), other = choice === 'np' ? 'nc' : 'np';
@@ -33137,8 +33173,8 @@
   const sdbVm = () => vueState((PAGE.document || document).getElementById('sdb-vue-app'), ['selectedItems', 'toggleSelection', 'isSelected', 'moveQty', 'onSearch', 'onPageChange', 'bulkAction', 'setViewFilter', 'items']);   // (the SDB's own list: its search, pages, NP/NC switch and selection)
   async function sdbIdle(st) {   // (its list done loading; false if that takes more than 20 seconds)
     const t0 = Date.now();
-    await wtSleep(50);
-    while (st.loading) { if (Date.now() - t0 > 20000) return false; await wtSleep(120); }
+    await bmSleep(50);
+    while (st.loading) { if (Date.now() - t0 > 20000) return false; await bmSleep(120); }
     return true;
   }
   async function sdbFind(st, name) {   // (its own search for the name, as you'd type it; the item of that exact name among what comes back, a page on if need be)
@@ -33150,7 +33186,7 @@
       const it = [...(st.items || [])].find((x) => x && reClean(x.obj_name).toLowerCase() === want);
       if (it) return { it };
       if (p >= pages) return {};
-      await wtSleep(2400 + Math.random() * 1400);
+      await bmSleep(2400 + Math.random() * 1400);
       st.onPageChange(p + 1);
       if (!(await sdbIdle(st))) return { err: true };
     }
@@ -33172,7 +33208,7 @@
       st.selectedCategory = '';
       st.perPage = 90;
       for (const name of names) {
-        while (document.hidden && !me.stop) await wtSleep(700);
+        while (document.hidden && !bmP().bg && !me.stop) await bmSleep(700);   // (in a background tab too, unless you've turned that off)
         if (me.stop) break;
         me.name = name;
         me.at++;
@@ -33189,7 +33225,7 @@
         set.delete(name);
         me.i++;
         wtPickPaint();
-        if (me.i < names.length && !me.stop) await wtSleep(2600 + Math.random() * 1600);
+        if (me.i < names.length && !me.stop) await bmSleep(2600 + Math.random() * 1600);
       }
     } catch (e) {
       const slow = !!(e && e.message === 'slow');
@@ -46517,9 +46553,9 @@
     const mine = myWorn(), ownBox = !!mine && myBoxOwn(myLive(mine));   // (a theme of yours with a box of its own draws it here itself, as on any page)
     // (the beta box: since Oct 2026 a wash of your theme's colour fading to white, drawn as a picture over no colour; before, plain
     // white. A box that would come out see-through is white)
-    const wash = /^linear-gradient\(/.test(box.img || '');   // (the beta box's wash of colour: spread as on a long page, so a short one shows only its lighter top)
+    const wash = /^linear-gradient\(/.test(box.img || '');   // (the beta box's wash of colour: only its lighter half, spread over the page (the user, 2026-11-03: "cut the gradient in half and then stretch that out"), so a short page shows only its lightest top)
     const boxBg = ownBox ? '' : box.img && box.img !== 'none' && !/\bblob:/.test(box.img)
-      ? wash ? `background-color: ${clear(box.bg) ? '#fff' : box.bg} !important; background-image: ${box.img} !important; background-size: 100% max(100%, 1300px) !important; background-repeat: no-repeat !important; background-position: 0 0 !important;`
+      ? wash ? `background-color: ${clear(box.bg) ? '#fff' : box.bg} !important; background-image: ${box.img} !important; background-size: 100% max(200%, 2600px) !important; background-repeat: no-repeat !important; background-position: 0 0 !important;`
         : `background-color: ${clear(box.bg) ? 'transparent' : box.bg} !important; background-image: ${box.img} !important; background-size: ${box.size || 'auto'} !important; background-repeat: ${box.rep || 'repeat'} !important; background-position: ${box.pos || '0 0'} !important;`
       : `background: ${clear(box.bg) ? '#fff' : box.bg} !important;`;
     return `
@@ -48714,6 +48750,11 @@
     .bnp-wt-top li:nth-child(3)::before { background: linear-gradient(#f3c28f, #cd8445); box-shadow: inset 0 0 0 1.5px #a9652d; color: #4f2a08; }
     .bnp-wt-n small { margin-top: 1px; }
     .bnp-wt-sorts, .bnp-wt-pools { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+    .bnp-wt-filt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 6px 0 8px; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; color: #4a3f5a; }   /* (the list's filters) */
+    .bnp-wt-fchk, .bnp-wt-bgchk { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; } .bnp-wt-fchk input, .bnp-wt-bgchk input { width: 16px; height: 16px; margin: 0; }
+    .bnp-wt-frange { display: inline-flex; align-items: center; gap: 5px; } .bnp-wt-frange input { width: 86px; height: 26px; margin: 0; padding: 0 9px; border: 1.5px solid #d9d2e3; border-radius: 999px; background: #fff; color: #2b2b2b; font: 12.5px "MuseoSansRounded500", Arial, sans-serif; text-align: right; box-sizing: border-box; }
+    .bnp-wt-fhid { display: inline-flex; align-items: center; gap: 6px; color: #7a6f86; } .bnp-wt-fnone { margin: 4px 0 8px; }
+    .bnp-wt-bgchk { margin-top: 6px; color: #5d566a; font: 12px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-wt-sorts { margin: 2px 0 8px; }
     .bnp-wt-sorts .bnp-wt-pb[aria-pressed="true"], .bnp-wt-pools .bnp-wt-pb[aria-pressed="true"] { border-color: rgba(28, 20, 0, .4); background: linear-gradient(#7a5500, #5a3d00); color: #fff !important; }
     .bnp-wt-sorts .bnp-wt-pb[aria-pressed="true"]:hover, .bnp-wt-pools .bnp-wt-pb[aria-pressed="true"]:hover { border-color: rgba(28, 20, 0, .4); background: linear-gradient(#8a6200, #6a4800); }
@@ -51590,6 +51631,12 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.2.1', '2026-11-03', [
+      'Your shop: Price mode keeps going while you’re in another tab (its new “In another tab too” box, on unless you turn it off)',
+      'What it’s worth: Select in your SDB and Count it all keep going in a background tab too',
+      'What it’s worth: hide the items the Super Shop Wizard can’t search, and show only those priced from … to … NP',
+      'Older pages (the Kadoatery, Neomail…): your theme’s colour wash is lighter, its top half spread over the page',
+    ]],
     ['5.2', '2026-11-03', [
       'Kadoatery: made over. One frame of cages (hungry ones in pink, with their food’s itemdb price) and a one-line bar of upcoming windows',
       'Kadoatery times: learned from what NE sees, counted from when they’re fed, with minis, pends and the boards’ Kadoatery topic',
