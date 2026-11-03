@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.1.1
+// @version      5.1.2
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -32118,10 +32118,15 @@
   const SDR_BOOKS = '6';   // (the SDB's own Books category)
   const SDR_SORT = 'bnp-sdr-sort';   // (how the books are listed and read: cheap, dear or name)
   const sdrSortOf = () => { try { const v = localStorage.getItem(SDR_SORT); return v === 'dear' || v === 'name' ? v : 'cheap'; } catch (_) { return 'cheap'; } };
+  const SDR_KIND = 'bnp-sdr-kind';   // (which books are shown and read: both kinds, books, or Booktastic books; each kind has its own award)
+  const sdrKindOf = () => { try { const v = localStorage.getItem(SDR_KIND); return v === 'books' || v === 'bt' ? v : 'all'; } catch (_) { return 'all'; } };
+  const sdrBt = (b) => /booktastic/i.test(String((b.it && b.it.type_name) || ''));   // (a Booktastic book: its own list on Books Read and its own award. Neopets' type can come wrapped in tags)
+  const sdrShows = (b, k = sdrKindOf()) => k === 'all' || (k === 'bt') === sdrBt(b);
   function sdrSorted() {   // (the books as listed, and read: the ones it hasn't read in your order, then the ones it has, by name)
     const by = sdrSortOf(), name = (a, b) => a.name.localeCompare(b.name);
     const order = by === 'name' ? name : by === 'dear' ? (a, b) => ((b.p || -1) - (a.p || -1)) || name(a, b) : (a, b) => ((a.p || Infinity) - (b.p || Infinity)) || name(a, b);
-    return [...sdr.books.filter((b) => !b.done).sort(order), ...sdr.books.filter((b) => b.done).sort(name)];
+    const list = sdr.books.filter((b) => sdrShows(b));   // (of the kind shown)
+    return [...list.filter((b) => !b.done).sort(order), ...list.filter((b) => b.done).sort(name)];
   }
   async function sdrPrices() {   // (each book's itemdb price, only to sort by and show: from NE's kept Books Read lists, else itemdb asked, a hundred at a time)
     const cat = new Map();
@@ -32340,7 +32345,8 @@
     if (sdrPinAsked() && !sdr.pin) { sdr.err = 'Your SDB asks for your PIN first.'; sdrPaint(); const p = sdr.win.querySelector('[data-sdrpin]'); if (p) p.focus(); return; }
     try { localStorage.setItem(SDR_PET, pet); } catch (_) { /* */ }
     const run = sdr.run = { n: list.length, i: 0, read: 0, stop: false, over: false, at: null, fails: 0, pinStop: '' };
-    for (const b of sdr.books) { b.st = b.on ? 'wait' : ''; b.why = ''; }
+    const go = new Set(list);
+    for (const b of sdr.books) { b.st = go.has(b) ? 'wait' : ''; b.why = ''; }   // (only the ones shown: a kind hidden isn't read)
     sdr.err = '';
     sdr.state = 'run';
     try { if (st) for (const b of list) if (!st.isSelected(b.it)) st.toggleSelection(b.it); } catch (_) { /* */ }   // (all of them selected in its own list while they wait, as you'd select them: what NE keeps of your SDB knows their names; each one read leaves the selection)
@@ -32371,7 +32377,7 @@
     run.at = null;
     sdr.state = 'done';
     for (const b of sdr.books) if (b.st === 'now') b.st = 'wait';
-    if (sdr.had && run.read) { for (const b of sdr.books) if (b.st === 'read') { sdr.had.ids.add(b.id); sdr.had.keys.add(colImgKey(b.it.obj_filename)); if (/booktastic/i.test(String(b.it.type_name || ''))) sdr.had.bt++; else sdr.had.n++; } }   // (what it's read now, without asking again)
+    if (sdr.had && run.read) { for (const b of sdr.books) if (b.st === 'read') { sdr.had.ids.add(b.id); sdr.had.keys.add(colImgKey(b.it.obj_filename)); if (sdrBt(b)) sdr.had.bt++; else sdr.had.n++; } }   // (what it's read now, without asking again)
     sdrPaint();
     if (run.read) {
       document.dispatchEvent(new CustomEvent('bnp-col-read', { detail: JSON.stringify({ pet }) }));   // (its kept lists and the marks: read again)
@@ -32384,6 +32390,8 @@
     if (pc) { if (sdr.run && !sdr.run.over) return; if (sdr.pet !== pc.dataset.sdrpet || sdr.state === 'pick' || sdr.state === 'done') { sdr.pet = pc.dataset.sdrpet; sdrCheck().catch(report); } return; }
     const sv = el.closest('[data-sdrsrc]');
     if (sv) { if (sdr.run && !sdr.run.over) return; const s = sv.dataset.sdrsrc === 'all' ? 'all' : 'sel'; if (s !== sdr.src || sdr.state === 'done') { sdr.src = s; if (sdr.pet) sdrCheck().catch(report); else sdrPaint(); } return; }
+    const kv = el.closest('[data-sdrkind]');
+    if (kv) { if (sdr.run && !sdr.run.over) return; try { localStorage.setItem(SDR_KIND, kv.dataset.sdrkind); } catch (_) { /* */ } sdrPaint(); const f = sdr.win.querySelector('[data-sdrkind][aria-pressed="true"]'); if (f) f.focus(); return; }
     const t = el.closest('[data-sdr]');
     if (!t) return;
     const a = t.dataset.sdr;
@@ -32391,14 +32399,14 @@
     else if (a === 'go') sdrRun().catch(report);
     else if (a === 'stop') { if (sdr.run) { sdr.run.stop = true; sdrPaint(); } }
     else if (a === 'again') { if (sdr.pet) sdrCheck().catch(report); }
-    else if (a === 'all' || a === 'none') { for (const b of sdr.books) if (!b.done) b.on = a === 'all'; sdrPaint(); }
+    else if (a === 'all' || a === 'none') { for (const b of sdr.books) if (!b.done && sdrShows(b)) b.on = a === 'all'; sdrPaint(); }
     else if (a === 'upto') sdrUpTo();
   }
   function sdrUpTo() {   // (the books itemdb prices at or under the price written ticked, the rest not)
     const i = sdr.win.querySelector('[data-sdrupto]'), v = i ? bmParse(i.value) : 0;
     if (!v || sdr.state !== 'ready') return;
     try { localStorage.setItem('bnp-sdr-upto', String(v)); } catch (_) { /* */ }
-    for (const b of sdr.books) if (!b.done) b.on = b.p > 0 && b.p <= v;
+    for (const b of sdr.books) if (!b.done && sdrShows(b)) b.on = b.p > 0 && b.p <= v;
     sdrPaint();
     const n = sdr.win.querySelector('[data-sdrupto]');
     if (n) n.focus();
@@ -32413,7 +32421,7 @@
   function sdrRowHtml(b, can) {
     const pic = sdrPic(b.it), st = b.st, mark = { read: '<i class="bnp-sdr-st is-read" title="Read">✓</i>', kept: '<i class="bnp-sdr-st is-kept" title="Kept for your Archive">–</i>', no: '<i class="bnp-sdr-st is-no" title="Not read">!</i>', now: '<i class="bnp-sdr-st is-now" aria-label="Reading"></i>', ask: '<i class="bnp-sdr-st is-ask" title="Asks first">?</i>' }[st] || '';
     const why = b.why && st !== 'ask' ? `<small class="bnp-sdr-why">${esc(b.why)}</small>` : b.done && !st ? `<small>${b.arch ? esc(ARCH_WHY) : `${esc(sdr.pet)} has read it`}</small>` : !st || st === 'wait' ? `<small>${b.p ? `itemdb ≈ ${b.p.toLocaleString()} NP` : 'No itemdb price'}${Number(b.it.amount) > 1 ? ` · ${Number(b.it.amount).toLocaleString()} in your SDB, it reads one` : ''}</small>` : '';
-    return `<label class="bnp-sdr-row${b.on ? '' : ' is-off'}${st ? ` is-${st}` : ''}"${b.st === 'now' ? ' data-sdrnow' : ''}>${can ? `<input type="checkbox" data-sdrbook="${esc(b.id)}"${b.on ? ' checked' : ''}${b.arch ? ' disabled' : ''}>` : ''}<span class="bnp-sdr-bk">${pic ? `<img src="${esc(pic)}" alt="" width="40" height="40" loading="lazy">` : ''}</span><span class="bnp-sdr-nm"><b>${esc(b.name)}</b>${why}</span>${mark}</label>`;
+    return `<label class="bnp-sdr-row${b.on ? '' : ' is-off'}${st ? ` is-${st}` : ''}"${b.st === 'now' ? ' data-sdrnow' : ''}>${can ? `<input type="checkbox" data-sdrbook="${esc(b.id)}"${b.on ? ' checked' : ''}${b.arch ? ' disabled' : ''}>` : ''}<span class="bnp-sdr-bk">${pic ? `<img src="${esc(pic)}" alt="" width="40" height="40" loading="lazy">` : ''}</span><span class="bnp-sdr-nm"><b>${esc(b.name)}</b>${why}</span>${sdrKindOf() === 'all' && sdrBt(b) ? '<i class="bnp-sdr-bt">Booktastic</i>' : ''}${mark}</label>`;
   }
   function sdrPaint() {
     if (!sdr || !sdr.win.classList.contains('open')) return;
@@ -32425,18 +32433,21 @@
     else if (sdr.state === 'pick') main = `${sdr.err ? `<p class="bnp-sdr-note is-err">${esc(sdr.err)}</p>` : ''}<p class="bnp-sdr-note"><button type="button" class="bnp-sdr-lb" data-sdr="again">Try again</button></p>`;
     else if (sdr.state === 'check') { const sc = sdr.scan; main = `<p class="bnp-sdr-wait"><i class="bnp-sdr-spin" aria-hidden="true"></i>${!sdr.had ? `Looking at what ${esc(sdr.pet)} has read…` : sdr.src === 'all' ? `Looking through your SDB’s books${sc && sc.pages > 1 ? ` (page ${sc.page} of ${sc.pages})` : ''}…` : 'Looking at the books you’ve selected…'}</p>`; }
     else {
-      const shown = sdrSorted(), todo = shown.filter((b) => !b.done), done = shown.filter((b) => b.done), can = sdr.state === 'ready', on = sdr.books.filter((b) => b.on).length, h = sdr.had, by = sdrSortOf();
-      const count = h ? `<p class="bnp-sdr-count">${esc(sdr.pet)} has read <b>${h.n.toLocaleString()}</b> ${h.n === 1 ? 'book' : 'books'}${h.bt ? ` and <b>${h.bt.toLocaleString()}</b> Booktastic ${h.bt === 1 ? 'book' : 'books'}` : ''}${run && run.read ? ` <em>(${run.read.toLocaleString()} just now)</em>` : ''}<a class="bnp-sdr-go" href="${esc(colHref('books', sdr.pet))}">${COL_IC.books}Books Read</a><a class="bnp-sdr-go" href="/bookshelf/pet-bookshelf.phtml?pet=${encodeURIComponent(sdr.pet)}"><img src="${NPI}themes/h5/basic/images/v3/petbookshelf-icon.png" alt="" width="16" height="16">Pet Bookshelf</a></p>` : '';
+      const shown = sdrSorted(), todo = shown.filter((b) => !b.done), done = shown.filter((b) => b.done), can = sdr.state === 'ready', on = shown.filter((b) => b.on).length, h = sdr.had, by = sdrSortOf(), k = sdrKindOf(), noun = (n) => `${k === 'bt' ? 'Booktastic ' : ''}${n === 1 ? 'book' : 'books'}`;
+      const nb = (n, bt) => `<b>${n.toLocaleString()}</b> ${bt ? 'Booktastic ' : ''}${n === 1 ? 'book' : 'books'}`, readN = !h ? '' : k === 'books' ? nb(h.n) : k === 'bt' ? nb(h.bt, true) : `${nb(h.n)} and ${nb(h.bt, true)}`;   // (each kind counts for its own award)
+      const count = h ? `<p class="bnp-sdr-count">${esc(sdr.pet)} has read ${readN}${run && run.read ? ` <em>(${run.read.toLocaleString()} just now)</em>` : ''}<a class="bnp-sdr-go" href="${esc(colHref(k === 'bt' ? 'bt' : 'books', sdr.pet))}">${k === 'bt' ? `${COL_IC.bt}Booktastic` : `${COL_IC.books}Books Read`}</a><a class="bnp-sdr-go" href="/bookshelf/pet-bookshelf.phtml?pet=${encodeURIComponent(sdr.pet)}"><img src="${NPI}themes/h5/basic/images/v3/petbookshelf-icon.png" alt="" width="16" height="16">Pet Bookshelf</a></p>` : '';
+      const unread = (f) => sdr.books.filter((b) => !b.done && f(b)).length, seg = (v, l, f, tip) => `<button type="button" data-sdrkind="${v}" aria-pressed="${k === v}" title="${esc(tip)}"${busy ? ' disabled' : ''}>${l}<small>${unread(f).toLocaleString()}</small></button>`;   // (each with how many it hasn't read)
+      const kinds = sdr.books.length ? `<div class="bnp-sdr-kinds"><span>Show</span><span class="bnp-sdr-src" role="group" aria-label="Which books to show and read">${seg('all', 'All', () => true, 'Both kinds')}${seg('books', 'Books', (b) => !sdrBt(b), 'Books, Brightvale, Faerie, Moltaran, Neovian Press, Qasalan tablets and Desert scrolls: for the Book Award')}${seg('bt', 'Booktastic', sdrBt, 'Booktastic books: for the Booktastic Book Award')}</span></div>` : '';
       let head = '';
       if (run) {
         const left = sdr.books.filter((b) => b.st === 'wait').length, nos = sdr.books.filter((b) => b.st === 'no').length, kept = sdr.books.filter((b) => b.st === 'kept').length;
         head = run.over
-          ? `<div class="bnp-sdr-sum is-done"><b>${run.read ? `${run.read.toLocaleString()} ${run.read === 1 ? 'book' : 'books'} read to ${esc(sdr.pet)}` : `Nothing read to ${esc(sdr.pet)}`}</b>${nos ? `<span>${nos.toLocaleString()} not read: Neopets’ reason is beside ${nos === 1 ? 'it' : 'each'}</span>` : ''}${kept ? `<span>${kept.toLocaleString()} Archive ${kept === 1 ? 'book isn’t' : 'books aren’t'} read: ${kept === 1 ? 'it goes' : 'they go'} in your Archive Bookshelf</span>` : ''}${left ? `<span>${run.pinStop ? `Stopped: ${esc(run.pinStop)}` : run.netStop ? 'Stopped: Neopets didn’t answer twice in a row' : 'Stopped'}. ${left.toLocaleString()} still to read ${left === 1 ? 'is' : 'are'} still selected</span>` : ''}</div>`
+          ? `<div class="bnp-sdr-sum is-done"><b>${run.read ? `${run.read.toLocaleString()} ${noun(run.read)} read to ${esc(sdr.pet)}` : `Nothing read to ${esc(sdr.pet)}`}</b>${nos ? `<span>${nos.toLocaleString()} not read: Neopets’ reason is beside ${nos === 1 ? 'it' : 'each'}</span>` : ''}${kept ? `<span>${kept.toLocaleString()} Archive ${kept === 1 ? 'book isn’t' : 'books aren’t'} read: ${kept === 1 ? 'it goes' : 'they go'} in your Archive Bookshelf</span>` : ''}${left ? `<span>${run.pinStop ? `Stopped: ${esc(run.pinStop)}` : run.netStop ? 'Stopped: Neopets didn’t answer twice in a row' : 'Stopped'}. ${left.toLocaleString()} still to read ${left === 1 ? 'is' : 'are'} still selected</span>` : ''}</div>`
           : `<div class="bnp-sdr-sum"><b>Reading ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()} to ${esc(sdr.pet)}</b><span>${run.at ? esc(run.at.name) : ''}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
-      } else head = todo.length ? `<div class="bnp-sdr-sum"><b>${todo.length.toLocaleString()} ${todo.length === 1 ? 'book' : 'books'} ${esc(sdr.pet)} hasn’t read</b>${done.filter((b) => !b.arch).length ? `<span>${done.filter((b) => !b.arch).length.toLocaleString()} it has read already ${done.filter((b) => !b.arch).length === 1 ? 'is' : 'are'} left out</span>` : ''}${done.some((b) => b.arch) ? `<span>${done.filter((b) => b.arch).length.toLocaleString()} Archive ${done.filter((b) => b.arch).length === 1 ? 'book isn’t' : 'books aren’t'} read</span>` : ''}${todo.length > 1 ? `<span class="bnp-sdr-tick"><label class="bnp-sdr-sortby"><span>Sort</span><select data-sdrsort aria-label="Sort the books">${[['cheap', 'Cheapest first'], ['dear', 'Priciest first'], ['name', 'A to Z']].map(([v, l]) => `<option value="${v}"${by === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label><button type="button" class="bnp-sdr-lb" data-sdr="all">All</button><button type="button" class="bnp-sdr-lb" data-sdr="none">None</button><span class="bnp-upto" title="Ticks the ones itemdb prices at or under this, and unticks the rest"><label><span>Up to</span><input type="text" inputmode="numeric" autocomplete="off" data-sdrupto value="${esc(((() => { try { return Number(localStorage.getItem('bnp-sdr-upto')) || 0; } catch (_) { return 0; } })() || 5000).toLocaleString())}" aria-label="Tick the ones up to this many Neopoints">NP</label><button type="button" class="bnp-sdr-lb" data-sdr="upto">Tick</button></span></span>` : ''}</div>`
-        : `<div class="bnp-sdr-sum is-done"><b>${sdr.books.length ? `${esc(sdr.pet)} has read ${sdr.books.length === 1 ? 'it' : `all ${sdr.books.length.toLocaleString()}`} already` : sdr.src === 'all' ? 'No books in your SDB' : 'No books selected'}</b>${sdr.books.length && sdr.src === 'sel' ? '<span>Choose another pet, or look through every book in your SDB.</span>' : ''}</div>`;
+      } else head = todo.length ? `<div class="bnp-sdr-sum"><b>${todo.length.toLocaleString()} ${noun(todo.length)} ${esc(sdr.pet)} hasn’t read</b>${done.filter((b) => !b.arch).length ? `<span>${done.filter((b) => !b.arch).length.toLocaleString()} it has read already ${done.filter((b) => !b.arch).length === 1 ? 'is' : 'are'} left out</span>` : ''}${done.some((b) => b.arch) ? `<span>${done.filter((b) => b.arch).length.toLocaleString()} Archive ${done.filter((b) => b.arch).length === 1 ? 'book isn’t' : 'books aren’t'} read</span>` : ''}${todo.length > 1 ? `<span class="bnp-sdr-tick"><label class="bnp-sdr-sortby"><span>Sort</span><select data-sdrsort aria-label="Sort the books">${[['cheap', 'Cheapest first'], ['dear', 'Priciest first'], ['name', 'A to Z']].map(([v, l]) => `<option value="${v}"${by === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label><button type="button" class="bnp-sdr-lb" data-sdr="all">All</button><button type="button" class="bnp-sdr-lb" data-sdr="none">None</button><span class="bnp-upto" title="Ticks the ones itemdb prices at or under this, and unticks the rest"><label><span>Up to</span><input type="text" inputmode="numeric" autocomplete="off" data-sdrupto value="${esc(((() => { try { return Number(localStorage.getItem('bnp-sdr-upto')) || 0; } catch (_) { return 0; } })() || 5000).toLocaleString())}" aria-label="Tick the ones up to this many Neopoints">NP</label><button type="button" class="bnp-sdr-lb" data-sdr="upto">Tick</button></span></span>` : ''}</div>`
+        : `<div class="bnp-sdr-sum is-done"><b>${shown.length ? `${esc(sdr.pet)} has read ${shown.length === 1 ? 'it' : `all ${shown.length.toLocaleString()}`} already` : sdr.books.length ? `No ${noun(2)} ${sdr.src === 'all' ? 'in your SDB' : 'selected'}` : sdr.src === 'all' ? 'No books in your SDB' : 'No books selected'}</b>${!shown.length && sdr.books.length ? `<span>Show ${k === 'bt' ? 'Books' : 'Booktastic'} or All for the others.</span>` : shown.length && sdr.src === 'sel' ? '<span>Choose another pet, or look through every book in your SDB.</span>' : ''}</div>`;
       const rows = `${todo.map((b) => sdrRowHtml(b, can)).join('')}${done.length ? `${todo.length ? `<p class="bnp-sdr-sep">Left out: ${done.some((b) => !b.arch) ? `the ones ${esc(sdr.pet)} has read${can ? ' (tick one to read it anyway)' : ''}` : ''}${done.some((b) => !b.arch) && done.some((b) => b.arch) ? ', and ' : ''}${done.some((b) => b.arch) ? 'Archive books, which aren’t read' : ''}</p>` : ''}${done.map((b) => sdrRowHtml(b, can)).join('')}` : ''}`;
-      main = `${count}${head}${sdr.err ? `<p class="bnp-sdr-note is-err" role="alert">${esc(sdr.err)}</p>` : ''}${rows ? `<div class="bnp-sdr-list">${rows}</div>` : ''}`;
+      main = `${count}${kinds}${head}${sdr.err ? `<p class="bnp-sdr-note is-err" role="alert">${esc(sdr.err)}</p>` : ''}${rows ? `<div class="bnp-sdr-list">${rows}</div>` : ''}`;
       if (can && !on && todo.length) main += '<p class="bnp-sdr-note">Tick the books to read.</p>';
     }
     body.innerHTML = `<div class="bnp-sdr-pets" role="radiogroup" aria-label="Which pet">${chips}</div>${src}<div class="bnp-sdr-main">${main}</div>`;
@@ -32445,7 +32456,7 @@
     sdrPaintFoot();
   }
   function sdrPaintFoot() {
-    const foot = sdr.win.querySelector('[data-sdr-foot]'), run = sdr.run, busy = !!(run && !run.over), on = sdr.books.filter((b) => b.on).length, pin = sdrPinAsked();
+    const foot = sdr.win.querySelector('[data-sdr-foot]'), run = sdr.run, busy = !!(run && !run.over), on = sdrSorted().filter((b) => b.on).length, pin = sdrPinAsked();
     const had = foot.querySelector('[data-sdrpin]'), pv = had ? had.value : '';
     if (had) sdr.pin = pv;
     let h = '';
@@ -32474,7 +32485,7 @@
   const BM_KEY = 'bnp-bm', BM_BAN = 'bnp-bm-ban';   // (how you like it, on this browser; a wizard's break, till when)
   let bm = null;
   const bmNumOk = (v, d) => { const n = Math.round(Number(v)); return n > 0 ? n : d; };
-  const bmP = () => { const v = saJson(BM_KEY, {}); return { src: v.src === 'ssw' && itPremium() ? 'ssw' : 'sw', max: bmNumOk(v.max, 10000), budget: bmNumOk(v.budget, 100000), wait: v.wait !== false, read: v.read !== false, times: [1, 2, 3].includes(Number(v.times)) ? Number(v.times) : 1, bg: v.bg !== false, full: ['use', 'sdb', 'stop'].includes(v.full) ? v.full : 'use' }; };
+  const bmP = () => { const v = saJson(BM_KEY, {}); return { src: v.src === 'ssw' && itPremium() ? 'ssw' : 'sw', max: bmNumOk(v.max, 10000), budget: bmNumOk(v.budget, 100000), wait: v.wait !== false, read: v.read !== false, times: [1, 2, 3].includes(Number(v.times)) ? Number(v.times) : 1, bg: v.bg !== false, full: ['use', 'sdb', 'stop'].includes(v.full) ? v.full : 'use', stop: bmNumOk(v.stop, 0) }; };   // (stop: how many a run buys at most; 0, no limit)
   const bmPSet = (k, v) => { try { localStorage.setItem(BM_KEY, JSON.stringify({ ...saJson(BM_KEY, {}), [k]: v })); } catch (_) { /* */ } };
   const bmNp = (v) => `${Math.round(Number(v) || 0).toLocaleString()} NP`;
   function bmParse(s) {   // ("10,000", "10k", "1.5m": Neopoints; 0 when it isn't a number)
@@ -32569,6 +32580,7 @@
         ${P.src === 'sw' ? `<div class="bnp-bm-f"><span>Searches for each</span><span class="bnp-sdr-src" role="group" aria-label="Shop Wizard searches for each item" title="The Shop Wizard shows a few shops each search: more searches can find a cheaper one, but take longer and use up your searches faster (it asks for a break after too many)">${[1, 2, 3].map((n) => `<button type="button" data-bmtimes="${n}" aria-pressed="${P.times === n}"${busy ? ' disabled' : ''}>${n}</button>`).join('')}</span></div>` : ''}
         <label class="bnp-bm-f"><span>Most for one item</span><span class="bnp-bm-np"><input type="text" inputmode="numeric" autocomplete="off" data-bmnum="max" value="${P.max.toLocaleString()}"${busy ? ' disabled' : ''}>NP</span></label>
         <label class="bnp-bm-f"><span>Budget for this run</span><span class="bnp-bm-np"><input type="text" inputmode="numeric" autocomplete="off" data-bmnum="budget" value="${P.budget.toLocaleString()}"${busy ? ' disabled' : ''}>NP</span></label>
+        <label class="bnp-bm-f" title="Buy Mode stops once it has bought this many, however many are ticked: the rest stay ticked for next time. Empty: no limit"><span>Stop after</span><span class="bnp-bm-np"><input type="text" inputmode="numeric" autocomplete="off" data-bmstop value="${P.stop ? P.stop.toLocaleString() : ''}" placeholder="No limit" aria-label="Stop after this many bought"${busy ? ' disabled' : ''}>bought</span></label>
         ${bmReads() ? `<label class="bnp-bm-chk"><input type="checkbox" data-bmread${P.read ? ' checked' : ''}${busy ? ' disabled' : ''}><span>${esc(bmUse().sw(bm.pet))}<small>From your inventory, as its own pop-up does: when your inventory is full (it holds 50), while a wizard’s break is waited out, and at the end.${esc(bmUse().note || '')}</small></span></label>` : ''}
         <div class="bnp-bm-f bnp-bm-full"><span>When your inventory’s full (it holds 50)</span><span class="bnp-sdr-src" role="group" aria-label="When your inventory’s full">${[...(bmUse() ? [['use', bmUse().full]] : []), ['sdb', 'Put them in your SDB'], ['stop', 'Stop']].map(([v, l]) => `<button type="button" data-bmfull="${v}"${v === 'sdb' ? ' title="With Quick Stock: what’s bought and still in your inventory, all in one go"' : ''} aria-pressed="${(P.full === 'use' && !bmUse() ? 'sdb' : P.full) === v}"${busy ? ' disabled' : ''}>${esc(l)}</button>`).join('')}</span></div>
         <label class="bnp-bm-chk"><input type="checkbox" data-bmbg${P.bg ? ' checked' : ''}><span>Keep going when this tab’s in the background<small>Off: it waits while you’re in another tab, and carries on when you’re back.</small></span></label>
@@ -32587,17 +32599,17 @@
     bmFootPaint();
   }
   function bmSumHtml() {
-    const run = bm.run, busy = !!(run && !run.over), on = bm.rows.filter((r) => r.on), guide = on.reduce((s, r) => s + r.guide, 0);
+    const run = bm.run, busy = !!(run && !run.over), on = bm.rows.filter((r) => r.on), stop = bmP().stop, guide = (stop && on.length > stop ? on.slice(0, stop) : on).reduce((s, r) => s + r.guide, 0);   // (with a limit: the guide for the ones it'll buy first)
     if (run) {
       const got = bm.rows.filter((r) => r.st === 'got' && !r.mine), mine = bm.rows.filter((r) => r.mine).length, why = run.why;
       if (!run.over && run.looking) return '<div class="bnp-sdr-sum" data-bmsum><b>Looking at what you have</b><span>Your inventory and your SDB, so nothing’s bought twice</span></div>';
       const u = run.use, U = u && u.sdb ? BM_SDB : bmUse();
-      if (!run.over && u && U) { const more = run.n - run.i; return `<div class="bnp-sdr-sum" data-bmsum><b>${U.doing} ${u.sending ? (u.n === 1 ? 'it' : `all ${u.n.toLocaleString()}`) : `${Math.min(u.i + 1, u.n).toLocaleString()} of ${u.n.toLocaleString()}`}${esc(U.to(bm.pet))}</b><span>${esc(u.sending ? 'Quick Stock’s Submit pressed' : u.name || (u.qs ? 'Opening Quick Stock' : ''))}</span><span>${u.qs ? 'With Quick Stock, in one go · ' : ''}${run.useOnly ? 'From your inventory, one at a time' : more > 0 ? `Then back to buying: ${more.toLocaleString()} of ${run.n.toLocaleString()} left` : 'Then it’s done'} · spent ${esc(bmNp(run.spent))}</span><div class="bnp-sdr-track"><i style="width:${u.sending ? 100 : Math.max(4, Math.round(100 * u.i / Math.max(1, u.n)))}%"></i></div></div>`; }   // (its own progress while it's at it)
-      if (!run.over) return `<div class="bnp-sdr-sum" data-bmsum><b>${run.waitUntil ? 'Waiting out the wizard’s break' : run.pause ? 'Paused' : `Buying ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()}`}</b><span>${run.at && !run.reading ? esc(run.at.name) : ''}</span><span>Spent ${esc(bmNp(run.spent))} of your ${esc(bmNp(run.budget))}${Number.isFinite(run.room) ? ` · inventory ${Math.max(0, 50 - run.room)} of 50` : ''}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
+      if (!run.over && u && U) { const more = run.ending ? 0 : run.n - run.i; return `<div class="bnp-sdr-sum" data-bmsum><b>${U.doing} ${u.sending ? (u.n === 1 ? 'it' : `all ${u.n.toLocaleString()}`) : `${Math.min(u.i + 1, u.n).toLocaleString()} of ${u.n.toLocaleString()}`}${esc(U.to(bm.pet))}</b><span>${esc(u.sending ? 'Quick Stock’s Submit pressed' : u.name || (u.qs ? 'Opening Quick Stock' : ''))}</span><span>${u.qs ? 'With Quick Stock, in one go · ' : ''}${run.useOnly ? 'From your inventory, one at a time' : more > 0 ? `Then back to buying: ${more.toLocaleString()} of ${run.n.toLocaleString()} left` : 'Then it’s done'} · spent ${esc(bmNp(run.spent))}</span><div class="bnp-sdr-track"><i style="width:${u.sending ? 100 : Math.max(4, Math.round(100 * u.i / Math.max(1, u.n)))}%"></i></div></div>`; }   // (its own progress while it's at it)
+      if (!run.over) return `<div class="bnp-sdr-sum" data-bmsum><b>${run.waitUntil ? 'Waiting out the wizard’s break' : run.pause ? 'Paused' : `Buying ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()}`}</b><span>${run.at && !run.reading ? esc(run.at.name) : ''}</span><span>Spent ${esc(bmNp(run.spent))} of your ${esc(bmNp(run.budget))}${run.stopAt ? ` · bought ${run.bought.toLocaleString()} of ${run.stopAt.toLocaleString()}` : ''}${Number.isFinite(run.room) ? ` · inventory ${Math.max(0, 50 - run.room)} of 50` : ''}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
       const unread = bmUnread();
-      return `<div class="bnp-sdr-sum is-done" data-bmsum><b>${got.length ? `Bought ${got.length.toLocaleString()} for ${esc(bmNp(run.spent))}` : 'Nothing bought'}${run.read && bmUse() ? ` · ${run.read.toLocaleString()} ${esc(bmUse().done(bm.pet))}` : ''}${run.sdb ? ` · ${run.sdb.toLocaleString()} put in your SDB` : ''}${mine ? ` · ${mine.toLocaleString()} you had already` : ''}</b>${unread.length ? `<span class="bnp-sdr-tick"><button type="button" class="bnp-sdr-lb" data-bm="readnow">${esc(bmUse().now(unread.length === 1 ? 'one' : unread.length.toLocaleString(), bm.pet))}</button></span>` : ''}${why ? `<span>${esc(why === 'budget' ? 'Your budget for this run is used up.' : why === 'ban' ? `Stopped while the ${bmWiz(run.src)} was on its break.` : why)}</span>` : run.stop ? '<span>Stopped.</span>' : ''}<span>${(() => { const left = got.filter((r) => !r.read && !r.sdb).length; return left ? (left === got.length ? 'They’re in your inventory. ' : `${left.toLocaleString()} still in your inventory. `) : ''; })()}Tick more and Start again any time.</span></div>`;
+      return `<div class="bnp-sdr-sum is-done" data-bmsum><b>${got.length ? `Bought ${got.length.toLocaleString()} for ${esc(bmNp(run.spent))}` : 'Nothing bought'}${run.read && bmUse() ? ` · ${run.read.toLocaleString()} ${esc(bmUse().done(bm.pet))}` : ''}${run.sdb ? ` · ${run.sdb.toLocaleString()} put in your SDB` : ''}${mine ? ` · ${mine.toLocaleString()} you had already` : ''}</b>${unread.length ? `<span class="bnp-sdr-tick"><button type="button" class="bnp-sdr-lb" data-bm="readnow">${esc(bmUse().now(unread.length === 1 ? 'one' : unread.length.toLocaleString(), bm.pet))}</button></span>` : ''}${why ? `<span>${esc(why === 'budget' ? 'Your budget for this run is used up.' : why === 'count' ? `Stopped at your limit of ${run.stopAt.toLocaleString()} bought: the rest are still ticked.` : why === 'ban' ? `Stopped while the ${bmWiz(run.src)} was on its break.` : why)}</span>` : run.stop ? '<span>Stopped.</span>' : ''}<span>${(() => { const left = got.filter((r) => !r.read && !r.sdb).length; return left ? (left === got.length ? 'They’re in your inventory. ' : `${left.toLocaleString()} still in your inventory. `) : ''; })()}Tick more and Start again any time.</span></div>`;
     }
-    return `<div class="bnp-sdr-sum" data-bmsum><b>${bm.rows.length.toLocaleString()} listed</b><span>${on.length.toLocaleString()} ticked${guide ? ` · itemdb’s guide ≈ ${esc(bmNp(guide))}` : ''}</span><span class="bnp-sdr-tick"><input type="search" class="bnp-bm-find" data-bmfind placeholder="Find…" aria-label="Find one by name" value="${esc(bm.q)}"${busy ? ' disabled' : ''}><button type="button" class="bnp-sdr-lb" data-bm="all">All</button><button type="button" class="bnp-sdr-lb" data-bm="none">None</button><span class="bnp-upto" title="Ticks the ones itemdb prices at or under this, and unticks the rest (of those in sight). Only a guide: Buy Mode goes by the shops’ prices, never over your most"><label><span>Up to</span><input type="text" inputmode="numeric" autocomplete="off" data-bmupto value="${esc((bmNumOk(saJson(BM_KEY, {}).upto, 0) || bmP().max).toLocaleString())}"${busy ? ' disabled' : ''} aria-label="Tick the ones up to this many Neopoints">NP</label><button type="button" class="bnp-sdr-lb" data-bm="upto"${busy ? ' disabled' : ''}>Tick</button></span></span></div>`;
+    return `<div class="bnp-sdr-sum" data-bmsum><b>${bm.rows.length.toLocaleString()} listed</b><span>${on.length.toLocaleString()} ticked${stop && on.length > stop ? ` · it stops after ${stop.toLocaleString()} bought` : ''}${guide ? ` · itemdb’s guide ≈ ${esc(bmNp(guide))}` : ''}</span><span class="bnp-sdr-tick"><input type="search" class="bnp-bm-find" data-bmfind placeholder="Find…" aria-label="Find one by name" value="${esc(bm.q)}"${busy ? ' disabled' : ''}><button type="button" class="bnp-sdr-lb" data-bm="all">All</button><button type="button" class="bnp-sdr-lb" data-bm="none">None</button><span class="bnp-upto" title="Ticks the ones itemdb prices at or under this, and unticks the rest (of those in sight). Only a guide: Buy Mode goes by the shops’ prices, never over your most"><label><span>Up to</span><input type="text" inputmode="numeric" autocomplete="off" data-bmupto value="${esc((bmNumOk(saJson(BM_KEY, {}).upto, 0) || bmP().max).toLocaleString())}"${busy ? ' disabled' : ''} aria-label="Tick the ones up to this many Neopoints">NP</label><button type="button" class="bnp-sdr-lb" data-bm="upto"${busy ? ' disabled' : ''}>Tick</button></span></span></div>`;
   }
   function bmSumPaint() {
     const s = bm.win.querySelector('[data-bmsum]');
@@ -32613,7 +32625,7 @@
     const foot = bm.win.querySelector('[data-bm-foot]'), run = bm.run, busy = !!(run && !run.over), on = bm.rows.filter((r) => r.on && r.st !== 'got').length;
     let h = '';
     if (busy) h = `<span class="bnp-sdr-fnote">${run.waitUntil ? `Carrying on at about ${esc(bmAt(run.waitUntil))}.` : run.pause ? 'Paused: Resume carries on from here.' : `One at a time, a moment between${run.bg ? '' : ': it carries on while this tab is in front'}.`}</span>${run.waitUntil ? '' : `<button type="button" class="bnp-sdr-lb" data-bm="${run.pause ? 'resume' : 'pause'}">${run.pause ? 'Resume' : 'Pause'}</button>`}<button type="button" class="button-default__2020 button-red__2020 bnp-sdr-btn" data-bm="stop"${run.stop ? ' disabled' : ''}>${run.stop ? 'Stopping…' : 'Stop'}</button>`;
-    else h = `<span class="bnp-sdr-fnote">${run && run.over ? '' : 'Never over your most for one item, or your budget.'}</span><button type="button" class="bnp-sdr-lb" data-bm="x">${run && run.over ? 'Done' : 'Cancel'}</button><button type="button" class="button-default__2020 button-green__2020 bnp-sdr-btn" data-bm="start"${on ? '' : ' disabled'}>${on ? `Start: buy ${on.toLocaleString()}` : 'Tick what to buy'}</button>`;
+    else h = `<span class="bnp-sdr-fnote">${run && run.over ? '' : 'Never over your most for one item, or your budget.'}</span><button type="button" class="bnp-sdr-lb" data-bm="x">${run && run.over ? 'Done' : 'Cancel'}</button><button type="button" class="button-default__2020 button-green__2020 bnp-sdr-btn" data-bm="start"${on ? '' : ' disabled'}>${on ? (() => { const n = bmP().stop; return n && on > n ? `Start: buy ${n.toLocaleString()} of ${on.toLocaleString()}` : `Start: buy ${on.toLocaleString()}`; })() : 'Tick what to buy'}</button>`;
     foot.innerHTML = h;
   }
   function bmClick(e) {
@@ -32651,6 +32663,7 @@
     if (!(t instanceof HTMLInputElement) || !bm) return;
     if (t.dataset.bmrow != null) { const r = bm.rows[Number(t.dataset.bmrow)]; if (r) { r.on = t.checked; const row = t.closest('.bnp-sdr-row'); if (row) row.classList.toggle('is-off', !t.checked); bmSumPaint(); } return; }
     if (t.matches('[data-bmupto]')) return;
+    if (t.matches('[data-bmstop]')) { const raw = String(t.value).replace(/[\s,]/g, ''), v = Math.floor(Number(raw)); if (!raw) { bmPSet('stop', 0); bm.note = ''; } else if (v > 0) { bmPSet('stop', v); bm.note = ''; } else bm.note = 'Write how many to buy at most, as a number (20), or leave it empty for no limit.'; bmPaint(); return; }
     if (t.dataset.bmnum) { const v = bmParse(t.value); if (v) { bmPSet(t.dataset.bmnum, v); bm.note = ''; } else bm.note = 'Write a number of Neopoints: 10000, 10,000 or 10k.'; bmPaint(); return; }
     if (t.matches('[data-bmwait]')) { bmPSet('wait', t.checked); bmPaint(); return; }
     if (t.matches('[data-bmbg]')) { bmPSet('bg', t.checked); if (bm.run && !bm.run.over) bm.run.bg = t.checked; bmPaint(); return; }   // (a run under way goes by it from now)
@@ -32934,7 +32947,7 @@
     if (!bm || (bm.run && !bm.run.over)) return;
     const P = bmP(), ticked = bm.rows.filter((r) => r.on && r.st !== 'got');
     if (!ticked.length) return;
-    const run = bm.run = { n: ticked.length, i: 0, spent: 0, stop: false, pause: false, over: false, at: null, src: P.src, times: P.times, bg: P.bg, max: P.max, budget: P.budget, waitUntil: 0, why: '', room: Infinity, read: 0, sdb: 0, reading: 0, looking: true };
+    const run = bm.run = { stopAt: P.stop, bought: 0, n: ticked.length, i: 0, spent: 0, stop: false, pause: false, over: false, at: null, src: P.src, times: P.times, bg: P.bg, max: P.max, budget: P.budget, waitUntil: 0, why: '', room: Infinity, read: 0, sdb: 0, reading: 0, looking: true };
     const reading = P.read && bmReads(), full = P.full === 'use' && !bmReads() ? 'sdb' : P.full;
     for (const r of bm.rows) if (r.st !== 'got') { r.st = ''; r.why = ''; }
     bm.note = '';
@@ -32978,7 +32991,7 @@
         else if (!(await bmWaitOut(run, top))) break;
       }
       if (run.stop && (!a || a.busy || a.stopped)) { r.st = ''; bmRowPaint(r); break; }
-      if (a.got) { r.st = 'got'; r.paid = a.price; r.why = `Bought for ${bmNp(a.price)}`; run.spent += a.price; run.room--; }
+      if (a.got) { r.st = 'got'; r.paid = a.price; r.why = `Bought for ${bmNp(a.price)}`; run.spent += a.price; run.room--; run.bought++; }
       else if (a.over) { r.st = 'over'; r.why = `Cheapest just now ${bmNp(a.over)}: over ${a.by === 'budget' ? 'what’s left of your budget' : 'your most for one item'}`; }
       else if (a.none) { r.st = 'none'; r.why = 'In no shop the wizard showed just now'; }
       else if (a.gone) { r.st = 'none'; r.why = 'Sold or dearer by the time its shop opened'; }
@@ -32990,8 +33003,10 @@
       bmRowPaint(r);
       bmSumPaint();
       if (run.stop || run.halted) break;
+      if (run.stopAt && run.bought >= run.stopAt) { if (r !== list[list.length - 1]) run.why = 'count'; break; }   // (as many as you said: the rest stay ticked)
       if (r !== list[list.length - 1] && !(await bmStep(run))) break;
     }
+    run.ending = true;   // (no more buying: what's said while the last are used)
     if (reading && !run.stop && bmUnread().length) await bmReadPending(run);   // (at the end: the books bought, read)
     run.over = true;
     run.at = null;
@@ -47536,6 +47551,11 @@
     .bnp-sdr-count { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px; margin: 0; color: #5d5845; font-size: 13px; }
     .bnp-sdr-count b { color: #262626; font-weight: normal; font-family: "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-sdr-count em { color: #2b6a2f; font-style: normal; }
+    .bnp-sdr-kinds { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 10px; margin: 0; color: #5d5845; font-size: 13px; }
+    .bnp-sdr-kinds .bnp-sdr-src button { display: inline-flex; align-items: center; gap: 7px; }
+    .bnp-sdr-kinds .bnp-sdr-src small { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: rgba(0, 0, 0, .07); font-size: 11.5px; line-height: 1.35; text-align: center; }
+    .bnp-sdr-kinds .bnp-sdr-src button[aria-pressed="true"] small { background: color-mix(in srgb, var(--bnp-accent-text) 22%, transparent); }
+    .bnp-sdr-bt { flex: none; padding: 2px 9px; border-radius: 999px; background: #ece5f6; color: #4c3a72; font: 11px/1.4 "MuseoSansRounded700", Arial, sans-serif; font-style: normal; }   /* (a Booktastic book, when both kinds show: Kreludor's purple) */
     .bnp-sdr-go { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 11px 0 7px; border: 1.5px solid #ddd6c2; border-radius: 999px; background: #fff; color: #363636 !important; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; text-decoration: none !important; }
     .bnp-sdr-go:hover { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #777); }
     .bnp-sdr-go svg, .bnp-sdr-go img { flex: none; width: 15px; height: 15px; }
@@ -47603,6 +47623,8 @@
     .bnp-bm-np input { width: 110px; height: 32px; margin: 0; padding: 0 12px; border: 2px solid #d8d3c2; border-radius: 999px; background: #fff; color: #222; font: 14px "MuseoSansRounded700", Arial, sans-serif; text-align: right; outline: none; }
     .bnp-bm-np input:focus { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #000 12%); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bnp-accent) 40%, transparent); }
     .bnp-bm-np input:disabled { background: #f3f0e6; color: #777; }
+    .bnp-bm-np input[data-bmstop] { width: 92px; }
+    .bnp-bm-np input::placeholder { color: #9a9483; opacity: 1; }
     .bnp-bm-chk { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 8px; margin: 2px 0 0; color: #3f3a26; font-size: 12.5px; line-height: 1.35; cursor: pointer; }
     .bnp-bm-chk input { flex: none; width: 16px; height: 16px; margin: 1px 0 0; accent-color: color-mix(in srgb, var(--bnp-accent) 85%, #000); }
     .bnp-bm-chk small { display: block; color: #6b6653; font-size: 11.5px; }
@@ -50118,6 +50140,10 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.1.2', '2026-11-02', [
+      'Safety Deposit Box: Read to a pet shows All, Books or Booktastic books (each counts for its own award), with how many your pet hasn’t read. Only the ones shown are read, and the count at the top follows',
+      'Buy Mode: Stop after a number bought, so ticking by price can’t buy more than you meant. The rest stay ticked for next time',
+    ]],
     ['5.1.1', '2026-11-02', [
       'Buy Mode: when your inventory’s full and you’ve chosen “Put them in your SDB”, it uses Quick Stock as you would: Deposit ticked by each thing it bought, then one Submit for them all',
     ]],

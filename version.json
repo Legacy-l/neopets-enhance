@@ -1,7 +1,8 @@
 {
- "version": "5.1.1",
+ "version": "5.1.2",
  "date": "2026-11-02",
  "notes": [
-  "Buy Mode puts what it bought in your SDB with Quick Stock, all in one go"
+  "SDB Read to a pet: show Books, Booktastic or both",
+  "Buy Mode: stop after a number bought"
  ]
 }
