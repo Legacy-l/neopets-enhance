@@ -1,11 +1,7 @@
 {
- "version": "5.1",
+ "version": "5.1.1",
  "date": "2026-11-02",
  "notes": [
-  "Buy Mode for books, gourmet foods and stamps",
-  "Safety Deposit Box: read several books to a pet at once",
-  "Inventory: used items grey out at once",
-  "Books Read and Quick Ref polished, titles in the middle",
-  "Dailies run bar: skip ahead or back"
+  "Buy Mode puts what it bought in your SDB with Quick Stock, all in one go"
  ]
 }

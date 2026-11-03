@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.1
+// @version      5.1.1
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -32570,7 +32570,7 @@
         <label class="bnp-bm-f"><span>Most for one item</span><span class="bnp-bm-np"><input type="text" inputmode="numeric" autocomplete="off" data-bmnum="max" value="${P.max.toLocaleString()}"${busy ? ' disabled' : ''}>NP</span></label>
         <label class="bnp-bm-f"><span>Budget for this run</span><span class="bnp-bm-np"><input type="text" inputmode="numeric" autocomplete="off" data-bmnum="budget" value="${P.budget.toLocaleString()}"${busy ? ' disabled' : ''}>NP</span></label>
         ${bmReads() ? `<label class="bnp-bm-chk"><input type="checkbox" data-bmread${P.read ? ' checked' : ''}${busy ? ' disabled' : ''}><span>${esc(bmUse().sw(bm.pet))}<small>From your inventory, as its own pop-up does: when your inventory is full (it holds 50), while a wizard’s break is waited out, and at the end.${esc(bmUse().note || '')}</small></span></label>` : ''}
-        <div class="bnp-bm-f bnp-bm-full"><span>When your inventory’s full (it holds 50)</span><span class="bnp-sdr-src" role="group" aria-label="When your inventory’s full">${[...(bmUse() ? [['use', bmUse().full]] : []), ['sdb', 'Put them in your SDB'], ['stop', 'Stop']].map(([v, l]) => `<button type="button" data-bmfull="${v}" aria-pressed="${(P.full === 'use' && !bmUse() ? 'sdb' : P.full) === v}"${busy ? ' disabled' : ''}>${esc(l)}</button>`).join('')}</span></div>
+        <div class="bnp-bm-f bnp-bm-full"><span>When your inventory’s full (it holds 50)</span><span class="bnp-sdr-src" role="group" aria-label="When your inventory’s full">${[...(bmUse() ? [['use', bmUse().full]] : []), ['sdb', 'Put them in your SDB'], ['stop', 'Stop']].map(([v, l]) => `<button type="button" data-bmfull="${v}"${v === 'sdb' ? ' title="With Quick Stock: what’s bought and still in your inventory, all in one go"' : ''} aria-pressed="${(P.full === 'use' && !bmUse() ? 'sdb' : P.full) === v}"${busy ? ' disabled' : ''}>${esc(l)}</button>`).join('')}</span></div>
         <label class="bnp-bm-chk"><input type="checkbox" data-bmbg${P.bg ? ' checked' : ''}><span>Keep going when this tab’s in the background<small>Off: it waits while you’re in another tab, and carries on when you’re back.</small></span></label>
         <label class="bnp-bm-chk"><input type="checkbox" data-bmwait${P.wait ? ' checked' : ''}><span>If the ${esc(wiz)} asks for a break, carry on after the top of the hour<small>A moment in its first five minutes, when it lets you search again. Off: Buy Mode pauses till you press Resume.</small></span></label>
       </div>`;
@@ -32592,7 +32592,7 @@
       const got = bm.rows.filter((r) => r.st === 'got' && !r.mine), mine = bm.rows.filter((r) => r.mine).length, why = run.why;
       if (!run.over && run.looking) return '<div class="bnp-sdr-sum" data-bmsum><b>Looking at what you have</b><span>Your inventory and your SDB, so nothing’s bought twice</span></div>';
       const u = run.use, U = u && u.sdb ? BM_SDB : bmUse();
-      if (!run.over && u && U) { const more = run.n - run.i; return `<div class="bnp-sdr-sum" data-bmsum><b>${U.doing} ${Math.min(u.i + 1, u.n).toLocaleString()} of ${u.n.toLocaleString()}${esc(U.to(bm.pet))}</b><span>${esc(u.name || '')}</span><span>${run.useOnly ? 'From your inventory, one at a time' : more > 0 ? `Then back to buying: ${more.toLocaleString()} of ${run.n.toLocaleString()} left` : 'Then it’s done'} · spent ${esc(bmNp(run.spent))}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * u.i / Math.max(1, u.n)))}%"></i></div></div>`; }   // (its own progress while it's at it)
+      if (!run.over && u && U) { const more = run.n - run.i; return `<div class="bnp-sdr-sum" data-bmsum><b>${U.doing} ${u.sending ? (u.n === 1 ? 'it' : `all ${u.n.toLocaleString()}`) : `${Math.min(u.i + 1, u.n).toLocaleString()} of ${u.n.toLocaleString()}`}${esc(U.to(bm.pet))}</b><span>${esc(u.sending ? 'Quick Stock’s Submit pressed' : u.name || (u.qs ? 'Opening Quick Stock' : ''))}</span><span>${u.qs ? 'With Quick Stock, in one go · ' : ''}${run.useOnly ? 'From your inventory, one at a time' : more > 0 ? `Then back to buying: ${more.toLocaleString()} of ${run.n.toLocaleString()} left` : 'Then it’s done'} · spent ${esc(bmNp(run.spent))}</span><div class="bnp-sdr-track"><i style="width:${u.sending ? 100 : Math.max(4, Math.round(100 * u.i / Math.max(1, u.n)))}%"></i></div></div>`; }   // (its own progress while it's at it)
       if (!run.over) return `<div class="bnp-sdr-sum" data-bmsum><b>${run.waitUntil ? 'Waiting out the wizard’s break' : run.pause ? 'Paused' : `Buying ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()}`}</b><span>${run.at && !run.reading ? esc(run.at.name) : ''}</span><span>Spent ${esc(bmNp(run.spent))} of your ${esc(bmNp(run.budget))}${Number.isFinite(run.room) ? ` · inventory ${Math.max(0, 50 - run.room)} of 50` : ''}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
       const unread = bmUnread();
       return `<div class="bnp-sdr-sum is-done" data-bmsum><b>${got.length ? `Bought ${got.length.toLocaleString()} for ${esc(bmNp(run.spent))}` : 'Nothing bought'}${run.read && bmUse() ? ` · ${run.read.toLocaleString()} ${esc(bmUse().done(bm.pet))}` : ''}${run.sdb ? ` · ${run.sdb.toLocaleString()} put in your SDB` : ''}${mine ? ` · ${mine.toLocaleString()} you had already` : ''}</b>${unread.length ? `<span class="bnp-sdr-tick"><button type="button" class="bnp-sdr-lb" data-bm="readnow">${esc(bmUse().now(unread.length === 1 ? 'one' : unread.length.toLocaleString(), bm.pet))}</button></span>` : ''}${why ? `<span>${esc(why === 'budget' ? 'Your budget for this run is used up.' : why === 'ban' ? `Stopped while the ${bmWiz(run.src)} was on its break.` : why)}</span>` : run.stop ? '<span>Stopped.</span>' : ''}<span>${(() => { const left = got.filter((r) => !r.read && !r.sdb).length; return left ? (left === got.length ? 'They’re in your inventory. ' : `${left.toLocaleString()} still in your inventory. `) : ''; })()}Tick more and Start again any time.</span></div>`;
@@ -32745,7 +32745,7 @@
   const bmUnread = () => (bmReads() ? bm.rows.filter((r) => r.st === 'got' && !r.read && !r.readWhy && !r.sdb) : []);
   const bmInInv = () => bm.rows.filter((r) => r.st === 'got' && !r.read && !r.sdb);   // (what's bought, or was there already, and still in your inventory: for your SDB when it's full)
   const BM_SDB_CAT = { books: '6', bt: '6', food: '18', stamps: '15' };   // (each kind's own category in your SDB: Books, Food, Album Item)
-  const BM_SDB = { pick: (o) => /deposit/i.test(o.v) || /safety deposit/i.test(o.l), doing: 'Putting', to: () => ' in your SDB', done: () => 'put in your SDB', offer: () => 'Put into your SDB' };   // (into your SDB from your inventory, as its own pop-up puts one there)
+  const BM_SDB = { doing: 'Putting', to: () => ' in your SDB' };   // (its words while Quick Stock puts them in your SDB)
   async function bmInv() {   // (your inventory's page, opened afresh unseen, as a refresh would (its list is up to date only after that): its NP items' cards once drawn, and how many items. null when it didn't come)
     const page = '/inventory.phtml';
     wwwShut(page);
@@ -32781,12 +32781,12 @@
     } catch (e) { report(e); } finally { wwwShut(page); }
     return have;
   }
-  const bmReadPending = (run) => bmDoPending(run, 'use');
-  async function bmDoPending(run, mode) {   // (what's bought and waiting, from your inventory as its own pop-up does it: used (read, fed, put in your album), or put in your SDB (mode 'sdb'). The item opened, a moment, its choice. How many it did)
-    const pet = bm.pet, page = '/inventory.phtml', sdb = mode === 'sdb', list = sdb ? bmInInv() : bmUnread(), U = sdb ? BM_SDB : bmUse();
-    if (!list.length || !U || (!sdb && run.full)) return 0;
+  const bmReadPending = (run) => bmDoPending(run);
+  async function bmDoPending(run) {   // (what's bought and waiting, used from your inventory as its own pop-up does it (read, fed, put in your album): the item opened, a moment, its choice. How many it did)
+    const pet = bm.pet, page = '/inventory.phtml', list = bmUnread(), U = bmUse();
+    if (!list.length || !U || run.full) return 0;
     run.reading = list.length;
-    run.use = { n: list.length, i: 0, name: '', sdb };
+    run.use = { n: list.length, i: 0, name: '' };
     bmSumPaint();
     let read = 0;
     try {
@@ -32821,12 +32821,12 @@
           ok = res.ok && !/already|can.?t|cannot|unable|not able|isn.?t able|too (?:dumb|young|full|tired)|not hungry|full up|bloated/i.test(words);
         } catch (_) { ok = false; words = 'Neopets didn’t answer just now'; }
         run.use.i++;
-        if (ok) { if (sdb) { r.sdb = true; run.sdb = (run.sdb || 0) + 1; } else { r.read = true; run.read = (run.read || 0) + 1; } read++; } else r.readWhy = words.slice(0, 160) || 'Neopets didn’t do it';
+        if (ok) { r.read = true; run.read = (run.read || 0) + 1; read++; } else r.readWhy = words.slice(0, 160) || 'Neopets didn’t do it';
         bmRowPaint(r);
         if (!ok && bm.kind === 'food' && /too full|not hungry|full up|bloated/i.test(words)) { run.full = true; for (const x of list) if (!x.read && !x.readWhy) { x.readWhy = `${pet} is too full to eat more just now: it’s in your inventory`; bmRowPaint(x); } break; }   // (too full to eat more: the rest left)
       }
     } finally { wwwShut(page); run.reading = 0; run.use = null; bmSumPaint(); }
-    if (read && !sdb) {
+    if (read) {
       if (bm.kind === 'books' || bm.kind === 'bt') document.dispatchEvent(new CustomEvent('bnp-col-read', { detail: JSON.stringify({ pet }) }));   // (its kept lists and the marks: read again)
       if (bm.kind !== 'stamps' && col && col.pet === pet && col.kind === bm.kind) { for (const r of bm.rows) if (r.read && r.file && !col.had.has(colImgKey(r.file))) col.had.set(colImgKey(r.file), [col.had.size + 1, r.name, r.file, '']); colPaint(); }   // (this page shows them read, or eaten)
       if (bm.kind === 'stamps') {   // (your album: the stamps put in, counted in at once)
@@ -32850,6 +32850,78 @@
       }
     }
     return read;
+  }
+  async function bmQsPut(run) {   // (what's bought, or was there already, and still in your inventory, put in your SDB with Quick Stock as you'd do it: its page opened, Deposit ticked by each, one Submit for them all, and its list asked for again after, as its page does. How many items went)
+    const page = '/quickstock.phtml', list = bmInInv(), H = { 'X-Requested-With': 'XMLHttpRequest' }, LIST = '/np-templates/ajax/quickstock/get_items.php?page=1&per_page=50&filter=np&sort=recent&stack=1';
+    if (!list.length) return 0;
+    const why = (rows, t) => { for (const r of rows) { r.readWhy = t; bmRowPaint(r); } };
+    run.reading = list.length;
+    run.use = { n: list.length, i: 0, name: '', sdb: true, qs: true };
+    bmSumPaint();
+    let moved = 0;
+    try {
+      if (!(await bmStep(run, 'look'))) return 0;
+      wwwShut(page);   // (opened afresh: its list as it is now)
+      const html = await fromPageHtml(page), ck = (/__quickstockConfig[\s\S]{0,600}?refCk\s*:\s*["']([^"']+)["']/.exec(html) || [])[1] || '';
+      if (!ck) { why(list, 'Quick Stock didn’t open just now: it’s in your inventory'); return 0; }
+      const k = wwwFrames.get(page), t0 = Date.now(), have = [];
+      let tbl = null, empty = false;
+      while (!tbl && !empty && Date.now() - t0 < 12000) {   // (its list, once its page has asked for it itself: the table is there only then)
+        let d = null;
+        try { d = k && k.f && k.f.contentDocument; } catch (_) { d = null; }
+        if (!d) break;
+        tbl = d.querySelector('#quickstock-table-container table.quickstock-table');
+        empty = !!d.querySelector('#qs-empty-state');
+        if (!tbl && !empty) await bmSleep(250);
+      }
+      if (tbl) {
+        for (const tr of tbl.querySelectorAll('tbody tr')) {
+          if (tr.querySelector('input[name="checkall"], .qs-cash-marker')) continue;   // (Check All, an NC item)
+          const td = tr.querySelector('td'), dep = tr.querySelector('input[type="radio"][value="deposit"]');
+          if (!td) continue;
+          const c = td.cloneNode(true), b = c.querySelector('.qs-count-badge'), m = dep && /^qs_(oii_np|np)_(\d+)$/.exec(dep.name || '');
+          if (b) b.remove();
+          have.push({ n: reClean(c.textContent), q: b ? Number(String(b.textContent).replace(/\D/g, '')) || 1 : 1, key: m ? (m[1] === 'np' ? { objId: Number(m[2]) } : { oii: Number(m[2]) }) : null });   // (no Deposit there: N/A)
+        }
+      } else if (!empty) {   // (its list didn't show: asked for as its page asks)
+        const j = await fromPage(page, LIST, { method: 'GET', credentials: 'include', headers: H }).then((r) => r.json()).catch(() => null);
+        if (!j || !j.success || !Array.isArray(j.items)) { why(list, 'Quick Stock’s list didn’t come just now: it’s in your inventory'); return 0; }
+        for (const it of j.items) if (it && !it.isCash) have.push({ n: reClean(it.name || ''), q: Math.max(1, Number(it.count) || 1), key: it.noUse || it.oii == null ? null : { oii: Number(it.oii) } });
+      }
+      const pick = [];
+      for (const r of list) {
+        const it = have.find((x) => !x.used && x.n.toLowerCase() === r.name.toLowerCase());
+        if (!it) { r.readWhy = 'it wasn’t in Quick Stock’s list when NE looked'; bmRowPaint(r); continue; }
+        it.used = true;
+        if (!it.key) { r.readWhy = 'Quick Stock can’t put it in your SDB'; bmRowPaint(r); continue; }
+        pick.push({ r, it });
+      }
+      if (!pick.length) return 0;
+      run.use.n = pick.length;
+      bmSumPaint();
+      await bmSleep(700 + Math.random() * 900);   // (its list looked down)
+      for (const { r } of pick) {   // (Deposit ticked by each, one after another)
+        if (!(await bmGate(run))) return 0;
+        run.use.name = r.name;
+        bmSumPaint();
+        await bmSleep(350 + Math.random() * 650);
+        run.use.i++;
+      }
+      if (!(await bmGate(run))) return 0;
+      run.use.sending = true;
+      bmSumPaint();
+      await bmSleep(600 + Math.random() * 900);   // (Submit pressed)
+      let d = null;
+      try {
+        const res = await fromPage(page, '/np-templates/ajax/process_quickstock.php', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', ...H }, body: JSON.stringify({ items: pick.map(({ it }) => ({ ...it.key, action: 'deposit' })), cashItems: [], _ref_ck: ck }) });
+        d = await res.json().catch(() => null);
+      } catch (_) { d = null; }
+      if (!d || d.success !== true) { why(pick.map((x) => x.r), `${reClean(String((d && d.message) || 'Neopets didn’t answer just now').replace(/<[^>]*>/g, ' ')).slice(0, 140)}: it’s in your inventory`); return 0; }
+      for (const { r, it } of pick) { r.sdb = true; r.readWhy = ''; run.sdb = (run.sdb || 0) + 1; moved += it.q; bmRowPaint(r); }
+      if (S.features.worth !== false) wtSdbChange(pick.map(({ it }) => ({ n: it.n, dq: it.q, nc: false })));   // (your SDB's counted worth follows)
+      try { await fromPage(page, LIST, { method: 'GET', credentials: 'include', headers: H }); } catch (_) { /* */ }   // (its list asked for again, as its page does after)
+    } catch (e) { report(e); } finally { wwwShut(page); run.reading = 0; run.use = null; bmSumPaint(); }
+    return moved;
   }
   async function bmReadNow() {   // (the books bought but not read, read now: Stop as ever)
     if (!bm || !bm.run || !bm.run.over || !bmUnread().length) return;
@@ -32881,8 +32953,8 @@
     run.n = list.length;
     bmSumPaint();
     const makeRoom = async () => {   // (your inventory full: what's bought used, or put in your SDB, as you chose. How much room it made)
-      if (full === 'use' && bmReads() && bmUnread().length) return bmDoPending(run, 'use');
-      if (full === 'sdb' && bmInInv().length) return bmDoPending(run, 'sdb');
+      if (full === 'use' && bmReads() && bmUnread().length) return bmDoPending(run);
+      if (full === 'sdb' && bmInInv().length) return bmQsPut(run);
       return 0;
     };
     for (const r of list) {
@@ -50046,6 +50118,9 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.1.1', '2026-11-02', [
+      'Buy Mode: when your inventory’s full and you’ve chosen “Put them in your SDB”, it uses Quick Stock as you would: Deposit ticked by each thing it bought, then one Submit for them all',
+    ]],
     ['5.1', '2026-11-02', [
       'Buy Mode: buy the books, Booktastic books, gourmet foods and stamps you don’t have yet from users’ shops. Tick them, or all up to a price, with a most for one item and a budget',
       'Buy Mode: the Shop Wizard (1 to 3 searches an item) or Super Shop Wizard. A Shop Wizard break says when you can search again, and it carries on just after the hour or waits for Resume',
