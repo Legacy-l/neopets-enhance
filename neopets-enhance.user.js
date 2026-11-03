@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.1.5
+// @version      5.2
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -192,7 +192,7 @@
   // Requests Neopets takes only from one of its own pages (a theme saved in General Settings, a Neomail sent, a Neofriend request; it says
   // "directed to this page from the wrong place" otherwise): made from that page itself, opened unseen in a frame of NE's own with NE only
   // relaying there, so they carry that page as their referrer because they truly come from it. Already on that page: from here
-  function fromPageOk(p) { return /^\/(?:settings\/general\/|settings\/neoboards\/|neomessages\.phtml|neofriend_requests\.phtml|shops\/wizard\.phtml|island\/(?:fight_)?training\.phtml|quickstock\.phtml|browseshop\.phtml|safetydeposit\.phtml|inventory\.phtml)$/.test(p); }   // (the Shop Wizard's page: Price mode's searches come from it, as a person's do)
+  function fromPageOk(p) { return /^\/(?:games\/kadoatery\/index\.phtml|neoboards\/boardlist\.phtml|neoboards\/topic\.phtml|settings\/general\/|settings\/neoboards\/|neomessages\.phtml|neofriend_requests\.phtml|shops\/wizard\.phtml|island\/(?:fight_)?training\.phtml|quickstock\.phtml|browseshop\.phtml|safetydeposit\.phtml|inventory\.phtml)$/.test(p); }   // (the Shop Wizard's page: Price mode's searches come from it, as a person's do)
   const fromHere = (page) => !ON_MALL && !FRAME && location.pathname + location.search === page;
   const fromPage = (page, u, o) => (fromHere(page) ? fetch(u, o) : wwwFetch(u, o, page));
   const fromPageHtml = (page) => (fromHere(page) ? Promise.resolve(document.documentElement.outerHTML) : wwwFetch(page, { page: 1 }, page).then((r) => r.text()));   // (the page as it is there: nothing asked for again)
@@ -1808,11 +1808,11 @@
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, tillLog: true, tpSales: true, auSales: true,
     scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: true, oldBtns: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldGalleries: false, oldShops: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
-    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, kpopPlay: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
+    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, kpopPlay: true, kadHelp: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, tone: '', vol: 100, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,   // (tone: '' each its own, or one of the sounds for all; vol: how loud, 5 to 100)
-    ready: true, newday: true, dayend: true, dayendLead: 60, snow: true, dice: false, deadline: true, per: {},
+    ready: true, newday: true, dayend: true, dayendLead: 60, snow: true, dice: false, kad: false, kadLead: 30, deadline: true, per: {},
     fc: true, fcLead: 60, obelisk: true, turmac: true, lodge: true, lodgeLead: 360, train: true, freebies: true, advent: true, backup: true, custom: [],
   };
   function kindGroups(ids) {   // (your dailies in sections that make sense: one per kind, in this order; yours can change them)
@@ -3576,6 +3576,7 @@
       }
       if (R.dice && remListed('dice')) { const start = nstAtDay(dd, 0, now); add({ key: `dice:${start}`, at: start, start, exp: start + 3600000, kind: 'dice', title: 'Deadly Dice is open', text: 'Count von Roo plays until 1 am NST.', icon: dailyIcon(dailyById('dice')), href: '/worlds/deadlydice.phtml', sound: 'bell', check: () => { const r = dlog().dice; return !(r && r.at >= start); } }); }
     }
+    if (R.kad) for (const w of kadSoon(now)) add({ key: `kad:${w.start}`, at: w.start - (Number(R.kadLead) || 0) * 1000, kind: 'kad', start: w.start, until: w.end, title: w.k ? 'The Kadoatery’s main is due again' : 'The Kadoatery’s main is due', text: `Its window: ${fmtNstS(w.start)} to ${fmtNstS(w.end)} NST${w.k ? ` (it waited ${w.k * 7} minutes)` : ''}.`, icon: dailyIcon(dailyById('kadoatery')) || '', href: '/games/kadoatery/index.phtml', sound: 'chime', check: () => kadStill(w) });
     if (R.turmac !== false && remListed('turmac')) for (const w of turmacWins(now)) add({ key: `turmac:${w.start}`, at: w.start, kind: 'turmac', start: w.start, until: w.end, title: 'The Turmaculus may be awake', text: `This hour, till ${fmtNst(w.end)} NST, is one it’s due awake (the tracking petpage). Bring a petpet!`, icon: dailyIcon(dailyById('turmac')), href: '/medieval/turmaculus.phtml', sound: 'chime', check: () => { const r = dlog().turmac; return !(r && r.at >= w.start); } });   // (each of its due hours, as the tracking petpage has them)
     const nights = [nstAtDay(0, 0, now), nextNstMidnight(now)];   // (the midnight just gone as well as the next: worked out again a moment after midnight, tonight's is still there to say)
     for (const midnight of nights) {
@@ -3683,7 +3684,7 @@
   function remKept(k) { let ls = null; try { ls = JSON.parse(localStorage.getItem(`bnp-${k}`) || 'null'); } catch (_) { /* */ } const gm = get(k, {}); return { ...(gm && typeof gm === 'object' ? gm : {}), ...(ls && typeof ls === 'object' ? ls : {}) }; }
   function remKeep(k, v) { try { localStorage.setItem(`bnp-${k}`, JSON.stringify(v)); } catch (_) { /* (full: the script's own storage alone) */ } set(k, v); }
   const remNoteId = (n) => (n.keys || []).join(' ');
-  const remNoteOf = (n, now, local) => ({ keys: (n.keys || [n.key]).filter(Boolean), kind: n.kind, title: String(n.title || ''), text: String(n.text || ''), icon: n.icon || '', href: n.href || '', hub: n.hub || '', board: !!n.board, sound: n.sound || '', at: now, exp: n.exp || n.until || n.when || now + (n.kind === 'test' ? 120000 : 6 * 3600000), who: nclMe(), ...(n.what && n.when ? { what: n.what, when: n.when } : {}), ...(n.until ? { until: n.until } : {}), ...(n.start ? { start: n.start } : {}), ...(local ? { local: true } : {}) });
+  const remNoteOf = (n, now, local) => ({ keys: (n.keys || [n.key]).filter(Boolean), kind: n.kind, title: String(n.title || ''), text: String(n.text || ''), icon: n.icon || '', href: n.href || '', hub: n.hub || '', board: !!n.board, sound: n.sound || '', at: now, exp: n.exp || n.until || n.when || now + (n.kind === 'test' ? 120000 : 6 * 3600000), who: nclMe(), ...(n.what && n.when ? { what: n.what, when: n.when } : {}), ...(n.until ? { until: n.until } : {}), ...(n.start ? { start: n.start } : {}), ...(local ? { local: true } : {}), ...(n.own ? { own: true } : {}), ...(n.nosnooze ? { nosnooze: true } : {}), ...(n.setHref ? { setHref: String(n.setHref) } : {}) });
   function remActAdd(notes) {
     const a = remKept('remact'), now = Date.now();
     for (const n of notes) a[remNoteId(n)] = n;
@@ -3706,6 +3707,8 @@
     if (!n || !(n.exp > Date.now()) || (n.who && nclMe() && n.who !== nclMe())) return false;
     if (n.kind === 'snow') { const r = dlog().snowager; return !(r && r.at >= (n.start || 0)) && !SNOW_PAGE.test(location.pathname); }
     if (n.kind === 'dice') { const r = dlog().dice; return !(r && r.at >= (n.start || 0)); }
+    if (n.kind === 'kad') return kadStill(n);
+    if (n.kind === 'kadnew') return !KAD_PATH.test(location.pathname) && !(Number(kadGet().seenAt) > (n.at || 0));   // (new Kadoaties: till you've looked at the Kadoatery)
     if (n.kind === 'turmac') { const r = dlog().turmac; return !(r && r.at >= (n.start || 0)) && location.pathname !== '/medieval/turmaculus.phtml'; }
     if (n.kind === 'ready') return (n.keys || []).some((k) => { const d = dailyById(String(k).split(':')[1]); return !!d && dailyReady(d); });
     if (n.kind === 'fc') { const d = dailyById('foodclub'); return !d || dailyReady(d); }
@@ -3725,9 +3728,10 @@
       setInterval(() => { if (document.querySelector('[data-bnp="rems"] .bnp-rem')) { try { remSync(); } catch (e) { report(e); } } }, 30000);
     }
     const cards = $$('[data-bnp="rems"] .bnp-rem');
-    if (POPUP_WIN || !S.rem || !S.rem.on || !S.rem.popup) { for (const c of cards) c.remove(); return; }
+    if (POPUP_WIN) { for (const c of cards) c.remove(); return; }
+    const all = !!(S.rem && S.rem.on && S.rem.popup);   // (reminders' pop-ups on; a note with a switch of its own (the Kadoatery's) shows either way)
     const a = remKept('remact'), gone = remKept('remgone');
-    const live = Object.values(a).filter((n) => n && !(n.keys || []).some((k) => gone[k]) && remStill(n)).sort((x, y) => (y.at || 0) - (x.at || 0)).slice(0, 4);
+    const live = Object.values(a).filter((n) => n && (all || n.own) && !(n.keys || []).some((k) => gone[k]) && remStill(n)).sort((x, y) => (y.at || 0) - (x.at || 0)).slice(0, 4);
     const ids = new Set(live.map(remNoteId));
     for (const c of cards) if (!c.dataset.local && !ids.has(c.dataset.keys || '')) c.remove();
     for (const n of live.reverse()) remPopup(n);
@@ -3787,9 +3791,9 @@
     if (R.sound && !quiet) remRing(SOUNDS[R.tone] ? R.tone : notes.some((n) => n.sound === 'ice') ? 'ice' : notes.some((n) => n.sound === 'bell') ? 'bell' : 'chime', remVol());   // (the one you chose for all, or each its own)
   }
   tabsEar['rem-show'] = (m) => {   // (said on another tab: shown here too, quietly)
-    if (!S.rem || !S.rem.on || !S.rem.popup || !Array.isArray(m.notes)) return;
-    const gone = remKept('remgone');
-    for (const n of m.notes) if (n && Array.isArray(n.keys) && !n.keys.some((k) => gone[k]) && remStill(n)) remPopup(n);
+    if (POPUP_WIN || !Array.isArray(m.notes)) return;
+    const all = !!(S.rem && S.rem.on && S.rem.popup), gone = remKept('remgone');
+    for (const n of m.notes) if (n && (all || n.own) && Array.isArray(n.keys) && !n.keys.some((k) => gone[k]) && remStill(n)) remPopup(n);
   };
   function remVol() { return Math.min(100, Math.max(5, Number(S.rem.vol) || 100)) / 100; }   // (how loud reminders are, apart from NeoChat)
   function remWhenText(when) { const left = when - Date.now(); return left > 90e3 ? `in ${fmtLeft(left)}, at ${fmtNst(when)} NST` : left > -90e3 ? 'now' : `at ${fmtNst(when)} NST`; }   // (the event's own time)
@@ -3806,7 +3810,7 @@
   }
   let audioCtx = null;
   function soundReady() {   // (browsers let a page make sound only after you've clicked on it: the first click wakes the sound up)
-    if (!(S.rem.on && S.rem.sound) && !(S.features.ncl && S.features.nclSound)) return;   // (reminders' sound, or NeoChat's)
+    if (!(S.rem.on && S.rem.sound) && !(S.features.ncl && S.features.nclSound) && !(S.features.kadHelp !== false && kadPrefs().sound)) return;   // (reminders' sound, or NeoChat's)
     addEventListener('pointerdown', () => { try { const AC = window.AudioContext || window.webkitAudioContext; if (AC && !audioCtx) audioCtx = new AC(); if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch (_) { /* */ } }, { once: true, capture: true });
   }
   function remAudio() {   // (→ whether this tab may make a sound: browsers let a page make one once you've clicked on it, or came to it by a click. Its sound woken, to see)
@@ -3909,16 +3913,16 @@
     const card = document.createElement('div');
     card.className = `bnp-rem is-${n.kind}`;
     card.innerHTML = `
-      <div class="popup-header__2020 bnp-rem-head"><h3>${esc(title)}</h3><span class="bnp-rem-btns"><button type="button" class="button-default__2020 button-yellow__2020 bnp-rem-b" data-r="set" title="Reminder settings: which ones you get, and how" aria-label="Reminder settings">${SVG_GEAR}</button><button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-rem-x" data-r="x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button></span><div class="popup-header-pattern__2020"></div></div>
+      <div class="popup-header__2020 bnp-rem-head"><h3>${esc(title)}</h3><span class="bnp-rem-btns"><button type="button" class="button-default__2020 button-yellow__2020 bnp-rem-b" data-r="set" ${n.setHref ? 'title="Its settings: where you chose this" aria-label="Its settings"' : 'title="Reminder settings: which ones you get, and how" aria-label="Reminder settings"'}>${SVG_GEAR}</button><button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-rem-x" data-r="x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button></span><div class="popup-header-pattern__2020"></div></div>
       <div class="bnp-rem-body">${n.icon ? `<img src="${esc(n.icon)}" alt="">` : ''}<div><p>${esc(text || '')}</p>${n.until ? `<p class="bnp-rem-left" data-until="${n.until}"></p>` : ''}
-        <div class="bnp-rem-acts">${n.board || n.href || n.hub ? `<button type="button" class="button-default__2020 button-green__2020" data-r="go">${n.board ? 'Open the board' : n.hub === 'backup' ? 'Back up' : 'Go'}</button>${!n.board && !n.hub && n.href ? '<button type="button" class="button-default__2020 button-green__2020 bnp-rem-new" data-r="new" title="Open it in a new tab">New ↗</button>' : ''}` : ''}<button type="button" class="bnp-linkbtn" data-r="dismiss" title="Put it away, on every Neopets tab">Dismiss</button><button type="button" class="bnp-linkbtn" data-r="snooze" title="Put it away, and say it again in 10 minutes">Remind me in 10 minutes</button></div></div></div>`;
+        <div class="bnp-rem-acts">${n.board || n.href || n.hub ? `<button type="button" class="button-default__2020 button-green__2020" data-r="go">${n.board ? 'Open the board' : n.hub === 'backup' ? 'Back up' : 'Go'}</button>${!n.board && !n.hub && n.href ? '<button type="button" class="button-default__2020 button-green__2020 bnp-rem-new" data-r="new" title="Open it in a new tab">New ↗</button>' : ''}` : ''}<button type="button" class="bnp-linkbtn" data-r="dismiss" title="Put it away, on every Neopets tab">Dismiss</button>${n.nosnooze ? '' : '<button type="button" class="bnp-linkbtn" data-r="snooze" title="Put it away, and say it again in 10 minutes">Remind me in 10 minutes</button>'}</div></div></div>`;
     card.dataset.keys = keys.join(' ');
     if (n.board) card.dataset.board = '1';
     if (n.local) card.dataset.local = '1';
     card.addEventListener('click', (e) => {
       const b = e.target.closest('[data-r]');
       if (!b) return;
-      if (b.dataset.r === 'set') { openHub('reminders'); return; }   // (the note stays, to Go from after)
+      if (b.dataset.r === 'set') { if (n.setHref && safeHref(n.setHref)) { location.href = n.setHref; return; } openHub('reminders'); return; }   // (the note stays, to Go from after)
       if (b.dataset.r === 'snooze') { const sn = (get('remsnooze', []) || []).filter((s) => s.at > Date.now() - 3600000); sn.push({ key: 'sn' + uid(), at: Date.now() + 10 * 60000, title: n.title, text: n.text || '', href: n.href || '', hub: n.hub || '', icon: n.icon || '', board: !!n.board, kind: n.kind, sound: n.sound, dids: (n.keys || []).map((k) => (/^ready:([^:]+):/.exec(k) || [])[1]).filter(Boolean), ...(n.kind === 'snow' ? { start: n.start, until: n.until } : {}) }); set('remsnooze', sn); remSchedule(); }
       card.remove();
       if (!n.local) remCloseAll({ keys });   // (closed here: closed on every tab, and on the pages after)
@@ -6391,6 +6395,893 @@
       return true;
     };
     if (!pill()) { const o = new MutationObserver(() => { if (pill()) o.disconnect(); }); o.observe(document.documentElement, { childList: true }); }
+  }
+  // The Kadoatery: its cages made over, and its restock times learned from your own visits. kad_ids come in a row, a restock at a time:
+  // a run of them is one restock (the biggest, the main; the rest, minis). New ones still hungry mean it just happened (they're fed in
+  // seconds). A group's next window: its first after its restock (28 minutes, or what NE has seen mains usually take), 90 seconds long,
+  // then every 7 minutes it waits. NE never reloads the page or asks Neopets anything here: it reads what you open
+  const KAD_PATH = /^\/games\/kadoatery\/(?:index\.phtml)?$/, KAD_BASE = 28 * 60000, KAD_PEND = 7 * 60000, KAD_WIN = 90000;
+  const KAD_COG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.47.47 0 0 0-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.74 8.87a.47.47 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.48.48 0 0 0-.12-.61zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/></svg>';   // (a toothed cog, whole in its box: the settings)
+  const KAD_BOARD_IC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 4h14a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-8.2L6 21.6V18H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z"/></svg>';   // (said on the boards: a speech bubble)
+  const KAD_TITLE_IC = `${NPI}images/buddy/kadoatie_sulk.gif`;   // (the picture beside its title: a sulking Kadoatie, 50 × 50, the user's pick for now)
+  const kadKey = () => dkey().replace(/^dlog/, 'kad');
+  function kadGet() { const v = get(kadKey(), null); return v && typeof v === 'object' && v.v === 1 ? v : { v: 1, seen: {}, drops: [], gaps: [], fed: 0, fedIds: [], last: null, set: null, first: 'learn', total: null }; }
+  const kadPut = (st) => set(kadKey(), st);
+  const fmtNstS = (ms) => { const n = nstOf(ms); return `${n.h % 12 || 12}:${String(n.mi).padStart(2, '0')}:${String(n.s).padStart(2, '0')} ${n.h < 12 ? 'am' : 'pm'}`; };
+  const fmtCount = (ms) => { const s = Math.max(0, Math.round(ms / 1000)), m = Math.floor(s / 60); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}:${String(s % 60).padStart(2, '0')}`; };
+  function kadCells(root = document) {   // (each cage: its kad_id, name, hungry or fed, the food it wants, and whether you fed it; Neopets' own cell and link)
+    const me = String(nclMe() || '').toLowerCase(), out = [], st0 = kadGet(), mineIds = new Set(Object.entries(st0.seen || {}).filter(([, r]) => r && r[3]).map(([k]) => Number(k)));   // (yours: Neopets' feed page said so, or NE saw your name on it)
+    for (const a of root.querySelectorAll('a[href*="feed_kadoatie.phtml?kad_id="]')) {
+      const td = a.closest('td'), kid = Number((/kad_id=(\d+)/.exec(a.getAttribute('href') || '') || [])[1]) || 0;
+      if (!td || !kid || out.some((c) => c.kid === kid)) continue;
+      const t = td.textContent.replace(/\s+/g, ' '), strongs = [...td.querySelectorAll('strong')].filter((x) => !x.closest('[data-bnp]'));
+      const fed = /has been fed/i.test(t), bl = fed ? td.querySelector('a[href*="userlookup"]') : null, by = bl ? (bl.textContent || '').trim().toLowerCase() : '';
+      const bu = bl ? (() => { try { return decodeURIComponent((/[?&]user=([^&#]+)/.exec(bl.getAttribute('href') || '') || [])[1] || '').toLowerCase(); } catch (_) { return ''; } })() : '';
+      out.push({ td, a, kid, name: strongs[0] ? strongs[0].textContent.trim() : '', fed, food: !fed && strongs.length > 1 ? strongs[strongs.length - 1].textContent.trim() : '', mine: !!(fed && ((me && (by === me || bu === me)) || mineIds.has(kid))) });
+    }
+    return out;
+  }
+  function kadNote(cells, now = Date.now(), how = 'look') {   // (this look, kept: each Kadoatie's first sight, hungry and fed; a restock since the last look; yours)
+    const st = kadGet(), seen = st.seen, prev = st.last && now - st.last.at < 6 * 3600000 ? st.last : null;
+    const fresh = cells.filter((c) => !seen[c.kid]);
+    for (const c of cells) {
+      const r = seen[c.kid] || (seen[c.kid] = [now, 0, 0, 0]);
+      if (!c.fed) r[1] = now; else if (!r[2]) r[2] = now;
+      if (c.mine && !r[3]) kadMineNote(st, c, r, now);
+    }
+    const looked = Object.keys(seen).length > fresh.length;   // (NE had looked before: new ones came since then)
+    let best = null;   // (the biggest restock in this look: the one the alert tells of)
+    for (const run of kadRuns(fresh)) {   // (each run of ids in a row: one restock, its time and how far off it may be)
+      const ids = run.map((c) => c.kid), sad = run.filter((c) => !c.fed).length, lo = looked && prev ? prev.at : 0;
+      const hot = looked && sad >= Math.max(1, Math.ceil(run.length * 0.5));   // (half of them or more still hungry (a lone one too): it came a little before this look)
+      let from = 0, to = now;
+      if (hot) from = Math.max(lo, now - KAD_LAG(now));
+      else if (lo && now - lo <= 15 * 60000) from = lo;   // (all fed: somewhere between two looks close enough)
+      const at = from ? Math.round((from + to) / 2) : null, err = from ? Math.round((to - from) / 2) : 0;
+      const drop = { at, err, lo, hi: now, a: Math.min(...ids), b: Math.max(...ids), n: run.length, sure: !!at && err <= 45000 };
+      const last = [...st.drops].reverse().find((d) => d.n >= 8 && d.at && d.sure);
+      if (run.length >= 8 && drop.sure && last && drop.at - last.at > 20 * 60000 && drop.at - last.at < 3 * 3600000) st.gaps = [...st.gaps, drop.at - last.at].slice(-20);   // (main to main, both sure: what the first window usually is)
+      st.drops = [...st.drops, drop].slice(-40);
+      if (!best || run.length > best.n) best = drop;
+    }
+    const here = new Set(cells.map((c) => c.kid));
+    for (const k of Object.keys(seen)) if (!here.has(Number(k)) && now - seen[k][0] > 4 * 86400000) delete seen[k];   // (gone home days ago: forgotten)
+    st.last = { at: now, n: cells.length };
+    kadPut(st);
+    const sad = fresh.filter((c) => !c.fed).length;
+    kadNote.last = { looked, n: fresh.length, sad };
+    if (looked && sad) kadAlert(st, { how, sad, a: Math.min(...fresh.map((c) => c.kid)), found: now, at: best && best.at, err: best ? best.err : 0, main: !!best && best.n >= 8, locked: cells.some((c) => c.mine && !fresh.includes(c)) });   // (new hungry ones: as you chose to hear of them)
+    return st;
+  }
+  function kadMineNote(st, c, r, now) {   // (a cage seen as yours, the first time: counted, with when you pressed it and when its restock was found)
+    r[3] = 1;
+    if (!st.fedIds.includes(c.kid)) { st.fedIds = [...st.fedIds, c.kid].slice(-200); st.fed = (st.fed || 0) + 1; if (st.total != null) st.total += 1; }
+    const t = st.feedTry && st.feedTry.kid === c.kid && now - st.feedTry.at < 3600000 ? st.feedTry.at : 0;
+    st.feeds = Object.fromEntries([...Object.entries(st.feeds || {}), [c.kid, { at: t, found: r[1] ? r[0] : 0 }]].slice(-20));
+  }
+  function kadMineSync(cells) {   // (drawn with a cage as yours that NE hadn't counted (your name known only now, say): counted now)
+    const st = kadGet(), now = Date.now();
+    let n = 0;
+    for (const c of cells) { if (!c.mine) continue; const r = st.seen[c.kid] || (st.seen[c.kid] = [now, 0, now, 0]); if (!r[3]) { kadMineNote(st, c, r, now); n++; } }
+    if (n) kadPut(st);
+  }
+  const kadAuto = (p) => {   // (Auto refresh: off, or on: plain looks every so many minutes till a time is known (mins), then close looks round each window every so many seconds (burst; 0: plain looks only). An older choice carries over: 'smart' → on, 5 min; a number of minutes → on, that many)
+    const v = String(p.check || '0');
+    if (v === '0' || v === '') return { on: false, smart: false, mins: 5, burst: 0 };
+    const mins = Math.max(5, Number(p.search) || (Number(v) > 0 ? Number(v) : 5)), burst = String(p.burst) === '0' ? 0 : Math.max(8, Number(p.burst) || 15);
+    return { on: true, smart: burst > 0, mins, burst };
+  };
+  const KAD_P = { feed: 'one', ask: 'always', askOver: 2000, max: 5000, day: 0, src: 'sw', pace: 'person', lock: true, check: 0, burst: 15, back: 'auto', sound: '', flash: true, note: false, desk: false, board: 'auto', topic: '' };   // (board: the boards' times, 'off' | 'auto' (NE finds the topic) | 'topic' (yours: topic))   // (when new hungry ones are found: sound, one of NE's ('' none); flash, this tab's name; note, NE's notification on your Neopets tabs; desk, the desktop's)   // (check: minutes between looks in the background, 0 off)   // (feeding as you like it: asked first by default)
+  const kadPrefs = (st = kadGet()) => ({ ...KAD_P, ...(st.p || {}) });
+  const kadSpent = (st = kadGet()) => (st.spent && st.spent.day === nstDay() ? Number(st.spent.np) || 0 : 0);   // (NP bought with today)
+  const kad = { busy: false, drop: false, fresh: 0 };   // (fresh: when a check saw new ones come, on this page)   // (drop: the ⚙ panel open)
+  function kadAlert(st, o) {   // (new hungry ones found: your sound, this tab's name flashing, NE's notification on your Neopets tabs and the desktop's, as you chose. Not for your own look at the Kadoatery in front of you: you can see them)
+    const p = kadPrefs(st), kadTab = KAD_PATH.test(location.pathname);
+    if (o.how === 'look' && kadTab && !document.hidden) return;
+    if (o.locked) return;   // (your fed one's still there: these you couldn't feed, so no alert)
+    const quiet = (() => { try { return remQuiet(); } catch (_) { return false; } })();
+    if (p.sound && !quiet) { try { remRing(p.sound, remVol()); } catch (_) { /* */ } }
+    if (p.flash) tabFlash('Kadoatie Restock!');
+    tabsSay('kad-new', { sad: o.sad });   // (your other Kadoatery tabs: "new ones came", their names flashing too)
+    if (!p.note && !p.desk) return;
+    const n = remNoteOf({ key: `kadnew:${o.a}`, kind: 'kadnew', title: 'Kadoatie Restock!', text: `${o.main ? 'The main' : 'A mini'} came: ${o.sad === 1 ? 'a hungry Kadoatie' : `${o.sad} hungry Kadoaties`}, found at ${fmtNstS(o.found)} NST.`, icon: KAD_TITLE_IC, href: `${SITE}/games/kadoatery/index.phtml`, setHref: `${SITE}/games/kadoatery/index.phtml#bnp-kadset`, exp: Date.now() + 5 * 60000, own: true, nosnooze: true }, Date.now());
+    if (p.note) { remActAdd([n]); tabsSay('rem-show', { notes: [n] }); if (!kadTab) remPopup(n); }
+    if (p.desk && !quiet) remDesktop(n);
+  }
+  tabsEar['kad-new'] = () => {   // (another tab found new ones: a Kadoatery tab here says so, and flashes too)
+    if (!kad.paint || !KAD_PATH.test(location.pathname)) return;
+    kad.fresh = Date.now();
+    kad.paint();
+    if (kadPrefs().flash) tabFlash('Kadoatie Restock!');
+  };
+  const KAD_LAG = (now) => { const h = nstOf(now).h; return h >= 23 || h < 8 ? 180000 : 60000; };   // (how long hungry ones may have been there already: they're fed slower late at night)
+  const kadRuns = (cells) => { const out = []; for (const c of [...cells].sort((x, y) => x.kid - y.kid)) { const r = out[out.length - 1]; if (r && c.kid - r[r.length - 1].kid === 1) r.push(c); else out.push([c]); } return out; };   // (kad_ids in a row: a restock's, as Neopets hands them out)
+  function kadUsual(st) {   // (how many 7-minute waits a main usually has before it comes, from the mains seen one after another: 0 is the 28-minute window)
+    const ks = (st.gaps || []).map((g) => Math.max(0, Math.round((g - KAD_BASE) / KAD_PEND))).filter((k) => k <= 6);
+    if (ks.length < 3) return { k: 0, n: ks.length };
+    const c = {};
+    for (const k of ks) c[k] = (c[k] || 0) + 1;
+    const k = Number(Object.keys(c).sort((a, b) => c[b] - c[a] || a - b)[0]);
+    return { k, n: ks.length, of: c[k] };
+  }
+  const kadFirst = (st) => (st.first === 28 ? KAD_BASE : st.first === 35 ? KAD_BASE + KAD_PEND : KAD_BASE + kadUsual(st).k * KAD_PEND);
+  function kadGroups(cells, st) {   // (the cages by the restock that brought them: the drop NE saw them come in, else kad_ids in a row; the biggest group is the main)
+    const groups = new Map();
+    for (const c of [...cells].sort((x, y) => x.kid - y.kid)) {
+      const d = [...st.drops].reverse().find((x) => x.a <= c.kid && x.b >= c.kid);
+      let key = d ? `d${d.a}` : null;
+      if (!key) { const g = [...groups.values()].find((x) => !x.drop && c.kid - x.b === 1); key = g ? g.key : `r${c.kid}`; }
+      const g = groups.get(key) || { key, drop: d || null, a: c.kid, b: c.kid, cells: [] };
+      g.b = Math.max(g.b, c.kid);
+      g.cells.push(c);
+      groups.set(key, g);
+    }
+    const all = [...groups.values()].map((g) => ({ ...g, n: g.cells.length, came: g.drop ? g.drop.at : null, at: g.drop ? g.drop.at : null, err: g.drop ? Number(g.drop.err) || 0 : 0, sure: !!(g.drop && g.drop.sure) }));   // (came: when the restock came; at: its clock, when they were fed)
+    const LAG = KAD_LAG(Date.now()), late = [];
+    const fedOf = (c) => {   // (when a cage was fed: after the look that last saw it hungry, before the one that first saw it fed; soon after the first (they're fed fast))
+      const r = st.seen[c.kid];
+      const fo = c.mine && st.feeds ? st.feeds[c.kid] : null;
+      if (fo && fo.at) return { t: fo.at, e: 3000 };   // (yours: when you fed it, to the second)
+      if (!c.fed || !r || !r[1] || !r[2] || r[2] <= r[1]) return null;
+      if (r[2] - r[1] <= 2 * LAG) return { t: Math.round((r[1] + r[2]) / 2), e: Math.max(5000, Math.round((r[2] - r[1]) / 2)) };
+      return { t: Math.round(r[1] + LAG / 3), e: Math.round(LAG / 2) };   // (no look close after: fed soon after it was last seen hungry)
+    };
+    for (const g of all) {   // (its clock starts when it's fed: when most of them were; one fed 3+ minutes after them is on a clock of its own)
+      const fs = g.cells.map((c) => ({ c, f: fedOf(c) })).filter((x) => x.f);
+      if (!fs.length) continue;   // (never seen hungry: its restock's time stands)
+      const ts = fs.map((x) => x.f.t).sort((p1, p2) => p1 - p2), mid = ts[Math.floor((ts.length - 1) / 2)];
+      const out = fs.filter((x) => x.f.t - mid > 3 * 60000);
+      for (const { c, f } of out) {
+        const x = late.find((q) => Math.abs(q.at - f.t) < 2 * 60000);
+        if (x) { x.cells.push(c); x.b = Math.max(x.b, c.kid); x.err = Math.max(x.err, f.e); x.sure = x.err <= 45000; } else late.push({ key: `late${c.kid}`, drop: null, a: c.kid, b: c.kid, cells: [c], came: g.came, at: f.t, err: f.e, sure: f.e <= 45000, late: true });
+      }
+      const core = fs.filter((x) => !out.includes(x)).map((x) => x.f);
+      if (core.length) { const t2 = core.map((f) => f.t).sort((p1, p2) => p1 - p2), e2 = core.map((f) => f.e).sort((p1, p2) => p1 - p2); g.at = t2[Math.floor(t2.length / 2)]; g.err = e2[Math.floor(e2.length / 2)]; g.sure = g.err <= 45000; g.fed = true; }
+      if (out.length) { g.cells = g.cells.filter((c) => !out.some((x) => x.c === c)); g.n = g.cells.length; }
+    }
+    const list = [...all, ...late.map((x) => ({ ...x, n: x.cells.length }))].filter((g) => g.n > 0);
+    const main = list.reduce((m, g) => (!m || g.n > m.n ? g : m), null);
+    if (main && st.set && st.set.at && (!main.at || st.set.at > main.at)) { main.at = st.set.at; main.err = Number(st.set.err) || 0; main.sure = true; main.yours = true; }   // (the time you set yourself)
+    const bm = main && kadBoardMain(st);
+    if (bm && (!main.at || bm.at > main.at + 60000)) { main.at = bm.at; main.err = bm.err; main.sure = false; main.yours = false; main.board = bm.post; }   // (the boards' word on it, when newer than what NE has)
+    const bms = kadBoardMinis(st);
+    for (const g of list) if (g !== main && !g.at) { const b = bms.find((x) => x.n === g.n && !x.used); if (b) { b.used = true; g.at = b.at; g.err = b.err; g.board = b.post; } }   // (a mini whose time NE doesn't know: the boards', by its count)
+    const now0 = Date.now();
+    for (const g of list) {
+      g.waiting = g.cells.length > 0 && g.cells.every((c) => !c.fed);   // (just come, none fed yet: its clock starts when they're fed)
+      g.watch = !!g.came && now0 - g.came < 10 * 60000 && g.cells.some((c) => !c.fed);   // (just come, some still hungry: Smart watches the feeding)
+    }
+    return { main, minis: list.filter((g) => g !== main).sort((a, b) => (a.at || 9e15) - (b.at || 9e15)) };
+  }
+  function kadWin(g, st, now) {   // (a group's window now or next: its first after its restock, then every 7 minutes it waits; null with its time unknown)
+    if (!g || !g.at) return null;
+    const e = Math.min(120000, Math.max(0, Number(g.err) || 0));   // (how far off its time may be: the window that much wider, 2 minutes at most)
+    let start = g.at + kadFirst(st) - e, k = 0;
+    while (start + KAD_WIN + 2 * e < now && k < 400) { start += KAD_PEND; k++; }
+    return { start, end: start + KAD_WIN + 2 * e, mid: start + e, k, open: now >= start, rough: !g.sure || e > 45000, err: e };   // (mid: the window's own start, as said; start/end: widened by the error)
+  }
+  function kadSoon(now) {   // (the reminder's windows: the main's next, and at most two waits after its first, while NE's time for it is under two hours old)
+    const st = kadGet();
+    const bm = kadBoardMain(st);
+    const d = [...(st.set && st.set.at ? [{ at: st.set.at, err: st.set.err || 0, n: 20, sure: true }] : []), ...(bm ? [{ at: bm.at, err: bm.err, n: 20 }] : []), ...st.drops.filter((x) => x.n >= 8 && x.at)].sort((a, b) => b.at - a.at)[0];
+    if (!d || now - d.at > 2 * 3600000 || (st.last && st.last.at > d.at + kadFirst(st) + 3 * KAD_PEND)) return [];
+    const out = [];
+    const e = Math.max(0, Number(d.err) || 0);
+    for (let k = 0; k <= 2; k++) { const start = d.at + kadFirst(st) + k * KAD_PEND - e; if (start + KAD_WIN + 2 * e > now - 60000) out.push({ start, end: start + KAD_WIN + 2 * e, k, from: d.at }); }
+    return out.slice(0, 2);
+  }
+  function kadStill(w) {   // (still worth saying: no newer main seen since the one it counts from)
+    const st = kadGet(), from = w.from || ((w.start || 0) - kadFirst(st));
+    return !st.drops.some((d) => d.n >= 8 && d.at && d.at > from + 60000);
+  }
+  function kadPage() {   // (the Kadoatery: its cages as cards, Neopets' own table and links kept; the restock times and your own over them)
+    if (FRAME || S.features.kadHelp === false || !KAD_PATH.test(location.pathname)) return;
+    const cells = kadCells();
+    if (!cells.length) return;
+    styles();
+    kadNote(cells);
+    { const s0 = kadGet(); if (!document.hidden) { s0.seenAt = Date.now(); kadPut(s0); } }   // (seen)
+    const table = cells[0].td.closest('table'), td = document.querySelector('td.content');
+    document.documentElement.classList.add('bnp-kad-on');
+    const title = td && [...td.children].find((x) => x.tagName === 'STRONG' && /kadoatery/i.test(x.textContent));
+    if (title && !title.classList.contains('bnp-kad-title') && !title.dataset.bnpWords) {
+      title.dataset.bnpWords = '1';
+      kadTitleOn(td);   // (its title as NE's other made-over pages have theirs, a picture on its left; Neopets' welcome words under it out of sight, as the user asked)
+      const box = table && (table.closest('div[align="center"]') || table), hold = document.createElement('span');
+      hold.className = 'bnp-kad-words';
+      hold.hidden = true;
+      hold.setAttribute('data-bnp', 'kadwords');
+      for (let n = title.nextSibling; n && n !== box && !(n.nodeType === 1 && box && n.contains(box));) { const next = n.nextSibling; hold.append(n); n = next; }
+      title.after(hold);
+    }
+    if (table) table.classList.add('bnp-kad-grid');
+    kadDress(cells);
+    const card = document.createElement('div');
+    card.className = 'bnp-kad';
+    card.setAttribute('data-bnp', 'kad');
+    if (table) {   // (the cages in one frame, its restocks bar on top)
+      let frame = table.closest('.bnp-kad-box');
+      if (!frame) { frame = document.createElement('div'); frame.className = 'bnp-kad-box'; table.before(frame); frame.append(table); }
+      frame.prepend(card);
+    } else document.querySelector('td.content').prepend(card);
+    kadTitleFit();
+    window.addEventListener('resize', () => { clearTimeout(kadTitleFit.t); kadTitleFit.t = setTimeout(kadTitleFit, 150); });
+    try { document.fonts.ready.then(kadTitleFit); } catch (_) { /* */ }
+    document.addEventListener('click', (e) => { if (kad.drop && !e.composedPath().includes(card)) { kad.drop = false; paint(); } });   // (the ⚙ panel shut by a click elsewhere: by where the click went, as the button pressed may be drawn again by then)
+    card.addEventListener('keydown', (e) => { if (e.key === 'Escape' && kad.drop) { kad.drop = false; paint(); const g = card.querySelector('[data-kad="drop"]'); if (g) g.focus(); } });
+    try { remAccent(card); if (table) remAccent(table); const fr = card.closest('.bnp-kad-box'); if (fr) remAccent(fr); } catch (_) { /* */ }   // (your theme's pop-up colour, as the Dailies bar's)
+    const paint = () => { kadMineSync(kadCells()); kadPaint(card, kadCells(), kadGet()); kadActs(kadCells(), kadGet()); };
+    kad.paint = paint;   // (drawn again from elsewhere: a look of Auto refresh's, another tab's news)
+    if (location.hash === '#bnp-kadset') { kad.drop = true; try { history.replaceState(null, '', location.pathname + location.search); } catch (_) { /* */ } }   // (a notification's gear: its settings open)
+    paint();
+    { const s0 = kadGet(); if (kadAuto(kadPrefs(s0)).on) { s0.looks = [...(s0.looks || []), Date.now()].slice(-120); s0.chkNext = kadNextLook(s0); s0.chkWhy = kadNextLook.why; kadPut(s0); paint(); } }   // (this look counts as one: Auto refresh's next from here)
+    if (!nclMe()) addEventListener('load', () => setTimeout(paint, 600), { once: true });   // (your name not known yet: yours shown once it is)
+    setTimeout(() => kadBoardRead(false), 2000 + Math.random() * 3000);   // (the boards' newest times, when it's been a while)
+    if (table) table.addEventListener('click', (e) => {   // (a cage's own link pressed: when you fed, for how quick you were)
+      const a = e.target instanceof Element ? e.target.closest('a[href*="feed_kadoatie.phtml?kad_id="]') : null, kid = a ? Number((/kad_id=(\d+)/.exec(a.getAttribute('href') || '') || [])[1]) || 0 : 0;
+      if (kid) { const s3 = kadGet(); s3.feedTry = { kid, at: Date.now() }; kadPut(s3); }
+    }, true);
+    if (table) table.addEventListener('click', (e) => {   // (a cage's Buy and feed, or Buy it anyway)
+      const b = e.target instanceof Element ? e.target.closest('[data-kadbuy], [data-kadover]') : null;
+      if (!b || b.disabled) return;
+      e.preventDefault();
+      const box = b.closest('[data-bnp="kadact"]'), kid = Number(box && box.dataset.kid);
+      if (kid) kadBuyFeed(kid, b.dataset.kadover ? Number(b.dataset.kadover) : 0);
+    });
+    card.addEventListener('change', (e) => {   // (a Feeding setting typed or ticked: kept, and the cages drawn again)
+      const t = e.target;
+      if (!(t instanceof HTMLInputElement) || !t.dataset.kadp) return;
+      const s2 = kadGet(), p = kadPrefs(s2), k = t.dataset.kadp;
+      if (k === 'lock') p.lock = t.checked;
+      else { const v = Math.floor(Number(String(t.value).replace(/[\s,]/g, ''))); p[k] = Number.isFinite(v) && v >= 0 ? v : KAD_P[k]; }
+      s2.p = p;
+      kadPut(s2);
+      paint();
+    });
+    card.addEventListener('click', (e) => {
+      const b = e.target instanceof Element ? e.target.closest('[data-kad]') : null;
+      if (!b) return;
+      const k = b.dataset.kad, s2 = kadGet();
+      if (k === 'reload') { location.reload(); return; }
+      if (k === 'try') { const snd = kadPrefs(s2).sound; if (snd) try { remSound(snd, remVol()); } catch (_) { /* */ } return; }
+      if (k === 'tg') { const p = kadPrefs(s2); s2.p = { ...p, [b.dataset.k]: !p[b.dataset.k] }; kadPut(s2); paint(); const f = card.querySelector(`[data-kad="tg"][data-k="${b.dataset.k}"]`); if (f) f.focus({ preventScroll: true }); return; }
+      if (k === 'bread') { kadBoardRead(true); return; }
+      if (k === 'topic') {   // (your topic: its link or its number)
+        const v = String((card.querySelector('[data-kadtopic]') || {}).value || ''), m = /topic=(\d+)/.exec(v) || /^\s*(\d{5,})\s*$/.exec(v);
+        if (!m) { pageSay('Paste the topic’s link (…topic.phtml?topic=…) or its number', 'bad'); return; }
+        s2.p = { ...kadPrefs(s2), topic: m[1] };
+        kadPut(s2);
+        paint();
+        kadBoardRead(true);
+        return;
+      }
+      if (k === 'drop' || k === 'auto') { kad.drop = !kad.drop; paint(); if (kad.drop) { const f = card.querySelector('.bnp-kad-drop button, .bnp-kad-drop input'); if (f) f.focus({ preventScroll: true }); } return; }
+      if (k === 'close') { kad.drop = false; paint(); const g = card.querySelector('[data-kad="drop"]'); if (g) g.focus(); return; }
+      if (k === 'set') {   // ("the main was at :16": the last time it was that minute)
+        const v = String((card.querySelector('[data-kadset]') || {}).value || '').trim(), m = /^:?(\d{1,2})(?::(\d{1,2}))?$/.exec(v);
+        if (!m || +m[1] > 59 || (m[2] && +m[2] > 59)) { pageSay('Type the minute the main came, like :16 (or :16:20)', 'bad'); return; }
+        const n = nstOf(Date.now()), back = ((n.mi - +m[1]) * 60 + (n.s - (+m[2] || 0)) + 3600) % 3600;
+        s2.set = { at: Date.now() - back * 1000 + (m[2] ? 0 : 30000), err: m[2] ? 0 : 30000 };   // (just the minute: somewhere in it)
+        kadPut(s2);
+        paint();
+        return;
+      }
+      if (k === 'unset') { s2.set = null; kadPut(s2); paint(); return; }
+      if (k === 'first') { s2.first = b.dataset.v === '28' ? 28 : b.dataset.v === '35' ? 35 : 'learn'; kadPut(s2); paint(); return; }
+      if (k === 'pref') { const was = kadAuto(kadPrefs(s2)).on, old = kadPrefs(s2); s2.p = { ...old, [b.dataset.k]: b.dataset.v }; if (b.dataset.k === 'check' && !old.search && Number(old.check) > 0) s2.p.search = String(old.check);   // (an older "every N minutes" kept as Till a time is known)
+      if (['check', 'search', 'burst'].includes(b.dataset.k)) { const now2 = kadAuto(kadPrefs(s2)).on; s2.chkNext = was && now2 ? kadNextLook(s2) : now2 ? Date.now() + 15000 : 0; s2.chkWhy = was ? kadNextLook.why : 'start'; } kadPut(s2); paint(); if (b.dataset.k === 'board' && b.dataset.v !== 'off') kadBoardRead(true); const f = card.querySelector(`[data-kad="pref"][data-k="${b.dataset.k}"][data-v="${b.dataset.v}"]`); if (f) f.focus({ preventScroll: true }); return; }
+      if (k === 'total') {
+        const v = Math.floor(Number(String((card.querySelector('[data-kadtotal]') || {}).value || '').replace(/[\s,]/g, '')));
+        s2.total = Number.isFinite(v) && v >= 0 ? v : null;
+        kadPut(s2);
+        paint();
+      }
+    });
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target instanceof HTMLInputElement) { e.preventDefault(); const b = e.target.closest('.bnp-kad-f') && e.target.closest('.bnp-kad-f').querySelector('[data-kad]'); if (b) b.click(); } });
+    const tick = setInterval(() => { if (!card.isConnected) { clearInterval(tick); return; } if (!document.hidden) kadTick(card); }, 1000);
+  }
+  function kadPaint(card, cells, st) {   // (the bar on the cages' frame: the main's time and countdown, the minis, your own Kadoatie, Refresh and ⚙; ⚙ opens the rest over the cages)
+    const now = Date.now(), { main, minis } = kadGroups(cells, st), w = main && !main.waiting ? kadWin(main, st, now) : null, u = kadUsual(st), first = kadFirst(st);
+    const mine = cells.find((c) => c.mine), total = st.total != null ? st.total : st.fed || 0;
+    const own = (() => { const o = avOwn(); return !!(o && o.list.some((x) => /^kadoatery\.gif$/i.test(String(x[0] || '')))); })();
+    const cd = (x) => `<span class="bnp-kad-in" data-kadin="${x.mid}" data-kadend="${x.end}"></span>`;
+    const pm = (x) => (x.err > 45000 ? ` ±${Math.round(x.err / 30000) / 2} min` : '');   // (how far off a rough time may be)
+    const mineW = mine && (() => { const g = [main, ...minis].find((x) => x && x.cells.includes(mine)); return g && kadWin(g, st, now); })();
+    { const s0 = kadGet(); s0.plan = { t: now, locked: cells.some((c) => c.mine), g: [{ main: true, mine: !!(main && main.cells.some((c) => c.mine)), at: main ? main.at : null, err: main ? main.err || 0 : 0, sure: !!(main && main.sure), waiting: !!(main && main.waiting), watch: !!(main && main.watch), came: main ? main.came || null : null }, ...minis.map((g) => ({ mine: g.cells.some((c) => c.mine), at: g.at, err: g.err || 0, sure: !!g.sure, n: g.n, waiting: !!g.waiting, watch: !!g.watch, came: g.came || null }))] }; kadPut(s0); }   // (Smart's looks are timed from this)
+    const au = kadAuto(kadPrefs(st)), nx = Number(st.chkNext) || 0, lastLook = Math.max(Number(st.chk && st.chk.at) || 0, Number(st.last && st.last.at) || 0);
+    const mw = minis.map((g) => ({ g, x: g.waiting ? null : kadWin(g, st, now) })), soon = mw.filter((m) => m.x).sort((p1, p2) => p1.x.start - p2.x.start)[0] || mw[0];
+    const newChip = kad.came && now - kad.came < 10 * 60000 ? `<span class="bnp-kad-new" title="${esc(`Auto refresh found new hungry ones at ${fmtNstS(kad.came)} NST and put them here, without reloading`)}">New ${esc(fmtNstS(kad.came).replace(/ (am|pm)$/, ''))}</span>` : kad.fresh ? `<span class="bnp-kad-new" title="${esc(`Another tab saw new ones come (${fmtNstS(kad.fresh)} NST): Refresh to see them`)}">New ones: Refresh</span>` : '';
+    const me = (() => {   // (you: your trophy and count; your fed one, and how quick you were)
+      const tr = st.trophy && st.trophy.img && !st.trophy.none ? st.trophy : null, f = mine ? (st.feeds || {})[mine.kid] || {} : {}, quick = mine && f.at && f.found && f.at >= f.found && f.at - f.found < 3600000 ? f.at - f.found : null;
+      const tip = [tr ? `Your Kadoatery trophy: ${total.toLocaleString()} fed (from your lookup ${nstOf(tr.at).day === nstDay() ? `at ${fmtNst(tr.at)}` : `on ${fmtDay(tr.at)}`}, then counted as NE sees you feed)` : `${total.toLocaleString()} fed, as NE has counted. Open your own lookup once and NE takes your real count from its trophy`, total < 75 ? `${(75 - total).toLocaleString()} more for Mew!` : '', mine ? `You fed ${mine.name}${f.at ? ` at ${fmtNstS(f.at)} NST` : ''}.${f.found ? ` NE found the restock (RF) that brought it at ${fmtNstS(f.found)} NST${quick != null ? `: you took ${kadDur(quick)}` : ''}.` : ''} You can feed another once it goes home${mineW ? ` (its next restock: about ${fmtNst(mineW.mid)})` : ''}.` : ''].filter(Boolean).join('\n');
+      return `<span class="bnp-kad-troph${tr ? ' is-trophy' : ''}" title="${esc(tip)}">${tr ? `<img src="${esc(tr.img)}" alt="Your Kadoatery trophy" width="40" height="40">` : `<img src="${esc(`${NPI}neoboards/avatars/kadoatery.gif`)}" alt="" width="34" height="34">`}<b>${total.toLocaleString()}</b>${mine ? '' : '<span>fed</span>'}${mine ? `<span class="bnp-kad-cur">${esc(mine.name)}${quick != null ? ` · <b>${esc(kadDur(quick))}</b>` : f.at ? ` · ${esc(fmtNstS(f.at))}` : ''}</span>` : ''}</span>`;
+    })();
+    const mainTip = main && main.waiting ? `The main (${main.n}) has just come and is hungry: its clock starts when they’re fed, its next window about 28 minutes after` : w ? `The main (${main.n} cages): its next window ${fmtNstS(w.mid)} to ${fmtNstS(w.mid + KAD_WIN)} NST${pm(w)}${w.k ? `, after waiting ${w.k * 7} minutes` : ''}. If it doesn’t come, every 7 minutes after${main.board ? `. From the Kadoatery topic on the Neoboards (posted ${fmtNst(main.board)} NST)` : w.rough ? '. Rough: seen between two looks, not as it came' : ''}` : 'Not timed yet: catch a restock here (new hungry ones), let Auto refresh look, or set the main’s minute under ⚙';
+    card.innerHTML = `<div class="bnp-kad-bar">
+        <span class="bnp-kad-grp">
+          <span class="bnp-kad-main" title="${esc(mainTip)}"><span class="bnp-kad-lab">Main</span>${w ? `<b class="bnp-kad-when">${esc(fmtNstS(w.mid))}</b>${pm(w) ? `<small class="bnp-kad-pm">${esc(pm(w).trim())}</small>` : ''}${cd(w)}${w.k ? `<small class="bnp-kad-pend" title="${esc(`No restock in its window ${w.k === 1 ? 'once' : `${w.k} times`}: each time it waits 7 minutes more`)}">pend ${w.k}</small>` : ''}${main.board ? `<span class="bnp-kad-src">${KAD_BOARD_IC}</span>` : ''}` : main && main.waiting ? '<span class="bnp-kad-when is-sad">hungry now</span>' : '<span class="bnp-kad-when is-none">not timed yet</span>'}</span>
+          ${minis.length ? `<span class="bnp-kad-minis" title="${esc(mw.map(({ g, x }) => `Mini of ${g.n} (${g.cells.map((c) => c.name).join(', ')})${g.waiting ? ': hungry now (its clock starts when they’re fed)' : x ? `: ${fmtNstS(x.mid)} NST${pm(x)}${x.mid > now ? ` (in ${fmtCount(x.mid - now)})` : x.end > now ? ' (open now)' : ''}${x.k ? `, after waiting ${x.k * 7} minutes` : ''}${g.board ? ', from the boards' : g.late ? ', fed late' : ''}` : ': its time not known yet'}`).join('\n'))}"><span class="bnp-kad-lab">Minis</span><span class="bnp-kad-chip"><b>${soon.g.n}</b>${soon.x ? `<span>${pm(soon.x) ? '~' : ''}${esc(fmtNst(soon.x.mid).replace(/ (am|pm)$/, ''))}</span>` : (soon.g.waiting ? '<span class="is-sad">hungry</span>' : '<span>?</span>')}</span>${minis.length > 1 ? `<small class="bnp-kad-more">+${minis.length - 1}</small>` : ''}</span>` : ''}
+          ${newChip}
+        </span>
+        ${me}
+        <span class="bnp-kad-tools"><button type="button" class="bnp-kad-ib${kad.fresh ? ' is-hot' : ''}${au.on ? ' is-auto' : ''}${kadCheckRun.busy ? ' is-looking' : ''}" data-kad="reload"${au.on ? ` data-kadring="${lastLook}|${nx}"` : ''} title="${esc(au.on ? `Look again now. Auto refresh: next look ${nx > now ? fmtNstS(nx) : 'any moment'}${au.smart ? '' : ` (every ${au.mins} minutes)`}; the ring fills till then` : 'Look again now (this page, once)')}" aria-label="Refresh">${SVG_REFRESH}</button><button type="button" class="bnp-kad-ib" data-kad="drop" aria-expanded="${kad.drop}" title="Times, your count, feeding and settings" aria-label="Times and settings">${KAD_COG}</button></span>
+      </div>
+      <div class="bnp-kad-drop"${kad.drop ? '' : ' hidden'} role="dialog" aria-label="The Kadoatery: times and settings">
+        <div class="bnp-kad-dhead"><b>Restocks and feeding</b><button type="button" class="bnp-kad-ib" data-kad="close" title="Close" aria-label="Close">×</button></div>
+        <section class="bnp-kad-sec is-first"><h5>Restock times</h5>
+        ${w ? `<p class="bnp-kad-then">The main’s next window: ${esc(fmtNstS(w.mid))} to ${esc(fmtNstS(w.mid + KAD_WIN))} NST${esc(pm(w))}.${w.k ? ` It has waited ${w.k * 7} minutes.` : ''} If it doesn’t come, every 7 minutes after: ${[1, 2, 3].map((i) => esc(fmtNst(w.mid + i * KAD_PEND).replace(/ (am|pm)$/, ''))).join(' · ')}${first !== KAD_BASE ? ` <small>(its first window at ${first / 60000} minutes: ${st.first === 'learn' ? `what NE has seen ${u.of} of ${u.n} times` : 'as you chose'})</small>` : ''}</p>`
+          : `<p class="bnp-kad-then">${main && main.waiting ? 'The main has just come: its clock starts when they’re fed, and its next window is about 28 minutes after that.' : `${main && main.drop ? 'NE saw this main come while you were away, not when.' : 'NE hasn’t seen a restock come yet.'} Catch the next one here (new hungry Kadoaties), turn on Auto refresh’s Smart below, or set the main’s minute.`}</p>`}
+        ${kadRow('The main came at', `<input type="text" class="bnp-kad-min" data-kadset placeholder=":16" maxlength="6" value=""><button type="button" class="bnp-pillbtn" data-kad="set">Set</button>${st.set ? `<button type="button" class="bnp-pillbtn is-quiet" data-kad="unset" title="Forget it: only what NE sees">Forget ${esc(fmtNst(st.set.at))}</button>` : ''}`)}
+        ${kadRow('Its first window', kadSeg('data-kad="first"', st.first, [['learn', `As NE sees it${u.n >= 3 ? ` (${(KAD_BASE + u.k * KAD_PEND) / 60000} min)` : ''}`], ['28', '28 min'], ['35', '35 min']]))}
+        ${kadBoardHtml(st)}
+        <p class="bnp-kad-how"><b>How it works:</b> a Kadoatie asks again about 28 minutes after it was fed, within a 90-second window. If it doesn’t come then, it waits 7 minutes more (a pend), and again. The main is the biggest group fed together; minis are smaller ones fed at other times, each on its own clock. Auto refresh looks closely only in those windows (a little wider when NE knows a time only roughly), and not between them. You can feed one at a time: while yours is still there, it watches only that one’s window, as the next you can feed comes when it’s replaced.</p>
+        ${st.drops.filter((d) => d.at).length ? `<div class="bnp-kad-hist"><b>Restocks NE has seen</b>${st.drops.filter((d) => d.at).slice(-8).reverse().map((d) => `<span>${esc(fmtNstS(d.at))}${d.err ? ` ± ${Math.round(d.err / 1000) >= 60 ? `${Math.round(d.err / 60000)} min` : `${Math.round(d.err / 1000)} s`}` : ''} · ${d.n >= 8 ? `main (${d.n})` : `mini (${d.n})`}</span>`).join('')}</div>` : ''}
+        </section>
+        ${kadAutoHtml(st)}
+        ${kadPrefsHtml(st)}
+        <section class="bnp-kad-sec"><h5>Your count</h5>
+        <p class="bnp-kad-prog"><img src="${esc(`${NPI}neoboards/avatars/kadoatery.gif`)}" alt="The Mew! avatar" title="The Kadoatery's avatar, Mew!" width="50" height="50"><span>${own ? 'Mew! is yours' : total >= 75 ? `<b>${total.toLocaleString()}</b> fed: view <a href="/userlookup.phtml?place=9999&amp;user=${encodeURIComponent(nclMe() || '')}">your lookup</a> for Mew!` : `<b>${total.toLocaleString()}</b> fed · ${(75 - total).toLocaleString()} more for Mew!`}${st.total == null ? ' <small>(counted since NE started)</small>' : ''}</span></p>
+        ${kadRow('You’ve fed in all', `<input type="text" class="bnp-kad-min" data-kadtotal inputmode="numeric" maxlength="7" value="${st.total != null ? st.total : ''}" placeholder="${(st.fed || 0).toLocaleString()}"><button type="button" class="bnp-pillbtn" data-kad="total">Keep</button>`, 'Your lookup’s Kadoatery trophy has the real number. From then on, NE adds each one it sees you feed')}
+        </section>
+      </div>`;
+    kadTick(card);
+  }
+  function kadLookupRead() {   // (your own lookup: its Kadoatery trophy, and the number with it, kept as your count. Only yours: its user= is exactly your name)
+    if (FRAME || S.features.kadHelp === false || location.pathname !== '/userlookup.phtml') return;
+    const me = String(nclMe() || '').trim().toLowerCase(), who = String(new URLSearchParams(location.search).get('user') || '').trim().toLowerCase();
+    if (!me || who !== me) return;   // (someone else's lookup, a name that only starts like yours, or no name: nothing taken)
+    const box = document.getElementById('usertrophies') || document;
+    const cells = [...box.querySelectorAll('td.trophy_cell, #usertrophies td')].filter((td) => !td.querySelector('td'));
+    const said = (td) => `${td.textContent} ${[...td.querySelectorAll('img, a')].map((x) => `${x.getAttribute('src') || ''} ${x.getAttribute('alt') || ''} ${x.getAttribute('title') || ''}`).join(' ')}`;
+    const cell = cells.find((td) => /kadoat/i.test(said(td)));
+    const st = kadGet();
+    if (!cell) { st.trophy = { img: '', n: null, at: Date.now(), none: true }; kadPut(st); return; }   // (none on your lookup yet)
+    const words = `${cell.textContent} ${[...cell.querySelectorAll('img')].map((x) => `${x.getAttribute('alt') || ''} ${x.getAttribute('title') || ''}`).join(' ')}`;
+    const nums = (words.match(/\d[\d,]*/g) || []).map((x) => Number(x.replace(/,/g, ''))).filter((n) => n > 0 && n < 1e7);
+    const img = cell.querySelector('img');
+    const fedM = /([\d,]+)\s*fed\b/i.exec(cell.textContent || '');   // ("Kadoatery (3 fed)")
+    st.trophy = { img: img ? new URL(img.getAttribute('src') || '', location.href).href : '', n: fedM ? Number(fedM[1].replace(/,/g, '')) : nums.length ? Math.max(...nums) : null, at: Date.now() };
+    if (st.trophy.n != null) st.total = st.trophy.n;   // (your real count, from now on added to as NE sees you feed)
+    kadPut(st);
+  }
+  const KAD_STOP = 2 * 3600e3;   // (away from Neopets this long: no more looks till you're back)
+  const kadDur = (ms) => { const x = Math.max(0, Math.round(ms / 1000)); return x < 60 ? `${x} s` : `${Math.floor(x / 60)} min${x % 60 ? ` ${x % 60} s` : ''}`; };
+  const kadEvery = (v) => (v === 'smart' ? 'Smart' : Number(v) >= 60 ? 'hour' : `${Number(v)} minutes`);
+  function kadTitleOn(td) {   // (the Kadoatery's title as NE's made-over pages have theirs: bigger, a sulking Kadoatie on its left, up in the room under the top bar)
+    const title = td && [...td.children].find((x) => x.tagName === 'STRONG' && /kadoatery/i.test(x.textContent));
+    if (!title || title.classList.contains('bnp-kad-title')) return title || null;
+    title.classList.add('bnp-kad-title');
+    title.insertAdjacentHTML('afterbegin', `<img class="bnp-kad-tic" src="${esc(KAD_TITLE_IC)}" alt="" width="50" height="50">`);
+    kadTitleFit();
+    window.addEventListener('resize', () => { clearTimeout(kadTitleFit.t); kadTitleFit.t = setTimeout(kadTitleFit, 150); });
+    try { document.fonts.ready.then(kadTitleFit); } catch (_) { /* */ }
+    return title;
+  }
+  function kadFeedPage() {   // (Neopets' page after feeding one: noted (yours, when; its count kept as yours), made over to match the Kadoatery, and back to it after a success unless you stay)
+    if (FRAME || S.features.kadHelp === false || location.pathname !== '/games/kadoatery/feed_kadoatie.phtml') return;
+    const kid = Number(new URLSearchParams(location.search).get('kad_id')) || 0, now = Date.now(), st = kadGet();
+    if (kid && !(st.feedTry && st.feedTry.kid === kid && now - st.feedTry.at < 15000)) st.feedTry = { kid, at: now };
+    const td = document.querySelector('td.content'), box = td && [...td.querySelectorAll('div[align="center"]')].find((d) => !d.closest('[data-bnp]'));
+    const words = (box ? box.textContent : (td || document.body).textContent || '').replace(/\s+/g, ' ');
+    const ok = /very happy Kadoatie|thanks for doing a good deed/i.test(words), cnt = /fed\s+([\d,]+)\s+Kadoaties?\s+in all/i.exec(words);
+    if (ok && kid) {   // (it worked: yours, counted once; its clock starts now)
+      const r = st.seen[kid] || (st.seen[kid] = [now, 0, 0, 0]);
+      if (!r[2] || r[2] > now) r[2] = now;
+      if (!r[3]) { r[3] = 1; if (!st.fedIds.includes(kid)) { st.fedIds = [...st.fedIds, kid].slice(-200); st.fed = (st.fed || 0) + 1; } st.feeds = Object.fromEntries([...Object.entries(st.feeds || {}), [kid, { at: st.feedTry && st.feedTry.kid === kid ? st.feedTry.at : now, found: r[1] ? r[0] : 0 }]].slice(-20)); }
+    }
+    if (cnt) st.total = Number(cnt[1].replace(/,/g, ''));   // (Neopets' own count: yours from now on)
+    kadPut(st);
+    if (!td || !box) return;
+    styles();
+    document.documentElement.classList.add('bnp-kad-on');
+    kadTitleOn(td);
+    const frame = document.createElement('div');   // (the same frame as the cages')
+    frame.className = 'bnp-kad-box bnp-kad-res';
+    frame.setAttribute('data-bnp', 'kadres');
+    box.before(frame);
+    try { remAccent(frame); } catch (_) { /* */ }
+    const lines = [[]];   // (Neopets' words, line by line as its <br>s have them)
+    for (const n of [...box.childNodes]) { if (n.nodeName === 'BR') { if (lines[lines.length - 1].length) lines.push([]); continue; } if (n.nodeType === 3 && !n.textContent.trim()) continue; lines[lines.length - 1].push(n); }
+    const text = (l) => l.map((n) => n.textContent).join('').replace(/\s+/g, ' ').trim();
+    const head = document.createElement('div');
+    head.className = 'bnp-kad-resh';
+    const body = document.createElement('div');
+    body.className = 'bnp-kad-resb';
+    frame.append(head, body);
+    const used = new Set(), find = (re) => lines.find((l) => !used.has(l) && re.test(text(l)));
+    const put = (l, cls, into = body, tag = 'p') => { if (!l) return null; used.add(l); const el = document.createElement(tag); el.className = cls; el.append(...l); into.append(el); return el; };
+    const short = () => lines.find((l) => !used.has(l) && l.length === 1 && l[0].nodeName === 'STRONG' && text(l).length <= 24), hl = ok ? find(/^hoorah/i) || short() : short();   // (its own first word, "Hoorah!" or "Oops!", as the header)
+    if (hl) { used.add(hl); head.append(...hl); } else head.textContent = ok ? 'Hoorah!' : 'The Kadoatery';
+    if (ok) {
+      const pic = lines.find((l) => !used.has(l) && l.some((n) => n.nodeName === 'IMG')), mew = find(/^\*?mew!?\*?$/i);
+      const row = document.createElement('div');
+      row.className = 'bnp-kad-respic';
+      body.append(row);
+      if (pic) { used.add(pic); row.append(...pic); }
+      if (mew) put(mew, 'bnp-kad-resmew', row, 'span');
+      put(find(/very happy Kadoatie/i), 'bnp-kad-resmsg');
+      put(find(/good deed/i), 'bnp-kad-resmsg is-thanks');
+      const cl = find(/in all/i);
+      if (cl) { used.add(cl); const h = document.createElement('span'); h.hidden = true; h.className = 'bnp-kad-thx'; h.append(...cl); frame.append(h); }   // (Neopets' count sentence: kept, out of sight; said below)
+      const s2 = kadGet(), n = s2.total != null ? s2.total : s2.fed || 0, tr = s2.trophy && s2.trophy.img && !s2.trophy.none ? s2.trophy : null, f = kid ? (s2.feeds || {})[kid] || {} : {};
+      const quick = f.at && f.found && f.at >= f.found && f.at - f.found < 3600000 ? f.at - f.found : null;
+      const own = (() => { try { const o = avOwn(); return !!(o && o.list.some((x) => /^kadoatery\.gif$/i.test(String(x[0] || '')))); } catch (_) { return false; } })();
+      const you = document.createElement('div');
+      you.className = 'bnp-kad-resyou';
+      you.innerHTML = `<span class="bnp-kad-troph${tr ? ' is-trophy' : ''}">${tr ? `<img src="${esc(tr.img)}" alt="Your Kadoatery trophy" width="40" height="40">` : `<img src="${esc(`${NPI}neoboards/avatars/kadoatery.gif`)}" alt="" width="34" height="34">`}<b>${n.toLocaleString()}</b><span>fed in all</span></span><span class="bnp-kad-resnote">${own ? 'Mew! is yours' : n >= 75 ? 'View your lookup for Mew!' : `${(75 - n).toLocaleString()} more for Mew!`}${quick != null ? ` · fed <b>${esc(kadDur(quick))}</b> after the RF` : ''}</span>`;
+      body.append(you);
+    }
+    for (const l of lines) if (!used.has(l) && !l.some((n) => n.nodeName === 'CENTER' || n.nodeName === 'FORM' || (n.querySelector && n.querySelector('form')))) put(l, 'bnp-kad-resmsg');   // (anything else Neopets says, as it is)
+    const back = lines.find((l) => !used.has(l) && l.some((n) => n.nodeName === 'CENTER' || n.nodeName === 'FORM' || (n.querySelector && n.querySelector('form'))));
+    const foot = document.createElement('div');
+    foot.className = 'bnp-kad-resback';
+    body.append(foot);
+    if (back) { used.add(back); foot.append(...back); }
+    box.hidden = true;   // (Neopets' own box, emptied into the frame: kept, out of sight)
+    const brs = [];
+    for (let x = frame.previousSibling; x && x.nodeName !== 'STRONG'; x = x.previousSibling) if (x.nodeName === 'BR') brs.push(x);
+    brs.forEach((x) => { x.hidden = true; x.classList.add('bnp-kad-thx'); });
+    if (!ok || kadPrefs(kadGet()).back === 'stay') return;
+    const to = (() => { const fm = frame.querySelector('form[action*="kadoatery"]'); return fm ? fm.getAttribute('action') : '/games/kadoatery/index.phtml'; })();
+    const go = document.createElement('span');
+    go.className = 'bnp-kad-resgo';
+    go.innerHTML = 'Back in <b data-kadgo>3</b> s <button type="button" class="bnp-pillbtn is-quiet is-small" data-kadstay>Stay here</button>';
+    foot.append(go);
+    let left = 3;
+    const t = setInterval(() => {
+      left -= 1;
+      const b2 = go.querySelector('[data-kadgo]');
+      if (b2) b2.textContent = String(Math.max(0, left));
+      if (left <= 0) { clearInterval(t); try { location.replace(new URL(to, location.href).href); } catch (_) { location.href = '/games/kadoatery/index.phtml'; } }
+    }, 1000);
+    go.querySelector('[data-kadstay]').addEventListener('click', () => { clearInterval(t); go.textContent = 'Staying here'; });
+  }
+  function kadCheckBoot() {   // (Auto refresh: a Kadoatery tab looks for itself, out of sight too, and the others know it's open; with none open, a Neopets tab in front looks for all)
+    if (FRAME || !MAIN_HOST || S.features.kadHelp === false) return;
+    if (kad.paint) {
+      try { if (navigator.locks && navigator.locks.request) navigator.locks.request('bnp-kadtab', { mode: 'shared' }, () => new Promise(() => {})).catch(() => {}); } catch (_) { /* */ }   // (held while this tab is open: the others ask the browser)
+      document.addEventListener('visibilitychange', () => { if (document.hidden) return; const s0 = kadGet(); s0.seenAt = Date.now(); kadPut(s0); kadCheckRun(); });   // (back on it: seen; a look that was due, now)
+    }
+    addEventListener('bnp-back', () => kadCheckRun());
+    const loop = async () => {   // (each tab: wakes when the next look is due (30 s at most), on time: a worker's timer where it may look, the page's own elsewhere)
+      for (;;) {
+        const st = kadGet(), on = kadAuto(kadPrefs(st)).on, wait = on ? Math.max(1000, Math.min(30000, (Number(st.chkNext) || 0) - Date.now() + 300)) : 30000;
+        await (on && (kad.paint || !document.hidden) ? bmSleep(wait) : new Promise((r) => setTimeout(r, wait)));
+        try { await kadCheckRun(); } catch (e) { report(e); }
+      }
+    };
+    setTimeout(loop, 6000 + Math.random() * 9000);
+  }
+  async function kadTabOpen() {   // (→ whether a Kadoatery tab is open in this browser: it looks for itself then)
+    try { if (navigator.locks && navigator.locks.query) { const q = await navigator.locks.query(); return (q.held || []).some((l) => l.name === 'bnp-kadtab'); } } catch (_) { /* */ }
+    return false;
+  }
+  async function kadCheckRun() {   // (one look, when it's due: the Kadoatery read unseen in a frame of NE's own, as a visit would; what's new noted; on its own tab, its cages up to date. When the next is: kadNextLook)
+    const st = kadGet(), a = kadAuto(kadPrefs(st));
+    if (!a.on || kadCheckRun.busy || actIdle() > KAD_STOP) return;
+    const kadTab = !!kad.paint && KAD_PATH.test(location.pathname);
+    if (!kadTab && (document.hidden || (await kadTabOpen()))) return;   // (a Kadoatery tab is open: it looks; else only a tab in front)
+    if (Date.now() < (Number(st.chkNext) || 0)) return;
+    if ((await tabsOnce('kadcheck', 5000)) === false) return;   // (another tab is looking this moment; the next one's due time, set below, keeps the rest away)
+    const s1 = kadGet();
+    if (Date.now() < (Number(s1.chkNext) || 0)) return;
+    s1.chkNext = Math.max(Date.now() + 5000, kadNextLook(s1, Date.now()));   // (the next, claimed before this one goes; set again after it, from what it saw)
+    s1.chkWhy = kadNextLook.why;
+    s1.looks = [...(s1.looks || []), Date.now()].slice(-120);
+    kadPut(s1);
+    kadCheckRun.busy = true;
+    { const rb = document.querySelector('[data-bnp="kad"] [data-kad="reload"]'); if (rb) rb.classList.add('is-looking'); }   // (Refresh spins while it looks; the bar isn't drawn again till it's done)
+    const page = '/games/kadoatery/index.phtml';
+    try {
+      const html = await wwwFetch(page, { page: 1 }, page).then((r) => r.text());
+      const doc = new DOMParser().parseFromString(html, 'text/html'), cells = kadCells(doc);
+      if (!cells.length) return;   // (signed out, or not the page: nothing noted)
+      kadNote(cells, Date.now(), 'check');
+      const info = kadNote.last || {}, s2 = kadGet();
+      s2.chk = { at: Date.now(), n: info.n || 0, sad: info.sad || 0 };
+      if (info.looked && info.sad) s2.caught = Date.now();   // (a restock caught: one more look a minute on)
+      if (kadTab && !document.hidden) s2.seenAt = Date.now();
+      kadPut(s2);
+      if (kadTab) {
+        const swapped = kadSwap(doc);
+        if (info.looked && info.sad) { if (swapped) kad.came = Date.now(); else kad.fresh = Date.now(); }
+        kadCheckRun.busy = false;
+        kadRepaint();
+        setTimeout(() => kadBoardRead(false), 4000 + Math.random() * 4000);   // (the boards too, when it's been a while)
+      }
+      const s3 = kadGet();
+      s3.chkNext = kadNextLook(s3);
+      s3.chkWhy = kadNextLook.why;
+      kadPut(s3);
+    } catch (_) { /* (not this time: the next one as planned) */ }
+    finally { kadCheckRun.busy = false; try { wwwShut(page); } catch (_) { /* */ } kadRepaint(); }
+  }
+  // The boards' times: the Kadoatery topic in Site Games, where players say when the main and the minis came and when they're next due
+  const KAD_BOARD = 23;   // (Site Games)
+  const KAD_MON = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+  const kadBoardGet = () => { const v = get('kadboard', null); return v && typeof v === 'object' ? v : {}; };
+  const kadBoardPut = (v) => set('kadboard', v);
+  function kadRepaint() { const card = document.querySelector('[data-bnp="kad"]'), a = document.activeElement; if (!kad.paint || !card || (a && a.matches && a.matches('input') && card.contains(a))) return; kad.paint(); }   // (never while you're typing in it)
+  function kadBoardWhen(t, now = Date.now()) {   // ("2 Nov 2026 - 4:26 am", a post's own time, NST → the moment)
+    const m = /(\d{1,2})\s+([a-z]{3})[a-z]*\.?,?\s+(\d{4})\D+(\d{1,2}):(\d{2})\s*([ap])\.?\s*m/i.exec(t || ''), mo = m ? KAD_MON[m[2].toLowerCase()] : null;
+    if (mo == null) return null;
+    const n = nstOf(now), [ty, tm, td] = n.day.split('-').map(Number), days = Math.round((Date.UTC(+m[3], mo, +m[1]) - Date.UTC(ty, tm - 1, td)) / 86400000);
+    const h = (+m[4] % 12) + (m[6].toLowerCase() === 'p' ? 12 : 0), at = now + (days * 86400 + h * 3600 + +m[5] * 60 - n.sec) * 1000;
+    return at - (at % 1000);
+  }
+  function kadTimeToks(l) {   // (a line's times, in order: whole ones (4:23, 4:23:19, with am/pm or not) and minutes alone (:24, or a list after @ or pend: 47 54 01))
+    const toks = [];
+    let m;
+    const full = /(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*([ap])\.?\s*m\b\.?)?/gi;
+    while ((m = full.exec(l))) if (+m[1] <= 24 && +m[2] < 60 && (!m[3] || +m[3] < 60)) toks.push({ i: m.index, k: 'full', h: +m[1], mi: +m[2], s: +(m[3] || 0), ap: m[4] ? m[4].toLowerCase() : '' });
+    const mins = /(^|[^\d:]):(\d{2})(?![\d:])/g;
+    while ((m = mins.exec(l))) if (+m[2] < 60) toks.push({ i: m.index + m[1].length, k: 'min', mi: +m[2] });
+    const list = /(?:@|\bpend\w*|\bpnd\b)\s*(?:(?:rf|rs)\b)?\s*@?\s*((?:\d{1,2}(?![\d:])[\s,/|&-]*){2,})/gi;
+    while ((m = list.exec(l))) { const at = m.index + m[0].length - m[1].length; let k = 0; for (const x of m[1].matchAll(/\d{1,2}/g)) if (+x[0] < 60) toks.push({ i: at + x.index + (k++ * 0), k: 'min', mi: +x[0] }); }
+    return toks.sort((x, y) => x.i - y.i);
+  }
+  function kadAbs(t, P, want) {   // (a time on a post → the moment it means, near the post's own: a restock (rf) just before it, a window just after; the day and half of the day that fit)
+    const b = nstOf(P), day0 = P - b.sec * 1000;
+    const hs = t.k === 'min' ? [b.h - 1, b.h, b.h + 1, b.h + 2] : t.ap ? [(t.h % 12) + (t.ap === 'p' ? 12 : 0)] : t.h === 12 ? [0, 12] : t.h > 12 ? [t.h] : [t.h, t.h + 12];
+    const c = [];
+    for (const h of hs) for (const d of [-1, 0, 1]) c.push(day0 + (d * 86400 + h * 3600 + t.mi * 60 + (t.s || 0)) * 1000);
+    const ok = want === 'rf' ? c.filter((x) => x <= P + 3 * 60000 && P - x < 6 * 3600e3) : c.filter((x) => x >= P - 20 * 60000 && x - P < 6 * 3600e3);
+    return ok.length ? (want === 'rf' ? Math.max(...ok) : Math.min(...ok)) : null;
+  }
+  function kadBoardFacts(lines, P) {   // (one post: each group's restock (rf) and next window (w0) by its name and count, "main (16)", "Mini 1 (14)", "mini (3)"; and a "last rf" said on its own)
+    const recs = [];
+    let last = null, cur = null;
+    for (const raw of lines) {
+      const l = String(raw).toLowerCase();
+      const lab = /\b(main|mini)s?\b\s*#?\s*(\d)?(?![\d:])[^()\n]{0,14}?(?:\((\d{1,2})\))?/.exec(l), toks = kadTimeToks(l), wk = /\bpend|\bnext\b|\bnxt\b|\bwindows?\b/.exec(l);
+      if (lab) { cur = { g: lab[1], k: Number(lab[2]) || 0, n: Number(lab[3]) || null, rf: null, w0: null }; recs.push(cur); }
+      if (!toks.length) continue;
+      if (lab || (wk && cur)) {   // (a group's line, or a "Next …" line under one)
+        const cut = wk ? wk.index : -1, before = cut >= 0 ? toks.filter((t) => t.i < cut) : toks;
+        let wins = cut >= 0 ? toks.filter((t) => t.i > cut) : [];
+        const f = lab ? before.find((t) => t.k === 'full') : null;
+        if (f && !cur.rf) { cur.rf = kadAbs(f, P, 'rf'); if (cut < 0) wins = before.filter((t) => t.i > f.i); }   // ("@ 8:17:30 … 8:52:30am / :59": when it came, then its windows)
+        if (wins.length && !cur.w0) cur.w0 = kadAbs(wins[0], P, 'win');
+        continue;
+      }
+      if (/\b(?:rf|rs|refresh\w*|restock\w*|reset)\b/.test(l)) { const v = kadAbs(toks.find((t) => t.k === 'full') || toks[0], P, 'rf'); if (v && (!last || v > last)) last = v; }   // ("last rf @ 5:12:31 AM NST")
+    }
+    const timed = recs.filter((r) => r.rf || r.w0);
+    const main = timed.filter((r) => r.g === 'main').sort((x, y) => (y.n || 0) - (x.n || 0))[0] || timed.filter((r) => (r.n || 0) >= 8).sort((x, y) => y.n - x.n)[0] || null;   // (the biggest called main; else the biggest group)
+    return { main, minis: timed.filter((r) => r !== main), last, any: !!(timed.length || last) };
+  }
+  function kadBoardPosts(doc, now = Date.now()) {   // (a topic page's posts, oldest first: each one's time and its lines, quotes left out)
+    const out = [];
+    for (const m of doc.querySelectorAll('.boardPostMessage')) {
+      const li = m.closest('li') || m.parentElement, h6 = li && li.querySelector('h6'), at = h6 ? kadBoardWhen(h6.textContent, now) : null;
+      if (!at) continue;
+      const c = m.cloneNode(true);
+      c.querySelectorAll('blockquote, .quote, script, style').forEach((x) => x.remove());
+      c.querySelectorAll('br').forEach((x) => x.replaceWith('\n'));
+      c.querySelectorAll('p, div, center, li').forEach((x) => x.append('\n'));
+      out.push({ at, lines: (c.textContent || '').split('\n').map((x) => x.replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 80) });
+    }
+    return out.sort((x, y) => x.at - y.at);
+  }
+  function kadBoardSum(posts, now = Date.now()) {   // (the newest word on the main (from the last 3 hours) and the minis said with it; the newest "last rf")
+    let main = null, last = null, newest = 0, post = 0;
+    const minis = [], had = new Set();
+    for (const x of [...posts].sort((p1, p2) => p2.at - p1.at)) {
+      if (now - x.at > 3 * 3600e3) break;
+      const f = kadBoardFacts(x.lines, x.at);
+      if (!f.any) continue;
+      if (!newest) newest = x.at;
+      if (f.last && (!last || f.last > last)) last = f.last;
+      if (!main && f.main) { main = { rf: f.main.rf, w0: f.main.w0, n: f.main.n }; post = x.at; }
+      if (now - x.at < 90 * 60000) for (const r of f.minis) { const k = `${r.k}|${r.n}`; if (!had.has(k) && minis.length < 6) { had.add(k); minis.push({ rf: r.rf, w0: r.w0, n: r.n, k: r.k, post: x.at }); } }   // (each mini as said most lately)
+    }
+    return { main, minis, last, newest, post };
+  }
+  function kadBoardMain(st, now = Date.now()) {   // (the boards' word on the main, as a restock time NE's windows count from; none when off, unknown, or over 3 hours old)
+    if ((kadPrefs(st).board || 'auto') === 'off') return null;
+    const sum = kadBoardGet().sum || {}, m = sum.main;
+    if (!m || now - (sum.post || 0) > 3 * 3600e3) return null;
+    const at = m.w0 ? m.w0 - kadFirst(st) : m.rf;   // (its next window, said: NE's first window counted back from it, so they agree)
+    return at ? { at, err: m.w0 ? 0 : 30000, post: sum.post } : null;
+  }
+  function kadBoardMinis(st, now = Date.now()) {   // (the boards' minis, each as a restock time NE's windows count from)
+    if ((kadPrefs(st).board || 'auto') === 'off') return [];
+    return ((kadBoardGet().sum || {}).minis || []).filter((m) => m.n && (m.w0 || m.rf) && now - (m.post || 0) < 3 * 3600e3).map((m) => ({ n: m.n, at: m.w0 ? m.w0 - kadFirst(st) : m.rf, err: m.w0 ? 0 : 30000, post: m.post }));
+  }
+  function kadBoardRows(doc) {   // (a board's topics: id, title, its smilies' pictures, replies, the last page's next=, how long since the last post)
+    return [...doc.querySelectorAll('.boardTopicTitle')].map((t) => {
+      const li = t.closest('li') || t.parentElement, a = t.querySelector('a[href*="topic.phtml?topic="]'), id = Number((/topic=(\d+)/.exec((a && a.getAttribute('href')) || '') || [])[1]) || 0;
+      const nexts = [...li.querySelectorAll('a[href*="next="]')].map((x) => Number((/next=(\d+)/.exec(x.getAttribute('href')) || [])[1]) || 0);
+      const ago = /(\d+)\s*(sec|min|hour|day|week)/i.exec(((li.querySelector('.last') || {}).textContent || '')), unit = ago ? { sec: 1e3, min: 6e4, hour: 3.6e6, day: 8.64e7, week: 6.048e8 }[ago[2].toLowerCase()] : 0;
+      return { id, title: t.textContent.replace(/\s+/g, ' ').trim(), pics: [...t.querySelectorAll('img')].map((i) => (i.getAttribute('src') || '').split('/').pop().toLowerCase()), replies: Number(((li.querySelector('.replies') || {}).textContent || '').replace(/\D/g, '')) || 0, page: Math.max(1, ...nexts), ago: ago ? +ago[1] * unit : /just now/i.test(li.textContent) ? 0 : null };
+    }).filter((r) => r.id);
+  }
+  function kadBoardScore(r) {   // (how much a topic looks like the Kadoatery's times: its smilies, its words, alive lately)
+    const pics = r.pics.filter((x) => /kadoat/.test(x)).length;
+    let k = Math.min(2, pics) * 5;
+    if (/kadoat|\bkads?\b/i.test(r.title)) k += 6;
+    if (/refresh|\brf\b|\brs\b|restock/i.test(r.title)) k += 3;
+    if (/\bmains?\b|\bminis?\b|\bpend/i.test(r.title)) k += 2;
+    if (/\btimes?\b|\btimer|\btrack|\bclock/i.test(r.title)) k += 1;
+    if (r.replies >= 20) k += 1;
+    if (r.ago != null && r.ago < 3 * 3600e3) k += 2;
+    if (/avatar|help|question|\?/i.test(r.title) && !pics) k -= 3;   // (a question about it, not its times)
+    return k;
+  }
+  async function kadTopicGet(id, next) {   // (one page of a topic, read in a frame of NE's own, as a visit would)
+    const page = `/neoboards/topic.phtml?topic=${id}${next > 1 ? `&next=${next}` : ''}`;
+    try { return new DOMParser().parseFromString(await wwwFetch(page, { page: 1 }, page).then((r) => r.text()), 'text/html'); } finally { try { wwwShut(page); } catch (_) { /* */ } }
+  }
+  const kadTopicTop = (doc, id, page) => Math.max(page, ...[...doc.querySelectorAll('a[href*="topic.phtml"][href*="next="]')].filter((a) => (a.getAttribute('href') || '').includes(`topic=${id}`)).map((a) => Number((/next=(\d+)/.exec(a.getAttribute('href')) || [])[1]) || 0));
+  const kadTopicTitle = (doc) => ((doc.querySelector('.topicTitle') || {}).textContent || '').replace(/^\s*topic:\s*/i, '').replace(/\s+/g, ' ').trim();
+  const kadNap = () => bmSleep(1600 + Math.random() * 2400);   // (a person's moment between pages)
+  async function kadBoardFind() {   // (the Kadoatery topic in Site Games: its first page read; the best-scored topics (two at most) checked by their newest posts having times)
+    const list = `/neoboards/boardlist.phtml?board=${KAD_BOARD}`;
+    let doc;
+    try { doc = new DOMParser().parseFromString(await wwwFetch(list, { page: 1 }, list).then((r) => r.text()), 'text/html'); } finally { try { wwwShut(list); } catch (_) { /* */ } }
+    const rows = kadBoardRows(doc).map((r) => ({ ...r, score: kadBoardScore(r) })).filter((r) => r.score >= 5).sort((x, y) => y.score - x.score || (x.ago ?? 9e15) - (y.ago ?? 9e15));
+    for (const r of rows.slice(0, 2)) {
+      await kadNap();
+      const d2 = await kadTopicGet(r.id, r.page), posts = kadBoardPosts(d2), timed = posts.filter((x) => kadBoardFacts(x.lines, x.at).any).length;
+      if (timed >= 2 || (timed >= 1 && r.score >= 9)) return { id: r.id, title: kadTopicTitle(d2) || r.title, page: kadTopicTop(d2, r.id, r.page), doc: d2 };
+    }
+    return null;
+  }
+  async function kadBoardRead(force) {   // (the boards' newest times: the topic found (or yours), its last page read. Never twice in 10 minutes unless you ask; one tab at a time; not while you're away)
+    if (FRAME || !MAIN_HOST || S.features.kadHelp === false || kadBoardRead.busy) return;
+    const p = kadPrefs(), mode = p.board || 'auto', now = Date.now(), kb = kadBoardGet();
+    if (mode === 'off' || actIdle() > KAD_STOP || (mode === 'topic' && !Number(p.topic))) return;
+    if (!force && now - (kb.read || 0) < 10 * 60000) return;
+    if ((await tabsOnce('kadboard', 60000)) === false) return;
+    kadBoardRead.busy = true;
+    kadRepaint();
+    try {
+      let id = mode === 'topic' ? Number(p.topic) : kb.id || 0, page = kb.id === id ? kb.page || 1 : 1, title = kb.id === id ? kb.title || '' : '', doc = null;
+      const stale = !kb.sum || !kb.sum.newest || now - kb.sum.newest > 3 * 3600e3;
+      if (mode === 'auto' && (!id || now - (kb.found || 0) > 12 * 3600e3 || (stale && now - (kb.found || 0) > 30 * 60000))) {   // (none yet, or not looked for in a while, or its times have gone quiet: maybe a new one)
+        const f = await kadBoardFind();
+        kb.found = now;
+        if (f) { id = f.id; page = f.page; title = f.title; doc = f.doc; }
+        else if (!id) { Object.assign(kb, { read: now, none: true, sum: null }); kadBoardPut(kb); return; }
+      }
+      if (!doc) { if (kb.found === now) await kadNap(); doc = await kadTopicGet(id, page); }
+      const top = kadTopicTop(doc, id, page);
+      if (top > page) { await kadNap(); doc = await kadTopicGet(id, top); page = top; }   // (a page more since: the last one)
+      title = kadTopicTitle(doc) || title;
+      let posts = kadBoardPosts(doc), sum = kadBoardSum(posts, now);
+      if (!sum.main && page > 1 && posts.length < 10) { await kadNap(); posts = [...kadBoardPosts(await kadTopicGet(id, Math.max(1, page - 20))), ...posts]; sum = kadBoardSum(posts, now); }   // (just begun a page: the one before too)
+      Object.assign(kb, { id, title, page, by: mode === 'topic' ? 'you' : 'auto', read: now, sum, none: false, err: 0 });
+      kadBoardPut(kb);
+    } catch (_) { kb.read = now; kb.err = now; kadBoardPut(kb); }
+    finally { kadBoardRead.busy = false; kadRepaint(); }
+  }
+  function kadBoardHtml(st) {   // (⚙ › Restock times: the boards' times, Off / Find the topic / This topic, and what it says)
+    const p = kadPrefs(st), mode = p.board || 'auto', kb = kadBoardGet(), sum = kb.sum || {}, mine = mode !== 'topic' || Number(p.topic) === kb.id;
+    let stat = '';
+    if (mode !== 'off') {
+      if (kadBoardRead.busy) stat = 'Reading the boards…';
+      else if (mode === 'topic' && !Number(p.topic)) stat = 'Paste the topic’s link, then Keep';
+      else if (!kb.read || !mine) stat = 'Not read yet';
+      else if (kb.none) stat = 'No Kadoatery topic in Site Games just now';
+      else if (kb.err && kb.err === kb.read) stat = `It didn’t open (${fmtNst(kb.read)}): again next time`;
+      else {
+        const said = sum.main ? `main ${sum.main.w0 ? `next ${fmtNstS(sum.main.w0)}` : `came ${fmtNstS(sum.main.rf)}`}` : sum.last ? `last RF ${fmtNstS(sum.last)}` : 'no times in its newest posts';
+        stat = `${said}${sum.newest ? ` (posted ${fmtNst(sum.newest)})` : ''} · read ${fmtNst(kb.read)}`;
+      }
+    }
+    const link = kb.id && mine ? `/neoboards/topic.phtml?topic=${kb.id}${kb.page > 1 ? `&next=${kb.page}` : ''}` : '';
+    return `${kadRow('Times from the boards', kadSeg('data-kad="pref" data-k="board"', mode, [['off', 'Off'], ['auto', 'Find the topic'], ['topic', 'This topic']]), mode === 'auto' ? 'NE finds the Kadoatery topic in Site Games and reads its newest posts when you open this page, and now and then with Auto refresh. What NE sees itself comes first' : mode === 'topic' ? 'The topic you choose, read when you open this page' : '', true)}
+        ${mode === 'topic' ? kadRow('Its link', `<input type="text" class="bnp-kad-min is-long" data-kadtopic value="${esc(p.topic ? `topic=${p.topic}` : '')}" placeholder="Its link, or its number"><button type="button" class="bnp-pillbtn" data-kad="topic">Keep</button>`, '', true) : ''}
+        ${mode !== 'off' ? `<p class="bnp-kad-stat is-board">${link && kb.title ? `<a href="${esc(link)}" target="_blank" rel="noopener">${esc(kb.title)}</a> · ` : ''}${esc(stat)}<button type="button" class="bnp-pillbtn is-quiet is-small" data-kad="bread"${kadBoardRead.busy || (mode === 'topic' && !Number(p.topic)) ? ' disabled' : ''}>Read now</button></p>` : ''}`;
+  }
+  function kadPlan(st, now = Date.now()) {   // (the groups and their times as the Kadoatery's bar last had them; else from what NE has noted, when that's newer)
+    const drops = (st.drops || []).filter((d) => d.at && now - d.at < 3 * 3600e3);
+    if (st.plan && now - (st.plan.t || 0) < 3 * 3600e3 && !drops.some((d) => d.hi > st.plan.t)) { const g = (st.plan.g || []).slice(); g.locked = !!st.plan.locked; return g; }   // (locked: your fed one's still there)
+    const bm = kadBoardMain(st, now), m = drops.filter((d) => d.n >= 8).sort((x, y) => y.at - x.at)[0];
+    const main = bm && (!m || bm.at > m.at) ? { main: true, at: bm.at, err: bm.err } : m ? { main: true, at: m.at, err: m.err || 0, sure: !!m.sure } : { main: true, at: null };
+    return [main, ...drops.filter((d) => d.n < 8).slice(-4).map((d) => ({ at: d.at, err: d.err || 0, sure: !!d.sure, n: d.n }))];
+  }
+  function kadNextLook(st, now = Date.now()) {   // (Auto refresh's next look. Smart: from just before each window (the main's, the minis') to its end, every so many seconds (yours: 15 s); none between windows; one about a minute after a restock's caught; every 5 minutes while no time is known (10 while only some minis' aren't). Otherwise your interval. Why it's then: kadNextLook.why)
+    const p = kadPrefs(st), a = kadAuto(p), jit = () => 0.85 + Math.random() * 0.3, plain = now + actGap(a.mins * 60000) * jit();
+    kadNextLook.why = 'plain';
+    if (!a.smart) return plain;
+    const every = a.burst * 1000, LEAD = 12000, gs = kadPlan(st, now), spans = [], locked = !!gs.locked && gs.some((g) => g.mine);   // (your fed one's still there: only its window matters, as you can't feed another till it's replaced)
+    for (const g of gs) {   // (each group's window now or next: from a little before it to its end)
+      if (locked && !g.mine) continue;
+      const w = g.at ? kadWin(g, st, now) : null;
+      if (g.watch && g.came && now - g.came < 10 * 60000) spans.push([now, g.came + 10 * 60000, 'feed', now - g.came < 3 * 60000 ? 30000 : 75000]);   // (just come, some still hungry: a look every 30 s or so for 3 minutes, then every minute or so, to see when they're fed: their clock starts then)
+      if (g.waiting) continue;   // (none fed yet: no clock, no window)
+      if (w) { const pace = w.err > 45000 ? Math.max(60000, 4 * every) : every, why = locked ? 'mine' : g.main ? 'main' : 'mini'; spans.push([w.start - LEAD, w.end, why, pace], [w.start + KAD_PEND - LEAD, w.end + KAD_PEND, why, pace]); }   // (this window, and the one 7 minutes on in case it waits)   // (a rough time's window: every 45 s or so, till one's caught exactly)
+    }
+    let next = 0;
+    const open = spans.filter(([x, y]) => now >= x && now <= y);
+    if (open.length) {   // (a window open now: the next look at its pace, while it's open)
+      const pace = Math.min(...open.map((q) => q[3])), o = open.find((q) => q[3] === pace), t = now + pace * (0.75 + Math.random() * 0.5), end = Math.max(...open.map((q) => q[1]));
+      if (t <= end + 2000) { next = t; kadNextLook.why = o[2]; }
+    }
+    if (!next) { const up = spans.filter(([x]) => x > now).sort((q1, q2) => q1[0] - q2[0])[0]; if (up) { next = up[0] + Math.random() * 3000; kadNextLook.why = `${up[2]}-next`; } }   // (the next window: from just before it)
+    const caught = Number(st.caught) || 0;
+    if (!locked && caught && now - caught < 100000 && !gs.some((g) => g.watch || g.waiting)) { const f = caught + 45000 + Math.random() * 30000; if (f > now + 2000 && (!next || f < next)) { next = f; kadNextLook.why = 'after'; } }   // (caught one: a look a minute on, to see when they were fed)
+    const rel = locked ? gs.filter((g) => g.mine) : gs, known = rel.filter((g) => g.at).length, mainKnown = locked ? known > 0 : gs.some((g) => g.main && g.at);
+    if (!mainKnown || known < rel.length) { const p2 = now + actGap((mainKnown ? 2 * a.mins : a.mins) * 60000) * jit(); if (!next || p2 < next) { next = p2; kadNextLook.why = 'plain'; } }   // (times not known yet: plain looks till a restock is caught)
+    if (!next) next = plain;
+    if (actIdle() > 60 * 60000 && next < plain) { next = plain; kadNextLook.why = 'away'; }   // (away from Neopets over an hour: no closer looks)
+    const hour = (st.looks || []).filter((t) => now - t < 3600e3);
+    if (hour.length >= 90) { next = Math.max(next, Math.min(...hour) + 3600e3); kadNextLook.why = 'cap'; }   // (90 an hour at most: a guard)
+    return Math.round(next);
+  }
+  function kadDress(cells) {   // (each cage as NE shows it: hungry, fed, yours)
+    for (const c of cells) {
+      c.td.classList.add('bnp-kad-cage');
+      c.td.classList.toggle('is-fed', c.fed);
+      c.td.classList.toggle('is-sad', !c.fed);
+      c.td.classList.toggle('is-mine', c.mine);
+      const by = c.fed ? c.td.querySelector('a[href*="userlookup"]') : null;
+      if (by && !by.closest('.bnp-kad-by')) {   // (who fed it, alone and a little bigger: Neopets' "Thanks," and "!" out of sight)
+        const w = document.createElement('span');
+        w.className = 'bnp-kad-by';
+        by.before(w);
+        w.append(by);
+        const hide = (t) => { const h = document.createElement('span'); h.className = 'bnp-kad-thx'; h.hidden = true; h.textContent = t; return h; };
+        const pv = w.previousSibling, nx = w.nextSibling, th = pv && pv.nodeType === 3 ? /thanks,?\s*$/i.exec(pv.textContent) : null;
+        if (th) { pv.textContent = pv.textContent.slice(0, th.index); w.before(hide(th[0])); }
+        if (nx && nx.nodeType === 3 && /^\s*!/.test(nx.textContent)) { const bang = /^\s*!/.exec(nx.textContent)[0]; nx.textContent = nx.textContent.slice(bang.length); w.after(hide(bang)); }
+      }
+    }
+  }
+  function kadSwap(doc) {   // (this page's cages as a look of NE's found them, what Refresh would show, without reloading. Left as they are while you're buying one, or when nothing changed)
+    const here = kadCells(), table = here.length ? here[0].td.closest('table') : null, got = kadCells(doc), from = got.length ? got[0].td.closest('table') : null;
+    if (!table || !from || kad.busy) return false;
+    const sig = (cs) => cs.map((c) => `${c.kid}:${c.fed ? 1 : 0}:${c.mine ? 1 : 0}`).join(',');
+    if (sig(here) === sig(got)) return false;
+    from.querySelectorAll('script, style, iframe, object, embed, form').forEach((x) => x.remove());
+    for (const el of from.querySelectorAll('*')) for (const at of [...el.attributes]) if (/^on/i.test(at.name)) el.removeAttribute(at.name);
+    table.replaceChildren(...[...from.childNodes].map((x) => document.importNode(x, true)));
+    kadDress(kadCells());
+    try { if (itHere === 'kadoatery' && !itStepAside()) IT_SCAN.kadoatery(); } catch (_) { /* */ }   // (the Items helper's buttons on the new hungry ones)
+    return true;
+  }
+  function kadTitleFit() {   // (its title up in the room under the top bar, as the other made-over pages have theirs: everything under it up with it)
+    const t = document.querySelector('td.content > strong.bnp-kad-title'), bar = document.getElementById('navtop__2020');
+    if (!t) return;
+    t.classList.remove('is-fit');
+    t.style.removeProperty('--kt-up');
+    if (!bar || innerWidth < 860) return;   // (narrow: where it falls)
+    const room = t.getBoundingClientRect().top - bar.getBoundingClientRect().bottom;
+    if (room > 16) { t.style.setProperty('--kt-up', `${-Math.round(room - 10)}px`); t.classList.add('is-fit'); }
+  }
+  const kadRow = (label, ctl, note = '', wide = false) => `<div class="bnp-kad-f${wide ? ' is-wide' : ''}"><span class="bnp-kad-fl">${label}</span><span class="bnp-kad-fc">${ctl}</span>${note ? `<small>${note}</small>` : ''}</div>`;
+  const kadSeg = (attr, cur, list) => `<span class="bnp-seg">${list.map(([v, l, t]) => `<button type="button" ${attr} data-v="${v}" aria-pressed="${String(cur) === String(v)}"${t ? ` title="${esc(t)}"` : ''}>${esc(l)}</button>`).join('')}</span>`;
+  const kadNum = (k, v, ph = '') => `<span class="bnp-kad-num"><input type="text" data-kadp="${k}" inputmode="numeric" value="${v ? Number(v).toLocaleString() : ''}"${ph ? ` placeholder="${esc(ph)}"` : ''}><span>NP</span></span>`;
+  function kadAutoHtml(st) {   // (Auto refresh: how often, how it's going, and how you hear of new ones)
+    const p = kadPrefs(st), on = kadAuto(p).on, chk = st.chk, nx = Number(st.chkNext) || 0;
+    const why = { main: 'the main’s window is open', mini: 'a mini’s window is open', 'main-next': 'just before the main’s window', 'mini-next': 'just before a mini’s window', after: 'to see when they were fed', feed: 'to see when they’re fed', mine: 'your fed one’s window: you can feed again once it’s replaced', 'mine-next': 'just before your fed one’s window', plain: kadAuto(p).smart ? 'no time known yet' : `every ${kadAuto(p).mins} minutes`, away: 'slower: you’re away', cap: '90 an hour at most' }[st.chkWhy] || '';
+    const stat = !on ? '' : actIdle() > KAD_STOP ? 'Stopped while you’re away from Neopets: it starts again when you’re back' : `${chk && chk.at ? `Last look ${fmtNstS(chk.at)}: ${chk.sad ? `${chk.sad} new hungry` : 'nothing new'}` : 'No look yet'} · next ${nx > Date.now() ? fmtNstS(nx) : 'any moment'}${why ? ` (${why})` : ''}`;
+    const tg = (k, label, tip) => `<button type="button" class="bnp-kad-tg" data-kad="tg" data-k="${k}" aria-pressed="${!!p[k]}" title="${esc(tip)}">${label}</button>`;
+    return `<section class="bnp-kad-sec"><h5>Auto refresh</h5>
+      ${(() => {   // (on or off; when on, its two paces)
+        const au = kadAuto(p);
+        return `${kadRow('Looks by itself', kadSeg('data-kad="pref" data-k="check"', au.on ? 'on' : '0', [['0', 'Off'], ['on', 'On']]))}
+      ${au.on ? `${kadRow('Till a time is known', kadSeg('data-kad="pref" data-k="search"', String(au.mins), [['5', 'every 5 min'], ['10', '10 min'], ['15', '15 min'], ['30', '30 min']]), 'Plain looks, till it catches a restock as it comes (or the boards or you give a time)', true)}
+      ${kadRow('When a restock can come', kadSeg('data-kad="pref" data-k="burst"', String(au.burst), [['10', 'every 10 s'], ['15', '15 s'], ['20', '20 s'], ['30', '30 s'], ['0', 'Don’t']]), au.burst ? 'From just before each window of the main and the minis to its end, a little uneven, as you would by hand. Between windows it doesn’t look. Catching one as it comes is what makes the times exact' : 'No closer looks: plain ones every so often, windows or not', true)}` : ''}
+      <p class="bnp-kad-note">This page brings itself up to date without reloading, even while you’re on another tab (with none open, a Neopets tab in front looks instead). While you’re away from Neopets, windows are still watched for an hour; then slower, and it stops after 2 hours. It never feeds or buys.</p>`;
+      })()}
+      ${stat ? `<p class="bnp-kad-stat">${esc(stat)}</p>` : ''}
+      ${kadRow('When new ones come', `${tg('flash', 'Flash the tab’s name', '“Kadoatie Restock!” and its own name in turn, till you look at it')}${tg('note', 'NE notification', 'NE’s pop-up on your Neopets tabs, with Go')}${tg('desk', 'Desktop notification', 'Your computer’s own notification, outside the browser')}`, `New hungry ones found by Auto refresh, or by a Kadoatery tab you opened in the background. Not while you’re looking at this page${S.rem && S.rem.quiet ? '. The sound and desktop ones wait out your quiet hours' : ''}`, true)}
+      ${kadRow('Sound', `${kadSeg('data-kad="pref" data-k="sound"', p.sound, [['', 'Off'], ['chime', 'Chime'], ['bell', 'Bell'], ['ice', 'Icy'], ['coin', 'Coin'], ['pop', 'Pop']])}${p.sound ? '<button type="button" class="bnp-pillbtn is-quiet" data-kad="try">Try it</button>' : ''}`, '', true)}
+    </section>`;
+  }
+  function kadPrefsHtml(st) {   // (Feeding, as you choose it: Manual or Buy and feed, and how)
+    const p = kadPrefs(st), one = p.feed === 'one', prem = (() => { try { return !!itPremium(); } catch (_) { return false; } })();
+    const pref = (k) => `data-kad="pref" data-k="${k}"`;
+    return `<section class="bnp-kad-sec"><h5>Feeding</h5>
+      ${kadRow('On each hungry one', kadSeg(pref('feed'), p.feed, [['manual', 'Manual', 'Neopets’ cage, and the item’s Wizard, Trading Post, Auctions and SDB buttons'], ['one', 'Buy and feed', 'One press: the Wizard searched, the cheapest bought, then fed']]))}
+      ${kadRow('After a feed', kadSeg(pref('back'), p.back === 'stay' ? 'stay' : 'auto', [['auto', 'Back to the Kadoatery'], ['stay', 'Stay on its page']]), 'Back after 3 seconds, only when it worked (when it didn’t, you stay to read why)', true)}
+      ${one ? `${kadRow('Ask before buying', `${kadSeg(pref('ask'), p.ask, [['always', 'Always'], ['over', 'Over a price'], ['never', 'Never']])}${p.ask === 'over' ? kadNum('askOver', p.askOver) : ''}`)}
+      ${kadRow('Most for one item', kadNum('max', p.max))}
+      ${kadRow('Most in a day', kadNum('day', p.day, 'No limit'), `Spent today: ${kadSpent(st).toLocaleString()} NP`)}
+      ${kadRow('Search with', kadSeg(pref('src'), p.src, [['sw', 'Shop Wizard'], ['ssw', 'Super Shop Wizard', prem ? 'Premium’s: every shop at once' : 'Premium only: the Shop Wizard otherwise']]))}
+      ${kadRow('Pace', kadSeg(pref('pace'), p.pace, [['person', 'Like a person', 'A person’s moments between steps (about 2 to 4 seconds in all): the safest'], ['quick', 'Quick', 'Shorter moments between steps']]))}
+      <label class="bnp-kad-chk"><input type="checkbox" data-kadp="lock"${p.lock ? ' checked' : ''}><span>Not while your own fed Kadoatie is still here<small>Neopets lets you feed one at a time</small></span></label>
+      <p class="bnp-kad-note">Buy and feed never runs by itself: one press for each Kadoatie.</p>` : ''}</section>`;
+  }
+  function kadActs(cells, st) {   // (each hungry cage: its food's itemdb price, to give you an idea; Buy and feed, as your settings have it)
+    const p = kadPrefs(st), mine = cells.find((c) => c.mine), lock = p.lock && !!mine, one = p.feed === 'one';
+    const itp = (() => { try { const pg = itSettings().pages.kadoatery; return !!(S.features.items && pg && pg.on && pg.price); } catch (_) { return false; } })();   // (the Items helper shows one there already)
+    for (const c of cells) {
+      let box = c.td.querySelector(':scope > [data-bnp="kadact"]');
+      if (c.fed || !c.food || (!one && itp)) { if (box) box.remove(); continue; }
+      if (!box) { box = document.createElement('div'); box.className = 'bnp-kad-act'; box.setAttribute('data-bnp', 'kadact'); c.td.append(box); }
+      if (box.dataset.busy) continue;
+      box.dataset.kid = c.kid;
+      box.innerHTML = `${itp ? '' : '<span class="bnp-kad-price is-wait" data-kadprice>…</span>'}${one ? `<button type="button" class="button-default__2020 button-green__2020 bnp-kad-buy" data-kadbuy="${c.kid}"${lock ? ` disabled title="${esc(`You fed ${mine.name}: once it goes home you can feed another`)}"` : ` title="${esc(`The ${p.src === 'ssw' ? 'Super Shop Wizard' : 'Shop Wizard'} searched for ${c.food}, the cheapest up to ${p.max.toLocaleString()} NP bought${p.ask === 'never' ? '' : ' (asked first)'}, then fed to ${c.name}`)}"`}>Buy and feed</button><span class="bnp-kad-st">${lock ? `After ${esc(mine.name)} goes home` : `Up to ${esc(p.max.toLocaleString())} NP`}</span>` : ''}`;
+      const pr = box.querySelector('[data-kadprice]');
+      if (pr) kadPrice(pr, c.food, one ? p.max : 0);
+    }
+  }
+  function kadPrice(el, food, max) {   // (itemdb's price for a food: to give you an idea only. Buy and feed buys the Shop Wizard's cheapest)
+    try {
+      itPriceAsk(food, (res) => {
+        if (!el.isConnected) return;
+        el.classList.remove('is-wait');
+        if (res.visit) { el.innerHTML = '<a href="https://itemdb.com.br/" target="_blank" rel="noopener">Price: open itemdb</a>'; el.title = 'itemdb gives its prices to scripts like this once you’ve opened itemdb.com.br today. Open it: the prices here fill in next time'; return; }
+        if (res.err || !(res.p > 0)) { el.classList.add('is-none'); el.textContent = res.err ? '' : 'No itemdb price'; return; }
+        const over = max > 0 && res.p > max;
+        el.classList.toggle('is-over', over);
+        el.innerHTML = `<a href="${esc(res.slug ? `https://itemdb.com.br/item/${encodeURIComponent(res.slug)}` : `https://itemdb.com.br/search?s=${encodeURIComponent(food)}`)}" target="_blank" rel="noopener">≈ ${esc(npShort(res.p))} NP</a>${over ? ' <small>over your most</small>' : ''}`;
+        el.title = `itemdb: about ${res.p.toLocaleString()} NP${res.inf ? ' (it says inflated)' : ''}. To give you an idea only${max > 0 ? `: Buy and feed buys the Shop Wizard’s cheapest, up to your ${max.toLocaleString()} NP` : ''}`;
+      });
+    } catch (_) { el.remove(); }
+  }
+  function kadAsk(box, price, name) {   // (in its cage: "Buy for 3,200 NP and feed?", your yes or no)
+    return new Promise((ok) => {
+      box.innerHTML = `<span class="bnp-kad-st is-ask">${esc(name)}: ${esc(bmNp(price))}. Buy and feed?</span><span class="bnp-kad-yn"><button type="button" class="button-default__2020 button-green__2020 bnp-kad-buy" data-kadyes>Yes</button><button type="button" class="bnp-pillbtn" data-kadno>No</button></span>`;
+      const done = (v) => { box.removeEventListener('click', on); ok(v); };
+      const on = (e) => { if (e.target.closest('[data-kadyes]')) done(true); else if (e.target.closest('[data-kadno]')) done(false); };
+      box.addEventListener('click', on);
+      const y = box.querySelector('[data-kadyes]');
+      if (y) y.focus({ preventScroll: true });
+    });
+  }
+  async function kadBuyFeed(kid, over = 0) {   // (one press: its food searched, the cheapest bought (asked first, as you chose), then fed by Neopets' own cage link)
+    if (kad.busy) return;
+    const cells = kadCells(), c = cells.find((x) => x.kid === kid), st = kadGet(), p = kadPrefs(st);
+    if (!c || c.fed || !c.food) return;
+    const box = c.td.querySelector(':scope > [data-bnp="kadact"]');
+    if (!box) return;
+    const mine = cells.find((x) => x.mine);
+    if (p.lock && mine) return;
+    const say = (t, kind = '', more = '') => { box.innerHTML = `<span class="bnp-kad-st${kind ? ` is-${kind}` : ''}">${esc(t)}</span>${more}`; };
+    const prem = (() => { try { return !!itPremium(); } catch (_) { return false; } })(), src = p.src === 'ssw' && prem ? 'ssw' : 'sw';
+    const left = p.day > 0 ? Math.max(0, p.day - kadSpent(st)) : Infinity;
+    const max = over || p.max;
+    if (left <= 0) { say(`Today’s ${p.day.toLocaleString()} NP is spent`, 'bad'); return; }
+    const run = { src, times: 1, budget: left, spent: 0, max, room: 50, stop: false, pause: false, bg: true, paceMul: p.pace === 'quick' ? 0.3 : 1 };
+    if (!over && (p.ask === 'always' || p.ask === 'over')) run.confirm = (price, name) => (p.ask === 'over' && price <= p.askOver ? true : kadAsk(box, price, name));
+    kad.busy = true;
+    box.dataset.busy = '1';
+    try {
+      say(`Searching the ${src === 'ssw' ? 'Super Shop Wizard' : 'Shop Wizard'} for ${c.food}…`, 'busy');
+      const a = await bmBuyOne(run, { name: c.food });
+      if (a.got) {
+        const s2 = kadGet();
+        s2.spent = { day: nstDay(), np: kadSpent(s2) + a.price };
+        kadPut(s2);
+        say(`Bought for ${bmNp(a.price)}: feeding ${c.name}…`, 'ok');
+        await bmStep(run, 'buy');
+        { const s3 = kadGet(); s3.feedTry = { kid, at: Date.now() }; kadPut(s3); }   // (when you fed, for how quick you were)
+        location.assign(c.a.href);   // (Neopets' own cage link: its own answer page)
+        return;
+      }
+      if (a.busy) { const top = bmBanned(src) || bmTop(); bmBanSet(src, top); say(`The ${src === 'ssw' ? 'Super Shop Wizard' : 'Shop Wizard'} is taking a break till ${fmtNst(top)} NST`, 'bad'); }
+      else if (a.over) say(a.by === 'budget' ? `${bmNp(a.over)}: more than today’s NP left` : `The cheapest is ${bmNp(a.over)}, over your ${bmNp(max)}`, 'bad', a.by === 'budget' ? '' : `<button type="button" class="bnp-pillbtn" data-kadover="${a.over}">Buy it anyway</button>`);
+      else if (a.declined) say('Not bought');
+      else if (a.none) say('None in the Shop Wizard just now', 'bad');
+      else if (a.gone) say('Sold before NE got there: try again', 'bad');
+      else if (a.full) say('Your inventory is full: make room first', 'bad');
+      else if (a.unsure) say('Neopets didn’t answer the Buy: look in your inventory before trying again', 'bad');
+      else if (a.halt) say(a.halt, 'bad');
+      else if (a.cant) say(String(a.cant), 'bad');
+      else say(a.err ? `Couldn’t search: ${a.err}` : 'Couldn’t buy it just now', 'bad');
+    } catch (e) { report(e); say('Something went wrong: try again', 'bad'); }
+    finally { kad.busy = false; delete box.dataset.busy; }
+    if (!box.querySelector('[data-kadover]')) setTimeout(() => { if (!box.dataset.busy && box.isConnected) kadActs(kadCells(), kadGet()); }, 6000);   // (its message a moment, then Buy and feed again)
+  }
+  function kadTick(card) {   // (each second: the countdowns, and the window lit while it's open)
+    const now = Date.now();
+    for (const el of card.querySelectorAll('[data-kadin]')) {
+      const a = +el.dataset.kadin, b = +el.dataset.kadend;
+      el.textContent = now < a ? `in ${fmtCount(a - now)}` : now <= b ? 'open now' : 'it passed';
+      el.classList.toggle('is-open', now >= a && now <= b);
+      el.classList.toggle('is-soon', now < a && a - now < 60000);
+    }
+    for (const el of card.querySelectorAll('[data-kadring]')) {   // (Refresh's ring: how near Auto refresh's next look is)
+      const [a, b] = el.dataset.kadring.split('|').map(Number), f = b > a ? Math.min(1, Math.max(0, (now - a) / (b - a))) : 0;
+      el.style.setProperty('--kad-ring', `${f.toFixed(3)}turn`);
+      el.classList.toggle('is-looking', !!kadCheckRun.busy);
+    }
+    const anyPast = [...card.querySelectorAll('[data-kadin]')].some((el) => now > +el.dataset.kadend + 2000);
+    if (anyPast && !card.dataset.repaint && !card.contains(document.activeElement && document.activeElement.matches('input') ? document.activeElement : null)) { card.dataset.repaint = '1'; setTimeout(() => { delete card.dataset.repaint; kadPaint(card, kadCells(), kadGet()); }, 50); }   // (a window gone by: the next one; never while you're typing in it)
   }
   function KPOP_GAME() {   // (runs in Kiko Pop's page itself, before its own script: the Flash game it calls, stood in for. Neopets' own buttons, asks and prize pop-up do the rest; NE's card hears each step in "bnp-kpop" events)
     if (window.__bnpKpop) return;
@@ -30347,6 +31238,7 @@
     }
     return out;
   }
+  let lottoDrawnFn = null;   // (the open Lottery page's own "the draw's been made": for testing)
   function lottoPage() {   // (the Lottery made over: the next draw, your tickets, a picker that fills Neopets' six boxes, a plan of 20; Neopets' Buy buys)
     const f = $('form[action*="process_lottery"]'), ins = f ? ['one', 'two', 'three', 'four', 'five', 'six'].map((n) => f.querySelector(`input[name="${n}"]`)) : [];
     if (!f || f.dataset.bnpFill || ins.some((x) => !x)) return;
@@ -30355,11 +31247,19 @@
     const ticketsIn = (t) => [...t.matchAll(/Ticket\s+(\d+)\s*:\s*((?:\d+\s+){5}\d+)/g)].map((m) => m[2].trim().split(/\s+/).map(Number));
     let have = ticketsIn(txt);
     let sold = (/tickets sold so far\s*:\s*([\d,]+)/i.exec(txt) || [])[1] || '', fund = (/Total Prize Fund\s*:\s*([\d,]+)/i.exec(txt) || [])[1] || '';
-    const draw = (() => { const t = nstAtDay(0, 240, now); return t > now ? t : nstAtDay(1, 240, now); })();
+    const nextDraw = (t) => { const d = nstAtDay(0, 240, t); return d > t ? d : nstAtDay(1, 240, t); };   // (the 4 am NST draw next after a moment)
+    let draw = nextDraw(now), stale = false;
+    const sk = dkey().replace(/^dlog/, 'lottoseen');   // (which tickets NE saw for which draw)
+    const seenFor = (list) => {   // (the same tickets still listed after the draw NE saw them for: Neopets hasn't cleared them yet)
+      const prev = get(sk, null), keys = list.map(lottoKey);
+      stale = !!(prev && prev.draw < draw && keys.length && keys.every((k) => (prev.keys || []).includes(k)));
+      if (!stale) set(sk, { draw, keys: [...new Set([...(prev && prev.draw === draw ? prev.keys || [] : []), ...keys])] });
+    };
     const pk = dkey().replace(/^dlog/, 'lottoplan'), lk = dkey().replace(/^dlog/, 'lottolucky');
     let plan = (() => { const p = get(pk, null); return p && p.draw === draw && Array.isArray(p.list) ? p : null; })();
     const box = document.createElement('div');
     let haveKeys = new Set(have.map(lottoKey));
+    seenFor(have);
     if (plan && plan.list.every((t) => haveKeys.has(lottoKey(t)))) { plan = null; set(pk, null); }   // (a plan all bought: done with)
     const mark = () => { try { dailyMark('lottery', { proof: have.length >= 20 ? 'done' : have.length ? 'try' : 'ready', tries: have.length ? [have.length, 20] : null }); } catch (e) { report(e); } };
     mark();
@@ -30424,15 +31324,15 @@
       const pick = ins.map((x) => Number(x.value)).filter((n) => n >= 1 && n <= 30);
       const nextPlan = plan ? plan.list.find((t) => !haveKeys.has(lottoKey(t))) : null;
       top.innerHTML = `<div class="bnp-lotto-head"><img src="${NPI}events/lotteryman.gif" alt="" width="80" height="80"><div><h2>The Neopian Lottery</h2>
-          <p>Next draw <b>${esc(fmtNst(draw))} NST</b> · in ${esc(fmtLeft(draw - Date.now()))}</p>
-          <p>Your tickets: <b>${have.length} of 20</b>${fund ? ` · Prize fund <b>${esc(fund)} NP</b>${sold ? ` (${esc(sold)} tickets sold)` : ''}` : ''}</p></div></div>
+          <p>Next draw <b>${esc(fmtNst(draw))} NST</b> · ${draw > Date.now() ? `in ${esc(fmtLeft(draw - Date.now()))}` : 'being made now'}</p>
+          <p>Your tickets: <b>${have.length} of 20</b>${stale ? ' <small class="bnp-lotto-stale">from before the last draw: Neopets hasn’t cleared them yet</small>' : ''}${fund ? ` · Prize fund <b>${esc(fund)} NP</b>${sold ? ` (${esc(sold)} tickets sold)` : ''}` : ''}</p></div></div>
         <div class="bnp-lotto-pick"><div class="bnp-lotto-ticket"><b class="bnp-lotto-tlabel">Your ticket</b><div class="bnp-lotto-chosen" aria-label="Your ticket">${[0, 1, 2, 3, 4, 5].map((i) => (pick[i] ? `<i class="bnp-lball" style="--b:url('${NPI}images/ball${((pick[i] - 1) % 6) + 1}.gif')">${pick[i]}</i>` : '<i class="bnp-lball is-empty"></i>')).join('')}</div></div>
           <p class="bnp-lotto-glabel">All 30 numbers: pick six</p>
           <div class="bnp-lotto-balls" role="group" aria-label="Pick six numbers">${Array.from({ length: 30 }, (_, i) => ball(i + 1, `aria-pressed="${pick.includes(i + 1)}"`)).join('')}</div>
           <div class="bnp-lotto-tools"><button type="button" class="bnp-lpill" data-lt="random">Random</button>${get(lk, null) ? '<button type="button" class="bnp-lpill" data-lt="lucky">My lucky numbers</button>' : ''}<button type="button" class="bnp-lpill" data-lt="save"${pick.length === 6 ? '' : ' disabled'}>Keep these as my lucky ones</button><button type="button" class="bnp-lpill" data-lt="clear">Clear</button><button type="button" class="bnp-lpill is-main" data-lt="plan">${plan ? 'Plan them again' : `Plan my ${Math.max(0, 20 - have.length)} tickets`}</button></div>
           <p class="bnp-lotto-say" aria-live="polite"></p></div>`;
       bottom.innerHTML = `${plan ? `<div class="bnp-lotto-plan"><h3>Your plan for this draw <button type="button" class="bnp-lpill is-small" data-lt="unplan"${run ? ' disabled' : ''}>Clear plan</button></h3><ol>${plan.list.map((t) => { const got = haveKeys.has(lottoKey(t)), nx = !got && t === nextPlan; return `<li class="${got ? 'is-got' : nx ? 'is-next' : ''}">${row(t)}<small>${got ? 'Bought ✓' : nx ? 'Next: on your ticket' : 'To buy'}</small></li>`; }).join('')}</ol></div>` : ''}
-        ${have.length ? `<div class="bnp-lotto-yours"><h3>Your tickets for this draw</h3><ol class="bnp-lotto-ylist">${have.map((t, i) => `<li><b>${i + 1}</b>${row(t)}</li>`).join('')}</ol></div>` : ''}`;
+        ${have.length ? `<div class="bnp-lotto-yours"><h3>${stale ? 'Your tickets from the last draw <small class="bnp-lotto-stale">Neopets hasn’t cleared them yet</small>' : 'Your tickets for this draw'}</h3><ol class="bnp-lotto-ylist">${have.map((t, i) => `<li><b>${i + 1}</b>${row(t)}</li>`).join('')}</ol></div>` : ''}`;
       const head = top.querySelector('.bnp-lotto-head'), sp = top.querySelector('.bnp-lotto-say');
       if (head) head.append(sign);   // (the same one, moved: its picture never starts over)
       if (sp) sp.textContent = said;
@@ -30486,7 +31386,7 @@
         sold = (/tickets sold so far\s*:\s*([\d,]+)/i.exec(tx) || [])[1] || sold;
         fund = (/Total Prize Fund\s*:\s*([\d,]+)/i.exec(tx) || [])[1] || fund;
         const got = list.length > have.length && list.some((x) => lottoKey(x) === lottoKey(t));
-        if (list.length && list.length !== have.length) { have = list; haveKeys = new Set(have.map(lottoKey)); mark(); if (plan && !planLeft()) { plan = null; set(pk, null); } }   // (Neopets' own list, whatever it says; a plan all bought, done with)
+        if (list.length && list.length !== have.length) { have = list; haveKeys = new Set(have.map(lottoKey)); seenFor(have); mark(); if (plan && !planLeft()) { plan = null; set(pk, null); } }   // (Neopets' own list, whatever it says; a plan all bought, done with)
         if (got) return { ok: true };
         const err = doc.querySelector('.errorMessage, .errormess, .errorOuter, .error-message'), w = err ? err.textContent.replace(/\s+/g, ' ').trim() : '';
         return { ok: false, why: w ? `Neopets says: ${w.slice(0, 200)}` : 'Neopets didn’t sell that ticket (its page came back without it).' };
@@ -30580,6 +31480,32 @@
     }
     paint();
     signStart();
+    const rollover = async () => {   // (the draw made while the page is open: Neopets' page read again, once and quietly (what a reload would show), its list as it is then, the next draw)
+      if (!box.isConnected) return;
+      const old = draw;
+      draw = nextDraw(Math.max(Date.now(), old + 1000));
+      try {
+        const r = await fetch(location.pathname, { credentials: 'same-origin' });
+        if (!/\/login/i.test(new URL(r.url).pathname)) {
+          const doc = new DOMParser().parseFromString(await r.text(), 'text/html'), tx = doc.body ? doc.body.textContent : '';
+          have = ticketsIn(tx);
+          haveKeys = new Set(have.map(lottoKey));
+          sold = (/tickets sold so far\s*:\s*([\d,]+)/i.exec(tx) || [])[1] || '';
+          fund = (/Total Prize Fund\s*:\s*([\d,]+)/i.exec(tx) || [])[1] || '';
+          const tok = doc.querySelector('form[action*="process_lottery"] input[name="_ref_ck"]'), mine = f.querySelector('input[name="_ref_ck"]');
+          if (tok && mine && tok.value) mine.value = tok.value;   // (Neopets' key, as its page has it now)
+        }
+      } catch (_) { /* (not read: the list as it was, said as such below) */ }
+      seenFor(have);
+      if (plan && plan.draw !== draw) { plan = null; set(pk, null); }   // (a plan for the draw gone by: put away)
+      mark();
+      paint();
+      say(stale ? `The ${fmtNst(old)} NST draw was due: Neopets still lists your tickets from it (it hasn’t cleared them yet).` : `The ${fmtNst(old)} NST draw is done: new tickets go into ${fmtDay(draw)}’s ${fmtNst(draw)} NST draw.`);
+      lottoAt();
+    };
+    const lottoAt = () => { clearTimeout(lottoAt.t); lottoAt.t = setTimeout(rollover, Math.max(5000, draw - Date.now() + 30000 + Math.random() * 60000)); };   // (a moment after the next draw)
+    lottoAt();
+    lottoDrawnFn = rollover;
     if (plan) { const nx = plan.list.find((t) => !haveKeys.has(lottoKey(t))); if (nx) { fill(nx); setTimeout(() => { if (buy) buy.focus(); }, 80); } }   // (the next of your plan on your ticket, Buy in your hand)
   }
   // Two daily pages' forms filled in for you: the Lottery's six numbers (all different, 1 to 30, a new six every click) and the Wishing
@@ -32947,8 +33873,8 @@
   }
   const BM_PACE = { next: [1500, 2000, 0.12, 2000, 4000], again: [1200, 1400], look: [800, 1200], buy: [600, 1000], read: [1000, 1500, 0.1, 1500, 2500] };   // (each moment, in ms: [least, spread, chance of a longer one, its least, its spread]. next: on to the next item; again: the wizard asked again; look: the shop picked from the results; buy: its page looked at before Buy; read: on to the next book in your inventory)
   async function bmStep(run, how = 'next') {   // (a quick person's moment between things, uneven, now and then longer; while paused or in the background it waits)
-    const [a, b, c = 0, d = 0, e = 0] = BM_PACE[how] || BM_PACE.next;
-    const until = Date.now() + a + Math.random() * b + (Math.random() < c ? d + Math.random() * e : 0);
+    const [a, b, c = 0, d = 0, e = 0] = BM_PACE[how] || BM_PACE.next, k = run.paceMul > 0 ? run.paceMul : 1;   // (paceMul: the Kadoatery's Quick)
+    const until = Date.now() + (a + Math.random() * b + (Math.random() < c ? d + Math.random() * e : 0)) * k;
     while (Date.now() < until && !run.stop) await bmSleep(Math.max(20, Math.min(500, until - Date.now())));
     return bmGate(run);
   }
@@ -32992,6 +33918,7 @@
       if (held != null) { run.room = 50 - held; if (run.room <= 0) { wwwShut(shop); return { full: true }; } }   // (your inventory as the shop's own header counts it now: full, nothing's bought)
       if (!btn || !price || price > cap) { wwwShut(shop); continue; }   // (sold meanwhile, or dearer now: the next shop)
       if (np < price) { wwwShut(shop); return { halt: `Not enough Neopoints on hand for ${name} (${bmNp(price)})` }; }
+      if (run.confirm && !(await run.confirm(price, name))) { wwwShut(shop); return { declined: true, price }; }   // (asked first, its price found: Buy only with your yes)
       if (!(await bmStep(run, 'buy'))) { wwwShut(shop); return { stopped: true }; }   // (a moment on its page before Buy, as you'd look)
       const url = btn.getAttribute('data-buy-url');
       let j = null, status = 0;
@@ -34278,6 +35205,33 @@
       document.title = tabTitleWant;
     });
     tabObs.observe(el, { childList: true, subtree: true, characterData: true });
+  }
+  // A tab's name flashing: its words and the page's own name in turn, to be seen from another tab or window ("Kadoatie Restock!"). While
+  // it flashes, the name NeoTabs keeps is the one showing, so the two never fight; anything else naming the tab meanwhile has it, and the
+  // flashing stops. It stops once you've looked at the tab a few seconds, or after a while. Its beat is a worker's: a tab out of sight
+  // keeps it too
+  let flashRun = 0, flashBase = null, flashLast = '';
+  async function tabFlash(words, ms = 3 * 60000) {
+    tabFlashStop(true);
+    const id = ++flashRun, end = Date.now() + ms, put = (t) => { if (tabTitleWant) tabTitleWant = t; flashLast = t; document.title = t; };
+    flashBase = tabTitleWant || document.title;
+    let on = true, seen = 0;
+    put(words);
+    while (flashRun === id) {
+      await bmSleep(1000);
+      if (flashRun !== id) return;
+      if (document.title !== flashLast) { flashRun++; flashBase = null; flashLast = ''; return; }   // (named by something else meanwhile: theirs)
+      seen = !document.hidden && document.hasFocus() ? seen || Date.now() : 0;
+      if (Date.now() > end || (seen && Date.now() - seen >= 4000)) { tabFlashStop(true); return; }
+      on = !on;
+      put(on ? words : flashBase);
+    }
+  }
+  function tabFlashStop(back) {   // (the flashing stopped: the page's own name again, unless something else has named it since)
+    flashRun++;
+    if (back && flashBase != null && document.title === flashLast) { if (tabTitleWant) tabTitleWant = flashBase; document.title = flashBase; }
+    flashBase = null;
+    flashLast = '';
   }
   let tabNow = null;
   function tabsApply(late) {   // (as the page is read, again once it's loaded: theme pictures need the theme)
@@ -42077,7 +43031,7 @@
         <a class="button-default__2020 button-yellow__2020 bnp-small" href="/quickref.phtml">Open Quick Ref</a>
       </div>`;
   }
-  const REM_KIND_SW = { newday: 'newday', dayend: 'dayend', deadline: 'deadline', snow: 'snow', dice: 'dice', turmac: 'turmac', fc: 'fc', obelisk: 'obelisk', lodge: 'lodge', train: 'train', freebies: 'freebies', advent: 'advent', backup: 'backup', custom: '' };   // (which switch each kind of note answers to; ready: each daily's own)
+  const REM_KIND_SW = { newday: 'newday', dayend: 'dayend', deadline: 'deadline', snow: 'snow', dice: 'dice', kad: 'kad', turmac: 'turmac', fc: 'fc', obelisk: 'obelisk', lodge: 'lodge', train: 'train', freebies: 'freebies', advent: 'advent', backup: 'backup', custom: '' };   // (which switch each kind of note answers to; ready: each daily's own)
   function remPage() {
     const R = S.rem, now = Date.now();
     const sw = (k, title, small, more = '') => `<label class="bnp-switch"><input type="checkbox" data-rem="${k}"${R[k] ? ' checked' : ''}><span>${title}<small>${small}</small>${more}</span></label>`;
@@ -42129,6 +43083,7 @@
         ${sw('snow', 'The Snowager is asleep', 'Right as it falls asleep, at 6 am, 2 pm and 10 pm NST (it sleeps an hour). Not if you’re on its page already, or have been since.', notListed('snowager'))}
         ${sw('turmac', 'The Turmaculus may be awake', 'At each hour it’s due awake, as the Turmaculus tracking petpage has them (NE reads it twice a day at most). Not if you’ve been to it since.', notListed('turmac'))}
         ${sw('dice', 'Deadly Dice is open', 'Midnight to 1 am NST.', notListed('dice'))}
+        ${sw('kad', 'The Kadoatery’s main is due', 'When its next window opens, from the restocks NE has seen on its page (it learns them as you feed there):', ` <span class="bnp-inl">${sel('kadLead', [[0, 'as it opens'], [30, '30 seconds before'], [60, 'a minute before'], [120, '2 minutes before']])}</span>`)}
         ${sw('fc', 'Food Club bets', 'Bets close at 2 pm NST, when its round changes; if you haven’t bet in this round:', ` <span class="bnp-inl">${sel('fcLead', [[30, '30 minutes before'], [60, 'an hour before'], [120, '2 hours before'], [240, '4 hours before']])}</span>`)}
         ${sw('obelisk', 'Battleground of the Obelisk', `Sign-ups open, the battles start, their last day, and boons. Every two weeks: sign-ups ${fmtDay(obeliskPhase(now).phase === 'boons' ? obeliskPhase(now).end : now)}${obeliskPhase(now).phase === 'boons' ? '' : ' (now)'}.`)}
       </div>
@@ -42183,7 +43138,7 @@
       const R = S.rem;
       if (k === 'per') { const d = dailyById(t.dataset.v); if (!d) return; R.per = { ...(R.per || {}), [d.id]: !remPerOn(d) }; if (R.per[d.id] && !R.ready) R.ready = true; }
       if (k === 'off' && t.dataset.v in REM_DEFAULT) R[t.dataset.v] = false;
-      if (k === 'recommend') { R.per = {}; for (const x of ['ready', 'newday', 'dayend', 'deadline', 'snow', 'dice', 'turmac', 'fc', 'obelisk', 'lodge', 'train', 'freebies', 'advent', 'backup']) R[x] = REM_DEFAULT[x]; toast('Reminders: as recommended again'); }
+      if (k === 'recommend') { R.per = {}; for (const x of ['ready', 'newday', 'dayend', 'deadline', 'snow', 'dice', 'kad', 'turmac', 'fc', 'obelisk', 'lodge', 'train', 'freebies', 'advent', 'backup']) R[x] = REM_DEFAULT[x]; toast('Reminders: as recommended again'); }
       saveNow();
       remSchedule();
       const keep = hub.main.scrollTop; paintHub(); hub.main.scrollTop = keep;
@@ -44681,6 +45636,9 @@
           <div class="bnp-card"><h4>Sound on their pages</h4>
             ${sw('quietWheels', 'The wheels start quiet', 'Every wheel’s spin, without its sound. A Sound pill in the page’s corner turns it on for that visit.')}
             ${sw('quietKpop', 'Kiko Pop starts quiet', 'Play it as ever, without its sound. Its Sound pill turns it on for that visit.')}
+          </div>
+          <div class="bnp-card"><h4>The Kadoatery</h4>
+            ${sw('kadHelp', 'The Kadoatery made over', 'Its cages as cards, and its restock times learned from your own visits: when the main and the minis are due, your own Kadoatie, and how many more for the Mew! avatar. Its reminder is under Reminders › Set hours.')}
           </div>
           <div class="bnp-card"><h4>Games without Flash</h4>
             ${sw('kpopPlay', 'Kiko Pop, played on its page', 'Its dart game was Flash: pick how hard, then Throw your dart (every throw pops a balloon). Neopets’ own buttons, asks and prize pop-up do the rest.')}
@@ -49002,6 +49960,7 @@
     .bnp-lpill:hover:not(:disabled), .bnp-lpill:focus-visible { border-color: #000; outline: none; }
     .bnp-lotto-say { min-height: 1.2em; margin: 8px 0 0; color: #6b4c00; font-weight: 700; }
     form[action*="process_lottery"] { text-align: center; }
+    .bnp-lotto-stale { display: inline-block; margin-left: 4px; padding: 1px 8px; border-radius: 999px; background: #fff3d6; color: #7a4d00; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; vertical-align: middle; }   /* (tickets still listed after their draw) */
     .bnp-lotto-hide { display: none !important; }
     .bnp-lotto-buy { display: inline-block; width: auto !important; min-width: 220px; margin: 6px 0 4px !important; padding: 8px 24px !important; font-size: 17px !important; }
     .bnp-lotto-all { margin-left: 10px !important; }
@@ -49178,6 +50137,146 @@
     .bnp-kpop .bnp-kpop-go:disabled { opacity: .7; cursor: default; }
     html.bnp-kpop-on .bnp-kpop #prizeButton { position: static; margin: 4px auto 0; }   /* (Neopets' Reveal Prize, in the card, once its getResult shows it) */
     .bnp-kpop-note { margin: 12px 0 0; color: #4f6b78; font-size: 12px; }
+    html.bnp-kad-on td.content > strong.bnp-kad-title { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 2px 0 10px; color: inherit; font: 40px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .5pt; }   /* (bigger, up in the room under the top bar: kadTitleFit) */
+    html.bnp-kad-on td.content > strong.bnp-kad-title.is-fit { margin-top: var(--kt-up, 0px); }
+    .bnp-kad-tic { flex: none; width: 50px; height: 50px; }   /* (at its own size) */
+    html.bnp-kad-on td.content .bnp-kad-box { position: relative; max-width: 720px; margin: 0 auto 14px; border: 2px solid color-mix(in srgb, var(--bnp-accent, #c9a8e0) 60%, #4a2f63); border-radius: 18px; background: #fff; box-shadow: 0 3px 0 color-mix(in srgb, var(--bnp-accent, #c9a8e0) 45%, #4a2f63); text-align: left; }   /* (the cages together in one frame, a slim bar of their restocks on top) */
+    .bnp-kad-bar { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px 10px; padding: 6px 8px 6px 14px; border-bottom: 1px solid color-mix(in srgb, var(--bnp-accent, #c9a8e0) 30%, #d4cdda); border-radius: 16px 16px 0 0; background: linear-gradient(#fff, color-mix(in srgb, var(--bnp-accent, #c9a8e0) 10%, #fff)); color: #2f2a38; font: 13px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-kad-main, .bnp-kad-minis { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .bnp-kad-lab { color: #6a6178; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+    .bnp-kad-when { font: 17px/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; } .bnp-kad-when.is-none { color: #8a8494; font: 13px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-kad-in { padding: 2px 9px; border-radius: 999px; background: #efeaf5; color: #4a3f5a; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }
+    .bnp-kad-in.is-soon { background: #ffe9b3; color: #7a4d00; }
+    .bnp-kad-in.is-open { background: #2e9e3e; color: #fff; animation: bnp-kad-pulse 1s ease-in-out infinite alternate; }
+    @keyframes bnp-kad-pulse { to { box-shadow: 0 0 0 4px rgba(46, 158, 62, .25); } }
+    @media (prefers-reduced-motion: reduce) { .bnp-kad-in.is-open { animation: none; } }
+    .bnp-kad-rough { color: #8a8494; }
+    .bnp-kad-chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 3px 2px 9px; border: 1.5px solid #ddd3e8; border-radius: 999px; background: #fff; font-size: 12.5px; } .bnp-kad-chip b { font: 14px "Cafeteria", Arial, sans-serif; }
+    .bnp-kad-you { padding: 2px 10px; border-radius: 999px; background: #e3f4df; color: #24521b; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-kad-tools { display: inline-flex; gap: 6px; }
+    .bnp-kad-troph { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 2px 10px 2px 3px; border: 1.5px solid #e6dcef; border-radius: 999px; background: #fff; color: #4a3f5a; font: 12px "MuseoSansRounded700", Arial, sans-serif; }   /* (your Kadoatery trophy and count) */
+    .bnp-kad-troph img { flex: none; width: 34px; height: 34px; border-radius: 50%; object-fit: contain; background: #fff; } .bnp-kad-troph.is-trophy { padding-left: 2px; } .bnp-kad-troph.is-trophy img { width: 40px; height: 40px; margin: -4px 0; border-radius: 0; background: none; }   /* (the trophy itself: half its size, square) */
+    .bnp-kad-troph b { color: #2f2a38; font: 16px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    .bnp-kad .bnp-kad-ib { display: grid; place-items: center; width: 32px; height: 32px; margin: 0; padding: 0; border: 1.5px solid #d3ccb7; border-radius: 50%; background: linear-gradient(#fff, #f3efe4); box-shadow: inset 0 1px 0 #fff, 0 2px 0 #ddd6c4; color: #4a4636; font: 18px/1 Arial, sans-serif; cursor: pointer; }
+    .bnp-kad .bnp-kad-ib:hover, .bnp-kad .bnp-kad-ib:focus-visible, .bnp-kad .bnp-kad-ib[aria-expanded="true"] { border-color: color-mix(in srgb, var(--bnp-accent, #c9a8e0) 65%, #000 15%); background: color-mix(in srgb, var(--bnp-accent, #c9a8e0) 25%, #fff); outline: none; }
+    .bnp-kad .bnp-kad-ib svg { display: block; width: 18px; height: 18px; overflow: visible; }
+    .bnp-kad-drop { position: absolute; z-index: 6; top: 50px; right: 8px; width: min(470px, calc(100% - 16px)); max-height: min(72vh, 660px); overflow: auto; padding: 10px 14px 12px; border: 2px solid color-mix(in srgb, var(--bnp-accent, #c9a8e0) 60%, #4a2f63); border-radius: 16px; background: #fff; box-shadow: 0 10px 28px rgba(0, 0, 0, .22); color: #2f2a38; font: 13px "MuseoSansRounded500", Arial, sans-serif; box-sizing: border-box; }   /* (⚙: times, your count, feeding and its settings, over the cages till closed) */
+    .bnp-kad-drop[hidden] { display: none; }
+    .bnp-kad-sec { margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid #efe9f4; } .bnp-kad-sec.is-first { margin-top: 0; padding-top: 0; border-top: 0; }
+    .bnp-kad-sec > h5 { margin: 0 0 4px; color: #2f2a38; font: 16px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    .bnp-kad .bnp-kad-f { display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: center; gap: 4px 12px; margin: 8px 0 0; }
+    .bnp-kad .bnp-kad-fl { color: #4a3f5a; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-kad .bnp-kad-fc { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+    .bnp-kad .bnp-kad-f > small { grid-column: 2; color: #8a8494; font-size: 12px; line-height: 1.35; }
+    .bnp-kad .bnp-kad-f.is-wide { grid-template-columns: minmax(0, 1fr); gap: 6px; } .bnp-kad .bnp-kad-f.is-wide > small { grid-column: 1; }   /* (a long choice: under its name, the whole width) */
+    .bnp-kad-stat { margin: 8px 0 0; padding: 6px 10px; border-radius: 10px; background: #f4f1f8; color: #4a3f5a; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }   /* (Auto refresh: how it's going) */
+    .bnp-kad .bnp-kad-tg { display: inline-flex; align-items: center; gap: 7px; height: 30px; margin: 0; padding: 0 12px 0 7px; border: 1.5px solid #ddd5e6; border-radius: 999px; background: #fff; color: #5c5845; font: 12.75px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; cursor: pointer; }   /* (each on or off by itself) */
+    .bnp-kad .bnp-kad-tg::before { content: ""; flex: none; width: 17px; height: 17px; border: 1.5px solid #cfc6d9; border-radius: 50%; background: #fff; box-sizing: border-box; }
+    .bnp-kad .bnp-kad-tg[aria-pressed="true"] { border-color: color-mix(in srgb, var(--bnp-accent, #c9a8e0) 65%, #000 15%); background: color-mix(in srgb, var(--bnp-accent, #c9a8e0) 20%, #fff); color: #2b2b2b; }
+    .bnp-kad .bnp-kad-tg[aria-pressed="true"]::before { border-color: transparent; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.6 8.4l2.9 2.9 5.9-6.6' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 13px no-repeat, color-mix(in srgb, var(--bnp-accent, #c9a8e0) 75%, #000 22%); }
+    .bnp-kad .bnp-kad-tg:hover, .bnp-kad .bnp-kad-tg:focus-visible { border-color: color-mix(in srgb, var(--bnp-accent, #c9a8e0) 65%, #000 15%); outline: none; }
+    .bnp-kad .bnp-kad-auto { display: inline-flex; align-items: center; gap: 6px; height: 32px; margin: 0; padding: 0 11px; border: 1.5px solid #cfe5cc; border-radius: 999px; background: #eef8ec; color: #24521b; font: 12px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }   /* (Auto refresh on: its next look) */
+    .bnp-kad .bnp-kad-auto b { min-width: 34px; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; font-variant-numeric: tabular-nums; text-align: left; }
+    .bnp-kad .bnp-kad-auto:hover, .bnp-kad .bnp-kad-auto:focus-visible { border-color: #2e9e3e; outline: none; }
+    .bnp-kad-you b { font-family: "MuseoSansRounded900", "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-kad-grp { display: flex; flex: 1 1 auto; align-items: center; gap: 6px 12px; min-width: 0; overflow: hidden; }   /* (the times: one line, what doesn't fit cut off at the end) */
+    .bnp-kad-main { flex: none; white-space: nowrap; } .bnp-kad-minis { flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; } .bnp-kad-grp .bnp-kad-new { flex: none; white-space: nowrap; }
+    .bnp-kad-pm, .bnp-kad-pend { color: #8a8494; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; } .bnp-kad-pend { padding: 1px 6px; border-radius: 999px; background: #f1edf6; }   /* (a rough time's ±; how many times it has waited 7 minutes) */
+    .bnp-kad-when.is-sad, .bnp-kad-chip .is-sad { color: #a3366b; font: 13px "MuseoSansRounded700", Arial, sans-serif; }   /* (just come: hungry now) */
+    .bnp-kad-n { margin-left: -2px; color: #8a8494; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-kad-more { color: #6a6178; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-kad .bnp-kad-src { display: inline-grid; place-items: center; width: 20px; height: 20px; padding: 0; border-radius: 50%; background: #eef3fb; color: #2f5d9a; } .bnp-kad .bnp-kad-src svg { display: block; width: 12px; height: 12px; }   /* (the main's time from the boards) */
+    .bnp-kad-troph { flex: none; white-space: nowrap; margin-left: 0; }
+    .bnp-kad-cur { margin-left: 3px; padding: 2px 8px; border-radius: 999px; background: #e3f4df; color: #24521b; font: 12px "MuseoSansRounded700", Arial, sans-serif; } .bnp-kad-cur b { font-family: "MuseoSansRounded900", "MuseoSansRounded700", Arial, sans-serif; }   /* (your fed one, and how quick you were) */
+    .bnp-kad-tools { flex: none; }
+    .bnp-kad .bnp-kad-ib.is-auto { position: relative; }
+    .bnp-kad .bnp-kad-ib.is-auto::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; background: conic-gradient(#2e9e3e var(--kad-ring, 0turn), rgba(46, 158, 62, .16) 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)); pointer-events: none; }   /* (Auto refresh's next look: the ring fills till then) */
+    .bnp-kad .bnp-kad-ib.is-looking svg { animation: bnp-kad-spin .9s linear infinite; } @keyframes bnp-kad-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .bnp-kad .bnp-kad-ib.is-looking svg { animation: none; } }
+    @media (max-width: 760px) { .bnp-kad-bar { flex-wrap: wrap; } .bnp-kad-grp { flex-wrap: wrap; overflow: visible; } }   /* (narrow: as many lines as it needs) */
+    .bnp-kad-how { margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: #f7f4fa; color: #5d566a; font-size: 12px; line-height: 1.45; } .bnp-kad-how b { color: #4a3f5a; }
+    .bnp-kad-bar .bnp-kad-main, .bnp-kad-bar .bnp-kad-minis { flex-wrap: nowrap; gap: 5px; }   /* (one line each: nothing in the bar wraps) */
+    .bnp-kad-bar .bnp-kad-grp { gap: 6px 10px; } .bnp-kad-bar { gap: 6px 8px; }
+    .bnp-kad-bar .bnp-kad-minis { text-overflow: ellipsis; }
+    .bnp-kad-bar .bnp-kad-chip { padding: 2px 9px 2px 8px; white-space: nowrap; }
+    .bnp-kad-bar .bnp-kad-in { display: inline-block; min-width: 58px; text-align: center; font-variant-numeric: tabular-nums; box-sizing: border-box; }   /* (a set width: the countdown ticking doesn't move what's after it) */
+    .bnp-kad-bar .bnp-kad-when { font-variant-numeric: tabular-nums; }
+    html.bnp-kad-on td.content .bnp-kad-box.bnp-kad-res { max-width: 540px; }   /* (Neopets' page after a feed, in the cages' frame) */
+    .bnp-kad-resh { padding: 9px 16px 8px; border-bottom: 1px solid color-mix(in srgb, var(--bnp-accent, #c9a8e0) 30%, #d4cdda); border-radius: 16px 16px 0 0; background: linear-gradient(#fff, color-mix(in srgb, var(--bnp-accent, #c9a8e0) 10%, #fff)); color: #2f2a38; font: 26px/1.15 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; text-align: center; }
+    .bnp-kad-resh strong { font: inherit; }
+    .bnp-kad-resb { display: grid; justify-items: center; gap: 10px; padding: 16px 18px 16px; color: #3d3548; font: 14px/1.45 "MuseoSansRounded500", Arial, sans-serif; text-align: center; }
+    .bnp-kad-respic { position: relative; display: inline-flex; align-items: flex-start; gap: 6px; }
+    .bnp-kad-respic img { display: block; width: 100px; height: 100px; border-radius: 12px; background: #f3fbf2; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #9fd59b, 0 4px 12px rgba(46, 158, 62, .2); }   /* (the happy Kadoatie, at its size) */
+    .bnp-kad-resmew { align-self: flex-start; margin-top: -4px; padding: 3px 12px; border: 1.5px solid #cfe5cc; border-radius: 14px 14px 14px 4px; background: #fff; color: #24521b; font: 15px "Cafeteria", Arial, sans-serif; letter-spacing: .3pt; }   /* (its "*Mew!*", said beside it) */
+    .bnp-kad-resmew strong { font: inherit; }
+    p.bnp-kad-resmsg { margin: 0; } p.bnp-kad-resmsg strong { font-family: "MuseoSansRounded700", Arial, sans-serif; } p.bnp-kad-resmsg.is-thanks { color: #6a6178; font-size: 13px; }
+    .bnp-kad-resyou { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; margin-top: 2px; padding-top: 12px; border-top: 1px solid #efe9f4; width: 100%; }
+    .bnp-kad-resyou .bnp-kad-troph b { font-size: 18px; }
+    .bnp-kad-resnote { color: #4a3f5a; font: 13px "MuseoSansRounded700", Arial, sans-serif; } .bnp-kad-resnote b { color: #24521b; }
+    .bnp-kad-resback { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; } .bnp-kad-resback center { display: contents; } .bnp-kad-resback form { margin: 0; }
+    .bnp-kad-resgo { display: inline-flex; align-items: center; gap: 8px; color: #6a6178; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; } .bnp-kad-resgo b { min-width: 8px; color: #2f2a38; font-variant-numeric: tabular-nums; }
+    html.bnp-kad-on td.content td.bnp-kad-cage .bnp-kad-by { display: block; margin-top: 1px; font: 14px/1.3 "MuseoSansRounded700", Arial, sans-serif; }   /* (who fed it: under "Thanks,", a little bigger) */
+    html.bnp-kad-on td.content .bnp-kad-price { color: #6a6178; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }   /* (its food's itemdb price) */
+    html.bnp-kad-on td.content .bnp-kad-price a { color: #4a3f5a !important; text-decoration: none; } html.bnp-kad-on td.content .bnp-kad-price a:hover { text-decoration: underline; }
+    html.bnp-kad-on td.content .bnp-kad-price.is-over a, html.bnp-kad-on td.content .bnp-kad-price small { color: #a3361f !important; } html.bnp-kad-on td.content .bnp-kad-price small { font-size: 11px; }
+    html.bnp-kad-on td.content .bnp-kad-price.is-none, html.bnp-kad-on td.content .bnp-kad-price.is-wait { color: #9a94a3; font-family: "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-kad-src { padding: 1px 8px; border-radius: 999px; background: #eef3fb; color: #2f4f7a; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; }   /* (the main's time: from the boards) */
+    .bnp-kad-stat.is-board { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; } .bnp-kad-stat.is-board a { color: inherit; } .bnp-kad-stat.is-board .bnp-pillbtn { margin-left: auto; }
+    .bnp-kad .bnp-pillbtn.is-small { height: 26px; padding: 0 11px; font-size: 12px; } .bnp-kad .bnp-pillbtn:disabled { opacity: .55; cursor: default; transform: none; }
+    .bnp-kad input.bnp-kad-min.is-long { width: min(280px, 100%); }
+    .bnp-kad .bnp-seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid #e3dfd2; border-radius: 12px; background: #f3f0e6; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06); }   /* (NE's own segmented choices, here too) */
+    .bnp-kad .bnp-seg button { margin: 0; padding: 4px 11px 5px; border: 0; border-radius: 9px; background: none; color: #5c5845; font: 12.75px/1.25 "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; transition: background-color .12s, color .12s, box-shadow .12s; }
+    .bnp-kad .bnp-seg button:hover:not([aria-pressed="true"]) { background: rgba(255, 255, 255, .85); color: #2a2a2a; }
+    .bnp-kad .bnp-seg button[aria-pressed="true"] { background: linear-gradient(color-mix(in srgb, var(--bnp-accent, #c9a8e0) 82%, #fff), var(--bnp-accent, #c9a8e0)); color: var(--bnp-accent-text, #2b2b2b); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 2px 0 color-mix(in srgb, var(--bnp-accent, #c9a8e0) 60%, #000 25%); }
+    .bnp-kad .bnp-seg button:focus-visible { outline: 2px solid color-mix(in srgb, var(--bnp-accent, #c9a8e0) 70%, #000 15%); outline-offset: 1px; }
+    .bnp-kad .bnp-pillbtn { display: inline-flex; align-items: center; height: 30px; margin: 0; padding: 0 15px; border: 1px solid color-mix(in srgb, var(--bnp-accent, #c9a8e0) 55%, #000 25%); border-radius: 999px; background: linear-gradient(color-mix(in srgb, var(--bnp-accent, #c9a8e0) 30%, #fff), color-mix(in srgb, var(--bnp-accent, #c9a8e0) 55%, #fff)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 2px 0 color-mix(in srgb, var(--bnp-accent, #c9a8e0) 55%, #000 25%); color: #2b2b2b; font: 13px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; cursor: pointer; transition: transform .12s, box-shadow .12s; }   /* (raised, in the theme's colour: the look of Quick Ref's buttons) */
+    .bnp-kad .bnp-pillbtn:hover, .bnp-kad .bnp-pillbtn:focus-visible { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .65), 0 3px 0 color-mix(in srgb, var(--bnp-accent, #c9a8e0) 55%, #000 25%), 0 5px 12px rgba(0, 0, 0, .14); outline: none; transform: translateY(-1px); }
+    .bnp-kad .bnp-pillbtn.is-quiet { border-color: #d3ccb7; background: linear-gradient(#fff, #f3efe4); box-shadow: inset 0 1px 0 #fff, 0 2px 0 #ddd6c4; color: #4a4636; }
+    .bnp-kad .bnp-kad-num { display: inline-flex; align-items: center; gap: 6px; color: #6a6178; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-kad .bnp-kad-num input, .bnp-kad input.bnp-kad-min { width: 104px; height: 30px; margin: 0; padding: 0 12px; border: 1.5px solid #ddd5e6; border-radius: 999px; background: #fff; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06); color: #2b2b2b; font: 13.5px "MuseoSansRounded500", Arial, sans-serif; box-sizing: border-box; }
+    .bnp-kad .bnp-kad-num input { text-align: right; } .bnp-kad input.bnp-kad-min { width: 84px; }
+    .bnp-kad .bnp-kad-num input:focus, .bnp-kad input.bnp-kad-min:focus { border-color: color-mix(in srgb, var(--bnp-accent, #c9a8e0) 70%, #000 15%); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--bnp-accent, #c9a8e0) 30%, transparent); }
+    .bnp-kad .bnp-kad-chk { display: flex; align-items: flex-start; gap: 10px; margin: 10px 0 0; padding: 8px 10px; border-radius: 12px; background: #f7f4fa; color: #4a3f5a; font: 13px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
+    .bnp-kad .bnp-kad-chk input { flex: none; width: 18px; height: 18px; margin: 1px 0 0; accent-color: color-mix(in srgb, var(--bnp-accent, #c9a8e0) 70%, #000 20%); }
+    .bnp-kad .bnp-kad-chk small { display: block; color: #8a8494; font: 12px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-kad-new { padding: 2px 10px; border-radius: 999px; background: #2e9e3e; color: #fff; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-kad .bnp-kad-ib.is-hot { border-color: #2e9e3e; background: #dff3dc; color: #1f6a28; animation: bnp-kad-pulse 1s ease-in-out infinite alternate; }
+    .bnp-kad-dhead { display: flex; align-items: center; justify-content: space-between; margin: 0 0 6px; } .bnp-kad-dhead b { font: 18px "Cafeteria", Arial, sans-serif; }
+    .bnp-kad-then { margin: 0 0 6px; color: #5d566a; font-size: 12.5px; } .bnp-kad-then small { color: #8a8494; }
+    .bnp-kad-prog { display: flex; align-items: center; gap: 10px; margin: 4px 0 8px; color: #4a3f5a; font-size: 13.5px; } .bnp-kad-prog img { flex: none; width: 50px; height: 50px; } .bnp-kad-prog small { color: #8a8494; }
+    .bnp-kad-f { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 8px 0 0; } .bnp-kad-f small { flex-basis: 100%; color: #8a8494; font-size: 12px; }
+    .bnp-kad-f input { width: 76px; height: 28px; margin: 0 0 0 6px; padding: 0 9px; border: 2px solid #e1d8ea; border-radius: 999px; font: 13px "MuseoSansRounded500", Arial, sans-serif; box-sizing: border-box; }
+    .bnp-kad-hist { display: grid; gap: 2px; margin: 10px 0 0; color: #4a3f5a; font-size: 12.5px; } .bnp-kad-hist b { margin-bottom: 2px; }
+    .bnp-kad-feedset { margin: 6px 0 4px; padding: 8px 12px 10px; border: 1.5px solid #ece6f2; border-radius: 12px; background: #fff; } .bnp-kad-feedset > b { font: 16px "Cafeteria", Arial, sans-serif; }
+    .bnp-kad-f > span:first-child { min-width: 150px; color: #4a3f5a; }
+    .bnp-kad-chk { gap: 8px; } .bnp-kad-chk input { width: auto; height: auto; margin: 0; }
+    .bnp-kad-note { margin: 8px 0 0; color: #6a6178; font-size: 12px; }
+    html.bnp-kad-on td.content .bnp-kad-act { display: grid; justify-items: center; gap: 4px; margin: 8px 0 0; }   /* (a hungry cage's Buy and feed) */
+    html.bnp-kad-on td.content .bnp-kad-act .bnp-kad-buy { width: auto; min-width: 128px; height: 32px; margin: 0; padding: 0 14px; font-size: 14px; }
+    html.bnp-kad-on td.content .bnp-kad-act .bnp-kad-buy:disabled { opacity: .55; cursor: default; }
+    .bnp-kad-st { color: #6a6178; font: 11.5px/1.3 "MuseoSansRounded500", Arial, sans-serif; } .bnp-kad-st.is-ok { color: #2b7a2b; } .bnp-kad-st.is-bad { color: #a3361f; } .bnp-kad-st.is-busy { color: #4a3f5a; } .bnp-kad-st.is-ask { color: #2f2a38; font-family: "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-kad-yn { display: inline-flex; gap: 6px; } html.bnp-kad-on td.content .bnp-kad-yn .bnp-kad-buy { min-width: 64px; }
+    html.bnp-kad-on td.content table.bnp-kad-grid { width: 100%; margin: 0; border-collapse: collapse; border-spacing: 0; table-layout: fixed; }   /* (Neopets' own grid of cages, its lines thin, in the frame) */
+    html.bnp-kad-on td.content td.bnp-kad-cage { padding: 7px 5px 8px !important; border: 0 !important; border-right: 1px solid color-mix(in srgb, var(--bnp-accent, #c9a8e0) 30%, #d4cdda) !important; border-bottom: 1px solid color-mix(in srgb, var(--bnp-accent, #c9a8e0) 30%, #d4cdda) !important; background: #fff !important; color: #5d566a; font: 12px/1.3 "MuseoSansRounded500", Arial, sans-serif; vertical-align: top; }
+    html.bnp-kad-on td.content td.bnp-kad-cage:last-child { border-right: 0 !important; }
+    html.bnp-kad-on td.content tr:last-child > td.bnp-kad-cage { border-bottom: 0 !important; }
+    html.bnp-kad-on td.content tr:last-child > td.bnp-kad-cage:first-child { border-bottom-left-radius: 16px; } html.bnp-kad-on td.content tr:last-child > td.bnp-kad-cage:last-child { border-bottom-right-radius: 16px; }
+    html.bnp-kad-on td.content td.bnp-kad-cage br { display: none; }   /* (its words run on: "Midnight has been fed!" on one line, the cage on its own) */
+    html.bnp-kad-on td.content td.bnp-kad-cage > strong:first-child { color: #2f2a38; font: 15px/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-kad-on td.content td.bnp-kad-cage > strong:first-child::after { content: " "; }
+    html.bnp-kad-on td.content td.bnp-kad-cage > a:has(> img) { display: block; width: 100px; margin: 5px auto 4px; }
+    html.bnp-kad-on td.content td.bnp-kad-cage > a > img { display: block; border-radius: 10px; }
+    html.bnp-kad-on td.content td.bnp-kad-cage.is-fed:not(.is-mine) { background: #f7f6f9 !important; color: #8f8a98; }   /* (fed: quieter, so the hungry ones stand out) */
+    html.bnp-kad-on td.content td.bnp-kad-cage.is-fed:not(.is-mine) > strong:first-child { color: #77707f; }
+    html.bnp-kad-on td.content td.bnp-kad-cage.is-fed:not(.is-mine) > a > img { opacity: .55; filter: grayscale(.55); transition: opacity .15s, filter .15s; }
+    html.bnp-kad-on td.content td.bnp-kad-cage.is-fed:not(.is-mine):hover > a > img { opacity: .85; filter: none; }
+    html.bnp-kad-on td.content td.bnp-kad-cage.is-fed:not(.is-mine) a { color: #77707f !important; }
+    html.bnp-kad-on td.content td.bnp-kad-cage.is-sad { position: relative; background: linear-gradient(#fffbfd, #ffeef5) !important; box-shadow: inset 0 0 0 2px #f2a3c6; color: #5a2a40; }   /* (hungry: a soft pink frame and wash) */
+    html.bnp-kad-on td.content td.bnp-kad-cage.is-sad > strong:first-child { color: #3d1a2b; }
+    html.bnp-kad-on td.content td.bnp-kad-cage.is-sad > a > img { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #f2a3c6, 0 3px 9px rgba(226, 110, 160, .28); }
+    html.bnp-kad-on td.content td.bnp-kad-cage.is-sad > strong:last-of-type:not(:first-child) { display: table; margin: 3px auto 0; padding: 1px 9px; border-radius: 999px; background: #fcd9e8; color: #861c4c; font: 13px "MuseoSansRounded700", Arial, sans-serif; box-shadow: 0 2px 0 #f1b3cd; }   /* (the food it wants) */
+    html.bnp-kad-on td.content td.bnp-kad-cage.is-mine { background: #eef8ea !important; box-shadow: inset 0 0 0 2px #7cc576; }
+    html.bnp-kad-on td.content td.bnp-kad-cage.is-mine::after { content: "You fed this one"; display: table; margin: 4px auto 0; padding: 1px 8px; border-radius: 999px; background: #3c9e3c; color: #fff; font: 11px "MuseoSansRounded700", Arial, sans-serif; }
     input.bnp-dd-back { display: block !important; margin: 4px auto 0 !important; width: fit-content !important; padding: 6px 20px !important; font-size: 15px !important; }
     .bnp-dd-old { display: none !important; }
     .bnp-bob-hide { display: none !important; }
@@ -50491,6 +51590,15 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.2', '2026-11-03', [
+      'Kadoatery: made over. One frame of cages (hungry ones in pink, with their food’s itemdb price) and a one-line bar of upcoming windows',
+      'Kadoatery times: learned from what NE sees, counted from when they’re fed, with minis, pends and the boards’ Kadoatery topic',
+      'Kadoatery Auto refresh: updates the page without reloading, looking every few seconds only while a restock can come',
+      'Kadoatery alerts: a sound, “Kadoatie Restock!” flashing in the tab, an NE notification and a desktop one, each as you choose',
+      'Kadoatery feeding: Buy and feed in one press (asked first), your exact count, and how quick you were',
+      'Kadoatery: the page after feeding made over, then back to the Kadoatery in 3 seconds (or Stay here)',
+      'Lottery: a page left open over the 4 am draw updates itself, and tickets Neopets hasn’t cleared after its draw are marked',
+    ]],
     ['5.1.5', '2026-11-03', [
       'Dailies: the board has a Prizes tab, with what each daily gave you day by day, a chip for each daily and a find box',
       'Dailies bar: ‹ and › either side of Next go through the ready dailies both ways, and the arrows stay put as you go (Skip is gone)',
@@ -50982,7 +52090,7 @@
       for (const k of ['fquest', 'fqfold']) GM_addValueChangeListener(KEY + k, (n, o, v, remote) => { if (remote) paintFq(); });   // (your faerie quest, changed in another tab)
     } catch (_) { /* */ }
   }
-  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { wwwAsk: (u, o) => fetch(u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }), (e) => ({ err: String(e && e.message) })), fromAsk: (p, u, o) => (p === 'html' ? fromPageHtml(u).then((t) => ({ text: t.slice(0, 300) })) : fromPage(p, u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }))).catch((e) => ({ err: String(e && e.message) })), wwwShut, nmSendNow, ncValue, remSoundOnce, sa: () => sa, saKnown, saState, saMarksLoad, saMark, saMineLoad, itSsw, sswPanel, mark: (id, how) => dailyMark(id, how || { full: true }), dstate: (id) => { const d = dailyById(id); return d ? dailyState(d) : null; }, dlogNow: () => dlog(), dproof: DAILY_PROOF, remEvents: (a, b, c) => remEvents(a, b, c).map((e) => ({ key: e.key, at: e.at, kind: e.kind, title: e.title, text: e.textNow ? e.textNow() : e.text })), remSchedule, remPerOn: (id) => remPerOn(dailyById(id)), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbLivePill, pageSay, nbSay, toast, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, themeChanged, nclUnhold: () => new Promise((r) => { if (nclHoldEnd) { nclHoldEnd(); setTimeout(r, 80); } else r(); }), nclOpen, nclMin, nclTell, nclFold, nclSentList, nmSentGo, myMainColour, myColouriseShift, myColoursNow, myAll: () => S.myThemes, myTurnNow: () => myTurn, soundDraw, nclGlance, captureChrome, acctCheck, dlog, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
+  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { kadCheckRun, tabFlash, kadSwap, kadNextLook, kadPlan, lottoDrawn: () => lottoDrawnFn && lottoDrawnFn(), wwwAsk: (u, o) => fetch(u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }), (e) => ({ err: String(e && e.message) })), fromAsk: (p, u, o) => (p === 'html' ? fromPageHtml(u).then((t) => ({ text: t.slice(0, 300) })) : fromPage(p, u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }))).catch((e) => ({ err: String(e && e.message) })), wwwShut, nmSendNow, ncValue, remSoundOnce, sa: () => sa, saKnown, saState, saMarksLoad, saMark, saMineLoad, itSsw, sswPanel, mark: (id, how) => dailyMark(id, how || { full: true }), dstate: (id) => { const d = dailyById(id); return d ? dailyState(d) : null; }, dlogNow: () => dlog(), dproof: DAILY_PROOF, remEvents: (a, b, c) => remEvents(a, b, c).map((e) => ({ key: e.key, at: e.at, kind: e.kind, title: e.title, text: e.textNow ? e.textNow() : e.text })), remSchedule, remPerOn: (id) => remPerOn(dailyById(id)), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbLivePill, pageSay, nbSay, toast, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, themeChanged, nclUnhold: () => new Promise((r) => { if (nclHoldEnd) { nclHoldEnd(); setTimeout(r, 80); } else r(); }), nclOpen, nclMin, nclTell, nclFold, nclSentList, nmSentGo, myMainColour, myColouriseShift, myColoursNow, myAll: () => S.myThemes, myTurnNow: () => myTurn, soundDraw, nclGlance, captureChrome, acctCheck, dlog, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
   if (FRAME) { lookFrame(); return; }   // (the "Your look" window's page: Neoboard Settings alone, in the boards' look)
   // A page this makes over is never seen first as it was: the top bar is made over as soon as it's all there (Neopets puts it, the side
   // menu and their drop-downs before the page's own box, so that's before anything is drawn), and a page whose own layout changes much
@@ -51143,7 +52251,7 @@
     setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 4000 + Math.random() * 12000);   // (the Turmaculus' due hours, if they're needed: a moment after the page, not at once)
     document.addEventListener('visibilitychange', () => { if (document.hidden) return; clearTimeout(turmacRead.t); turmacRead.t = setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 3000 + Math.random() * 6000); });
     try { startKeep(); } catch (e) { report(e); }
-    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, sdrBoot, labPage, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, kpopPage, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
+    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, sdrBoot, labPage, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, kpopPage, kadPage, kadCheckBoot, kadLookupRead, kadFeedPage, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
     themeAfter(themeChanged);   // (an old page, its theme's sheets still coming: everything of ours dressed again once they're in)
     whenLoaded(() => { setTimeout(() => { try { boxFootNote(); } catch (e) { report(e); } }, 900); try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } setTimeout(() => { updCheck(false).catch(report); try { updSeen(); } catch (e) { report(e); } }, 1500); try { const w = myWorn(), sw = w && themeData().sw[myLive(w).base]; if (w && (!sw || sw.v !== 7)) themeSwatches(); } catch (e) { report(e); } });   // (a theme of yours: its base's sheet read, if it hasn't been yet)   // (a random event Neopets adds a moment later; theme pictures for the tab)
     if (document.getElementById('navtop__2020') || document.getElementById('navbottom__2020')) startOnce();

@@ -1,10 +1,9 @@
 {
- "version": "5.1.5",
+ "version": "5.2",
  "date": "2026-11-03",
  "notes": [
-  "Dailies: a Prizes tab on the board",
-  "Kiko Pop: playable without Flash",
-  "Dailies bar: ‹ › arrows",
-  "Quick Ref: Your Pets folds into its nameplate"
+  "Kadoatery: made over, with its times, Auto refresh and alerts",
+  "Kadoatery: Buy and feed, your count and trophy",
+  "Lottery: updates itself at the 4 am draw"
  ]
 }
