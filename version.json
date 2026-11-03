@@ -1,9 +1,8 @@
 {
- "version": "5.2.2",
+ "version": "5.2.3",
  "date": "2026-11-03",
  "notes": [
-  "Books Read, Booktastic, Gourmet: trophy goals show what gets you there",
-  "Price mode shows the item it’s on",
-  "Kadoatery: an Auto switch on the bar, and smarter checks once you’ve fed"
+  "Trainer mode keeps going while its tab is in the background",
+  "Neoboards: the topic’s bar at the top shows again as you scroll"
  ]
 }

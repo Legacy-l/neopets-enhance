@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.2.2
+// @version      5.2.3
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -1808,7 +1808,7 @@
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, tillLog: true, tpSales: true, auSales: true,
     scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: true, oldBtns: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldGalleries: false, oldShops: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
-    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, kpopPlay: true, kadHelp: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
+    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, kpopPlay: true, kadHelp: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trBg: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, tone: '', vol: 100, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,   // (tone: '' each its own, or one of the sounds for all; vol: how loud, 5 to 100)
@@ -8956,10 +8956,10 @@
           return;
         }
         if (Date.now() - t0 > 30000) { fail(new TypeError('Failed to fetch (no answer)')); return; }
-        setTimeout(tick, 120);
+        bmSleep(120).then(tick).catch(fail);   // (a worker's timer: a tab out of sight checks as often)
       };
       try { move(); } catch (e) { fail(e); return; }
-      setTimeout(tick, 120);
+      bmSleep(120).then(tick).catch(fail);
     });
     T.at = (path) => {   // (is it on this page, as it last landed there?)
       if (!T.doc || live() !== T.doc) return false;
@@ -8976,7 +8976,7 @@
           let moved = false;
           try { f.contentWindow.addEventListener('beforeunload', () => { moved = true; }, { once: true }); } catch (_) { moved = true; }
           a.click();
-          setTimeout(() => { if (!moved && f && live() === d) f.src = href; }, 4000);   // (a link its page keeps to itself: opened as from your page instead)
+          bmSleep(4000).then(() => { if (!moved && f && live() === d) f.src = href; });   // (a link its page keeps to itself: opened as from your page instead)
         });
       }
       if (f) return T.go(() => { f.src = href; });
@@ -9059,7 +9059,7 @@
       let tbl = null;
       while (!tbl && Date.now() - t0 < 12000) {   // (its list, once its page has it: the table is there only then)
         try { tbl = k.f.contentDocument.querySelector('#quickstock-table-container table.quickstock-table'); } catch (_) { tbl = null; }
-        if (!tbl) await wtSleep(250);
+        if (!tbl) await bmSleep(250);
       }
       if (tbl) {
         for (const tr of tbl.querySelectorAll('tbody tr')) {
@@ -9074,7 +9074,7 @@
       }
     } catch (e) { if (e === TR_STOP) throw e; report(e); }
     for (let pg = next; pg && pg <= 3; pg++) {   // (as its page asks for its list: its first when its own didn't show, else the next)
-      if (pg > 1) await wtSleep(1800 + Math.random() * 1400);
+      if (pg > 1) await bmSleep(1800 + Math.random() * 1400);
       const r = await fromPage(page, `/np-templates/ajax/quickstock/get_items.php?page=${pg}&per_page=50&filter=np&sort=recent&stack=1`, { method: 'GET', credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
       const j = await r.json().catch(() => null);
       if (!j || !j.success || !Array.isArray(j.items)) { wwwShut(page); throw new Error('Your inventory couldn’t be read just now'); }
@@ -9101,7 +9101,7 @@
       await trStep(run, `Searching your SDB for ${w === 'codestone' ? 'codestones' : w}…`);
       last = w;
       for (let pg = 1; pg <= 4; pg++) {
-        if (pg > 1) await wtSleep(1600 + Math.random() * 1600);   // (its next page, as you'd go on to it)
+        if (pg > 1) await bmSleep(1600 + Math.random() * 1600);   // (its next page, as you'd go on to it)
         const j = await ask(w, pg), d = j && j.success && j.data;
         if (!d || !Array.isArray(d.items)) break;
         for (const it of d.items) { const k = reClean(it.obj_name).toLowerCase(); if (want.has(k) && !found.has(k)) found.set(k, it); }
@@ -9190,9 +9190,11 @@
 
   // A round, for every pet with goals. By itself on a school page in your hours, when there's something to do; or when you press Run now
   let trBusy = null, trElsewhere = false, trTimer = 0, trNextAt = 0, trNextWhy = '';
-  async function trStep(run, doing) {   // (a person's moment before the next thing; only while this tab's in front, in your hours (unless you pressed Run now), and not stopped)
-    if (run.n++) { await untilShown(); await wtSleep(2400 + Math.random() * 2800 + (Math.random() < 0.15 ? 2500 + Math.random() * 6000 : 0)); }   // (mostly a few seconds, now and then longer)
-    await untilShown();
+  const trBg = () => S.features.trBg !== false;   // (Settings › Training schools › In another tab too: it keeps going while its tab's out of sight, unless you've turned that off)
+  const trShown = () => (trBg() ? Promise.resolve() : untilShown());
+  async function trStep(run, doing) {   // (a person's moment before the next thing, by a worker's timer (on time in a tab out of sight too); only while this tab's in front if you've chosen so, in your hours (unless you pressed Run now), and not stopped)
+    if (run.n++) { await trShown(); await bmSleep(2400 + Math.random() * 2800 + (Math.random() < 0.15 ? 2500 + Math.random() * 6000 : 0)); }   // (mostly a few seconds, now and then longer)
+    await trShown();
     if (run.stop || !trOn() || (!run.manual && trLog().paused)) throw TR_STOP;   // (paused: nothing more, Check now's round apart)
     if (!run.manual && !trHoursOk()) { run.why = 'hours'; throw TR_STOP; }
     if (doing) { run.doing = doing; trPaint(); }
@@ -9203,7 +9205,7 @@
       const run = trBusy = { stop: false, manual: !!manual, n: 0, doing: 'Starting…', why: '', did: 0, noBuy: '', hist: [], bought: [], sdb: {}, began: Date.now(), mine: [] };
       let failed = false;
       trElsewhere = false;
-      clearTimeout(trTimer);
+      trTimer = 0;   // (the round planned: this is it)
       trPaint();
       try { await trRound(run); if (manual && !run.did) trSay('Looked: nothing to do just now'); }
       catch (e) {
@@ -9229,7 +9231,7 @@
       }
     };
     if (!(navigator.locks && navigator.locks.request)) return go();
-    return navigator.locks.request('bnp-trainer', { ifAvailable: true }, async (lock) => { if (!lock) { trElsewhere = true; trPaint(); setTimeout(() => { trElsewhere = false; trPlan(180000); }, 90000); return; } await go(); });
+    return navigator.locks.request('bnp-trainer', { ifAvailable: true }, async (lock) => { if (!lock) { trElsewhere = true; trPaint(); bmSleep(90000).then(() => { trElsewhere = false; trPlan(180000); }); return; } await go(); });
   }
   function trNeed(mine) {   // (the schools to look at in a round: where each pet with goals was last seen on a course, and where its level trains; both for one not seen yet)
     const L = trLog(), out = new Set();
@@ -9264,7 +9266,7 @@
           if (e === TR_STOP || trLeaving || k || /log in/i.test(String((e && e.message) || ''))) throw e;
           report(e);
           tab.shut();
-          await wtSleep(2500 + Math.random() * 1500);
+          await bmSleep(2500 + Math.random() * 1500);
         }
       }
     };
@@ -9426,7 +9428,7 @@
   const trWaitMin = () => { const m = Number(S.features.trWait ?? 5); return [0, 5, 10, 15, 30].includes(m) ? m : 5; };   // (Settings › Training schools: no delay, or up to 5, 10, 15 or 30 minutes; 5 unless chosen)
   const trLag = (end) => { const r = trRand(Math.round(end / 60000)), m = trWaitMin(); return m ? 15000 + r * (m * 60000 - 15000) : 6000 + r * 9000; };   // (from a course's end till it's seen to, as you'd come back to it: a random moment within the time chosen (the user, 2026-11-02), never before Neopets' own clock says it's done; no delay, a few seconds. Drawn once for that minute: Status read again a second off doesn't move it, and courses ending together are seen to together)
   function trPlan(gap = 180000, stale = false) {   // (the next round on this page: when there's something to do, but not sooner than gap after the last; else soon after a course of a pet with goals ends. Moved to your hours)
-    clearTimeout(trTimer);
+    trTimer = 0;   // (the one planned before: not now)
     trNextAt = 0;
     if (!trOn() || !trSchoolOf(location.pathname)) return;
     if (trLog().paused) { trPaint(); return; }   // (paused: no round of its own till you resume)
@@ -9438,7 +9440,7 @@
     trNextWhy = due || !at ? '' : at === wiz ? 'wiz' : 'end';
     if (at && !trHoursOk(new Date(at))) { const nx = trHoursNext(new Date(at)); at = nx ? nx.getTime() + 60000 + trRand(nx.getTime()) * 240000 : 0; }
     trNextAt = at;
-    if (at) trTimer = setTimeout(() => { const away = document.hidden; untilShown().then(() => (away ? wtSleep(3000 + Math.random() * 5000) : null)).then(() => trRun(false)).catch(report); }, Math.min(Math.max(at - now, 1500), 2 ** 31 - 1));   // (back to the tab: a moment's look first)
+    if (at) { const t = trTimer = {}; bmSleep(Math.min(Math.max(at - now, 1500), 2 ** 31 - 1)).then(() => { if (trTimer !== t) return null; const away = document.hidden && !trBg(); return trShown().then(() => (away ? bmSleep(3000 + Math.random() * 5000) : null)).then(() => (trTimer === t ? trRun(false) : null)); }).catch(report); }   // (a worker's timer: on time in a tab out of sight too. Waiting for you to come back to the tab only if you've chosen so, then a moment's look first)
     trPaint();
   }
 
@@ -9474,7 +9476,7 @@
     if (FRAME || !trSchoolOf(location.pathname)) return;
     if (!trOn() && trBusy) trBusy.stop = true;
     trViewApply();
-    if (trOn()) trPlan(0, true); else clearTimeout(trTimer);
+    if (trOn()) trPlan(0, true); else trTimer = 0;
   }
   function trViewApply() {   // (the Trainer in place of the page's own words, or the page as it is; its link among the school's)
     document.documentElement.classList.toggle('bnp-trview', trViewOn());
@@ -9507,7 +9509,7 @@
   }
   function trState() {   // ({ state, cls }: what it's doing, said in a line)
     const run = trBusy, now = Date.now();
-    if (run) return { state: `${run.doing || 'Working…'}${document.hidden ? ' (paused while this tab’s in the back)' : ''}`, cls: 'is-run' };
+    if (run) return { state: `${run.doing || 'Working…'}${document.hidden && !trBg() ? ' (paused while this tab’s in the back)' : ''}`, cls: 'is-run' };
     if (trElsewhere) return { state: 'Working in another tab', cls: 'is-run' };
     if (!trAny()) return { state: 'No pet chosen yet: click the stats a pet should train', cls: 'is-idle' };
     if (trLog().paused) return { state: 'It starts, pays for and completes nothing till you resume', cls: 'is-paused' };
@@ -9706,7 +9708,7 @@
     trFinding = true;
     trPaint();
     const tab = trTabNew();   // (each school's Status, opened in an unseen tab of its own as you'd open them)
-    try { const st = {}; let k = 0; for (const s of Object.keys(TR_SCHOOLS)) { if (k++) await wtSleep(1500 + Math.random() * 1200); await tab.open(`${TR_SCHOOLS[s].path}?type=status`); if (!trainTable(tab.doc)) throw new Error('Neopets didn’t answer just now'); st[s] = trPets(tab.doc, s); } trSeen(st); } catch (e) { if (!trLeaving) trFlash('Neopets didn’t answer just now: try again in a moment'); report(e); } finally { tab.shut(); }
+    try { const st = {}; let k = 0; for (const s of Object.keys(TR_SCHOOLS)) { if (k++) await bmSleep(1500 + Math.random() * 1200); await tab.open(`${TR_SCHOOLS[s].path}?type=status`); if (!trainTable(tab.doc)) throw new Error('Neopets didn’t answer just now'); st[s] = trPets(tab.doc, s); } trSeen(st); } catch (e) { if (!trLeaving) trFlash('Neopets didn’t answer just now: try again in a moment'); report(e); } finally { tab.shut(); }
     trFinding = false;
     trPaint();
   }
@@ -11876,8 +11878,8 @@
   }
   // ---- the topic's own slim bar, once its header has gone by: where you are, its pages, ★, Reply ----
   function nbSticky() {
-    const head = $('#boardTopic .topicNavTop');
-    if (!head || typeof IntersectionObserver !== 'function' || $('[data-bnp="nbsticky"]')) return;
+    let head = $('#boardTopic .topicNavTop');
+    if (!head || $('[data-bnp="nbsticky"]')) return;
     if (!nbOpt().stick) { const n = $('#navtop__2020'); document.documentElement.style.setProperty('--nb-jumpgap', `${Math.round((n ? Math.max(0, n.getBoundingClientRect().bottom) : 0) + 14)}px`); return; }   // (off: no bar at the top, and a post jumped to stops just under Neopets' own)
     const bar = document.createElement('div');
     bar.className = 'bnp-nbsticky';
@@ -11893,14 +11895,20 @@
     document.documentElement.style.setProperty('--nb-jumpgap', `${Math.round(navH() + 8 + bar.offsetHeight + 14)}px`);
     bar.hidden = true;
     bar.style.visibility = '';
-    const io = new IntersectionObserver((es) => {
-      const e = es[es.length - 1], gone = !e.isIntersecting && e.boundingClientRect.bottom < navH() + 4;
-      if (gone === !bar.hidden) return;
-      bar.style.top = `${Math.round(navH() + 8)}px`;
-      bar.hidden = !gone;
-    }, { rootMargin: '-72px 0px 0px 0px' });
-    io.observe(head);
-    bar.bnpIo = io;
+    let raf = 0;
+    const look = () => {   // (the header gone under Neopets' top bar, however tall that is: the bar just under it. Asked on every scroll, once a frame, so a slow, smooth scroll can't slip past)
+      raf = 0;
+      if (!bar.isConnected) return;
+      if (!head.isConnected) { head = $('#boardTopic .topicNavTop'); if (!head) return; }
+      const top = navH(), gone = head.getBoundingClientRect().bottom < top + 4;
+      if (gone) { const t = `${Math.round(top + 8)}px`; if (bar.style.top !== t) bar.style.top = t; }
+      if (gone !== !bar.hidden) bar.hidden = !gone;
+    };
+    const ask = () => { if (!raf) raf = requestAnimationFrame(look); };
+    document.addEventListener('scroll', ask, { passive: true, capture: true });   // (the page's own scrolling, and any box's in it, as full screen's)
+    addEventListener('resize', ask, { passive: true });
+    look();   // (a page opened part-way down, at a post: there at once)
+    bar.bnpIo = { disconnect: () => { document.removeEventListener('scroll', ask, { capture: true }); removeEventListener('resize', ask); if (raf) cancelAnimationFrame(raf); } };   // (nbStickyRedo: the switch turned off)
   }
   function nbStickyRedo() {   // (the switch changed: the bar gone, or there again)
     const b = $('[data-bnp="nbsticky"]');
@@ -46025,8 +46033,8 @@
         ${sw('hpLevel', 'Your pets on one line', 'Every pet on the home page stands on the same line, its name under it level with the others’. Neopets puts a pet that’s taller than it is wide lower than the rest; NE draws it a little smaller instead, never lower.')}
       </div>`],
       ['otherpages', `<div class="bnp-card"><h4>Training schools</h4>
-        ${sw('trainer', 'Trainer mode', 'On a page of the Mystery Island or Ninja school, it trains the pets you give goals to by itself, one step at a time with a person’s pause between: a finished course completed, the next course started toward each pet’s goals, the codestones it asks for bought from the cheapest shop when your inventory hasn’t got them (under your limits below), then paid. Its band on the school’s pages says what it’s doing, with Stop; its Trainer button there gives your pets their goals. It never cancels a course, and works only in the tab you’re looking at.')}
-        <div class="bnp-trrisk" role="note"><i aria-hidden="true">${WARN_SVG}</i><p><b>Use at your own risk.</b> Once you choose stats for a pet, Trainer mode acts on your account by itself: it starts and pays for courses, takes codestones out of your SDB and spends your Neopoints in other players’ shops. It goes slowly, like a person, and only while you’re on a school’s page, but Neopets’ rules don’t allow automating the site. With no pet chosen it does nothing; switch it off here to have no Trainer at all.</p></div>
+        ${sw('trainer', 'Trainer mode', 'On a page of the Mystery Island or Ninja school, it trains the pets you give goals to by itself, one step at a time with a person’s pause between: a finished course completed, the next course started toward each pet’s goals, the codestones it asks for bought from the cheapest shop when your inventory hasn’t got them (under your limits below), then paid. Its band on the school’s pages says what it’s doing, with Stop; its Trainer button there gives your pets their goals. It never cancels a course, and keeps going in a school’s page left open in another tab too, unless you turn that off below.')}
+        <div class="bnp-trrisk" role="note"><i aria-hidden="true">${WARN_SVG}</i><p><b>Use at your own risk.</b> Once you choose stats for a pet, Trainer mode acts on your account by itself: it starts and pays for courses, takes codestones out of your SDB and spends your Neopoints in other players’ shops. It goes slowly, like a person, and only while one of the schools’ pages is open, but Neopets’ rules don’t allow automating the site. With no pet chosen it does nothing; switch it off here to have no Trainer at all.</p></div>
         <div class="bnp-trsub" data-needs="trainer"${f.trainer ? '' : ' hidden'}>
           ${sw('trHours', 'Active hours', 'It works only between these times (your computer’s clock), on the days lit. Outside them its band says when it’s back; Run now still works when you press it.')}
           <div class="bnp-trsub" data-needs="trHours"${f.trHours ? '' : ' hidden'}>
@@ -46035,6 +46043,7 @@
             <div class="bnp-f"><span>Days</span><span class="bnp-trdays">${[1, 2, 3, 4, 5, 6, 0].map((d) => `<label class="bnp-trday"><input type="checkbox" data-feat="trD${d}"${f[`trD${d}`] !== false ? ' checked' : ''}><span>${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]}</span></label>`).join('')}</span></div>
           </div>
           <div class="bnp-f"><span>Delay before the next course</span><span class="bnp-seg" role="group" aria-label="Delay before the next course">${[['0', 'No delay'], ['5', '5 min'], ['10', '10 min'], ['15', '15 min'], ['30', '30 min']].map(([v, l]) => `<button type="button" data-featv="trWait:${v}" aria-pressed="${String(trWaitMin()) === v}">${l}</button>`).join('')}</span><span class="bnp-note">When a course ends, the next one starts at a random moment within the time chosen, as you’d come back to it yourself. Courses that end together are seen to together. No delay: within a few seconds.</span></div>
+          ${sw('trBg', 'In another tab too', 'It keeps going while the school’s page is in a tab you’re not looking at, on time. Off: it waits till you’re back on that tab.')}
           ${sw('trSdb', 'Take codestones out of your SDB first', 'Before it buys any, the ones a course needs that are in your Safety Deposit Box come out to your inventory, as your SDB’s own Move to Inventory does it. If your SDB asks for your PIN to take things out, it leaves them to you and says so.')}
           ${sw('trBuy', 'Buy the codestones it needs', 'Only what your inventory (and your SDB) hasn’t got, from the cheapest shop the Shop Wizard finds (the Super Shop Wizard with Premium), never over the limits here. It stops buying when your inventory holds 50 items, you’re short of Neopoints, or the Wizard asks for a break, and says so. Off: it waits for you to bring them.')}
           <div class="bnp-trsub" data-needs="trBuy"${f.trBuy !== false ? '' : ' hidden'}>
@@ -51709,6 +51718,10 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.2.3', '2026-11-03', [
+      'Trainer mode: keeps going while the school’s page is in another tab (its new “In another tab too” switch, on unless you turn it off)',
+      'Neoboards: the topic’s bar at the top shows again as you scroll down (a slow, smooth scroll could slip past it)',
+    ]],
     ['5.2.2', '2026-11-03', [
       'Books Read, Booktastic, Gourmet: press a trophy goal to see the cheapest ones that get you there, then tick them in Buy Mode',
       'Your shop: Price mode lights up the item it’s on, with a green dot while it looks it up; Show me brings that row into view',
