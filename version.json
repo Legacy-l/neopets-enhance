@@ -1,9 +1,9 @@
 {
- "version": "5.2.1",
+ "version": "5.2.2",
  "date": "2026-11-03",
  "notes": [
-  "Price mode and the SDB selector keep going in another tab",
-  "What it’s worth: hide unsearchable items, a price range",
-  "Older pages: a lighter colour wash"
+  "Books Read, Booktastic, Gourmet: trophy goals show what gets you there",
+  "Price mode shows the item it’s on",
+  "Kadoatery: an Auto switch on the bar, and smarter checks once you’ve fed"
  ]
 }

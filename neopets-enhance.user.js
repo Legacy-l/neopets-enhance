@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.2.1
+// @version      5.2.2
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -6643,6 +6643,18 @@
       if (!b) return;
       const k = b.dataset.kad, s2 = kadGet();
       if (k === 'reload') { location.reload(); return; }
+      if (k === 'autosw') {   // (Auto refresh on or off, here on the bar: your paces kept)
+        const old = kadPrefs(s2), was = kadAuto(old).on;
+        s2.p = { ...old, check: was ? '0' : 'on' };
+        if (!was && !old.search && Number(old.check) > 0) s2.p.search = String(old.check);   // (an older "every N minutes" kept)
+        s2.chkNext = was ? 0 : Date.now() + 15000;
+        s2.chkWhy = was ? '' : 'start';
+        kadPut(s2);
+        paint();
+        const f = card.querySelector('[data-kad="autosw"]');
+        if (f) f.focus({ preventScroll: true });
+        return;
+      }
       if (k === 'try') { const snd = kadPrefs(s2).sound; if (snd) try { remSound(snd, remVol()); } catch (_) { /* */ } return; }
       if (k === 'tg') { const p = kadPrefs(s2); s2.p = { ...p, [b.dataset.k]: !p[b.dataset.k] }; kadPut(s2); paint(); const f = card.querySelector(`[data-kad="tg"][data-k="${b.dataset.k}"]`); if (f) f.focus({ preventScroll: true }); return; }
       if (k === 'bread') { kadBoardRead(true); return; }
@@ -6704,7 +6716,7 @@
           ${newChip}
         </span>
         ${me}
-        <span class="bnp-kad-tools"><button type="button" class="bnp-kad-ib${kad.fresh ? ' is-hot' : ''}${au.on ? ' is-auto' : ''}${kadCheckRun.busy ? ' is-looking' : ''}" data-kad="reload"${au.on ? ` data-kadring="${lastLook}|${nx}"` : ''} title="${esc(au.on ? `Look again now. Auto refresh: next look ${nx > now ? fmtNstS(nx) : 'any moment'}${au.smart ? '' : ` (every ${au.mins} minutes)`}; the ring fills till then` : 'Look again now (this page, once)')}" aria-label="Refresh">${SVG_REFRESH}</button><button type="button" class="bnp-kad-ib" data-kad="drop" aria-expanded="${kad.drop}" title="Times, your count, feeding and settings" aria-label="Times and settings">${KAD_COG}</button></span>
+        <span class="bnp-kad-tools"><button type="button" class="bnp-kad-sw" data-kad="autosw" role="switch" aria-checked="${au.on}" title="${esc(au.on ? 'Auto refresh is on: press to turn it off (no more looks, in any tab, till you turn it on again)' : 'Auto refresh is off: press to turn it on (its first look in a moment)')}"><i aria-hidden="true"></i><span>Auto</span></button><button type="button" class="bnp-kad-ib${kad.fresh ? ' is-hot' : ''}${au.on ? ' is-auto' : ''}${kadCheckRun.busy ? ' is-looking' : ''}" data-kad="reload"${au.on ? ` data-kadring="${lastLook}|${nx}"` : ''} title="${esc(au.on ? `Look again now. Auto refresh: next look ${nx > now ? fmtNstS(nx) : 'any moment'}${au.smart ? '' : ` (every ${au.mins} minutes)`}; the ring fills till then` : 'Look again now (this page, once)')}" aria-label="Refresh">${SVG_REFRESH}</button><button type="button" class="bnp-kad-ib" data-kad="drop" aria-expanded="${kad.drop}" title="Times, your count, feeding and settings" aria-label="Times and settings">${KAD_COG}</button></span>
       </div>
       <div class="bnp-kad-drop"${kad.drop ? '' : ' hidden'} role="dialog" aria-label="The Kadoatery: times and settings">
         <div class="bnp-kad-dhead"><b>Restocks and feeding</b><button type="button" class="bnp-kad-ib" data-kad="close" title="Close" aria-label="Close">×</button></div>
@@ -6714,7 +6726,7 @@
         ${kadRow('The main came at', `<input type="text" class="bnp-kad-min" data-kadset placeholder=":16" maxlength="6" value=""><button type="button" class="bnp-pillbtn" data-kad="set">Set</button>${st.set ? `<button type="button" class="bnp-pillbtn is-quiet" data-kad="unset" title="Forget it: only what NE sees">Forget ${esc(fmtNst(st.set.at))}</button>` : ''}`)}
         ${kadRow('Its first window', kadSeg('data-kad="first"', st.first, [['learn', `As NE sees it${u.n >= 3 ? ` (${(KAD_BASE + u.k * KAD_PEND) / 60000} min)` : ''}`], ['28', '28 min'], ['35', '35 min']]))}
         ${kadBoardHtml(st)}
-        <p class="bnp-kad-how"><b>How it works:</b> a Kadoatie asks again about 28 minutes after it was fed, within a 90-second window. If it doesn’t come then, it waits 7 minutes more (a pend), and again. The main is the biggest group fed together; minis are smaller ones fed at other times, each on its own clock. Auto refresh looks closely only in those windows (a little wider when NE knows a time only roughly), and not between them. You can feed one at a time: while yours is still there, it watches only that one’s window, as the next you can feed comes when it’s replaced.</p>
+        <p class="bnp-kad-how"><b>How it works:</b> a Kadoatie asks again about 28 minutes after it was fed, within a 90-second window. If it doesn’t come then, it waits 7 minutes more (a pend), and again. The main is the biggest group fed together; minis are smaller ones fed at other times, each on its own clock. Auto refresh looks closely only in those windows (a little wider when NE knows a time only roughly), and not between them. You can feed one at a time, so once you have, it stops watching that restock and skips the minis yours isn’t in (they can’t bring you another). The main’s windows are watched as usual.</p>
         ${st.drops.filter((d) => d.at).length ? `<div class="bnp-kad-hist"><b>Restocks NE has seen</b>${st.drops.filter((d) => d.at).slice(-8).reverse().map((d) => `<span>${esc(fmtNstS(d.at))}${d.err ? ` ± ${Math.round(d.err / 1000) >= 60 ? `${Math.round(d.err / 60000)} min` : `${Math.round(d.err / 1000)} s`}` : ''} · ${d.n >= 8 ? `main (${d.n})` : `mini (${d.n})`}</span>`).join('')}</div>` : ''}
         </section>
         ${kadAutoHtml(st)}
@@ -7085,13 +7097,14 @@
     const p = kadPrefs(st), a = kadAuto(p), jit = () => 0.85 + Math.random() * 0.3, plain = now + actGap(a.mins * 60000) * jit();
     kadNextLook.why = 'plain';
     if (!a.smart) return plain;
-    const every = a.burst * 1000, LEAD = 12000, gs = kadPlan(st, now), spans = [], locked = !!gs.locked && gs.some((g) => g.mine);   // (your fed one's still there: only its window matters, as you can't feed another till it's replaced)
+    const every = a.burst * 1000, LEAD = 12000, gs = kadPlan(st, now), spans = [], locked = !!gs.locked && gs.some((g) => g.mine);   // (your fed one's still there: you can't feed another till it's replaced. A main can do that, so its windows are watched as ever; a mini only with yours in it)
+    const fedFrom = locked ? gs.filter((g) => g.mine && g.came).map((g) => g.came) : [];   // (the restock yours came in: its feeding isn't watched, you've had yours from it)
     for (const g of gs) {   // (each group's window now or next: from a little before it to its end)
-      if (locked && !g.mine) continue;
+      if (locked && !g.mine && !g.main) continue;   // (a mini without yours: it can't bring you another)
       const w = g.at ? kadWin(g, st, now) : null;
-      if (g.watch && g.came && now - g.came < 10 * 60000) spans.push([now, g.came + 10 * 60000, 'feed', now - g.came < 3 * 60000 ? 30000 : 75000]);   // (just come, some still hungry: a look every 30 s or so for 3 minutes, then every minute or so, to see when they're fed: their clock starts then)
+      if (g.watch && g.came && now - g.came < 10 * 60000 && !(locked && (g.mine || fedFrom.includes(g.came)))) spans.push([now, g.came + 10 * 60000, 'feed', now - g.came < 3 * 60000 ? 30000 : 75000]);   // (just come, some still hungry: a look every 30 s or so for 3 minutes, then every minute or so, to see when they're fed: their clock starts then)
       if (g.waiting) continue;   // (none fed yet: no clock, no window)
-      if (w) { const pace = w.err > 45000 ? Math.max(60000, 4 * every) : every, why = locked ? 'mine' : g.main ? 'main' : 'mini'; spans.push([w.start - LEAD, w.end, why, pace], [w.start + KAD_PEND - LEAD, w.end + KAD_PEND, why, pace]); }   // (this window, and the one 7 minutes on in case it waits)   // (a rough time's window: every 45 s or so, till one's caught exactly)
+      if (w) { const pace = w.err > 45000 ? Math.max(60000, 4 * every) : every, why = g.main ? 'main' : locked ? 'mine' : 'mini'; spans.push([w.start - LEAD, w.end, why, pace], [w.start + KAD_PEND - LEAD, w.end + KAD_PEND, why, pace]); }   // (this window, and the one 7 minutes on in case it waits)   // (a rough time's window: every 45 s or so, till one's caught exactly)
     }
     let next = 0;
     const open = spans.filter(([x, y]) => now >= x && now <= y);
@@ -7102,7 +7115,7 @@
     if (!next) { const up = spans.filter(([x]) => x > now).sort((q1, q2) => q1[0] - q2[0])[0]; if (up) { next = up[0] + Math.random() * 3000; kadNextLook.why = `${up[2]}-next`; } }   // (the next window: from just before it)
     const caught = Number(st.caught) || 0;
     if (!locked && caught && now - caught < 100000 && !gs.some((g) => g.watch || g.waiting)) { const f = caught + 45000 + Math.random() * 30000; if (f > now + 2000 && (!next || f < next)) { next = f; kadNextLook.why = 'after'; } }   // (caught one: a look a minute on, to see when they were fed)
-    const rel = locked ? gs.filter((g) => g.mine) : gs, known = rel.filter((g) => g.at).length, mainKnown = locked ? known > 0 : gs.some((g) => g.main && g.at);
+    const rel = locked ? gs.filter((g) => g.mine || g.main) : gs, known = rel.filter((g) => g.at).length, mainKnown = gs.some((g) => g.main && g.at);
     if (!mainKnown || known < rel.length) { const p2 = now + actGap((mainKnown ? 2 * a.mins : a.mins) * 60000) * jit(); if (!next || p2 < next) { next = p2; kadNextLook.why = 'plain'; } }   // (times not known yet: plain looks till a restock is caught)
     if (!next) next = plain;
     if (actIdle() > 60 * 60000 && next < plain) { next = plain; kadNextLook.why = 'away'; }   // (away from Neopets over an hour: no closer looks)
@@ -21091,12 +21104,29 @@
       if (thr == null) return '';
       const all = total > 0 && thr === total, need = all ? Math.max(0, total - mine) : Math.max(0, thr + 1 - mine), got = all ? mine >= total : mine > thr;
       const pic = trophy ? `<img src="https://images.neopets.com/games/trophies/${COL_BOARD[kind][1]}${trophy}.gif" alt="" width="30" height="30">` : '<b class="bnp-col-top">200</b>';
-      return `<span class="bnp-col-goal${got ? ' is-got' : ''}" title="${esc(`${label}: place ${last} has ${thr.toLocaleString()} today${all ? ` (every one there is: ${verb} them all to tie)` : ''}`)}">${pic}<span><b>${esc(label)}</b><small>${got ? 'Reached' : `${need.toLocaleString()} more`}</small></span></span>`;
+      const open = !!(col && col.goal === label);
+      if (col) (col.goalData || (col.goalData = {}))[label] = { need, got, trophy, title: `${label}: place ${last} has ${thr.toLocaleString()} today${all ? ` (every one there is: ${verb} them all to tie)` : ''}` };   // (what its panel says)
+      return `<button type="button" class="bnp-col-goal${got ? ' is-got' : ''}${open ? ' is-open' : ''}" data-col-goal="${esc(label)}" aria-expanded="${open}" title="${esc(`${label}: place ${last} has ${thr.toLocaleString()} today${all ? ` (every one there is: ${verb} them all to tie)` : ''}`)}">${pic}<span><b>${esc(label)}</b><small>${got ? 'Reached' : `${need.toLocaleString()} more`}</small></span></button>`;
     };
     const tier = (k2) => b.tiers.find((t) => t.k === k2);
     const out = [goal('Top 200', Math.min(200, b.at.length), 4), ...[[3, 'Bronze'], [2, 'Silver'], [1, 'Gold']].map(([k2, l]) => (tier(k2) ? goal(l, tier(k2).last, k2) : ''))].filter(Boolean);
     if (!out.length) return '';
     return `<div class="bnp-col-goals"><span class="bnp-col-goalhead">${esc(k.club)}${mine > 0 && place <= b.at.length ? `<small>about place ${place.toLocaleString()} today</small>` : ''}</span>${out.join('')}</div>`;
+  }
+  function colGoalPanel(kind, items) {   // (a goal pressed: what it takes, under the goals: how many more, the cheapest of those not had yet that make it up, about what they come to)
+    const g = (col.goalData || {})[col.goal];
+    if (!g) return '';
+    const k = COL_KINDS[kind], need = g.need, got = g.got, trophy = g.trophy, verb = kind === 'food' ? 'eat' : 'read';
+    const pic = trophy ? `<img src="https://images.neopets.com/games/trophies/${COL_BOARD[kind][1]}${trophy}.gif" alt="" width="40" height="40">` : '<b class="bnp-col-top">200</b>';
+    const head = `<div class="bnp-col-gphead">${pic}<span><b>${esc(col.goal)}</b><small>${esc(g.title)}</small></span><button type="button" class="bnp-col-gpx" data-col-goal="${esc(col.goal)}" title="Close" aria-label="Close">×</button></div>`;
+    if (got) return `<div class="bnp-col-gpanel">${head}<p class="bnp-col-gpsay is-got">Reached: ${esc(col.pet)} has ${esc(k.did)} enough for it today. The board moves as others ${verb}, so a few more keep it safe.</p></div>`;
+    const left = items.filter((it) => !col.had.has(colImgKey(it[0])) && !it[6]), priced = left.filter((it) => it[3] > 0).sort((p, q) => p[3] - q[3] || p[1].localeCompare(q[1]));
+    const take = priced.slice(0, need), cost = take.reduce((t, it) => t + it[3], 0), short = need - take.length;
+    const tile = (it) => `<li title="${esc(`${it[1]}: about ${it[3].toLocaleString()} NP at itemdb`)}"><img src="https://images.neopets.com/items/${esc(it[0])}" alt="" width="40" height="40" loading="lazy"><span>${esc(it[1])}</span><small>${esc(colNp(it[3]))} NP</small></li>`;
+    const say = `<b>${need.toLocaleString()} more</b> to ${verb}${!take.length ? ` · none of those ${esc(col.pet)} hasn’t ${esc(k.did)} has an itemdb price yet` : short > 0 ? ` · only ${take.length.toLocaleString()} of those ${esc(col.pet)} hasn’t ${esc(k.did)} have an itemdb price, about <b>${colNp(cost)} NP</b> for them all; the other ${short.toLocaleString()} have none (most can’t be bought now)` : ` · the ${need.toLocaleString()} cheapest ${esc(col.pet)} hasn’t ${esc(k.did)} come to about <b>${colNp(cost)} NP</b>`}`;
+    return `<div class="bnp-col-gpanel">${head}<p class="bnp-col-gpsay">${say}</p>
+      ${take.length ? `<ol class="bnp-col-gplist">${take.slice(0, 12).map(tile).join('')}</ol>${take.length > 12 ? `<p class="bnp-col-gpmore">and ${(take.length - 12).toLocaleString()} more, cheapest first</p>` : ''}` : ''}
+      <div class="bnp-col-gpacts">${take.length ? `<button type="button" class="bnp-col-btn is-go" data-col-goaltick="${take.length}">Tick them in Buy Mode</button>` : ''}<button type="button" class="bnp-col-btn" data-col-goallist>Show them in the list</button><small>Prices are itemdb’s, to give you an idea: Buy Mode buys at the Shop Wizard’s.</small></div></div>`;
   }
   async function colLoad(force) {
     if (!col) return;
@@ -21172,6 +21202,7 @@
         <div class="bnp-col-prog"><div class="bnp-col-big"><b>${(total ? inList : d.n).toLocaleString()}</b>${total ? ` of ${total.toLocaleString()} ${esc(k.what)} ${esc(k.did)}` : ` ${esc(k.what)} ${esc(k.did)}`}${total ? `<span class="bnp-col-pct">${pct}%</span>` : ''}${d.n !== hadN || (total && hadN !== inList) ? `<small title="Neopets’ own count${hadN - inList > 0 ? `, and ${hadN - inList} that aren’t on itemdb’s list` : ''}">Neopets counts ${Number(d.n).toLocaleString()}</small>` : ''}</div>
         ${total ? `<div class="bnp-col-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${inList}"><i style="width:${pct}%"></i></div>` : ''}${hadIt.length ? `<p class="bnp-col-worth">What ${esc(pet)} has ${esc(k.did)} is worth about <b>${colNp(worth)} NP</b><small>itemdb’s prices, for the ${hadIt.length.toLocaleString()} of them with one</small></p>` : ''}</div>
         ${(() => { const g = colGoals(kind, Number(d.n) || hadN, total); return g ? `<div class="bnp-col-award">${g}</div>` : ''; })()}
+        ${col.goal ? colGoalPanel(kind, items) : ''}
         ${subs.length ? (() => {
           const left2 = (s) => (col.view === 'had' ? s.had : s.all - s.had), many = subs.length > 9, order = many ? subs.slice().sort((a, b) => left2(b) - left2(a)) : subs;
           const shown = many && !col.allSubs ? order.filter((s, n) => n < 8 || s.i === col.sub) : order;
@@ -21224,6 +21255,9 @@
       if (!t || !root.contains(t)) return;
       const d = t.dataset;
       if ('colBuy' in d) { bmOpen(col.kind); return; }
+      if (d.colGoal != null) { col.goal = col.goal === d.colGoal ? '' : d.colGoal; colPaint(); return; }   // (a goal: what it takes, under them; again, shut)
+      if (d.colGoaltick) { bmOpen(col.kind); bmTickCheapest(Number(d.colGoaltick) || 0, col.goal); return; }
+      if ('colGoallist' in d) { col.view = 'not'; col.sort = 'cheap'; col.priced = true; col.sub = -1; col.q = ''; colPaint(); const g = col.root.querySelector('[data-col-grid]'); if (g) g.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
       if ('colTrack' in d) {
         const list = colTracked(col.kind), on = list.some((x) => x.toLowerCase() === col.pet.toLowerCase());
         if (on) { colTrackSet(col.kind, list.filter((x) => x.toLowerCase() !== col.pet.toLowerCase())); col.note = `Not tracking ${col.pet}’s ${COL_KINDS[col.kind].what} any more.`; }
@@ -21522,6 +21556,19 @@
     html.bnp-col-page .bnp-col-goal b { color: var(--nb-text); font: 12.5px var(--nb-ui); }
     html.bnp-col-page .bnp-col-goal small { color: var(--nb-muted); font: 12px var(--nb-txt); }
     html.bnp-col-page .bnp-col-goal.is-got { border-color: #9fd39a; background: #f1faf0; }
+    html.bnp-col-page button.bnp-col-goal { margin: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; transition: transform .12s, box-shadow .12s, border-color .12s; }   /* (a goal: pressed, what it takes) */
+    html.bnp-col-page button.bnp-col-goal:hover, html.bnp-col-page button.bnp-col-goal:focus-visible { border-color: var(--nb-frame); box-shadow: 0 3px 8px rgba(0, 0, 0, .1); transform: translateY(-1px); outline: none; }
+    html.bnp-col-page button.bnp-col-goal.is-open { border-color: var(--nb-frame); box-shadow: 0 0 0 3px color-mix(in srgb, var(--nb-frame) 22%, transparent); }
+    html.bnp-col-page .bnp-col-gpanel { grid-column: 1 / -1; margin: 4px 0 0; padding: 12px 14px; border: 2px solid var(--nb-line); border-radius: 14px; background: #fff; }   /* (what a goal takes) */
+    html.bnp-col-page .bnp-col-gphead { display: flex; align-items: center; gap: 10px; } html.bnp-col-page .bnp-col-gphead img { flex: none; }
+    html.bnp-col-page .bnp-col-gphead > span { display: grid; flex: 1; line-height: 1.2; } html.bnp-col-page .bnp-col-gphead b { color: var(--nb-text); font: 15px var(--nb-ui); } html.bnp-col-page .bnp-col-gphead small { color: var(--nb-muted); font: 12px var(--nb-txt); }
+    html.bnp-col-page .bnp-col-gpx { flex: none; width: 28px; height: 28px; margin: 0; padding: 0; border: 1.5px solid var(--nb-line); border-radius: 50%; background: #fff; color: var(--nb-muted); font: 18px/1 Arial, sans-serif; cursor: pointer; }
+    html.bnp-col-page .bnp-col-gpsay { margin: 10px 0 8px; color: var(--nb-text); font: 13.5px var(--nb-txt); } html.bnp-col-page .bnp-col-gpsay b { font-family: var(--nb-ui); } html.bnp-col-page .bnp-col-gpsay.is-got { color: #2a6e2a; }
+    html.bnp-col-page .bnp-col-gplist { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+    html.bnp-col-page .bnp-col-gplist li { display: grid; grid-template-columns: 40px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 8px; align-items: center; padding: 4px 8px 4px 4px; border: 1.5px solid var(--nb-line); border-radius: 10px; background: #fff; }
+    html.bnp-col-page .bnp-col-gplist img { grid-row: 1 / 3; border-radius: 6px; } html.bnp-col-page .bnp-col-gplist span { overflow: hidden; color: var(--nb-text); font: 12px var(--nb-ui); white-space: nowrap; text-overflow: ellipsis; } html.bnp-col-page .bnp-col-gplist small { color: var(--nb-muted); font: 11.5px var(--nb-txt); }
+    html.bnp-col-page .bnp-col-gpmore { margin: 6px 0 0; color: var(--nb-muted); font: 12px var(--nb-txt); }
+    html.bnp-col-page .bnp-col-gpacts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 10px; } html.bnp-col-page .bnp-col-gpacts small { color: var(--nb-muted); font: 11.5px var(--nb-txt); }
     html.bnp-col-page .bnp-col-goal.is-got small { color: #2a6e2a; font-family: var(--nb-ui); }
     /* polished again (the user, 2026-11-02): the title with its picture, bigger, in the middle; Quick Ref's raised look on all that's pressed */
     html.bnp-col-page .bnp-col-btn { background: linear-gradient(#fff, color-mix(in srgb, var(--nb-tint, #f3efe2) 55%, #fff)); box-shadow: inset 0 1px 0 #fff, 0 2px 0 var(--nb-frame), 0 4px 9px rgba(0, 0, 0, .08); transition: transform .12s, box-shadow .12s; }
@@ -28949,6 +28996,7 @@
       <div class="bnp-shop-pmact"><span class="bnp-shop-pmsay" data-shop-pmsay aria-live="polite"></span>
       <span class="bnp-shop-pmonly" role="group" aria-label="Which items">${SHOP_PM_ONLY.map(([k, l]) => `<button type="button" data-shop-pmonly="${k}" aria-pressed="${shopPmOnly() === k}">${l}</button>`).join('')}</span>
       <span class="bnp-shop-pmscope" role="group" aria-label="Price" hidden>${SHOP_PM_SCOPES.map(([k, l]) => `<button type="button" data-shop-pmscope="${k}" aria-pressed="false">${l}</button>`).join('')}</span>
+      <button type="button" class="bnp-shop-pmno bnp-shop-pmwhere" data-shop-pm="where" title="Bring the item it’s at into sight" hidden>Show me</button>
       <button type="button" class="bnp-shop-pmstop" data-shop-pm="stop" hidden>Stop</button>
       <button type="button" class="bnp-shop-pmno" data-shop-pm="no" hidden></button>
       <button type="button" class="button-default__2020 button-yellow__2020 bnp-shop-pmall" data-shop-pm="all"></button></div>`;
@@ -28976,6 +29024,7 @@
     for (const b of sc.querySelectorAll('[data-shop-pmscope]')) { b.setAttribute('aria-pressed', String(b.getAttribute('data-shop-pmscope') === scope)); b.disabled = going || !!run || !!pm.one; }
     for (const b of s.querySelectorAll('[data-shop-pmonly]')) { b.setAttribute('aria-pressed', String(b.getAttribute('data-shop-pmonly') === only)); b.disabled = going || !!run || !!pm.one; }
     stop.hidden = !going;
+    { const w = s.querySelector('[data-shop-pm="where"]'); if (w) w.hidden = !((pm.busy && pm.at) || pm.one); }   // (Show me: while it's at one)
     let go, nope = '', words = pm.msg;
     if (pm.waitUntil) go = 'Waiting…';
     else if (pm.busy) go = `Looking up ${pm.busy.n + 1} of ${pm.busy.of}…`;
@@ -29011,20 +29060,23 @@
   function shopPmRow(tr) {   // (under a row's price: Look up; then the lowest found, or none, with Look again)
     const pm = shop.pm, state = tr.querySelector('[data-shop-state]');
     let line = tr.querySelector('[data-shop-pmrow]');
-    if (!pm.on || !shopPmAllowed()) { if (line) line.hidden = true; return; }
+    if (!pm.on || !shopPmAllowed()) { if (line) line.hidden = true; tr.classList.remove('bnp-shop-pmnow', 'is-looking'); return; }
     if (!state) return;
     if (!line) { state.insertAdjacentHTML('afterend', '<span class="bnp-shop-pmrow" data-shop-pmrow></span>'); line = state.nextElementSibling; }
     line.hidden = false;
     const name = tr.dataset.name || '', r = pm.res.get(name), now = pm.one === name || (pm.busy && pm.busy.name === name), fresh = !r && !now ? (pm.run ? shopPmFresh(name, pm.run.skip || 0, pm.run.src) : shopPmFresh(name)) : null;
+    tr.classList.toggle('bnp-shop-pmnow', !!now || (!!pm.busy && pm.at === name));   // (where it's at: lit)
+    tr.classList.toggle('is-looking', !!now);
     const again = `<button type="button" class="bnp-shop-pmagain" data-shop-pm="one" title="Look again" aria-label="${esc(`Look up ${name} again`)}">${SHOP_PM_AGAIN}</button>`;
-    const html = now ? '<span class="bnp-shop-pmwait">Looking…</span>'
+    const html = now ? '<span class="bnp-shop-pmwait"><i class="bnp-shop-pmdot" aria-hidden="true"></i>Looking…</span>'
       : fresh ? (fresh.cant ? `<span title="${esc(`${shopPmWiz(fresh.src)} says: ${fresh.cant}`)}">Can’t be searched</span>${again}` : `<span title="${esc(`Looked up ${new Date(fresh.at).toLocaleString()} with ${fresh.src === 'ssw' ? 'the Super Shop Wizard' : 'the Shop Wizard'}, so left as it is`)}">${fresh.low ? `Priced ${colAgo(fresh.at)} · lowest <b>${fresh.low.toLocaleString()} NP</b>` : `In no other shop ${colAgo(fresh.at)}`}</span>${again}`)
       : !r ? `<button type="button" class="bnp-shop-pmgo" data-shop-pm="one" title="${esc(`The lowest price for ${name} in other shops, and yours just under it`)}">${SHOP_PM_ICON}Look up</button>`
       : r.err ? `<span class="bnp-shop-pmerr">${esc(r.err)}</span>${again}`
       : r.none ? `<span>In no other shop</span>${again}`
       : r.cant ? `<span title="${esc(`${shopPmWiz(r.src)} says: ${r.cant}`)}">Can’t be searched</span>${again}`
       : `<span title="${esc(`From ${r.src === 'ssw' ? 'the Super Shop Wizard' : `${r.times > 1 ? `${r.times} Shop Wizard searches` : 'a Shop Wizard search'}`}, your own shop left out`)}">Lowest <b>${r.low.toLocaleString()} NP</b> · ${r.n.toLocaleString()} shop${r.n === 1 ? '' : 's'}</span>${again}`;
-    if (line.dataset.v !== html) { line.dataset.v = html; line.innerHTML = html; }
+    const at = !now && !!pm.busy && pm.at === name, html2 = at ? `<i class="bnp-shop-pmdot is-still" aria-hidden="true"></i>${html}` : html;   // (between two: the dot stays where it's at, still)
+    if (line.dataset.v !== html2) { line.dataset.v = html2; line.innerHTML = html2; }
   }
   function shopPmClick(e) {
     const t = e.target instanceof Element ? e.target : null, b = t && t.closest('[data-shop-pm], [data-shop-pmsrc], [data-shop-pmscope], [data-shop-pmonly]');
@@ -29036,6 +29088,7 @@
     if (b.matches('[data-shop-pmscope]')) { if (b.disabled) return; shopPSet('pmScope', b.getAttribute('data-shop-pmscope')); pm.ask = false; pm.msg = ''; shopPmSay(); return; }
     if (b.matches('[data-shop-pmonly]')) { if (b.disabled) return; shopPSet('pmOnly', b.getAttribute('data-shop-pmonly')); pm.ask = false; pm.msg = ''; shopPmSay(); return; }
     const k = b.getAttribute('data-shop-pm');
+    if (k === 'where') { const nm = pm.one || pm.at, tr = nm ? shopTrs().find((t) => t.dataset.name === nm) : null; if (tr) tr.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }   // (the row it's at, in sight)
     if (k === 'toggle') {   // (off: anything under way stops, and a whole-shop run is forgotten)
       pm.on = !pm.on;
       shopPSet('pm', pm.on);
@@ -29157,6 +29210,9 @@
       if (shopPmHalt()) { pm.why = 'stop'; break; }
       const name = rows[i].dataset.name || '';
       pm.busy = { n: i, of: rows.length, name };
+      const was = pm.at;
+      pm.at = name;   // (where it's at: lit in the table till the next one starts)
+      if (was && was !== name) { const pt = shopTrs().find((t) => t.dataset.name === was); if (pt) shopPmRow(pt); }
       shopPmSay();
       const got = await shopPmOne(rows[i], o);
       if (run) { run.done[name] = got.r; shopPmRunSet(run); }
@@ -29180,6 +29236,7 @@
       if (i < rows.length - 1) await shopPmSleep(shopPmGap(src));
     }
     pm.busy = null;
+    { const was = pm.at, pt = was ? shopTrs().find((t) => t.dataset.name === was) : null; pm.at = ''; if (pt) shopPmRow(pt); }   // (done: no row lit)
     return !pm.why;
   }
   async function shopPmAll() {   // (Price all shown: every item shown that isn't looked up yet, and isn't a price you've typed yourself)
@@ -30010,6 +30067,12 @@
     html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmwait { display: inline-flex; align-items: center; gap: 7px; margin: 0; color: var(--nb-muted); font: 13px var(--nb-ui); cursor: pointer; }
     html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmwait input { width: 16px; height: 16px; margin: 0; accent-color: var(--shop-edge); cursor: pointer; }
     html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmno { height: 32px; margin: 0; padding: 0 14px !important; border: 2px solid var(--nb-line) !important; border-radius: 999px !important; background: #fff !important; color: var(--nb-text) !important; box-shadow: 0 2px 0 var(--nb-line) !important; font: 13px var(--nb-ui) !important; text-shadow: none !important; cursor: pointer; }
+    html.bnp-shop-on tr.bnp-shop-pmnow > td { background: #eefaec !important; transition: background-color .2s; }   /* (where Price mode is at) */
+    html.bnp-shop-on tr.bnp-shop-pmnow > td:first-child { box-shadow: inset 4px 0 0 #2e9e3e !important; }
+    html.bnp-shop-on .bnp-shop-pmdot { display: inline-block; flex: none; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; background: #2e9e3e; vertical-align: middle; animation: bnp-pmdot 1.2s ease-out infinite; }   /* (looking up: a pulsing green dot) */
+    @keyframes bnp-pmdot { 0% { box-shadow: 0 0 0 0 rgba(46, 158, 62, .55); } 100% { box-shadow: 0 0 0 7px rgba(46, 158, 62, 0); } }
+    @media (prefers-reduced-motion: reduce) { html.bnp-shop-on .bnp-shop-pmdot { animation: none; } }
+    html.bnp-shop-on .bnp-shop-pmdot.is-still { animation: none; box-shadow: 0 0 0 3px rgba(46, 158, 62, .18); }
     html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmno:hover { border-color: var(--shop-edge) !important; box-shadow: 0 2px 0 var(--shop-edge) !important; }
     html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmall:disabled { opacity: .7; cursor: default; }
     html.bnp-shop-on #bnp-shop-pm .bnp-shop-pmsay { flex: 1 1 200px; color: var(--nb-muted); font: 13px var(--nb-ui); }
@@ -33867,6 +33930,13 @@
     else if (a === 'all' || a === 'none') { for (const r of bm.rows) if (vis(r) && r.st !== 'got') r.on = a === 'all'; bmPaint(); }
     else if (a === 'upto') bmUpTo();
     else if (a === 'more') { bm.show = (bm.show || BM_PAGE) + BM_PAGE; bmListPaint(); }
+  }
+  function bmTickCheapest(n, why) {   // (a goal's own: the cheapest that many with an itemdb price ticked, the rest not)
+    if (!bm || !n) return;
+    let k = 0;
+    for (const r of bm.rows.slice().sort((a, b) => ((a.guide || Infinity) - (b.guide || Infinity)))) r.on = r.st !== 'got' && r.guide > 0 && k < n ? (k++, true) : false;
+    bm.note = `${k.toLocaleString()} ticked, the cheapest first${why ? `: enough for ${why}` : ''}.`;
+    bmPaint();
   }
   function bmUpTo() {   // (the ones itemdb prices at or under the price written ticked, the rest not: those in sight)
     const i = bm.win.querySelector('[data-bmupto]'), v = i ? bmParse(i.value) : 0, q = String(bm.q || '').trim().toLowerCase();
@@ -50230,6 +50300,14 @@
     .bnp-kad-troph { flex: none; white-space: nowrap; margin-left: 0; }
     .bnp-kad-cur { margin-left: 3px; padding: 2px 8px; border-radius: 999px; background: #e3f4df; color: #24521b; font: 12px "MuseoSansRounded700", Arial, sans-serif; } .bnp-kad-cur b { font-family: "MuseoSansRounded900", "MuseoSansRounded700", Arial, sans-serif; }   /* (your fed one, and how quick you were) */
     .bnp-kad-tools { flex: none; }
+    .bnp-kad .bnp-kad-sw { display: inline-flex; align-items: center; gap: 0; height: 32px; margin: 0; padding: 0 6px; border: 1.5px solid #d3ccb7; border-radius: 999px; background: linear-gradient(#fff, #f3efe4); box-shadow: inset 0 1px 0 #fff, 0 2px 0 #ddd6c4; color: #4a4636; font: 12px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; cursor: pointer; }   /* (Auto refresh, on or off, on the bar) */
+    .bnp-kad .bnp-kad-sw i { position: relative; flex: none; width: 30px; height: 18px; border-radius: 999px; background: #cfc9d8; transition: background-color .15s; }
+    .bnp-kad .bnp-kad-sw i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: left .15s; }
+    .bnp-kad .bnp-kad-sw[aria-checked="true"] i { background: #2e9e3e; } .bnp-kad .bnp-kad-sw[aria-checked="true"] i::after { left: 14px; }
+    .bnp-kad .bnp-kad-sw:hover, .bnp-kad .bnp-kad-sw:focus-visible { border-color: color-mix(in srgb, var(--bnp-accent, #c9a8e0) 65%, #000 15%); outline: none; }
+    .bnp-kad .bnp-kad-sw > span { max-width: 0; overflow: hidden; opacity: 0; transition: max-width .2s, opacity .2s, margin .2s; }   /* (its name shows as you point at it) */
+    .bnp-kad .bnp-kad-sw:hover > span, .bnp-kad .bnp-kad-sw:focus-visible > span { max-width: 44px; margin-left: 6px; opacity: 1; }
+    @media (prefers-reduced-motion: reduce) { .bnp-kad .bnp-kad-sw i, .bnp-kad .bnp-kad-sw i::after, .bnp-kad .bnp-kad-sw > span { transition: none; } }
     .bnp-kad .bnp-kad-ib.is-auto { position: relative; }
     .bnp-kad .bnp-kad-ib.is-auto::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; background: conic-gradient(#2e9e3e var(--kad-ring, 0turn), rgba(46, 158, 62, .16) 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)); pointer-events: none; }   /* (Auto refresh's next look: the ring fills till then) */
     .bnp-kad .bnp-kad-ib.is-looking svg { animation: bnp-kad-spin .9s linear infinite; } @keyframes bnp-kad-spin { to { transform: rotate(360deg); } }
@@ -50237,7 +50315,7 @@
     @media (max-width: 760px) { .bnp-kad-bar { flex-wrap: wrap; } .bnp-kad-grp { flex-wrap: wrap; overflow: visible; } }   /* (narrow: as many lines as it needs) */
     .bnp-kad-how { margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: #f7f4fa; color: #5d566a; font-size: 12px; line-height: 1.45; } .bnp-kad-how b { color: #4a3f5a; }
     .bnp-kad-bar .bnp-kad-main, .bnp-kad-bar .bnp-kad-minis { flex-wrap: nowrap; gap: 5px; }   /* (one line each: nothing in the bar wraps) */
-    .bnp-kad-bar .bnp-kad-grp { gap: 6px 10px; } .bnp-kad-bar { gap: 6px 8px; }
+    .bnp-kad-bar .bnp-kad-grp { gap: 6px 8px; } .bnp-kad-bar { gap: 6px 6px; }
     .bnp-kad-bar .bnp-kad-minis { text-overflow: ellipsis; }
     .bnp-kad-bar .bnp-kad-chip { padding: 2px 9px 2px 8px; white-space: nowrap; }
     .bnp-kad-bar .bnp-kad-in { display: inline-block; min-width: 58px; text-align: center; font-variant-numeric: tabular-nums; box-sizing: border-box; }   /* (a set width: the countdown ticking doesn't move what's after it) */
@@ -51631,6 +51709,12 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.2.2', '2026-11-03', [
+      'Books Read, Booktastic, Gourmet: press a trophy goal to see the cheapest ones that get you there, then tick them in Buy Mode',
+      'Your shop: Price mode lights up the item it’s on, with a green dot while it looks it up; Show me brings that row into view',
+      'Kadoatery: an Auto switch on the bar turns Auto refresh on or off without opening ⚙',
+      'Kadoatery: once you’ve fed one, it stops checking that restock and skips minis yours isn’t in; mains are checked as usual',
+    ]],
     ['5.2.1', '2026-11-03', [
       'Your shop: Price mode keeps going while you’re in another tab (its new “In another tab too” box, on unless you turn it off)',
       'What it’s worth: Select in your SDB and Count it all keep going in a background tab too',
