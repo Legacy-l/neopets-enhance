@@ -1,9 +1,11 @@
 {
- "version": "5.2.5",
+ "version": "5.2.6",
  "date": "2026-11-04",
  "notes": [
-  "Buy Mode no longer piles up hidden pages (Tampermonkey’s running count) as it goes",
-  "Quick Ref: a smoother Your Pets title",
-  "No more notes about a Snowager sleep you missed"
+  "Auctions: the bid box no longer suggests a far too high bid",
+  "The Premium menu can be edited in Settings",
+  "Show more on your sales lists",
+  "Trading Post: Look again after a price is found",
+  "My Gallery’s title centred"
  ]
 }

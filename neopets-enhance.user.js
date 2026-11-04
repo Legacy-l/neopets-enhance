@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.2.5
+// @version      5.2.6
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -4409,7 +4409,7 @@
   ];
   const SR_IC = {   // (each part's picture: your theme's own, from its menus)
     Neopet: ['el:#navprofiledropdown__2020 .nav-petcentral-icon'], User: ['el:#navprofiledropdown__2020 .nav-profile-icon'], Item: ['el:#navprofiledropdown__2020 .nav-inventory-icon'],
-    'NC Mall Item': ['el:.nav-top__2020 .nav-premium-icon__2020'], Location: ['el:.nav-top__2020 .nav-explore-icon__2020'], Game: ['el:.nav-top__2020 .nav-games-icon__2020'],
+    'NC Mall Item': ['nat:shop-ncmall-icon', 'el:.nav-top__2020 .nav-premium-icon__2020'], Location: ['el:.nav-top__2020 .nav-explore-icon__2020'], Game: ['el:.nav-top__2020 .nav-games-icon__2020'],
     Species: ['el:#navprofiledropdown__2020 .nav-createpet-icon'], 'TCG Card': ['el:#navprofiledropdown__2020 .nav-tcg-icon'], Neopedia: ['el:#navprofiledropdown__2020 .nav-bookshelf-icon'], Screensaver: ['el:#navprofiledropdown__2020 .nav-gallery-icon'],
   };
   const SR_CLS = { Neopet: 'pet', User: 'user', Item: 'item', 'NC Mall Item': 'nc', Location: 'place', Game: 'game', Species: 'species', 'TCG Card': 'tcg', Neopedia: 'pedia', Screensaver: 'saver' };
@@ -5699,6 +5699,13 @@
     whenLoaded(run);
     whenLoaded(() => setTimeout(ncStepAside, 1500));   // (DTI Enhance's NC values, once it's put them in: ours go)
   }
+  function aucNums(bid) {   // (a lot's page: its current price and increment, and whether anyone's bid, as words from the nearest box around the bid box that holds both lines, so no other number on the page is ever taken for them. null when they aren't there)
+    for (let box = bid.parentElement; box; box = box.parentElement) {
+      const t = (box.textContent || '').replace(/\s+/g, ' '), cur = /current\s*price\s*:?\s*([\d,]+)\s*NP/i.exec(t), inc = /minimum increment[^\d]*([\d,]+)\s*NP/i.exec(t);
+      if (cur && inc) return { cur: Number(cur[1].replace(/,/g, '')), inc: Number(inc[1].replace(/,/g, '')), none: /no bids have been placed/i.test(t) };
+    }
+    return null;
+  }
   function itAuctions() {   // (Auctions and the Auction Genie: a row and itemdb's price beside each lot, a good deal marked; the bid page too)
     const set = itSettings(), a = set.auction, page = set.pages.auctions;
     const bid = $('input[name="amount"]');
@@ -5707,11 +5714,11 @@
         bid.removeAttribute('oninput');
         const f = bid.closest('form');
         if (f) f.addEventListener('submit', () => { bid.value = bid.value.replace(/[^\d]/g, ''); });
-        const html = document.body.innerHTML, cur = /(?:current|price)[^<]{0,60}<b>([\d,]+)<\/b>\s*NP/i.exec(html), inc = /minimum increment[^<]*?([\d,]+)\s*NP/i.exec(html);
-        if (cur && inc) { const next = Number(cur[1].replace(/,/g, '')) + Number(inc[1].replace(/,/g, '')), now = Number(bid.value.replace(/[^\d]/g, '')) || 0; if (next > now) bid.value = String(next); }
+        const n = aucNums(bid);
+        if (n) { const next = n.none ? n.cur : n.cur + n.inc, now = Number(bid.value.replace(/[^\d]/g, '')) || 0; if (next > now) bid.value = String(next); }   // (no bids yet: the price itself is the lowest; else the increment over it. Never under what Neopets filled in)
       }
       const b = $$('b, strong').find((x) => /\(owned by /i.test(x.textContent));
-      if (b) { const name = b.textContent.replace(/\s*\(owned by [^)]+\)\s*/i, ''), cur = /(?:current|price)[^<]{0,60}<b>([\d,]+)<\/b>\s*NP/i.exec(document.body.innerHTML); itPut(b, name, { ask: cur ? Number(cur[1].replace(/,/g, '')) : 0 }); }
+      if (b) { const name = b.textContent.replace(/\s*\(owned by [^)]+\)\s*/i, ''), n = aucNums(bid); itPut(b, name, { ask: n ? n.cur : 0 }); }
       return;
     }
     const seen = new Set();   // (each lot once: its name's link, not its View button)
@@ -5846,7 +5853,7 @@
     const y = nav ? nav.getBoundingClientRect().height : 0;
     for (let n = el; n && n.id !== 'container__2020'; n = n.parentElement) {
       let p = n.previousElementSibling;
-      while (p && (p.id === 'navsub-buffer__2020' || /^(SCRIPT|STYLE|LINK|NOSCRIPT)$/.test(p.tagName) || !p.getClientRects().length || ['absolute', 'fixed'].includes(getComputedStyle(p).position))) p = p.previousElementSibling;
+      while (p && (p.id === 'navsub-buffer__2020' || /^(SCRIPT|STYLE|LINK|NOSCRIPT)$/.test(p.tagName) || !p.getClientRects().length || !p.getBoundingClientRect().height || ['absolute', 'fixed'].includes(getComputedStyle(p).position))) p = p.previousElementSibling;   // (nothing of height takes up room: an old page's empty #ban read as the top of it, and My Gallery's title sat on its chips bar (user, 2026-11-04))
       if (p) return Math.max(y, p.getBoundingClientRect().bottom + scrollY);
     }
     return y;
@@ -29868,16 +29875,18 @@
     if (added) { if (!v.since) v.since = now; if (v.rows.length > 5000) v.rows.splice(0, v.rows.length - 5000); shopSalesPut(v); }
     return v;
   }
-  function shopSalesView(rows, by) {   // (each sale, newest first; or by item, what sold for the most first)
+  const SHOP_SALES_PAGE = 50;   // (sales shown at a time: Show more brings the next (user, 2026-11-04: "needs a 'show more' button instead of scrolling so far"))
+  const shopSalesMore = (total, shown, what) => (total > shown ? `<p class="bnp-sales-more"><button type="button" class="bnp-shop-btn" data-shop-salesmore>Show ${Math.min(SHOP_SALES_PAGE, total - shown).toLocaleString()} more</button><span>${(total - shown).toLocaleString()} more ${what} below these</span></p>` : '');
+  function shopSalesView(rows, by, limit = Infinity) {   // (each sale, newest first; or by item, what sold for the most first. limit: how many are shown, Show more under them)
     const np = (x) => `${x.toLocaleString()} NP`, pic = (name) => `<img class="bnp-sales-pic" data-shop-pic="${esc(name)}" alt="">`;
     const item = (name) => `<span class="bnp-sales-item">${pic(name)}<b>${esc(name)}</b></span>`;
     if (by === 'item') {
       const g = new Map();
       for (const r of rows) { const o = g.get(r.i) || { i: r.i, n: 0, np: 0, lo: Infinity, hi: 0, last: '' }; o.n += 1; o.np += r.p; o.lo = Math.min(o.lo, r.p); o.hi = Math.max(o.hi, r.p); if (r.d > o.last) o.last = r.d; g.set(r.i, o); }
       const list = [...g.values()].sort((a, b) => b.np - a.np || b.n - a.n);
-      return `<table class="bnp-sales-t"><thead><tr><th scope="col">Item</th><th scope="col" class="is-n">Sold</th><th scope="col" class="is-np">Each</th><th scope="col" class="is-np">Together</th><th scope="col">Last sold</th></tr></thead><tbody>${list.map((o) => `<tr><td>${item(o.i)}</td><td class="is-n">${o.n.toLocaleString()}</td><td class="is-np">${o.lo === o.hi ? np(o.lo) : `${o.lo.toLocaleString()} – ${np(o.hi)}`}</td><td class="is-np"><b>${np(o.np)}</b></td><td>${esc(shopFmtDay(o.last))}</td></tr>`).join('')}</tbody></table>`;
+      return `<table class="bnp-sales-t"><thead><tr><th scope="col">Item</th><th scope="col" class="is-n">Sold</th><th scope="col" class="is-np">Each</th><th scope="col" class="is-np">Together</th><th scope="col">Last sold</th></tr></thead><tbody>${list.slice(0, limit).map((o) => `<tr><td>${item(o.i)}</td><td class="is-n">${o.n.toLocaleString()}</td><td class="is-np">${o.lo === o.hi ? np(o.lo) : `${o.lo.toLocaleString()} – ${np(o.hi)}`}</td><td class="is-np"><b>${np(o.np)}</b></td><td>${esc(shopFmtDay(o.last))}</td></tr>`).join('')}</tbody></table>${shopSalesMore(list.length, limit, list.length - limit === 1 ? 'item' : 'items')}`;
     }
-    return `<table class="bnp-sales-t"><thead><tr><th scope="col">When</th><th scope="col">Item</th><th scope="col">Bought by</th><th scope="col" class="is-np">Price</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${esc(shopFmtDay(r.d))}</td><td>${item(r.i)}</td><td>${r.b ? `<a href="/userlookup.phtml?user=${encodeURIComponent(r.b)}">${esc(r.b)}</a>` : ''}</td><td class="is-np"><b>${np(r.p)}</b></td></tr>`).join('')}</tbody></table>`;
+    return `<table class="bnp-sales-t"><thead><tr><th scope="col">When</th><th scope="col">Item</th><th scope="col">Bought by</th><th scope="col" class="is-np">Price</th></tr></thead><tbody>${rows.slice(0, limit).map((r) => `<tr><td>${esc(shopFmtDay(r.d))}</td><td>${item(r.i)}</td><td>${r.b ? `<a href="/userlookup.phtml?user=${encodeURIComponent(r.b)}">${esc(r.b)}</a>` : ''}</td><td class="is-np"><b>${np(r.p)}</b></td></tr>`).join('')}</tbody></table>${shopSalesMore(rows.length, limit, rows.length - limit === 1 ? 'sale' : 'sales')}`;
   }
   function shopSales() {
     const page = $('.mkt-page');
@@ -29900,6 +29909,7 @@
       card.querySelector('[data-shop-salestools]').append(clear);
     }
     if (read) read.table.classList.add('bnp-shop-old');
+    let shown = SHOP_SALES_PAGE;   // (how many are shown: Show more brings the next; a new view starts again from the top)
     const paint = () => {
       const by = shopP().salesBy === 'item' ? 'item' : 'each', rows = v.rows.map((r, n) => ({ ...r, n })).sort((a, b) => (a.d === b.d ? b.n - a.n : a.d < b.d ? 1 : -1));
       const n = rows.length, sum = rows.reduce((a, r) => a + r.p, 0), month = nstOf(Date.now()).day.slice(0, 7), inMonth = rows.filter((r) => r.d.slice(0, 7) === month).reduce((a, r) => a + r.p, 0), first = n ? rows[n - 1].d : '';
@@ -29911,7 +29921,7 @@
       card.querySelector('.bnp-sales-by').innerHTML = [['each', 'Each sale'], ['item', 'By item']].map(([k, l]) => `<button type="button" data-shop-salesby="${k}" class="${by === k ? 'is-on' : ''}" aria-pressed="${by === k}">${l}</button>`).join('');
       const items = new Set(rows.map((r) => r.i)).size;
       card.querySelector('[data-shop-salescount]').textContent = `${n.toLocaleString()} sale${n === 1 ? '' : 's'} · ${items.toLocaleString()} item${items === 1 ? '' : 's'}`;
-      card.querySelector('[data-shop-salesview]').innerHTML = shopSalesView(rows, by);
+      card.querySelector('[data-shop-salesview]').innerHTML = shopSalesView(rows, by, shown);
       card.querySelector('[data-shop-salesnote]').textContent = v.off ? '' : listed ? 'NE keeps a copy in this browser: clearing Neopets’ list, as it asks, loses nothing here.' : 'Neopets’ list is empty: these are the sales NE kept before it was cleared.';
       const tools = card.querySelector('[data-shop-salestools]'), fb = tools.querySelector('[data-shop-salesforget]'), more = !v.off && n > listed;   // (Forget only while NE holds sales Neopets no longer lists)
       if (more && !fb) tools.insertAdjacentHTML('afterbegin', '<button type="button" class="bnp-shop-btn is-quiet" data-shop-salesforget>Forget the earlier ones</button>');
@@ -29921,9 +29931,10 @@
       for (const [nm, imgs] of want) itPriceAsk(nm, (res) => { if (res && res.img) for (const i of imgs) i.src = res.img; });
     };
     card.addEventListener('click', (e) => {
-      const b = e.target instanceof Element ? e.target.closest('[data-shop-salesby], [data-shop-salesforget]') : null;
+      const b = e.target instanceof Element ? e.target.closest('[data-shop-salesby], [data-shop-salesforget], [data-shop-salesmore]') : null;
       if (!b) return;
-      if (b.dataset.shopSalesby) { shopPSet('salesBy', b.dataset.shopSalesby); paint(); return; }
+      if (b.hasAttribute('data-shop-salesmore')) { shown += SHOP_SALES_PAGE; paint(); return; }   // (the next ones, under these: the page stays where it is)
+      if (b.dataset.shopSalesby) { shopPSet('salesBy', b.dataset.shopSalesby); shown = SHOP_SALES_PAGE; paint(); return; }
       if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Sure? Forget them for good'; return; }
       shopSalesPut({ rows: [], since: 0 });
       v = shopSalesKeep(read ? read.rows : []);   // (what Neopets still lists comes back in at once: only the earlier ones are gone)
@@ -30086,6 +30097,7 @@
     html.bnp-shop-page .bnp-sales-by button.is-on { background: var(--nb-bar) !important; color: var(--nb-bar-ink) !important; }
     html.bnp-shop-page .bnp-sales-count { color: var(--nb-muted); font: 12.5px var(--nb-ui); }
     html.bnp-shop-page .bnp-sales-scroll { overflow-x: auto; }
+    html.bnp-shop-page .bnp-sales-more { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 12px; margin: 10px 0 2px; color: var(--nb-muted); font: 12.5px var(--nb-txt); }   /* (Show more under the list, with what's left, as Buy Mode's) */
     html.bnp-shop-page table.bnp-sales-t { width: 100%; margin: 0; border-collapse: collapse; font: 13.5px var(--nb-txt); }
     html.bnp-shop-page .bnp-sales-t th { padding: 6px 10px; border-bottom: 2px solid var(--nb-line); background: none; color: var(--nb-muted); font: 12px var(--nb-ui); text-align: left; white-space: nowrap; }
     html.bnp-shop-page .bnp-sales-t td { padding: 5px 10px; border-bottom: 1px solid color-mix(in srgb, var(--nb-line) 55%, #fff); background: #fff; color: var(--nb-text); text-align: left; vertical-align: middle; }
@@ -30393,7 +30405,8 @@
     .bnp-tpm-th img { display: block; width: 40px; height: 40px; }
     .bnp-tpm-n b { display: block; color: #2a2a2a; font: 13.5px "MuseoSansRounded700", Arial, sans-serif; }
     .bnp-tpm-n small { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; color: #8a7a5a; font-size: 11.5px; }
-    .bnp-tpm-low { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin-top: 3px; color: #2f6a2a; font-size: 11.5px; }
+    .bnp-tpm-low { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 3px; color: #2f6a2a; font-size: 11.5px; }
+    .bnp-tpm-low > span:first-child { flex: 1 1 100%; }   /* (the price on its own line, its buttons together under it: Use and Look again) */
     .bnp-tpm-low.is-none { color: #9a8a6a; }
     .bnp-tpm-goc { display: inline-flex; align-items: center; gap: 8px; }   /* (List it, with its tick before it) */
     .bnp-tpm-ibok { display: grid; flex: none; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #2b8a27; box-shadow: 0 0 0 1.5px #1d5f1a; color: #fff; }
@@ -30827,7 +30840,7 @@
     const known = names.map((n) => [n, tpIbOf(n)]);
     let html = '';
     if (names.length) {
-      html = known.slice(0, 4).map(([n, x]) => `<div class="bnp-tpib-one">${x && x.img ? `<img src="${esc(x.img)}" alt="" width="30" height="30">` : ''}<span><b>${esc(n)}</b>${times(n) > 1 ? ` ×${times(n)}` : ''}: ${x ? tpLowHtml(x) : 'no Instant Buy seen for it yet'}</span>${tpIbFresh(x) ? '' : `<a class="bnp-tpbtn is-small" href="${esc(tpFind(n))}" target="_blank" rel="noopener">${x ? 'Look again' : 'Look it up'}</a>`}</div>`).join('')
+      html = known.slice(0, 4).map(([n, x]) => `<div class="bnp-tpib-one">${x && x.img ? `<img src="${esc(x.img)}" alt="" width="30" height="30">` : ''}<span><b>${esc(n)}</b>${times(n) > 1 ? ` ×${times(n)}` : ''}: ${x ? tpLowHtml(x) : tpLookedNone.has(n.toLowerCase()) ? 'none to buy on the Trading Post right now' : 'no Instant Buy seen for it yet'}</span>${x ? `<button type="button" class="bnp-tpbtn is-small" data-tpib-look="${esc(n)}"${tpLooking ? ' disabled' : ''} title="Its lowest Instant Buy looked up again on the Trading Post, here, in case it’s changed">${tpLooking && tpLooking.names && tpLooking.names.includes(n) ? 'Looking…' : 'Look again'}</button>` : `<a class="bnp-tpbtn is-small" href="${esc(tpFind(n))}" target="_blank" rel="noopener">Look it up</a>`}</div>`).join('')
         + (names.length > 4 ? `<div>and ${names.length - 4} more</div>` : '');
       const all = known.every(([, x]) => tpIbFresh(x)), sum = all ? known.reduce((s, [n, x]) => s + x.p * times(n), 0) : 0;   // (filled in only from prices seen in the last day)
       if (all) html += `<div class="bnp-tpib-fill">${tpUnderSel()}<button type="button" class="bnp-tpbtn is-small is-go" data-tpfill="${tpUnder(sum)}">Fill in ${tpFmt(tpUnder(sum))} NP${picked.length > 1 ? ': just under them together' : ': just under it'}</button></div>`;
@@ -30891,7 +30904,12 @@
     const r = await fetch(`${TP_AJAX}tradingpost-list.php?`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'XMLHttpRequest' }, body: JSON.stringify({ type: 'browse', criteria: 'item_exact', search_string: name, sort: 'newest', page: 1 }) });
     const j = await r.json(), k = name.toLowerCase();
     const lots = (j && Array.isArray(j.lots) ? j.lots : []).filter((l) => !l.is_your_lot && !l.seller_at_np_cap && Number(l.instant_buy_amount) > 0 && Array.isArray(l.items) && l.items.length === 1 && (Number(l.items[0].amount) || 1) === 1 && String(l.items[0].name || '').toLowerCase() === k);   // (one item, one of it, that you could buy now: as the page counts them)
-    if (!lots.length) { tpLookedNone.add(k); return null; }
+    if (!lots.length) {
+      tpLookedNone.add(k);
+      const had = tpIbAll();
+      if (j && Array.isArray(j.lots) && had[k]) { const left = { ...had }; delete left[k]; set('tpib', { items: left }); }   // (none now: the price seen before isn't there to go by any more)
+      return null;
+    }
     const low = lots.reduce((m, l) => (Number(l.instant_buy_amount) < Number(m.instant_buy_amount) ? l : m));
     const items = { ...tpIbAll(), [k]: { n: low.items[0].name, p: Number(low.instant_buy_amount), at: Date.now(), l: low.lot_id, img: low.items[0].img_url || '' } };
     set('tpib', { items: Object.fromEntries(Object.entries(items).sort((a, b) => b[1].at - a[1].at).slice(0, 400)) });
@@ -30903,7 +30921,7 @@
     if (tpLooking) return;
     const names = only || tpLookNames();
     if (!names.length) return;
-    tpLooking = { n: 0, of: names.length };
+    tpLooking = { n: 0, of: names.length, names };
     tpLookErr = '';
     tpMultiPaint();
     for (const n of names) {
@@ -30957,7 +30975,7 @@
       const idbHtml = !d || d.none ? '' : d.visit ? `<span class="bnp-tpm-idb">itemdb’s price: open it once today</span><a class="bnp-tpbtn is-small" href="https://itemdb.com.br/" target="_blank" rel="noopener">Open itemdb</a>`
         : d.wait ? '<span class="bnp-tpm-idb">itemdb’s price…</span>' : `<span class="bnp-tpm-idb">itemdb says about <b>${tpFmt(d.sum)} NP</b></span>${r.done ? '' : `<button type="button" class="bnp-tpbtn is-small" data-tpm-idb="${i}">Use ${tpFmt(d.sum)}</button>`}`;
       const its = r.items.map((x) => `<span class="bnp-tpm-th" title="${esc(x.n)}"><img src="${esc(x.img)}" alt="${esc(x.n)}" width="40" height="40">${r.done ? '' : `<button type="button" class="bnp-tpm-thx" data-tpm-out="${esc(r.k)}:${esc(x.id)}" title="Take it out of this lot" aria-label="Take ${esc(x.n)} out of this lot">×</button>`}</span>`).join('');
-      const lowHtml = !n ? '' : low.all ? `<span>${n === 1 ? tpLowHtml(low.one) : `lowest Instant Buys seen, together <b>${tpFmt(low.sum)} NP</b>${low.oldest ? ` · the oldest ${esc(avAgo(low.oldest))}` : ''}`}</span>${r.done ? '' : low.fresh ? `<button type="button" class="bnp-tpbtn is-small" data-tpm-under="${i}">Use ${tpFmt(tpUnder(low.sum))}</button>` : `<button type="button" class="bnp-tpbtn is-small" data-tpm-look="${i}"${tpLooking ? ' disabled' : ''} title="Its lowest Instant Buy looked up again on the Trading Post, here">Look again</button>`}`
+      const lowHtml = !n ? '' : low.all ? `<span>${n === 1 ? tpLowHtml(low.one) : `lowest Instant Buys seen, together <b>${tpFmt(low.sum)} NP</b>${low.oldest ? ` · the oldest ${esc(avAgo(low.oldest))}` : ''}`}</span>${r.done ? '' : `${low.fresh ? `<button type="button" class="bnp-tpbtn is-small" data-tpm-under="${i}">Use ${tpFmt(tpUnder(low.sum))}</button>` : ''}<button type="button" class="bnp-tpbtn is-small" data-tpm-look="${i}"${tpLooking ? ' disabled' : ''} title="Its lowest Instant Buy looked up again on the Trading Post, here, in case it’s changed">${tpLooking && tpLooking.names && r.items.some((x) => tpLooking.names.includes(x.n)) ? 'Looking…' : 'Look again'}</button>`}`
         : `<span>${tpLookedNone.has(low.miss.n.toLowerCase()) ? `none to buy on the Trading Post for ${n === 1 ? 'it' : esc(low.miss.n)} right now` : `no Instant Buy seen for ${n === 1 ? 'it' : esc(low.miss.n)} yet`}</span>${r.done ? '' : `<a class="bnp-tpbtn is-small" href="${esc(tpFind(low.miss.n))}" target="_blank" rel="noopener">Look it up</a>`}${idbHtml}`;
       return `<div class="bnp-tpm-row${r.done ? ' is-done' : ''}${here ? ' is-here' : ''}" data-tpm-row="${i}">
         <div class="bnp-tpm-its">${its || '<span class="bnp-tpm-none">Click items above to put them in this lot</span>'}</div>
@@ -31039,7 +31057,7 @@
       tpQSave(q); tpMultiPaint(); return;
     }
     if (v.tpmOut) { const [k, id] = v.tpmOut.split(':'), r = q.rows.find((y) => y.k === k); if (lotFree(r)) { r.items = r.items.filter((y) => y.id !== id); tpQSave(q); tpMultiPaint(); } return; }
-    if (v.tpmLook != null) { const r = q.rows[Number(v.tpmLook)], low = r && tpLotLow(r.items); if (low && low.old.length) tpLookAll(low.old); return; }   // (a lot's old prices, looked up again)
+    if (v.tpmLook != null) { const r = q.rows[Number(v.tpmLook)], low = r && tpLotLow(r.items); if (low && low.all) tpLookAll([...new Set(low.old.length ? low.old : r.items.map((x) => x.n))]); return; }   // (a lot's old prices looked up again; all fresh, all of them, as they may have changed)
     if (v.tpmUnder != null) { const r = q.rows[Number(v.tpmUnder)], low = r && tpLotLow(r.items); if (low && low.fresh) { r.ib = String(tpUnder(low.sum)); r.ibTouched = false; tpQSave(q); tpMultiPaint(); } return; }   // (and kept just under, if it's filled in by itself)
     if (v.tpmIdb != null) { const r = q.rows[Number(v.tpmIdb)], sum = r ? r.items.reduce((s, x) => s + (Number(tpIdb.get(x.n)) || 0), 0) : 0; if (sum > 0) { r.ib = String(sum); r.ibTouched = true; r.ibAuto = false; tpQSave(q); tpMultiPaint(); } return; }
     if (v.tpmGo != null) { tpListOne(Number(v.tpmGo)); return; }
@@ -31078,11 +31096,12 @@
   }
   function tpShowFew(id) { if (tpVue && tpVue.open[id]) delete tpVue.open[id]; tpMoreOpen.delete(id); tpPaint(); }
   function tpClick(e) {
-    const t = e.target instanceof Element ? e.target.closest('[data-tpmore], [data-tpless], [data-tp], [data-tpfill], [data-tpm], [data-tpm-it], [data-tpm-under], [data-tpm-idb], [data-tpm-go], [data-tpm-x], [data-tpm-out], [data-tpm-here], [data-tpm-look]') : null;
+    const t = e.target instanceof Element ? e.target.closest('[data-tpmore], [data-tpless], [data-tp], [data-tpfill], [data-tpib-look], [data-tpm], [data-tpm-it], [data-tpm-under], [data-tpm-idb], [data-tpm-go], [data-tpm-x], [data-tpm-out], [data-tpm-here], [data-tpm-look]') : null;
     if (!t) return;
     if (t.dataset.tpmore) { tpShowAll(t.dataset.tpmore); return; }
     if (t.dataset.tpless) { tpShowFew(t.dataset.tpless); return; }
     if (t.dataset.tpfill) { tpFillIb(Number(t.dataset.tpfill)); return; }
+    if (t.dataset.tpibLook) { const app = document.getElementById('tp_app__2025'), re = () => { if (app) tpIbHint(app); }; tpLookAll([t.dataset.tpibLook]).then(re, re); re(); return; }   // (Create a Trade's Look again: its price looked up here, its line drawn again as it goes)
     if (t.closest('[data-bnp="tpm"]')) { tpMultiClick(t); return; }
     const k = t.dataset.tp;
     if (k === 'pick') { tpPickOn = true; tpPicked.clear(); tpPaint(); return; }
@@ -31365,7 +31384,8 @@
     const body = rows.map(([l, list]) => { const o = sum(list); all.m += o.m; all.y += o.y; all.a += o.a; return line(l, o); }).join('');
     return `<div class="bnp-card"><h4>All your sales</h4><p class="bnp-note">Your shop till, the Trading Post and auctions together, each as counted on its own.</p><table class="bnp-salesall"><thead><tr><td></td><th scope="col">This month</th><th scope="col">This year</th><th scope="col">All of it</th></tr></thead><tbody>${body}${line('Together', all, ' class="is-total"')}</tbody></table></div>`;
   }
-  function tpSalesHtml(kind = 'tp') {   // (Settings: the Trading Post's, or the auctions': this month, this year and all of it; the latest 25)
+  const tpSalesShown = { tp: 25, au: 25 };   // (how many of each list Settings shows: Show more brings 25 more, while Settings is open)
+  function tpSalesHtml(kind = 'tp') {   // (Settings: the Trading Post's, or the auctions': this month, this year and all of it; the latest first, 25 at a time)
     tpAucScan();
     const v = tpSalesGet().filter((r) => tpSaleAu(r) === (kind === 'au')), now = nstOf(Date.now()), sum = { month: 0, year: 0, all: 0 };
     for (const r of v) { const o = nstOf(r.at); sum.all += r.np || 0; if (o.month === now.month) sum.month += r.np || 0; if (o.month.slice(0, 4) === now.month.slice(0, 4)) sum.year += r.np || 0; }
@@ -31377,9 +31397,11 @@
       return `<li class="bnp-tps-row"><span class="bnp-tps-when" title="${esc(new Date(r.at).toLocaleString())}">${esc(new Date(r.at).toLocaleDateString([], { month: 'short', day: 'numeric' }))}</span><span class="bnp-tps-what"><b>${esc(gave || (r.lot ? `Lot ${r.lot}` : 'A lot'))}</b><small>${how}</small></span><span class="bnp-tps-np">${r.np ? `+${npShort(r.np)} NP` : ''}</span></li>`;
     };
     return `<div class="bnp-tps"><div class="bnp-till-sums">${cell('This month', sum.month)}${cell('This year', sum.year)}${cell(`All of it (${v.length.toLocaleString()} ${kind === 'au' ? 'auction' : 'sale'}${v.length === 1 ? '' : 's'})`, sum.all)}</div>
-      ${v.length ? `<ol class="bnp-tps-list">${v.slice(-25).reverse().map(row).join('')}</ol>${v.length > 25 ? `<p class="bnp-note">And ${(v.length - 25).toLocaleString()} before them, in the totals.</p>` : ''}<div class="bnp-tools"><button type="button" class="bnp-pillbtn is-danger" data-tpsforget="${kind}">Forget them</button></div>` : `<p class="bnp-note">${kind === 'au' ? 'None yet: the next auction of yours that sells is the first.' : 'None yet: the next offer you accept, or lot bought with its Instant Buy, is the first.'}</p>`}</div>`;
+      ${v.length ? `<ol class="bnp-tps-list">${v.slice(-Math.min(v.length, tpSalesShown[kind] || 25)).reverse().map(row).join('')}</ol>${(() => { const left = v.length - (tpSalesShown[kind] || 25); return left > 0 ? `<p class="bnp-tps-more"><button type="button" class="bnp-pillbtn" data-tpsmore="${kind}">Show ${Math.min(25, left).toLocaleString()} more</button><span>${left.toLocaleString()} older ${left === 1 ? (kind === 'au' ? 'auction' : 'sale') : (kind === 'au' ? 'auctions' : 'sales')} below these</span></p>` : ''; })()}<div class="bnp-tools"><button type="button" class="bnp-pillbtn is-danger" data-tpsforget="${kind}">Forget them</button></div>` : `<p class="bnp-note">${kind === 'au' ? 'None yet: the next auction of yours that sells is the first.' : 'None yet: the next offer you accept, or lot bought with its Instant Buy, is the first.'}</p>`}</div>`;
   }
-  document.addEventListener('click', (e) => {   // (Settings: Forget them, asked twice)
+  document.addEventListener('click', (e) => {   // (Settings: Show more; Forget them, asked twice)
+    const m = e.target instanceof Element ? e.target.closest('[data-tpsmore]') : null;
+    if (m && hub && hub.win.contains(m)) { const k = m.dataset.tpsmore === 'au' ? 'au' : 'tp'; tpSalesShown[k] = (tpSalesShown[k] || 25) + 25; const top = hub.main.scrollTop; paintHub(); hub.main.scrollTop = top; return; }   // (the next 25 under these: Settings stays where it was)
     const b = e.target instanceof Element ? e.target.closest('[data-tpsforget]') : null;
     if (!b || !hub || !hub.win.contains(b)) return;
     if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Sure? Forget them for good'; return; }
@@ -36136,20 +36158,31 @@
   // ═══════════════════════════════════════════════════════════════════════════
   // The menus: Neopets' own items stay (moved, hidden or renamed in place); added ones are made the way Neopets makes them
   // ═══════════════════════════════════════════════════════════════════════════
-  const MENUS = [['community', 'Community'], ['games', 'Games'], ['explore', 'Explore'], ['shopNP', 'Shop · NP'], ['shopNC', 'Shop · NC'], ['profile', 'Profile']];
+  const MENUS = [['community', 'Community'], ['games', 'Games'], ['explore', 'Explore'], ['shopNP', 'Shop · NP'], ['shopNC', 'Shop · NC'], ['premium', 'Premium'], ['profile', 'Profile']];
   const MENU_ICONS = {   // (each menu's picture, as your theme has it on the top bar: for its page in Settings)
     community: ['el:.nav-top__2020 .nav-community-icon__2020', 'el:.nav-community-icon__2020'], games: ['el:.nav-top__2020 .nav-games-icon__2020', 'el:.nav-games-icon__2020'],
     explore: ['el:.nav-top__2020 .nav-explore-icon__2020', 'el:.nav-explore-icon__2020'], shopNP: ['el:.nav-top__2020 .nav-shop-icon__2020', 'el:.nav-shop-icon__2020'],
-    shopNC: ['el:.nav-top__2020 .nav-premium-icon__2020', 'el:.nav-premium-icon__2020'], profile: ['el:.nav-profile-dropdown__2020 .nav-profile-icon'],
+    shopNC: ['nat:shop-ncmall-icon'], premium: ['el:.nav-top__2020 .nav-premium-icon__2020', 'el:.nav-premium-icon__2020'], profile: ['el:.nav-profile-dropdown__2020 .nav-profile-icon'],
   };
   const MENU_NAME = Object.fromEntries(MENUS);
-  const DD_CLASS = { community: 'community-dropdown', games: 'games-dropdown', explore: 'explore-dropdown', shopNP: 'shop-dropdown', shopNC: 'shop-dropdown', profile: 'bnp-profile-dropdown' };
+  const DD_CLASS = { community: 'community-dropdown', games: 'games-dropdown', explore: 'explore-dropdown', shopNP: 'shop-dropdown', shopNC: 'shop-dropdown', premium: 'premium-dropdown', profile: 'bnp-profile-dropdown' };
   const SEL = {
-    top: { community: '#communitydropdown__2020 > ul', games: '#gamesdropdown__2020 > ul', explore: '#exploredropdown__2020 > ul', shopNP: '#shopdropdown__2020 .shopdropdownNPTab > ul', shopNC: '#shopdropdown__2020 .shopdropdownNCTab > ul', profile: '#bnpprofiledropdown__2020 > ul' },
-    bottom: { community: '#communitydropdownbottom__2020 > ul', games: '#gamesdropdownbottom__2020 > ul', explore: '#exploredropdownbottom__2020 > ul', shopNP: '#shopdropdownbottom__2020 .shopdropdownNPTab > ul', shopNC: '#shopdropdownbottom__2020 .shopdropdownNCTab > ul' },
+    top: { community: '#communitydropdown__2020 > ul', games: '#gamesdropdown__2020 > ul', explore: '#exploredropdown__2020 > ul', shopNP: '#shopdropdown__2020 .shopdropdownNPTab > ul', shopNC: '#shopdropdown__2020 .shopdropdownNCTab > ul', premium: '#premiumdropdown__2020 > ul', profile: '#bnpprofiledropdown__2020 > ul' },
+    bottom: { community: '#communitydropdownbottom__2020 > ul', games: '#gamesdropdownbottom__2020 > ul', explore: '#exploredropdownbottom__2020 > ul', shopNP: '#shopdropdownbottom__2020 .shopdropdownNPTab > ul', shopNC: '#shopdropdownbottom__2020 .shopdropdownNCTab > ul', premium: '#premiumdropdownbottom__2020 > ul' },
   };
   const homes = new WeakMap();   // a list → its own children, as Neopets made them
-  const homeOf = (ul) => { if (!homes.has(ul)) homes.set(ul, [...ul.children].filter((c) => !c.hasAttribute('data-bnp'))); return homes.get(ul); };
+  const homeOf = (ul) => { if (!homes.has(ul)) { for (const li of ul.querySelectorAll(':scope > li[onclick*="toggleWidget__2020"]')) navToolWrap(li); homes.set(ul, [...ul.children].filter((c) => !c.hasAttribute('data-bnp'))); } return homes.get(ul); };
+  function navToolWrap(li) {   // (one of Neopets' tools in a menu, with no address (Premium's Super Shop Wizard, Bankroll and Dailies: a click opens its little window): in a link as its other items are, so it moves, hides and renames as they do. A click still only does what it did; the address is the Premium Portal's, for a middle-click)
+    const m = /toggleWidget__2020\('(\w+)'\)/.exec(li.getAttribute('onclick') || '');
+    if (!m) return;
+    const a = document.createElement('a');
+    a.href = '/premium/';
+    a.dataset.bnpTool = m[1];
+    li.before(a);
+    a.append(li);
+  }
+  document.addEventListener('click', (e) => { if (e.target instanceof Element && e.target.closest('a[data-bnp-tool]')) e.preventDefault(); });   // (on any page, an old page's kept bar too: its window opens, nothing navigates)
+  const navKey = (el) => (el.dataset && el.dataset.bnpTool ? `tool:${el.dataset.bnpTool}` : el.tagName === 'A' && el.getAttribute('href') ? keyOf(el.getAttribute('href')) : null);   // (an item of Neopets' own: by its address, or the tool it is)
   // (a label's own words only: Neopets puts little notice dots inside some of them)
   const textOf = (h) => [...h.childNodes].filter((n) => n.nodeType === 3).map((n) => n.nodeValue).join('').replace(/\s+/g, ' ').trim();
   function setText(h, t) {
@@ -36170,8 +36203,8 @@
       const ul = $(sel);
       if (!ul) continue;
       for (const el of homeOf(ul)) {
-        if (el.tagName !== 'A' || !el.getAttribute('href')) continue;
-        const k = keyOf(el.getAttribute('href'));
+        const k = navKey(el);
+        if (!k) continue;
         if (!map.has(k)) map.set(k, { el, menu: m, label: labelOf(el), key: k });
       }
     }
@@ -36282,7 +36315,7 @@
     if (m === 'profile') S.menus.profile = profileDefaults();
     else {
       const ul = $(SEL.top[m]) || $(SEL.bottom[m]);
-      S.menus[m] = defaultsFor(m, homeOf(ul).filter((el) => el.tagName === 'A' && el.getAttribute('href')).map((el) => keyOf(el.getAttribute('href'))));
+      S.menus[m] = defaultsFor(m, homeOf(ul).map(navKey).filter(Boolean));
     }
     saveNow();
     return true;
@@ -37566,7 +37599,7 @@
       if (m !== 'profile') {   // (Neopets' own items the layout doesn't name, new ones, stay where Neopets put them)
         let last = -1;
         for (const el of homeOf(ul)) {
-          const k = el.tagName === 'A' && el.getAttribute('href') ? keyOf(el.getAttribute('href')) : null;
+          const k = navKey(el);
           if (k && mentioned.has(k)) { const i = out.indexOf(el); if (i >= 0) last = i; continue; }
           out.splice(++last, 0, el);
         }
@@ -39518,7 +39551,7 @@
     };
     const now = Date.now();
     for (const d of trackedDailies()) add(d.label, d.href, dailyIcon(d), 'Your daily', { daily: d, st: dailyState(d, now) });
-    for (const n of natNow().values()) add(n.label, n.el.getAttribute('href'), nativeIcon(n), MENU_NAME[n.menu] || 'Menu');
+    for (const n of natNow().values()) if (!n.el.dataset.bnpTool) add(n.label, n.el.getAttribute('href'), nativeIcon(n), MENU_NAME[n.menu] || 'Menu');   // (a tool has no page to go to)
     for (const s of sideMap().values()) add(s.label, s.href, s.icon, 'Your account');
     for (const list of Object.values(S.menus)) walk(list, (e) => { if (e.t === 'l' && e.href && !e.special) add(e.label, e.href, iconOf(e.icon) || iconForKey(keyOf(e.href)), 'Your link'); });
     for (const [href, name, spec, full] of TAB_PAGES) if (!href.endsWith('*') && href !== '/' && href !== '/home/') add(full || name, href, tabIconOf(spec), 'Page', { aka: full ? name : '', short: name });
@@ -41423,7 +41456,7 @@
     return t;
   }
   const themeAccount = () => { const l = themeLinks().pop(); return themeOfUrl(l && (l.getAttribute('data-bnp-was') || l.href)) || (() => { try { return localStorage.getItem('bnp-themenow') || ''; } catch (_) { return ''; } })(); };
-  const MY_ICON_NAMES = { 'community-icon': 'Community', 'games-icon': 'Games', 'explore-icon': 'Explore', 'shop-icon': 'Shop', 'premium-icon': 'NC Mall', 'search-icon': 'Search', 'quests-icon': 'Quests', 'bell-icon': 'Alerts', 'calendar-icon': 'Calendar', 'dropdown-arrow': 'Menus’ arrow',
+  const MY_ICON_NAMES = { 'community-icon': 'Community', 'games-icon': 'Games', 'explore-icon': 'Explore', 'shop-icon': 'Shop', 'premium-icon': 'Premium', 'search-icon': 'Search', 'quests-icon': 'Quests', 'bell-icon': 'Alerts', 'calendar-icon': 'Calendar', 'dropdown-arrow': 'Menus’ arrow',
     compress: 'Pet box: smaller', expand: 'Pet box: bigger', 'carouselarrow-left': 'Home page: left arrow', 'carouselarrow-right': 'Home page: right arrow',
     'profile-icon': 'Your profile', 'neopass-icon': 'NeoPass', 'mypets-icon': 'Your pets', 'customise-icon': 'Customise', 'chamber-icon': 'Styling Chamber', 'createpet-icon': 'Create a pet', 'adoptpet-icon': 'Adopt a pet', 'inventory-icon': 'Inventory', 'safetydeposit-icon': 'Safety Deposit Box', 'quickstock-icon': 'Quick Stock',
     'transferlog-icon': 'Transfer log', 'myalbums-icon': 'Albums', 'bookshelf-icon': 'Bookshelf', 'closet-icon': 'Closet', 'gallery-icon': 'Gallery', 'stamps-icon': 'Stamps', 'tradingcards-icon': 'Trading cards', 'ncalbum-icon': 'NC Album', 'settings-icon': 'Settings', 'signout-icon': 'Log out' };
@@ -43221,7 +43254,10 @@
   }
   function hubPageHtml(p) {   // (a page of these settings: a Menus or Folders one with its tabs on top)
     const pages = { sidebar: () => sidebarPage(), themes: () => { const h = themesPage(); if (!hubIndexing) queueMicrotask(() => { lookFigs(); lookTileFigs(); myPrevs(); lookAdjPaint(); }); return h; }, general: () => featuresPage('general', false, startCardHtml('general')), neomail: () => featuresPage('neomail'), shops: () => featuresPage('shops'), tradingpost: tpHubPage, newest: nwPage, neochat: nclHubPage, nclthemes: () => { const h = nctPage(); queueMicrotask(nctMount); return h; }, otherpages: otherPagesPage, dailies: dailiesHubPage, backup: backupPage, updates: updatesPage, dti: dtiHubPage, clock: clockPage, reminders: remPage, randomevents: rePage, avatars: avPage, items: itemsHubPage, neoboards: nbHubPage, tabs: tabsPage };
-    const tabs = hubTabbed(p) ? `<div class="bnp-subtabs" role="tablist" aria-label="${esc(hubKindName(p[2]))}">${hubTabs(p[2]).map(([k, n]) => `<button type="button" role="tab" data-page="${k}" aria-selected="${k === p[0]}">${p[2] === 'menu' ? hubTabIc(k) : ''}${esc(n)}</button>`).join('')}</div>` : '';
+    const tabs = hubTabbed(p) ? `<div class="bnp-subtabs" role="tablist" aria-label="${esc(hubKindName(p[2]))}">${(() => {
+      const list = hubTabs(p[2]), btn = ([k, n], short) => `<button type="button" role="tab" data-page="${k}" aria-selected="${k === p[0]}"${short ? ` title="${esc(n)}" aria-label="${esc(n)}"` : ''}>${p[2] === 'menu' ? hubTabIc(k) : ''}${esc(short || n)}</button>`;
+      return list.map((t) => (t[0] === 'shopNC' ? '' : t[0] === 'shopNP' ? `<span class="bnp-subsplit" role="presentation">${btn(t, 'NP')}${btn(list.find((x) => x[0] === 'shopNC'), 'NC')}</span>` : btn(t))).join('');   // (Shop's two as one pill split in half: room for Premium beside it)
+    })()}</div>` : '';
     return tabs + (p[2] === 'menu' ? menuPage(p[0]) : pages[p[0]] ? pages[p[0]]() : folderPage(p[0]));
   }
   function paintHub() {
@@ -43260,7 +43296,7 @@
   const HUB_ICON_PLAIN = {   // (where your theme's picture isn't on this page, as on the NC Mall's: the plain theme's own, so every page has one)
     general: '%3settings-icon.svg', themes: '%3customise-icon.svg', sidebar: '%3profile-icon.svg', neoboards: '%neoboards-icon.png', neomail: '%3neomail-icon.svg',
     shops: '%myshop-icon.png', tradingpost: '%tradingpost-icon.png', dailies: '%3calendar-icon.svg', otherpages: '%neopiacentral-icon.png', reminders: '%3bell-icon.svg',
-    community: '%3community-icon.svg', games: '%3games-icon.svg', explore: '%3explore-icon.svg', shopNP: '%3shop-icon.svg', shopNC: '%3premium-icon.svg', profile: '%3profile-icon.svg',
+    community: '%3community-icon.svg', games: '%3games-icon.svg', explore: '%3explore-icon.svg', shopNP: '%3shop-icon.svg', shopNC: '%ncmall-icon.png', premium: '%3premium-icon.svg', profile: '%3profile-icon.svg',
     boards: '%neoboards-icon.png', lands: '%3explore-icon.svg', recent: '%3explore-icon.svg', avatars: '%3profile-icon.svg',
   };
   function hubStars(el) {   // (Neopets' own three stars, off its logo, over Neopets Enhance: cut once and kept in this browser; the title's colour and outline go on them)
@@ -45096,7 +45132,7 @@
     if (home) {
       const named = new Set();
       for (const list of Object.values(S.menus)) walk(list, (e) => { if (e.t === 'n') named.add(e.k); });
-      for (const el of homeOf(home)) { const k = el.tagName === 'A' && el.getAttribute('href') ? keyOf(el.getAttribute('href')) : null; if (k && !named.has(k)) out.push(el.cloneNode(true)); }
+      for (const el of homeOf(home)) { const k = navKey(el); if (k && !named.has(k)) out.push(el.cloneNode(true)); }
     }
     const dd = document.createElement('div');
     dd.className = 'nav-dropdown__2020 bnp-prev-dd ' + DD_CLASS[m];
@@ -49025,6 +49061,7 @@
     .bnp-tpold { color: #b0461b; font-family: "MuseoSansRounded700", Arial, sans-serif; }   /* (a lowest Instant Buy seen over a day ago) */
     .bnp-hub .bnp-tps { display: grid; gap: 10px; margin-top: 6px; }   /* (Trading Post sales: totals, then each trade a card) */
     .bnp-hub .bnp-tps-list { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+    .bnp-hub .bnp-tps-more { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 12px; margin: 2px 0 0; color: #6b6653; font-size: 12.5px; }   /* (Show more under the list, with what's left, as Buy Mode's) */
     .bnp-hub .bnp-tps-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 8px 12px; border: 1px solid #ece5cf; border-radius: 10px; background: #fff; box-shadow: 0 2px 0 #f1ebd9; }
     .bnp-hub .bnp-tps-when { color: #8a8571; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }
     .bnp-hub .bnp-tps-what { min-width: 0; color: #363636; font-size: 13px; line-height: 1.4; }
@@ -51761,6 +51798,10 @@
     .bnp-hub .bnp-main h5:not(.bnp-card h5):has(+ .bnp-card > h4:first-child) { text-shadow: none; }
     .bnp-hub .bnp-card > h4:first-child :is(.bnp-note, small), .bnp-hub .bnp-main h5:not(.bnp-card h5):has(+ .bnp-card):not(:has(+ .bnp-card > h4:first-child)) :is(.bnp-note, small) { color: var(--bnp-bar-ink, #fff); opacity: .9; font: 12.5px/1.3 "MuseoSansRounded500", Arial, sans-serif; letter-spacing: 0; text-transform: none; }   /* (a note in a title band: the band's own writing colour) */
     .bnp-hub .bnp-main > .bnp-subtabs button { display: inline-flex; align-items: center; gap: 6px; }
+    .bnp-hub .bnp-subsplit { display: inline-flex; }   /* (Shop's two menus, NP and NC: one pill split in half) */
+    .bnp-hub .bnp-subtabs .bnp-subsplit button { padding-right: 11px; padding-left: 11px; }
+    .bnp-hub .bnp-subtabs .bnp-subsplit button:first-child { border-right-width: 1px; border-radius: 999px 0 0 999px; }
+    .bnp-hub .bnp-subtabs .bnp-subsplit button:last-child { border-left-width: 1px; border-radius: 0 999px 999px 0; }
     .bnp-hub .bnp-subtabs .bnp-subtab-ic { flex: none; width: 20px; height: 20px; margin: -3px 0 -3px -5px; background: center / contain no-repeat; }   /* (a Menus tab's picture: its menu's own) */
     .bnp-hub .bnp-subtabs button[aria-selected="true"] .bnp-subtab-ic { filter: drop-shadow(0 0 1px rgba(255, 255, 255, .95)) drop-shadow(0 0 2px rgba(255, 255, 255, .55)); }   /* (on the open tab's dark pill: a light edge, so dark icons show too) */
     .bnp-hub .bnp-guildpicrow .bnp-guildpicacts { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -52044,6 +52085,13 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.2.6', '2026-11-04', [
+      'Auctions: the bid box fills in the right lowest bid (it could pick up another number on the page and suggest far too much)',
+      'Settings › Menus: the Premium menu can be edited, its Super Shop Wizard, Bankroll and Dailies too; Shop’s NP and NC share one split tab, and NC has the NC Mall’s picture',
+      'Sales: Sales History shows 50 at a time with Show more; the Trading Post’s and auctions’ lists in Settings show 25, the older ones a click away',
+      'Trading Post: Look again stays beside a price once it’s found, looks right there, and says so when none are left on sale',
+      'My Gallery: its title sits in the middle of its space, as other pages’ do',
+    ]],
     ['5.2.5', '2026-11-04', [
       'Buy Mode and other long runs: the Neopets pages NE works from in the background open without their scripts or ads, so nothing piles up in Tampermonkey or in memory as they run',
       'Quick Ref: the Your Pets title’s edge is smooth all round, as NeoChat’s is, with no shadow under it',
