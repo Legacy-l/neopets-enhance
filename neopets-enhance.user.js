@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.2.4
+// @version      5.2.5
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -126,7 +126,74 @@
   }
   let wwwSeq = 0;
   const wwwWait = new Map(), wwwFrames = new Map();   // (each frame NE asks from, by its page: { port, f, ch, down, n, bye })
+  // On Neopets' own address the frame is bare (wwwBare): the page opened as a visit with none of its scripts running in it (its ads and
+  // trackers, NE, or any other script you have), and NE's requests sent into it from the page you're on, with that page's own fetch, so
+  // they come from that page as its own requests do. A frame that ran the whole page, scripts and all, for every step of a long run (a
+  // Wizard search, a shop, your Inventory) piled up in Tampermonkey's count and in memory (the user, 2026-11-04: "tampermonkey 'scripts
+  // running' count goes up and up and up" during Buy Mode, to over 100). Only the NC Mall's address, which can't reach into www's
+  // frames, still has NE relaying inside its frame
+  function wwwBare(path, via) {   // (the bare frame of a page, made at the first request that needs it: ready once the page is there and a moment's passed, as you'd see it before doing anything. via: NE's bare frame already open, sent on to this page by a link on the page it's on)
+    const k = wwwFrames.get(path) || { port: null, f: null, ch: null, down: 0, n: 0, bye: 0 };
+    wwwFrames.set(path, k);
+    if (k.port) return k.port;
+    if (Date.now() - k.down < 20000) return Promise.reject(new TypeError('Failed to fetch (Neopets’ page didn’t open)'));   // (it couldn't be opened a moment ago: not tried again for 20 seconds)
+    k.bare = true;
+    return (k.port = new Promise((done, fail) => {
+      const f = via || document.createElement('iframe'), want = new URL(path, SITE).pathname;
+      let before = null, over = false;
+      try { before = via ? via.contentDocument : null; } catch (_) { before = null; }
+      const end = (ok) => {
+        if (over) return;
+        over = true;
+        clearTimeout(tm);
+        clearInterval(poll);
+        f.removeEventListener('load', look);
+        if (ok) { setTimeout(() => done(f), 400 + Math.random() * 700); return; }
+        k.port = null; k.f = null; k.down = Date.now();
+        f.remove();
+        fail(new TypeError('Failed to fetch (Neopets’ page didn’t open)'));
+      };
+      const look = () => {   // (the page there once its words are in, not when its last picture is; another page (the login page, signed out): said at once)
+        if (!f.isConnected) { end(false); return; }
+        let d = null, at = '';
+        try { d = f.contentDocument; at = f.contentWindow.location.pathname; } catch (_) { return; }
+        if (!d || d === before || at === 'blank' || d.readyState === 'loading') return;
+        end(at === want);
+      };
+      const poll = setInterval(look, 120);
+      f.addEventListener('load', look);
+      const tm = setTimeout(() => end(false), 30000);
+      k.f = f;
+      k.ch = null;
+      if (via) {   // (a link on the page it's on, followed there: this page's referrer is that one, as a click's is)
+        try { const d = f.contentDocument, a = d.createElement('a'); a.href = path; a.hidden = true; (d.body || d.documentElement).append(a); a.click(); a.remove(); } catch (_) { end(false); }
+        return;
+      }
+      f.setAttribute('sandbox', 'allow-same-origin');   // (none of the page's scripts run: Neopets' own pages still open as a visit, and requests sent into it are its)
+      f.src = path;
+      f.title = '';
+      f.tabIndex = -1;
+      f.setAttribute('aria-hidden', 'true');
+      f.style.cssText = 'position:absolute!important;left:-9999px!important;top:0!important;width:1px!important;height:1px!important;border:0!important;visibility:hidden!important';
+      document.documentElement.append(f);   // (beside the page's body, not in it: a page that redraws its body can't take it away)
+    }));
+  }
+  async function wwwBareAsk(f, x, method, o) {   // (one request, sent from the page in NE's bare frame with that page's own fetch, so it comes from there as its own do; o.page: the page itself, as it is there)
+    let W = null, d = null;
+    try { W = f.contentWindow; d = f.contentDocument; } catch (_) { W = null; }
+    if (!W || !d || !f.isConnected) throw new TypeError('Failed to fetch (its frame was taken away)');
+    const answer = (text, status, type, url, redirected) => { const r = new Response([101, 204, 205, 304].includes(status) ? null : text, { status: status >= 200 && status <= 599 ? status : 502, headers: type ? { 'content-type': type } : {} }); Object.defineProperty(r, 'url', { value: url || '' }); Object.defineProperty(r, 'redirected', { value: !!redirected }); return r; };
+    if (o.page) return answer(d.documentElement.outerHTML, 200, 'text/html', W.location.href.split('#')[0], false);
+    const b = o.body;
+    let body = null;
+    if (b instanceof URLSearchParams) body = new W.URLSearchParams([...b]);
+    else if (b instanceof FormData) { body = new W.FormData(); for (const [n, v] of b) if (typeof v === 'string') body.append(n, v); }
+    else if (b != null) body = String(b);
+    const r = await W.fetch(x.pathname + x.search, { method, headers: Object.fromEntries(new Headers(o.headers || {})), body, credentials: 'include', cache: o.cache || 'default' });
+    return answer(await r.text(), r.status, r.headers.get('content-type') || '', r.url, r.redirected);
+  }
   function wwwOpen(path = '/robots.txt', via = null) {   // (the frame and its channel, made once, at the first request that needs it. via: a frame of NE's already open, sent on to this page by a link on the page it's on)
+    if (!ON_MALL && !FRAME && path !== '/robots.txt') return wwwBare(path, via);   // (on Neopets' own address: the bare frame, nothing of NE's in it)
     const page = path !== '/robots.txt', k = wwwFrames.get(path) || { port: null, f: null, ch: null, down: 0, n: 0, bye: 0 };
     wwwFrames.set(path, k);
     if (k.port) return k.port;
@@ -189,6 +256,7 @@
     const port = await wwwOpen(path), k = wwwFrames.get(path);
     k.n++;
     clearTimeout(k.bye);
+    if (k.bare) return wwwBareAsk(port, x, method, o).finally(() => { if (--k.n === 0) k.bye = setTimeout(() => wwwShut(path), 120000); });   // (the bare frame: asked from here, straight into it)
     return new Promise((done, fail) => {
       const id = ++wwwSeq, tm = setTimeout(() => { wwwWait.delete(id); fail(new TypeError('Failed to fetch (no answer)')); }, 30000);
       wwwWait.set(id, { done, fail, tm });
@@ -294,6 +362,7 @@
     if (k.ch) k.ch.port1.close();
     if (k.f) k.f.remove();
     k.port = null; k.f = null; k.ch = null;
+    if (k.bare && !k.down) wwwFrames.delete(path);   // (nothing kept of it: a long run asks from hundreds of shops)
   }
   function wwwGo(from, to) {   // (NE's frame of page from sent on to page to by a link there, as you'd click one: to's referrer is from. The frame is to's then, from's made afresh when it's next asked from; not open, to's opened as any)
     const k = wwwFrames.get(from), t = wwwFrames.get(to);
@@ -3840,8 +3909,11 @@
     try { evs = remEvents(now).filter((e) => !fired[e.key]); } catch (e) { report(e); }   // (one kind going wrong: the timer still runs on)
     const due = evs.filter((e) => e.at <= now);
     if (due.length) remClaim(due.map((e) => e.key)).then((keys) => remFire(due.filter((e) => keys.includes(e.key))));
-    try {   // (missed while no Neopets tab was open, up to 12 hours back: one note for them all, never dropped unsaid)
-      const old = remEvents(now, now - 20 * 60000, now - 12 * 3600000).filter((e) => !fired[e.key] && ['ready', 'deadline', 'snow', 'fc', 'dice', 'turmac'].includes(e.kind) && (e.kind !== 'ready' || !e.check || e.check()));
+    try {   // (missed while no Neopets tab was open, up to 12 hours back: one note for them all, never dropped unsaid; the Snowager's hour, once over, isn't something to have missed)
+      const back = remEvents(now, now - 20 * 60000, now - 12 * 3600000).filter((e) => !fired[e.key]);
+      const asleep = back.filter((e) => e.kind === 'snow' && e.check && e.check());   // (the Snowager still asleep: said as ever, while there's time to go. Once its hour is over it's never said at all (user, 2026-11-04: "you dont need to let someone know they missed the time previously"))
+      if (asleep.length) remClaim(asleep.map((e) => e.key)).then((keys) => remFire(asleep.filter((e) => keys.includes(e.key))));
+      const old = back.filter((e) => ['ready', 'deadline', 'fc', 'dice', 'turmac'].includes(e.kind) && (e.kind !== 'ready' || !e.check || e.check()));
       if (old.length) remClaim(old.map((e) => e.key)).then((keys) => { const got = old.filter((e) => keys.includes(e.key)); if (got.length) remFire([{ key: `away:${now}`, kind: 'away', title: 'While you were away', text: `${got.slice(0, 5).map(remAwayLine).join(' · ')}${got.length > 5 ? ` and ${got.length - 5} more` : ''}`, icon: got[0].icon || iconOf(FOLDERS.dailies.icon), board: true, sound: 'chime', exp: now + 6 * 3600000 }]); });
     } catch (e) { report(e); }
     const next = evs.find((e) => e.at > now);
@@ -3850,7 +3922,6 @@
   function remAwayLine(e) {   // (one thing missed, as it stands now)
     if (e.kind === 'ready') return `${e.d.label} is ready (since ${fmtNst(e.at)})`;
     if (e.kind === 'deadline') return `${e.what.replace(/: your time runs out$/, '')}: its time ran out at ${fmtNst(e.when)}`;
-    if (e.kind === 'snow') return `the Snowager slept ${fmtNst(e.start)}–${fmtNst(e.until)}`;
     if (e.kind === 'fc') return `Food Club bets closed at ${fmtNst(e.when)}`;
     if (e.kind === 'dice') return 'Deadly Dice was open midnight to 1 am';
     if (e.kind === 'turmac') return `the Turmaculus was due ${fmtNst(e.start)}–${fmtNst(e.until)}`;
@@ -6216,6 +6287,10 @@
   const invAllOn = () => { try { return localStorage.getItem(INV_ALL) === '1'; } catch (_) { return false; } };
   const invAllSet = (on) => { try { localStorage.setItem(INV_ALL, on ? '1' : '0'); } catch (_) { /* */ } };
   const invAskType = (d, type) => invAsk(d).replace(/itemType=[^&]*/, `itemType=${type}`);
+  const invAskOpen = (doc) => {   // (what the Inventory page's own script asks for as it opens, NP's tab: your choices this visit (kept in the tab, where its script reads them first), else the page's own)
+    const el = doc.getElementById('invDisplay'), ds = (el && el.dataset) || {}, ss = (k, v) => { try { const x = sessionStorage.getItem(k); return x != null ? x : v; } catch (_) { return v; } };
+    return invAskType({ dataset: { type: 'np', filter: ss('invFilter', ds.filter || ''), stack: ss('invStack', ds.stack || '1'), action: ss('invAction', ds.action || '') } }, 'np');
+  };
   async function invListHtml(d, type) {   // (one kind's grid, asked for as Neopets' own tab asks)
     const r = await fetch(`/np-templates/ajax/inventory.php?${invAskType(d, type)}`, { method: 'POST', credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
     return r.ok ? r.text() : '';
@@ -9153,7 +9228,7 @@
       await wwwOpen(page);
       const k = wwwFrames.get(page), t0 = Date.now();
       let tbl = null;
-      while (!tbl && Date.now() - t0 < 12000) {   // (its list, once its page has it: the table is there only then)
+      while (!tbl && !(k && k.bare) && Date.now() - t0 < 12000) {   // (its list, once its page has it: the table is there only then. NE's bare frame runs none of its scripts: asked for below, as its page asks)
         try { tbl = k.f.contentDocument.querySelector('#quickstock-table-container table.quickstock-table'); } catch (_) { tbl = null; }
         if (!tbl) await bmSleep(250);
       }
@@ -34270,6 +34345,18 @@
     wwwShut(page);
     try { await wwwOpen(page); } catch (_) { return null; }   // (its page didn't open: none)
     const k = wwwFrames.get(page), t0 = Date.now();
+    if (k && k.bare) {   // (none of its scripts run there: its NP tab's list asked for as its own script asks as the page opens, and read from that)
+      let doc = null, html = '';
+      try { doc = k.f.contentDocument; } catch (_) { doc = null; }
+      if (!doc) return null;
+      if (doc.body && bmInvHere(doc) === 0) return { cards: [], n: 0 };   // (Neopets' own header says it's empty: nothing to ask for)
+      try { const r = await fromPage(page, `/np-templates/ajax/inventory.php?${invAskOpen(doc)}`, { method: 'POST', credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } }); html = r.ok ? await r.text() : ''; } catch (_) { html = ''; }
+      if (!html) return null;
+      const t = document.createElement('template');
+      t.innerHTML = html;   // (inert: nothing in it loads or runs)
+      const cards = [...t.content.querySelectorAll('.item-img[data-objid]')].filter((i) => (i.getAttribute('data-itemset') || 'np') !== 'nc');   // (NC items aren't in the 50)
+      return { cards, n: cards.reduce((s, i) => s + Math.max(1, Number(i.getAttribute('data-itemquantity')) || 1), 0) };
+    }
     while (Date.now() - t0 < 15000) {
       let d = null;
       try { d = k && k.f && k.f.contentDocument; } catch (_) { d = null; }
@@ -34409,7 +34496,7 @@
       if (!ck) return fail('Quick Stock didn’t open just now', true);
       const k = wwwFrames.get(page), t0 = Date.now(), have = [];
       let tbl = null, empty = false;
-      while (!tbl && !empty && Date.now() - t0 < 12000) {   // (its list, once its page has asked for it itself: the table is there only then)
+      while (!tbl && !empty && !(k && k.bare) && Date.now() - t0 < 12000) {   // (its list, once its page has asked for it itself: the table is there only then. NE's bare frame runs none of its scripts: asked for below, as its page asks)
         let d = null;
         try { d = k && k.f && k.f.contentDocument; } catch (_) { d = null; }
         if (!d) break;
@@ -47426,7 +47513,7 @@
     /* Your Pets: Neopets' Quick Links, a full bar in the theme's header with the counts that show only those pets */
     .bq-pets { position: relative; margin: 30px 0 16px; border: 2px solid var(--bq-ln); border-radius: 18px; background: radial-gradient(120% 90% at 50% 0%, #fff 0%, color-mix(in srgb, var(--bq-h) 9%, #fff) 55%, color-mix(in srgb, var(--bq-h) 16%, #fff) 100%); box-shadow: 0 3px 0 var(--bq-ln), 0 8px 18px rgba(0, 0, 0, .08); }   /* (a box of its own: lit from the top, the theme's tint at its edges) */
     .bq .bq-plate { position: absolute !important; top: 0 !important; left: 50% !important; z-index: 2; display: grid !important; place-items: center; width: auto !important; min-width: 214px; height: 46px !important; margin: 0 !important; padding: 0 30px !important; border: 1.5px solid color-mix(in srgb, var(--bq-h) 55%, #000 45%) !important; border-radius: 999px !important; background: linear-gradient(color-mix(in srgb, var(--bq-h) 76%, #fff), var(--bq-h) 58%, color-mix(in srgb, var(--bq-h) 90%, #000)) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -2px 0 rgba(0, 0, 0, .1), 0 3px 0 color-mix(in srgb, var(--bq-h) 55%, #000 45%), 0 8px 16px rgba(0, 0, 0, .18) !important; color: var(--bq-hi); overflow: hidden; transform: translate(-50%, -52%); }   /* (its title on a nameplate in the theme's colour, lit from the top with a ledge under it, as the cards' buttons: set on the box's top edge) */
-    .bq .bq-plate h3 { position: relative; z-index: 2; top: -1px; max-width: none !important; margin: 0 !important; padding: 0 !important; color: inherit; font: 22pt/1 "Cafeteria", "Arial Bold", sans-serif !important; letter-spacing: .5pt; white-space: nowrap; -webkit-text-stroke: 3px var(--bq-tedge, rgba(255, 255, 255, .92)); paint-order: stroke fill; text-shadow: 0 2px 0 color-mix(in srgb, var(--bq-h) 45%, #000); }   /* (in the middle: Neopets caps a header's h3 at 90% less 65px for a pop-up's X, which pushed these words 11px right; a thin edge, a little depth) */
+    .bq .bq-plate h3 { position: relative; z-index: 2; top: -1px; max-width: none !important; margin: 0 !important; padding: 0 !important; color: inherit; font: 22pt/1 "Cafeteria", "Arial Bold", sans-serif !important; letter-spacing: .5pt; white-space: nowrap; --bq-e: var(--bq-tedge, rgba(255, 255, 255, .92)); -webkit-text-stroke: 0 !important; text-shadow: 2px 0 0 var(--bq-e), 1.85px 0.77px 0 var(--bq-e), 1.41px 1.41px 0 var(--bq-e), 0.77px 1.85px 0 var(--bq-e), 0 2px 0 var(--bq-e), -0.77px 1.85px 0 var(--bq-e), -1.41px 1.41px 0 var(--bq-e), -1.85px 0.77px 0 var(--bq-e), -2px 0 0 var(--bq-e), -1.85px -0.77px 0 var(--bq-e), -1.41px -1.41px 0 var(--bq-e), -0.77px -1.85px 0 var(--bq-e), 0 -2px 0 var(--bq-e), 0.77px -1.85px 0 var(--bq-e), 1.41px -1.41px 0 var(--bq-e), 1.85px -0.77px 0 var(--bq-e) !important; }   /* (in the middle: Neopets caps a header's h3 at 90% less 65px for a pop-up's X, which pushed these words 11px right. Its edge as NeoChat's title has it (nctRing): the letters' own shadow all round, smooth, no drop shadow under it. A drawn stroke spiked at Cafeteria's corners, and the drop shadow under it made the edge look jagged (user, 2026-11-04)) */
     .bq .bq-plate .popup-header-pattern__2020 { opacity: .22; -webkit-mask-image: linear-gradient(90deg, #000, transparent 30%, transparent 70%, #000); mask-image: linear-gradient(90deg, #000, transparent 30%, transparent 70%, #000); }   /* (the theme's pattern only faintly, at its ends) */
     .bq-tray { padding: 36px 16px 18px; }   /* (under the nameplate: the counts, then your pets) */
     .bq-pets.is-bar { width: fit-content; max-width: 100%; margin: -8px auto 18px; border: 0; background: none; box-shadow: none; }   /* (folded: no box, the nameplate alone, in the middle, its counts and the button that opens it in it (the user, 2026-11-03: "it could all fit into the Your Pets pill"). Pulled up into the room Neopets leaves under its links bar: as much space over it as under it ("lessen this blank space above")) */
@@ -51957,6 +52044,11 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.2.5', '2026-11-04', [
+      'Buy Mode and other long runs: the Neopets pages NE works from in the background open without their scripts or ads, so nothing piles up in Tampermonkey or in memory as they run',
+      'Quick Ref: the Your Pets title’s edge is smooth all round, as NeoChat’s is, with no shadow under it',
+      'Reminders: “While you were away” no longer lists the Snowager’s sleep once it’s over; back while it’s still asleep, its own reminder comes',
+    ]],
     ['5.2.4', '2026-11-04', [
       'Pages NE reads for you now open unseen as ordinary page visits instead of script requests',
       'Board replies, lottery tickets and Neomail actions go through Neopets’ own forms',
