@@ -1,8 +1,11 @@
 {
- "version": "5.2.3",
- "date": "2026-11-03",
+ "version": "5.2.4",
+ "date": "2026-11-04",
  "notes": [
-  "Trainer mode keeps going while its tab is in the background",
-  "Neoboards: the topic’s bar at the top shows again as you scroll"
+  "Pages NE reads for you open as ordinary page visits; posts go through Neopets’ own forms",
+  "Long runs take short breaks; board checks every 5 minutes by default, never on the dot",
+  "Read to a pet uses the SDB’s own filter and pages, with Neopets’ own words for each book",
+  "Styling Studio’s Available tab reads only once you use it",
+  "Books Read, Booktastic, Gourmet: “Only ones without a price”"
  ]
 }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.2.3
+// @version      5.2.4
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -160,6 +160,12 @@
       };
       k.f = f;
       k.ch = ch;
+      f.addEventListener('load', () => {   // (the frame came to another page (the login page, signed out): not waited for, said at once)
+        if (ready) return;
+        let at = '';
+        try { at = f.contentWindow.location.pathname; } catch (_) { at = ''; }   // (another address's frame, the Mall's: not readable, waited for as before)
+        if (at && at !== 'blank' && at !== new URL(path, SITE).pathname) { clearTimeout(tm); no(); }
+      });
       if (via) {   // (a link on the page it's on, followed there: this page's referrer is that one, as a click's is)
         try { const d = f.contentDocument, a = d.createElement('a'); a.href = `https://www.neopets.com${path}#bnp-relay`; a.hidden = true; (d.body || d.documentElement).append(a); a.click(); a.remove(); } catch (_) { clearTimeout(tm); no(); }
         return;
@@ -169,7 +175,7 @@
       f.tabIndex = -1;
       f.setAttribute('aria-hidden', 'true');
       f.style.cssText = 'position:absolute!important;left:-9999px!important;top:0!important;width:1px!important;height:1px!important;border:0!important;visibility:hidden!important';
-      (document.body || document.documentElement).append(f);
+      document.documentElement.append(f);   // (beside the page's body, not in it: a page that redraws its body can't take it away)
     }));
   }
   async function wwwFetch(u, o = {}, path = '/robots.txt') {   // (a request for one of Neopets' own pages, asked by NE in a frame of www: robots.txt's from the Mall's address, or that page's own (fromPage). The answer as a Response)
@@ -192,10 +198,95 @@
   // Requests Neopets takes only from one of its own pages (a theme saved in General Settings, a Neomail sent, a Neofriend request; it says
   // "directed to this page from the wrong place" otherwise): made from that page itself, opened unseen in a frame of NE's own with NE only
   // relaying there, so they carry that page as their referrer because they truly come from it. Already on that page: from here
-  function fromPageOk(p) { return /^\/(?:games\/kadoatery\/index\.phtml|neoboards\/boardlist\.phtml|neoboards\/topic\.phtml|settings\/general\/|settings\/neoboards\/|neomessages\.phtml|neofriend_requests\.phtml|shops\/wizard\.phtml|island\/(?:fight_)?training\.phtml|quickstock\.phtml|browseshop\.phtml|safetydeposit\.phtml|inventory\.phtml)$/.test(p); }   // (the Shop Wizard's page: Price mode's searches come from it, as a person's do)
+  function fromPageOk(p) { return /^\/(?:games\/kadoatery\/index\.phtml|neoboards\/boardlist\.phtml|neoboards\/topic\.phtml|settings\/general\/|settings\/neoboards\/|neomessages\.phtml|neofriend_requests\.phtml|shops\/wizard\.phtml|island\/(?:fight_)?training\.phtml|quickstock\.phtml|browseshop\.phtml|safetydeposit\.phtml|inventory\.phtml|mall\/dyeworks\/)$/.test(p); }   // (the Shop Wizard's page: Price mode's searches come from it, as a person's do. The Dyeworks: its page read from the NC Mall's own address)
   const fromHere = (page) => !ON_MALL && !FRAME && location.pathname + location.search === page;
   const fromPage = (page, u, o) => (fromHere(page) ? fetch(u, o) : wwwFetch(u, o, page));
   const fromPageHtml = (page) => (fromHere(page) ? Promise.resolve(document.documentElement.outerHTML) : wwwFetch(page, { page: 1 }, page).then((r) => r.text()));   // (the page as it is there: nothing asked for again)
+  // Neopets' pages NE only reads (what a pet has read, a board, an album page): opened as a visit opens them, never asked for by a script,
+  // in a frame NE alone sees where none of the page's own scripts run (no ads or trackers no one would see; the user, 3 November 2026:
+  // "I'm not worried about blocking ads"). Several in a row go one after another in that frame, each by a link on the one before, as you'd
+  // click your way there, a moment between. Their HTML, in order; a page that opened somewhere else (the login page) is said at once
+  async function pageVisit(paths, gap = [900, 900]) {
+    const list = Array.isArray(paths) ? paths : [paths], out = [], t = pageTour();
+    try { for (const p of list) out.push(await t.go(p, gap)); } finally { t.done(); }
+    return out;
+  }
+  function pageTour() {   // (pageVisit's frame, kept for pages chosen as they come: go(path) the first one, then each next by a link on the one before; done() puts it away)
+    if (ON_MALL || FRAME) throw new TypeError('Failed to fetch (not from here)');
+    const f = document.createElement('iframe');
+    f.setAttribute('sandbox', 'allow-same-origin');
+    f.setAttribute('aria-hidden', 'true');
+    f.tabIndex = -1;
+    f.title = '';
+    f.style.cssText = 'position:absolute!important;left:-9999px!important;top:0!important;width:1px!important;height:1px!important;border:0!important;visibility:hidden!important';
+    const landed = (path, before, any) => new Promise((ok, no) => {   // (the page read once its words are all in, as you'd see it, not when its last picture is; before: the page it's leaving; any: an action's address, which sends you on to another page (any but the login page): { url, html } of where it lands)
+      const want = new URL(path, SITE).pathname;
+      let over = false;
+      const end = (fn) => { if (over) return; over = true; clearTimeout(tm); clearInterval(poll); f.removeEventListener('load', look); fn(); };
+      const look = () => {
+        let d = null, at = '';
+        try { d = f.contentDocument; at = f.contentWindow.location.pathname; } catch (_) { return; }
+        if (!f.isConnected) { end(() => no(new TypeError('Failed to fetch (its frame was taken away)'))); return; }
+        if (!d || d === before || at === 'blank' || d.readyState === 'loading') return;   // (still the page before, the frame's empty start, or still coming)
+        if (any ? /^\/login\b/.test(at) : at !== want) { end(() => no(new TypeError(`Failed to fetch (it opened ${/^\/login\b/.test(at) ? 'the login page' : 'another page'})`))); return; }
+        end(() => { try { const html = d.documentElement.outerHTML; ok(any ? { url: f.contentWindow.location.href, html } : html); } catch (e) { no(e); } });
+      };
+      const poll = setInterval(look, 120);
+      f.addEventListener('load', look);
+      const tm = setTimeout(() => end(() => no(new TypeError('Failed to fetch (the page didn’t open)'))), 30000);
+    });
+    let first = true;
+    return {
+      async go(path, gap = [900, 900], any = false) {
+        if (first) { first = false; const p = landed(path, null, any); f.src = path; document.documentElement.append(f); return p; }   // (beside the page's body, not in it: a page that redraws its body can't take it away)
+        await bmSleep(gap[0] + Math.random() * gap[1]);   // (a moment on the page, then on to the next, as you'd click: a worker's timer, on time in a tab out of sight too)
+        const d = f.contentDocument, p = landed(path, d, any), a = d.createElement('a');
+        a.href = path;
+        a.hidden = true;
+        (d.body || d.documentElement).append(a);
+        a.click();
+        return p;
+      },
+      done() { f.remove(); },
+    };
+  }
+  async function pageGo(path) {   // (an action's address (one that does something, then sends you on) opened as its link would open it, unseen: { url, html } of where it lands; the login page, an error)
+    const t = pageTour();
+    try { return await t.go(path, undefined, true); } finally { t.done(); }
+  }
+  const pageRead = (path) => (ON_MALL ? fetch(path, { credentials: 'include' }).then((r) => r.text()) : pageVisit(path).then((p) => p[0]));   // (one page read as a visit; on the NC Mall's own address, where a frame of www can't be read, through its relay as before)
+  function pagePost(form, submitter) {   // (a form of Neopets' own sent as you'd send it, its button's name and value with it, the browser putting it together: its answer opens in NE's unseen frame, where none of the page's scripts run. { url, html } of where it lands. Called straight from your click, so it goes as yours)
+    return new Promise((done, fail) => {
+      const name = `bnp-post-${uid()}`, fr = document.createElement('iframe');
+      fr.name = name;
+      fr.setAttribute('sandbox', 'allow-same-origin');
+      fr.setAttribute('aria-hidden', 'true');
+      fr.tabIndex = -1;
+      fr.style.cssText = 'position:absolute!important;left:-9999px!important;top:0!important;width:1px!important;height:1px!important;border:0!important;visibility:hidden!important';
+      document.documentElement.append(fr);   // (beside the page's body, not in it: a page that redraws its body can't take it away)
+      const blank = fr.contentDocument;
+      let over = false;
+      const end = (fn) => { if (over) return; over = true; clearTimeout(tm); clearInterval(poll); fr.removeEventListener('load', look); fr.remove(); fn(); };
+      const look = () => {   // (its answer, read once its words are all in)
+        let d = null, url = '';
+        try { d = fr.contentDocument; url = fr.contentWindow.location.href; } catch (_) { return; }
+        if (!fr.isConnected) { end(() => fail(new TypeError('Failed to fetch (its frame was taken away)'))); return; }
+        if (!d || d === blank || !url || url === 'about:blank' || d.readyState === 'loading') return;   // (the frame's empty start, or still coming)
+        const html = d.documentElement.outerHTML;
+        end(() => done({ url, html }));
+      };
+      const poll = setInterval(look, 120);
+      fr.addEventListener('load', look);
+      const tm = setTimeout(() => end(() => fail(new TypeError('Failed to fetch (no answer)'))), 45000);
+      const was = form.getAttribute('target');
+      let extra = null;
+      if (submitter && submitter.name) { extra = document.createElement('input'); extra.type = 'hidden'; extra.name = submitter.name; extra.value = submitter.value || ''; form.append(extra); }   // (as pressing it would add it)
+      form.setAttribute('target', name);
+      try { HTMLFormElement.prototype.submit.call(form); }   // (the form's own sending, past NE's catch of it: a field named "submit" can hide form.submit)
+      catch (e) { end(() => fail(e)); }
+      finally { if (extra) extra.remove(); if (was == null) form.removeAttribute('target'); else form.setAttribute('target', was); }
+    });
+  }
   function wwwShut(path) {   // (a page's frame put away: the next request opens it afresh)
     const k = wwwFrames.get(path);
     if (!k || k.n) return;
@@ -3522,7 +3613,7 @@
     const today = nstOf(Date.now()).day, T0 = get('turmac', null) || {};
     set('turmac', { ...T0, tryDay: today, tries: (T0.tryDay === today ? T0.tries || 0 : 0) + 1 });   // (counted before it goes: twice a day at most, whatever happens)
     try {
-      const r = await fetch(TURMAC_PP, { credentials: 'include' }), days = r.ok ? turmacParse(await r.text()) : null, T = get('turmac', null) || {};
+      const html = await pageRead(TURMAC_PP).catch(() => ''), days = html ? turmacParse(html) : null, T = get('turmac', null) || {};   // (the petpage opened as a visit opens it)
       if (days) { set('turmac', { ...T, at: Date.now(), days, failAt: 0 }); remSchedule(); dailiesChanged(); const c = document.querySelector('[data-bnp="turmac"]'); if (c && c.bnpPaint) c.bnpPaint(); } else set('turmac', { ...T, failAt: Date.now() });
     } catch (e) { set('turmac', { ...(get('turmac', null) || {}), failAt: Date.now() }); }
     finally { turmacBusy = false; }
@@ -4450,7 +4541,7 @@
     if (!info) {
       out.textContent = 'Looking…';
       try {
-        const doc = new DOMParser().parseFromString(await (await fetch(href, { credentials: 'include' })).text(), 'text/html');
+        const doc = new DOMParser().parseFromString(await pageRead(href), 'text/html');   // (its page opened as a visit opens it)
         info = srItemInfo(doc);
         try { sessionStorage.setItem('bnp-sri:' + href, JSON.stringify(info)); } catch (_) { /* */ }
       } catch (e) { out.textContent = 'Neopets didn’t answer just now.'; return; }
@@ -4672,7 +4763,7 @@
     cards.forEach((c) => c.classList.add('bnp-pd-wait'));
     if (btn) btn.disabled = true;
     try {
-      const r = await fetch(`/pound/get_adopt.phtml?r=${Math.ceil(Math.random() * 9999999)}`, { credentials: 'same-origin', cache: 'no-store', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const r = await fetch(`/pound/get_adopt.phtml?r=${Math.ceil(Math.random() * 9999999)}`, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });   // (as adopt.js asks: its r= keeps it fresh, no cache headers of its own)
       let data = null;
       try { data = r.ok ? JSON.parse(await r.text()) : null; } catch (_) { /* (not its list: logged out, or a page instead) */ }
       if (!data || typeof data !== 'object' || !poundOk(data[1])) { pageSay(r.ok ? 'The Pound has no others to show just now: try again in a moment' : 'The Pound didn’t answer just now: try again in a moment'); return; }
@@ -5064,12 +5155,17 @@
     clearTimeout(itAskT);
     itAskT = setTimeout(itPriceSend, 250);
   }
-  function itPriceSend() {
+  async function itPriceSend() {   // (a hundred names at a time, one after another, a moment between: never all at once)
     const batch = itAsk;
     itAsk = new Map();
     const names = [...batch.keys()];
     for (let i = 0; i < names.length; i += 100) {   // (itemdb takes them a hundred at a time)
       const part = names.slice(i, i + 100);
+      if (i) {
+        await new Promise((ok) => setTimeout(ok, 1000 + Math.random() * 1000));
+        if (itBlocked()) { for (const n of names.slice(i)) for (const b of batch.get(n) || []) itTell(b, itBlockedBusy() ? { err: 1, busy: 1 } : { visit: 1 }); return; }   // (told to wait meanwhile: the rest not asked)
+      }
+      await new Promise((done) => {
       try {
         GM_xmlhttpRequest({ method: 'POST', url: 'https://itemdb.com.br/api/v1/items/many', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, data: JSON.stringify({ name: part }), timeout: 15000,
           onload: (r) => {
@@ -5077,6 +5173,7 @@
               const refused = r.status === 401 && Date.now() - itVisitAt() < 3 * 60000;   // (turned away just after a visit: its pass isn't reaching itemdb)
               try { localStorage.setItem(IT_401, `${Date.now()}|${r.status}${refused ? 'r' : ''}`); } catch (_) { /* */ }
               for (const n of part) for (const b of batch.get(n) || []) itTell(b, r.status === 401 ? { visit: 1, refused } : { err: 1, busy: 1 });
+              done();
               return;
             }
             let data = {};
@@ -5089,10 +5186,12 @@
               for (const b of batch.get(n) || []) itTell(b, res);
             }
             try { localStorage.setItem(IT_PRICES, JSON.stringify(cache)); } catch (_) { /* */ }
+            done();
           },
-          onerror: () => { for (const n of part) for (const b of batch.get(n) || []) itTell(b, { err: 1 }); },
-          ontimeout: () => { for (const n of part) for (const b of batch.get(n) || []) itTell(b, { err: 1 }); } });
-      } catch (_) { for (const n of part) for (const b of batch.get(n) || []) itTell(b, { err: 1 }); }
+          onerror: () => { for (const n of part) for (const b of batch.get(n) || []) itTell(b, { err: 1 }); done(); },
+          ontimeout: () => { for (const n of part) for (const b of batch.get(n) || []) itTell(b, { err: 1 }); done(); } });
+      } catch (_) { for (const n of part) for (const b of batch.get(n) || []) itTell(b, { err: 1 }); done(); }
+      });
     }
   }
   function itBusyLater() {   // (itemdb's "too busy": asked again once its pause is over, a moment after)
@@ -5242,7 +5341,7 @@
         onerror: () => res({}), ontimeout: () => res({}) });
     } catch (_) { res({}); }
   });
-  const ncValisar = () => fetch('/~valisar', { credentials: 'include' }).then((r) => r.text()).then((html) => {   // (its table: # · name · value)
+  const ncValisar = () => pageRead('/~valisar').then((html) => {   // (its table: # · name · value; the petpage opened as a visit opens it)
     const m = {}, month = new RegExp(MONTH_NAMES.join('|'));
     for (const tr of new DOMParser().parseFromString(html, 'text/html').querySelectorAll('table#item-values tr')) {
       const td = tr.querySelectorAll('td');
@@ -6837,15 +6936,14 @@
     const to = (() => { const fm = frame.querySelector('form[action*="kadoatery"]'); return fm ? fm.getAttribute('action') : '/games/kadoatery/index.phtml'; })();
     const go = document.createElement('span');
     go.className = 'bnp-kad-resgo';
-    go.innerHTML = 'Back in <b data-kadgo>3</b> s <button type="button" class="bnp-pillbtn is-quiet is-small" data-kadstay>Stay here</button>';
+    const end = Date.now() + 2500 + Math.random() * 2500, secs = () => Math.max(0, Math.ceil((end - Date.now()) / 1000));   // (a moment to read it, never the same each time)
+    go.innerHTML = `Back in <b data-kadgo>${secs()}</b> s <button type="button" class="bnp-pillbtn is-quiet is-small" data-kadstay>Stay here</button>`;
     foot.append(go);
-    let left = 3;
     const t = setInterval(() => {
-      left -= 1;
       const b2 = go.querySelector('[data-kadgo]');
-      if (b2) b2.textContent = String(Math.max(0, left));
-      if (left <= 0) { clearInterval(t); try { location.replace(new URL(to, location.href).href); } catch (_) { location.href = '/games/kadoatery/index.phtml'; } }
-    }, 1000);
+      if (b2) b2.textContent = String(secs());
+      if (Date.now() >= end) { clearInterval(t); try { location.replace(new URL(to, location.href).href); } catch (_) { location.href = '/games/kadoatery/index.phtml'; } }
+    }, 250);
     go.querySelector('[data-kadstay]').addEventListener('click', () => { clearInterval(t); go.textContent = 'Staying here'; });
   }
   function kadCheckBoot() {   // (Auto refresh: a Kadoatery tab looks for itself, out of sight too, and the others know it's open; with none open, a Neopets tab in front looks for all)
@@ -7020,21 +7118,18 @@
     if (/avatar|help|question|\?/i.test(r.title) && !pics) k -= 3;   // (a question about it, not its times)
     return k;
   }
-  async function kadTopicGet(id, next) {   // (one page of a topic, read in a frame of NE's own, as a visit would)
-    const page = `/neoboards/topic.phtml?topic=${id}${next > 1 ? `&next=${next}` : ''}`;
-    try { return new DOMParser().parseFromString(await wwwFetch(page, { page: 1 }, page).then((r) => r.text()), 'text/html'); } finally { try { wwwShut(page); } catch (_) { /* */ } }
+  async function kadTopicGet(id, next, tour) {   // (one page of a topic, opened in the boards' tour (pageTour): by a link on the page before, as you'd click)
+    return new DOMParser().parseFromString(await tour.go(`/neoboards/topic.phtml?topic=${id}${next > 1 ? `&next=${next}` : ''}`, [0, 0]), 'text/html');   // (the moment before it is the caller's kadNap)
   }
   const kadTopicTop = (doc, id, page) => Math.max(page, ...[...doc.querySelectorAll('a[href*="topic.phtml"][href*="next="]')].filter((a) => (a.getAttribute('href') || '').includes(`topic=${id}`)).map((a) => Number((/next=(\d+)/.exec(a.getAttribute('href')) || [])[1]) || 0));
   const kadTopicTitle = (doc) => ((doc.querySelector('.topicTitle') || {}).textContent || '').replace(/^\s*topic:\s*/i, '').replace(/\s+/g, ' ').trim();
   const kadNap = () => bmSleep(1600 + Math.random() * 2400);   // (a person's moment between pages)
-  async function kadBoardFind() {   // (the Kadoatery topic in Site Games: its first page read; the best-scored topics (two at most) checked by their newest posts having times)
-    const list = `/neoboards/boardlist.phtml?board=${KAD_BOARD}`;
-    let doc;
-    try { doc = new DOMParser().parseFromString(await wwwFetch(list, { page: 1 }, list).then((r) => r.text()), 'text/html'); } finally { try { wwwShut(list); } catch (_) { /* */ } }
+  async function kadBoardFind(tour) {   // (the Kadoatery topic in Site Games: its first page read; the best-scored topics (two at most) checked by their newest posts having times)
+    const doc = new DOMParser().parseFromString(await tour.go(`/neoboards/boardlist.phtml?board=${KAD_BOARD}`), 'text/html');
     const rows = kadBoardRows(doc).map((r) => ({ ...r, score: kadBoardScore(r) })).filter((r) => r.score >= 5).sort((x, y) => y.score - x.score || (x.ago ?? 9e15) - (y.ago ?? 9e15));
     for (const r of rows.slice(0, 2)) {
       await kadNap();
-      const d2 = await kadTopicGet(r.id, r.page), posts = kadBoardPosts(d2), timed = posts.filter((x) => kadBoardFacts(x.lines, x.at).any).length;
+      const d2 = await kadTopicGet(r.id, r.page, tour), posts = kadBoardPosts(d2), timed = posts.filter((x) => kadBoardFacts(x.lines, x.at).any).length;
       if (timed >= 2 || (timed >= 1 && r.score >= 9)) return { id: r.id, title: kadTopicTitle(d2) || r.title, page: kadTopicTop(d2, r.id, r.page), doc: d2 };
     }
     return null;
@@ -7043,29 +7138,31 @@
     if (FRAME || !MAIN_HOST || S.features.kadHelp === false || kadBoardRead.busy) return;
     const p = kadPrefs(), mode = p.board || 'auto', now = Date.now(), kb = kadBoardGet();
     if (mode === 'off' || actIdle() > KAD_STOP || (mode === 'topic' && !Number(p.topic))) return;
-    if (!force && now - (kb.read || 0) < 10 * 60000) return;
+    if (!force && (now - (kb.read || 0) < 10 * 60000 || document.hidden)) return;   // (not while this tab's in the back, unless you ask)
     if ((await tabsOnce('kadboard', 60000)) === false) return;
     kadBoardRead.busy = true;
     kadRepaint();
+    let tour = null;
     try {
+      tour = pageTour();   // (the board's list and its topic's pages, one after another by their links, as you'd click through)
       let id = mode === 'topic' ? Number(p.topic) : kb.id || 0, page = kb.id === id ? kb.page || 1 : 1, title = kb.id === id ? kb.title || '' : '', doc = null;
       const stale = !kb.sum || !kb.sum.newest || now - kb.sum.newest > 3 * 3600e3;
       if (mode === 'auto' && (!id || now - (kb.found || 0) > 12 * 3600e3 || (stale && now - (kb.found || 0) > 30 * 60000))) {   // (none yet, or not looked for in a while, or its times have gone quiet: maybe a new one)
-        const f = await kadBoardFind();
+        const f = await kadBoardFind(tour);
         kb.found = now;
         if (f) { id = f.id; page = f.page; title = f.title; doc = f.doc; }
         else if (!id) { Object.assign(kb, { read: now, none: true, sum: null }); kadBoardPut(kb); return; }
       }
-      if (!doc) { if (kb.found === now) await kadNap(); doc = await kadTopicGet(id, page); }
+      if (!doc) { if (kb.found === now) await kadNap(); doc = await kadTopicGet(id, page, tour); }
       const top = kadTopicTop(doc, id, page);
-      if (top > page) { await kadNap(); doc = await kadTopicGet(id, top); page = top; }   // (a page more since: the last one)
+      if (top > page) { await kadNap(); doc = await kadTopicGet(id, top, tour); page = top; }   // (a page more since: the last one)
       title = kadTopicTitle(doc) || title;
       let posts = kadBoardPosts(doc), sum = kadBoardSum(posts, now);
-      if (!sum.main && page > 1 && posts.length < 10) { await kadNap(); posts = [...kadBoardPosts(await kadTopicGet(id, Math.max(1, page - 20))), ...posts]; sum = kadBoardSum(posts, now); }   // (just begun a page: the one before too)
+      if (!sum.main && page > 1 && posts.length < 10) { await kadNap(); posts = [...kadBoardPosts(await kadTopicGet(id, Math.max(1, page - 20), tour)), ...posts]; sum = kadBoardSum(posts, now); }   // (just begun a page: the one before too)
       Object.assign(kb, { id, title, page, by: mode === 'topic' ? 'you' : 'auto', read: now, sum, none: false, err: 0 });
       kadBoardPut(kb);
     } catch (_) { kb.read = now; kb.err = now; kadBoardPut(kb); }
-    finally { kadBoardRead.busy = false; kadRepaint(); }
+    finally { if (tour) tour.done(); kadBoardRead.busy = false; kadRepaint(); }
   }
   function kadBoardHtml(st) {   // (⚙ › Restock times: the boards' times, Off / Find the topic / This topic, and what it says)
     const p = kadPrefs(st), mode = p.board || 'auto', kb = kadBoardGet(), sum = kb.sum || {}, mine = mode !== 'topic' || Number(p.topic) === kb.id;
@@ -8452,9 +8549,8 @@
     try {
       const p = petsNow().find((x) => x.name === name);
       await activate(name, p && p.image);
-      const r = await fetch('/water/fishing.phtml', { credentials: 'include' });   // (the page as it is now, its skill line for the new pet; nothing is cast)
-      if (/login/i.test(new URL(r.url).pathname)) throw new Error('signed out');
-      const doc = new DOMParser().parseFromString(await r.text(), 'text/html'), el = fishSkillEl(doc), m = el && FISH_SKILL.exec(el.textContent || ''), here = fishSkillEl(document);
+      const html = await pageRead('/water/fishing.phtml').catch((e) => { throw /login/.test(String(e && e.message)) ? new Error('signed out') : e; });   // (the page as it is now, opened unseen as a reload opens it: its skill line for the new pet; nothing is cast)
+      const doc = new DOMParser().parseFromString(html, 'text/html'), el = fishSkillEl(doc), m = el && FISH_SKILL.exec(el.textContent || ''), here = fishSkillEl(document);
       if (m && here) fishSkillSet(here, m[1], m[2]);
       const f = fishKeep();
       if (fishNote(doc, f)) fishSet(f);
@@ -9596,7 +9692,7 @@
     img.decoding = 'async';
     const tries = ['1/2.png', '1/2.png', '1/2.png', '1/1.png'];   // (its 150px picture, shown smaller; asked again a few seconds on; then its 50px one)
     let n = 0;
-    const go = () => { img.src = `https://pets.neopets.com/cpn/${encodeURIComponent(name)}/${tries[n]}${n ? `?try=${n}` : ''}`; };
+    const go = () => { const u = `https://pets.neopets.com/cpn/${encodeURIComponent(name)}/${tries[n]}`; if (img.getAttribute('src') === u) { img.removeAttribute('src'); setTimeout(() => { img.src = u; }, 0); } else img.src = u; };   // (asked again at its own address, as a page reload would: nothing added to it)
     img.addEventListener('load', () => { img.classList.add('is-ok'); if (img.parentElement) img.parentElement.classList.add('is-ok'); });
     img.addEventListener('error', () => { if (++n < tries.length) setTimeout(go, [0, 2500, 6000, 12000][n]); });
     go();
@@ -10008,8 +10104,9 @@
     const say = (u, post, status, text) => {
       try {
         const t = String(text || '');
-        if (t.length > 60000 && !/"avatar/i.test(t)) return;   // (a long list: never a daily's answer)
-        tell.dispatchEvent(new CustomEvent('bnp-heard', { detail: JSON.stringify({ u: where(u), post: clean(post), status, text: t.slice(0, 60000) }) }));
+        const tpl = /\/tradingpost-list\.php/.test(u);   // (the Trading Post's search: whole, so NE reads its lots' items from it, never asking for it again)
+        if (t.length > 60000 && !/"avatar/i.test(t) && !tpl) return;   // (a long list: never a daily's answer)
+        tell.dispatchEvent(new CustomEvent('bnp-heard', { detail: JSON.stringify({ u: where(u), post: clean(post), status, text: tpl ? t.slice(0, 2e6) : t.slice(0, 60000) }) }));
       } catch (_) { /* */ }
     };
     const bodyOf = (b) => { try { if (typeof b === 'string') return b; if (b instanceof URLSearchParams) return b.toString(); if (b instanceof FormData) return [...b.entries()].filter(([, v]) => typeof v === 'string').map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&'); } catch (_) { /* */ } return ''; };
@@ -10197,11 +10294,9 @@
   }
   const invAsk = (d) => new URLSearchParams({ itemType: d.dataset.type || 'np', alpha: d.dataset.filter || '', itemStack: d.dataset.stack || '1', action: Number(d.dataset.action) ? String(Number(d.dataset.action)) : '' }).toString();   // (what Neopets' own tabs ask for)
   let invStale = false;   // (something was done to an item since the page was last loaded: Neopets' list is out of date till it is)
-  async function invFresh() {   // (the Inventory page, loaded unseen, as a refresh would: Neopets' list of your items is up to date after it. A random event on it: brought onto this page, and logged)
-    const r = await fetch('/inventory.phtml', { credentials: 'include' });
-    if (!r.ok) return;
-    const html = await r.text();
-    if (!/randomEvent|something has happened/i.test(html)) return;
+  async function invFresh() {   // (the Inventory page, opened unseen as a reload opens it: Neopets' list of your items is up to date after it. A random event on it: brought onto this page, and logged)
+    const html = await pageRead('/inventory.phtml').catch(() => '');
+    if (!html || !/randomEvent|something has happened/i.test(html)) return;
     const doc = new DOMParser().parseFromString(html, 'text/html'), boxes = [...doc.getElementsByClassName('randomEvent'), ...reOldBoxes(doc)];
     if (!boxes.length) return;
     const at = $('#navsub-buffer__2020'), box = $('#container__2020');
@@ -10949,8 +11044,8 @@
   const NB_TOPICS = 40;   // (topics a page on a board)
   const nbKind = () => { const p = location.pathname; return /^\/neoboards\/(index\.phtml)?$/.test(p) ? 'index' : p === '/neoboards/boardlist.phtml' ? 'board' : p === '/neoboards/topic.phtml' ? 'topic' : p === '/neoboards/create_topic.phtml' ? 'create' : ''; };
   const nbOn = () => !!(S.features.nb2 && nbKind());
-  const NB_DEF = { bar: true, stick: true, pages: true, marks: true, live: 300, boardLive: 0, acts: true, who: 'hover', links: true, pics: 'np', mutes: 'fold', avatars: 'normal', pet: 's', mePet: true, drafts: true, keys: true, pen: true, mine: true, peek: true, inplace: true, mineTint: true, per: 40 };
-  const nbOpt = () => { const o = Object.assign({}, NB_DEF, S.nb || {}); if (o.boardLive > 0 && o.boardLive < 120) o.boardLive = 120; return o; };   // (a board's topics every minute isn't offered any more: every 2)
+  const NB_DEF = { bar: true, stick: true, pages: true, marks: true, live: 300, boardLive: 300, acts: true, who: 'hover', links: true, pics: 'np', mutes: 'fold', avatars: 'normal', pet: 's', mePet: true, drafts: true, keys: true, pen: true, mine: true, peek: true, inplace: true, mineTint: true, per: 40 };
+  const nbOpt = () => { const o = Object.assign({}, NB_DEF, S.nb || {}); if (o.boardLive > 0 && o.boardLive < 120) o.boardLive = 120; if (o.live > 0 && o.live < 120) o.live = 120; return o; };   // (a board's topics every minute, or a topic's new posts every 30 seconds or minute, aren't offered any more (user, 2026-11-04: "keep 2mins as lowest"): every 2)
   // (your theme, as its own parts wear it: pop-up headers and their pattern, the menus' colours and frames, the pet box, and the boards' own bars and links)
   const NB_VARS = { acc: '--nb-acc', ink: '--nb-ink', pic: '--nb-pat', patsz: '--nb-patsz', patpos: '--nb-patpos', frame: '--nb-frame', panel: '--nb-panel', pink: '--nb-pink', rule: '--nb-rule', pop: '--nb-pop', bar: '--nb-bar', barInk: '--nb-bar-ink', blink: '--nb-blink' };
   const nbPaintVars = (t) => { const root = document.documentElement; for (const [k, v] of Object.entries(NB_VARS)) if (t && t[k] && t[k] !== 'none') root.style.setProperty(v, t[k]); };
@@ -11063,7 +11158,7 @@
   }
   const nbPageOf = (k) => (k <= NB_PER ? 1 : Math.floor((k - 1) / NB_PER) * NB_PER + 1);   // (the page a reply is on, as Neopets' next= has it)
   const nbTopicUrl = (id, k) => { const n = Number(k) || 0, next = nbPageOf(n); return `/neoboards/topic.phtml?topic=${id}${next > 1 ? `&next=${next}` : ''}${n > 0 ? `#nbp-${n}` : ''}`; };
-  const nbFetch = (u) => fetch(u, { credentials: 'include' }).then((r) => { if (!r.ok) throw new Error(`Neopets answered ${r.status}`); return r.text(); }).then((t) => new DOMParser().parseFromString(t, 'text/html'));
+  const nbFetch = (u) => pageRead(u).then((t) => new DOMParser().parseFromString(t, 'text/html'));   // (a board's page opened as a visit opens it, unseen: never asked for by a script)
   let nbHere = {};   // (this page: its board, its topic, how far it goes)
   const NB_SVG = {
     palette: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1 0 1.7-.8 1.7-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-1 .8-1.7 1.7-1.7H17a4 4 0 0 0 4-4C21 6.8 17 3 12 3z"/><circle cx="7.5" cy="11.5" r="1.1" fill="currentColor"/><circle cx="10.5" cy="7.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="8" r="1.1" fill="currentColor"/></svg>',
@@ -11213,48 +11308,8 @@
     nbAvFill(p.rows, 'hist');
     return `<div class="bnp-nbpanel-h"><span>Read lately</span>${nbPager('panel', p)}${hist.length ? '<button type="button" data-nbx="histall">Clear it</button>' : ''}</div>${hist.length ? p.rows.map((h) => nbTrow(h, `hist:${h.id}`)).join('') : '<p class="bnp-nbpanel-empty">The topics you read come here, newest first, and open where you left off.</p>'}`;
   }
-  let nbAvBusy = false, nbAvLeft = 6, nbAvLast = 0;
-  const nbAvSkip = new Set();   // (looked for on this page and not come: not again till another page)
-  async function nbAvFill(rows, kind) {   // (topics listed without their starter's avatar: a few looked up from their first page, kept with them. One at a time with a person's pause, only while you're looking at this tab, at most six a page)
-    if (nbAvBusy || nbAvLeft <= 0 || document.hidden) return;
-    const want = rows.filter((t) => t.id && !t.av && !t.avTried && !nbAvSkip.has(String(t.id))).slice(0, 3);
-    if (!want.length) return;
-    nbAvBusy = true;
-    let changed = false;
-    try {
-      for (const t of want) {
-        if (document.hidden || nbAvLeft <= 0) break;
-        const wait = nbAvLast + 3000 + Math.random() * 2400 - Date.now();   // (a person's pause after the last one, this round's or the one before)
-        if (wait > 0) await new Promise((ok) => setTimeout(ok, wait));
-        if (document.hidden) break;
-        nbAvLeft--;
-        nbAvSkip.add(String(t.id));
-        let a = '', av = '', came = false;
-        try {
-          const r = await fetch(`/neoboards/topic.phtml?topic=${t.id}`, { credentials: 'include' });
-          came = r.ok;
-          const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
-          const li = [...doc.querySelectorAll('.boardPostByline')].map((b) => b.parentElement)[0];
-          if (li) { a = reClean((li.querySelector('.postAuthorName') || {}).textContent); av = fullUrl(bgUrl(li.querySelector('.authorIcon'))); }
-        } catch (_) { came = false; }
-        nbAvLast = Date.now();
-        if (!came) {   // (it didn't come: another page, another time; after three, left be)
-          const miss = (x) => { if (Number(x.id) === Number(t.id)) { x.avFail = (x.avFail || 0) + 1; if (x.avFail >= 3) x.avTried = 1; } };
-          const marks = nbMarks(); marks.forEach(miss); set('nbmarks', marks);
-          const hist = nbHist(); hist.forEach(miss); nbJsonSet('bnp-nbhist', hist);
-          continue;
-        }
-        const fix = (x) => { if (Number(x.id) !== Number(t.id)) return; x.avTried = 1; if (av) x.av = av; if (a && !x.a) x.a = a; };   // (tried once its page has come, found or not: a topic that's gone has no posts to read)
-        const marks = nbMarks(); marks.forEach(fix); set('nbmarks', marks);
-        const hist = nbHist(); hist.forEach(fix); nbJsonSet('bnp-nbhist', hist);
-        changed = true;
-      }
-    } finally { nbAvBusy = false; }
-    if (!changed) return;
-    const p = $('[data-g="nbpanel"]');
-    if (p && !p.hidden) p.innerHTML = p.dataset.open === 'marks' ? nbMarksHtml() : nbHistHtml();
-    nbHomePaint();
-  }
+  function nbAvFill() {}   // (topics listed without their starter's avatar get it when you open them (nbNote keeps it): no topic is read in the
+  // background just for its avatar (the user, 3 November 2026: "we want everything to always look as normal as possible"))
   function nbRepaint() { nbBarPaint(); nbHomePaint(); nbMarksPaint(); if (nbHere.kind === 'board') nbFltPaint(); }
   function nbToggleMark(id, info) {   // (a topic bookmarked, or not: Undo puts it back)
     const marks = nbMarks(), i = marks.findIndex((m) => Number(m.id) === Number(id));
@@ -11990,7 +12045,7 @@
   }
 
   // ---- a topic's other pages, in place: no new page, so your reply box (and what's in it) stays; Back and Forward work as ever ----
-  const nbPageCache = new Map();   // (address → its page, asked for once: when you point at its button, or come near the end of this page)
+  const nbPageCache = new Map();   // (address → its page, opened once: when you point at its button a while, or press it)
   const nbAhead = [];
   function nbAheadOk() {   // (a page read ahead of a click (pointed at a while): eight a minute at most, as a person's looking about)
     const now = Date.now();
@@ -12220,15 +12275,7 @@
     } catch (e) { report(e); location.href = href; }   // (it didn't come: the ordinary way)
     finally { clearTimeout(slow); root.classList.remove('bnp-nb-going'); h.going = false; }
   }
-  function nbNearEnd() {   // (the end of this page in sight: the next one is fetched ahead)
-    if (typeof IntersectionObserver !== 'function') return;
-    if (nbNearEnd.io) nbNearEnd.io.disconnect();
-    if (nbHere.kind !== 'topic') return;
-    const posts = $$('#boardTopic li[data-k]'), last = posts[posts.length - 1];
-    if (!last || nbHere.last) return;
-    nbNearEnd.io = new IntersectionObserver((es) => { if (!es.some((x) => x.isIntersecting)) return; nbNearEnd.io.disconnect(); nbPageGet(`/neoboards/topic.phtml?topic=${nbHere.topic}&next=${nbHere.next === 1 ? NB_PER + 1 : nbHere.next + NB_PER}`).catch(() => { /* */ }); }, { rootMargin: '600px 0px' });
-    nbNearEnd.io.observe(last);
-  }
+  function nbNearEnd() {}   // (the next page isn't read ahead as you near the end: only once you point at its button a while, or press it (the user, 3 November 2026: "look as normal as possible"))
   async function nbTopicGo(href, push, y = null) {
     const h = nbHere;
     if (h.going || !h.holder) return;
@@ -12291,15 +12338,12 @@
     const btn = $('[data-nbsend]'), was = btn ? btn.innerHTML : '';
     if (btn) { btn.disabled = true; btn.innerHTML = `${NB_SVG.send}Posting…`; }
     nbSendErr('');
-    const body = new URLSearchParams();
-    for (const [k, v] of new FormData(f.form)) if (typeof v === 'string') body.append(k, k === 'message' ? v.replace(/\r?\n/g, '\r\n') : v);   // (as the browser sends a form: its lines end \r\n)
     nbDraftSent();
-    const action = new URL(f.form.getAttribute('action') || 'process_topic.phtml', location.href).href;
     let doc = null, url = '';
     try {
-      const r = await fetch(action, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() });
-      url = r.url;
-      doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+      const res = await pagePost(f.form, f.form.querySelector('input[type="submit" i], button[type="submit"]'));   // (Neopets' own form, sent as its own button sends it, its answer opening unseen)
+      url = res.url;
+      doc = new DOMParser().parseFromString(res.html, 'text/html');
     } catch (_) { doc = null; }
     try {
       const u = url ? new URL(url) : null;
@@ -12540,16 +12584,17 @@
     const line = li.previousElementSibling && li.previousElementSibling.matches('.bnp-nbnewline') ? li.previousElementSibling : null;   // (the first you haven't read: its “New since you last read” in sight too)
     requestAnimationFrame(() => { (line || li).scrollIntoView({ block: 'start' }); li.classList.add('is-flash'); });
   }
-  const nbJitter = (sec) => Math.round(sec * 1000 * (0.85 + Math.random() * 0.4));   // (never on the dot: each wait a new 85–125 % of your setting)
+  const nbJitter = (sec) => Math.round(sec * 1000 * (0.7 + Math.random() * 0.5 + (Math.random() < 0.25 ? Math.random() * 0.45 : 0)));   // (never on the dot: each wait a new 70–120 % of your setting, and one in four up to 45 % longer still; at 5 minutes anywhere from 3½ to about 8, 5 on average)
   function nbLive() {   // (the last page of a topic, while you're looking: new posts come in under the others. Your setting read each time: off stops it)
     const every = () => Number(nbOpt().live) || 0;
     if (!every() || nbHere.liveT) return;
-    const tick = () => { clearTimeout(nbHere.liveT); const sec = every(); if (!sec) { nbHere.liveT = 0; return; } nbHere.liveT = setTimeout(() => { if (!document.hidden && nbHere.last && actIdle() < nbStop(sec)) nbCheck(false); tick(); }, nbJitter(actGap(Math.max(20, sec) * 1000) / 1000)); };   // (only while you're on its last page: another page, put in place, waits. Further apart while you're away; none after an hour away, or 30 minutes at every 30 seconds or minute)
+    const tick = () => { clearTimeout(nbHere.liveT); const sec = every(); if (!sec) { nbHere.liveT = 0; return; } nbHere.liveT = setTimeout(() => { if (!document.hidden && nbHere.last && actIdle() < nbStop(sec)) nbCheck(false); tick(); }, nbJitter(actGap(Math.max(20, sec) * 1000) / 1000)); };   // (only while you're on its last page: another page, put in place, waits. Further apart while you're away; none after an hour away)
     tick();
     if (nbLive.wired) return;
     nbLive.wired = true;
-    addEventListener('bnp-back', () => { const sec = every(); if (!sec) return; if (!document.hidden && nbHere.last && Date.now() - (nbHere.checkedAt || 0) > Math.max(20, sec) * 1000) nbCheck(false); tick(); });   // (back after a while: at once if it's due, then your setting again)
-    document.addEventListener('visibilitychange', () => { const sec = every(); if (sec && !document.hidden && nbHere.last && Date.now() - (nbHere.checkedAt || 0) > Math.max(20, sec) * 1000) nbCheck(false); });   // (back on the tab: at once, if it's been longer than your setting)
+    const soon = () => { clearTimeout(nbHere.backT); nbHere.backT = setTimeout(() => { const sec = every(); if (sec && !document.hidden && nbHere.last && Date.now() - (nbHere.checkedAt || 0) > Math.max(20, sec) * 1000) nbCheck(false); }, 2000 + Math.random() * 5000); };   // (a few seconds after you're back, as you'd reload it: never the moment the tab comes up)
+    addEventListener('bnp-back', () => { if (!every()) return; soon(); tick(); });   // (back after a while: soon, if it's due, then your setting again)
+    document.addEventListener('visibilitychange', () => { if (every() && !document.hidden) soon(); });   // (back on the tab: soon, if it's been longer than your setting)
   }
   async function nbCheck(byHand) {
     const h = nbHere;
@@ -13368,8 +13413,8 @@
       </div>
       <h5${hide}>Topics</h5>
       <div class="bnp-card"${hide}>
-        <div class="bnp-f"><span>New posts</span>${seg('live', [[0, 'When you reload'], [30, '30 sec'], [60, '1 min'], [120, '2 min'], [300, '5 min'], [600, '10 min'], [900, '15 min'], [1800, '30 min']])}</div>
-        <p class="bnp-note">About how often a topic’s last page looks for new posts while you’re on it (never on the dot: each wait is a little longer or shorter). They come in under the others. Back on the tab after longer than that, it looks at once. While you’re away from Neopets it looks less and less often, and after ${awayWords(nbStop(120))} away (${awayWords(nbStop(60))} at 30 sec or 1 min) it stops until you’re back.</p>
+        <div class="bnp-f"><span>New posts</span>${seg('live', [[0, 'When you reload'], [120, '2 min'], [300, '5 min'], [600, '10 min'], [900, '15 min'], [1800, '30 min']])}</div>
+        <p class="bnp-note">About how often a topic’s last page looks for new posts while you’re on it, never on the dot: at 5 min, each wait is anywhere from 3½ to about 8 minutes, 5 on average. They come in under the others. Back on the tab after longer than that, it looks a few seconds later. While you’re away from Neopets it looks less and less often, and after ${awayWords(NB_STOP)} away it stops until you’re back.</p>
         ${sw('stick', 'The topic’s bar at the top as you scroll', 'Its name, its pages, the size of the words, Bookmark, New posts? and Reply, in a bar that stays at the top of the window. Off: they stay at the top of the topic, and scroll away with it.')}
         ${sw('acts', 'Things to do under each post', 'Quote, Reply (@their name), and the poster’s own buttons: Neomail, their trades, auctions, shop and gallery; ⋯ to follow, mute or tag them.')}
         <div class="bnp-f"><span>Poster’s buttons</span>${seg('who', [['all', 'Always'], ['hover', 'When you point at a post'], ['click', 'Behind their name']])}</div>
@@ -14596,8 +14641,21 @@
   const nmNeoChat = () => location.pathname === '/neomessages.phtml' && /(^|[?&])folder=neochat(&|$)/i.test(location.search);   // (NeoChat's own page: NeoChat's to dress, never ours)
   const nmOn = () => !!S.features.nm2 && !!NM_PAGES[location.pathname] && !nmNeoChat();
   const nmType = () => (location.pathname === '/neomessages.phtml' ? (new URLSearchParams(location.search).get('type') || '').toLowerCase() : NM_PAGES[location.pathname] || '');
-  const NM_SENT = 'neo-sent', NM_SENT_PAGE = `/neomessages.phtml?folder=${NM_SENT}`;   // (Neomail's Sent folder: a folder Neopets hasn't got, so it shows an empty one there, and NE fills it)
-  const nmSentHere = () => location.pathname === '/neomessages.phtml' && new URLSearchParams(location.search).get('folder') === NM_SENT;
+  const NM_SENT = 'neo-sent', NM_SENT_PAGE = `/neomessages.phtml#${NM_SENT}`;   // (Neomail's Sent folder: Neopets' own Neomail page, its folder after the # (NE's, never sent to Neopets); NE puts the Sent list in its place)
+  const nmSentHere = () => location.pathname === '/neomessages.phtml' && (new RegExp(`^#${NM_SENT}(?:&|$)`).test(location.hash) || new URLSearchParams(location.search).get('folder') === NM_SENT);   // (?folder= from before still works)
+  const nmSentArgs = () => new URLSearchParams(nmSentHere() && location.hash ? location.hash.slice(NM_SENT.length + 1).replace(/^&/, '') : location.search);   // (which Neomail of it, which page: after the #, or as before)
+  function nmHashWatch() {   // (NeoChat's or the Sent folder's # come or gone on Neopets' Neomail page by a link: a # alone brings no new page, so the page opens again; another conversation's #neochat=who opens it)
+    if (nmHashWatch.on || location.pathname !== '/neomessages.phtml') return;
+    nmHashWatch.on = true;
+    const kind = (h) => (/^#neochat(?:=|$)/.test(h) ? 'ncl' : new RegExp(`^#${NM_SENT}(?:&|$)`).test(h) ? 'sent' : '');
+    addEventListener('hashchange', (e) => {
+      let was = '';
+      try { was = new URL(e.oldURL).hash; } catch (_) { /* */ }
+      if (kind(was) !== kind(location.hash)) { location.reload(); return; }
+      const m = kind(location.hash) === 'ncl' && /^#neochat=([^&]+)/.exec(location.hash);
+      if (m) nclWho(decodeURIComponent(m[1]), false);
+    });
+  }
   const nmSentOn = () => !!S.features.nmSent && nmSentHere();
   const NM_CSS = `
     html.bnp-nm { --nb-acc: #fed123; --nb-ink: #363636; --nb-pat: none; --nb-patsz: 121px 58px; --nb-patpos: 50% -10px; --nb-frame: #faa819; --nb-panel: #fffacd; --nb-pink: #363636; --nb-rule: #faa819; --nb-pop: #faa819;
@@ -14888,6 +14946,7 @@
     if (!document.getElementById('bnp-nmsent-early')) { const st = document.createElement('style'); st.id = 'bnp-nmsent-early'; st.textContent = 'html.bnp-nmsentpage td.content > :not(div.medText):not([data-bnp]) { display: none !important; }'; root.append(st); }
   }
   function nmPage() {
+    nmHashWatch();
     if (!nmOn()) return;
     nmEarly();
     styles();
@@ -14901,6 +14960,7 @@
       nmSentLink(tc);
       nmHead(tc, t);
       if (nmSentOn()) nmSentPage(tc);
+      else if (nclHere()) { /* (NeoChat's own page, on Neopets' Inbox: Neomail's tabs only, NeoChat puts the rest away) */ }
       else if (location.pathname === '/neomessages.phtml' && (!t || t === 'folder')) nmList(tc);
       else if (t === 'read_message') nmRead(tc);
       else if (t === 'send') nmSend(tc);
@@ -14975,7 +15035,7 @@
   async function nfReqMaybe() {   // (after a look at your Inbox: the requests page too, when it's been half an hour, a moment later)
     if (Date.now() - nfReq().at < 30 * 60000) return;
     await new Promise((ok) => setTimeout(ok, 1500 + Math.random() * 2500));
-    try { nfReqRead(nmDoc(await (await fetch('/neofriend_requests.phtml', { credentials: 'include' })).text())); } catch (_) { /* (another time) */ }
+    try { nfReqRead(nmDoc(await pageRead('/neofriend_requests.phtml'))); } catch (_) { /* (another time) */ }   // (opened as a visit opens it)
   }
   // Your Neofriends' avatars wherever Neopets shows the one they wear: their posts on the boards, a Neomail from them, Neofriends
   // online, and their lookup (see nfLook). The newest seen is kept
@@ -15151,7 +15211,8 @@
     head.querySelector('[data-nmfold]').addEventListener('click', () => nmMiniSet(true));
     const tabs = head.querySelector('[data-g="nmtabs"]');
     const paint = () => {   // (Neopets' links as tabs, the one you're on marked; NeoChat's too, once it has put it in)
-      const here = (u) => { try { const x = new URL(u, location.href); return x.pathname === location.pathname && (x.searchParams.get('type') || '') === (new URLSearchParams(location.search).get('type') || '') && (x.searchParams.get('folder') || '') === (new URLSearchParams(location.search).get('folder') || ''); } catch (_) { return false; } };
+      const view = (h) => (/^#(neochat|neo-sent)(?:[=&]|$)/.exec(h) || [])[1] || '';   // (NeoChat's or the Sent folder's page, after the #)
+      const here = (u) => { try { const x = new URL(u, location.href); return x.pathname === location.pathname && (x.searchParams.get('type') || '') === (new URLSearchParams(location.search).get('type') || '') && (x.searchParams.get('folder') || '') === (new URLSearchParams(location.search).get('folder') || '') && view(x.hash) === view(location.hash); } catch (_) { return false; } };
       const html = [...nav.querySelectorAll('a[href]')].map((a) => {
         const href = a.getAttribute('href'), label = reClean(a.textContent).replace(/^Send$/i, 'Write a Neomail');
         const sent = nmSentHref(href), icon = sent ? '' : /neomessages\.phtml(\?folder=|$)/.test(href) ? ic : /neofriends/.test(href) ? tabIconOf(['nat:community-central-icon']) : '';   // (Sent: a paper plane, as NeoChat's Send has)
@@ -15221,7 +15282,7 @@
     more.hidden = true;
     const over = () => tabs.scrollWidth > tabs.clientWidth + 1, done = () => { nmMoreList(items.filter((x) => x.classList.contains('is-more'))); };
     if (!over()) return done();
-    for (const re of [/[?&]folder=neo-chat/, /[?&]folder=neo-sent/, /\/neofriends\.phtml/]) { const x = find(re); if (x && x.matches('a') && x.querySelector('i, svg')) { x.classList.add('is-ic'); if (!x.getAttribute('title')) x.setAttribute('title', reClean(x.textContent)); x.setAttribute('aria-label', reClean(x.textContent)); if (!over()) return done(); } }
+    for (const re of [/[?&]folder=neo-chat|#neochat/, /[?&]folder=neo-sent|#neo-sent/, /\/neofriends\.phtml/]) { const x = find(re); if (x && x.matches('a') && x.querySelector('i, svg')) { x.classList.add('is-ic'); if (!x.getAttribute('title')) x.setAttribute('title', reClean(x.textContent)); x.setAttribute('aria-label', reClean(x.textContent)); if (!over()) return done(); } }
     more.hidden = false;
     for (const re of [/\/listgreetings\.phtml/, /\/diary\.phtml/, /\/block\.phtml/, /[?&]type=folders/, /\/neofriends\.phtml/]) { if (!over()) break; const x = find(re); if (x) x.classList.add('is-more'); }
     done();
@@ -15378,24 +15439,24 @@
   async function nmPost(form, value, n) {
     const tc = form.closest('td.content');
     for (const r of nmList.rows || []) if (r.tr.classList.contains('is-out')) r.cb.checked = false;   // (only the ones shown)
-    const fd = new FormData(form);
-    fd.set('action', value);
+    const sel = form.querySelector('select[name="action"]'), go = form.querySelector('input[type="submit"]');
+    if (!sel || ![...sel.options].some((o) => o.value === value)) { if (sel && go) { sel.value = value; go.click(); } return; }   // (not one of its own choices: the page's own way)
+    sel.value = value;   // (its own list's choice, as you'd pick it)
     form.classList.add('is-busy');
     let sent = false;
     try {
-      const r = await fetch(new URL(form.getAttribute('action') || 'modify_neomessages.phtml', location.href).href, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(fd).toString() });   // (as its form sends it: no charset added)
-      sent = true;
-      if (!r.ok) throw new Error(`Neomail answered ${r.status}`);
-      let doc = nmDoc(await r.text());
-      if (!doc.querySelector('form[name="messages"]')) doc = nmDoc(await (await fetch(location.href, { credentials: 'include' })).text());
+      const posted = pagePost(form, go);   // (Neopets' own form, sent as its Go sends it, its answer opening unseen)
+      sent = true;   // (gone the moment it's sent: never sent again if its answer is slow)
+      const r = await posted;
+      let doc = nmDoc(r.html);
+      if (!doc.querySelector('form[name="messages"]')) doc = nmDoc(await pageRead(location.pathname + location.search));   // (this page again, opened unseen as a reload opens it)
       if (!nmSwap(tc, doc)) throw new Error('no list came back');
       pageSay(/^Delete/i.test(value) ? `Deleted ${n} Neomail${n === 1 ? '' : 's'}` : /^Mark as Read/i.test(value) ? `Marked ${n} as read` : /^Mark as Unread/i.test(value) ? `Marked ${n} as unread` : /^Move to /i.test(value) ? `Moved ${n} to ${value.replace(/^Move to /i, '')}` : 'Done');
     } catch (e) {
       report(e);
       if (sent) { location.reload(); return; }   // (Neopets has it: the page as it is now)
       form.classList.remove('is-busy');
-      const sel = form.querySelector('select[name="action"]'), go = form.querySelector('input[type="submit"]');   // (it never left: the page's own way)
-      if (sel && go) { sel.value = value; go.click(); }
+      if (go) { sel.value = value; go.click(); }   // (it never left: the page's own way)
     }
   }
   function nmSwap(tc, doc) {   // (the list as Neopets has it now: its count, its pages and its messages, in place of the old; the tools again)
@@ -15417,7 +15478,7 @@
   }
   // Neomail's own pages in place, without loading the whole page: its tabs, Jump to's chips, the Neofriends' letters and Search for a
   // friend. A page with work of its own to do (scripts in it), or not one of Neomail's, loads as usual
-  const nmSame = (u) => { try { const x = new URL(u, location.href); return x.origin === location.origin && !!NM_PAGES[x.pathname] && !(x.pathname === '/neomessages.phtml' && (/^(neo-?chat|neochat-lite)$/i.test(x.searchParams.get('folder') || '') || x.searchParams.get('folder') === NM_SENT)); } catch (_) { return false; } };
+  const nmSame = (u) => { try { const x = new URL(u, location.href); return x.origin === location.origin && !!NM_PAGES[x.pathname] && !(x.pathname === '/neomessages.phtml' && (/^#(?:neochat|neo-sent)(?:[=&]|$)/.test(x.hash) || /^(neo-?chat|neochat-lite)$/i.test(x.searchParams.get('folder') || '') || x.searchParams.get('folder') === NM_SENT)); } catch (_) { return false; } };
   let nmNavAsk = 0, nmNavDone = false;
   const nmKind = (u) => { try { const x = new URL(u, location.href); return `${x.pathname}?${(x.searchParams.get('type') || '').toLowerCase()}`; } catch (_) { return ''; } };
   const nmFull = () => { try { return JSON.parse(localStorage.getItem('bnp-nm-full') || '[]'); } catch (_) { return []; } };   // (Neomail's pages found to have scripts of their own: loaded as usual from then on, never fetched twice)
@@ -15427,9 +15488,7 @@
     const ask = ++nmNavAsk;
     tc.classList.add('bnp-nm-busy');
     try {
-      const r = await fetch(href, { credentials: 'include' });
-      if (!r.ok) throw new Error(`Neomail page ${r.status}`);
-      const doc = nmDoc(await r.text()), ntc = doc.querySelector('td.content'), url = new URL(r.url || href, location.href);
+      const doc = nmDoc(await pageRead(href)), ntc = doc.querySelector('td.content'), url = new URL(href, location.href);   // (the page opened unseen as a visit opens it, then put in place)
       if (ask !== nmNavAsk) return;   // (another was asked for meanwhile: that one)
       if (ntc && ntc.querySelector('script')) { try { localStorage.setItem('bnp-nm-full', JSON.stringify([...new Set([...nmFull(), nmKind(url.href)])].slice(-20))); } catch (_) { /* */ } }
       if (!ntc || !nmSame(url.href) || ntc.querySelector('script') || doc.querySelector('form[action*="login"] input[type="password"]')) { location.href = url.href; return; }
@@ -15467,7 +15526,7 @@
     if (!form) { location.href = href; return; }
     form.classList.add('is-busy');
     try {
-      const doc = nmDoc(await (await fetch(href, { credentials: 'include' })).text());
+      const doc = nmDoc(await pageRead(href));   // (opened unseen as a visit opens it)
       if (!nmSwap(tc, doc)) throw new Error('no list');
       if (push) history.pushState({ bnpNm: 1 }, '', href);
       nmNavDone = true;
@@ -15511,7 +15570,7 @@
     if (!form) return;
     form.classList.add('bnp-nmsend');
     const q = new URLSearchParams(location.search);
-    if (q.get('bnpdraft') !== '1') return;   // (come from the little window's ⤢: what you'd written there, in here)
+    if (q.get('bnpdraft') !== '1' && location.hash !== '#bnpdraft') return;   // (come from the little window's ⤢: what you'd written there, in here. NE's mark after the #, never sent to Neopets)
     const d = nmwDraftGet(q.get('recipient') || '');
     if (!d) return;
     const ta = form.querySelector('textarea[name="message_body"]');
@@ -15533,7 +15592,7 @@
   const NM_SENT_FOOT = 'Neopets keeps no copy of what you send, so NE keeps these, in this browser for this account: what you send from NeoChat, Write a Neomail and the little window, and your words quoted in their replies. NeoChat shows the same ones.';
   let nmSentShown = false, nmSentF = 'all', nmSentQ = '';
   const nmSentPick = new Set();   // (the ones ticked, by id: kept while the list is drawn again)
-  const nmSentHref = (u) => { try { const x = new URL(u, location.href); return x.origin === location.origin && x.pathname === '/neomessages.phtml' && x.searchParams.get('folder') === NM_SENT; } catch (_) { return false; } };
+  const nmSentHref = (u) => { try { const x = new URL(u, location.href); return x.origin === location.origin && x.pathname === '/neomessages.phtml' && (new RegExp(`^#${NM_SENT}(?:&|$)`).test(x.hash) || x.searchParams.get('folder') === NM_SENT); } catch (_) { return false; } };
   const nmSentUrl = (o = {}) => `${NM_SENT_PAGE}${o.id ? `&id=${encodeURIComponent(o.id)}` : o.lower ? `&lower=${o.lower}` : ''}`;
   function nmNstText(at) {   // (a moment as Neopets writes one: "24/10/2026 09:15pm", Neopian time)
     const n = nstOf(at), p = (x) => String(x).padStart(2, '0');
@@ -15634,11 +15693,11 @@
     nmSentPaint(box);
     document.documentElement.classList.remove('bnp-nm-cloak');
   }
-  const nmSentItem = () => { const id = new URLSearchParams(location.search).get('id') || ''; return id ? nclSentList().find((x) => String(x.m.i) === id) || null : null; };
-  function nmSentTop() { if (new URLSearchParams(location.search).get('lower')) history.replaceState(history.state, '', nmSentUrl()); }   // (another filter or other words: from its first page)
+  const nmSentItem = () => { const id = nmSentArgs().get('id') || ''; return id ? nclSentList().find((x) => String(x.m.i) === id) || null : null; };
+  function nmSentTop() { if (nmSentArgs().get('lower')) history.replaceState(history.state, '', nmSentUrl()); }   // (another filter or other words: from its first page)
   function nmSentPaint(box = $('[data-bnp="nmsent"]')) {   // (what the address asks for: one Neomail, or a page of the list)
     if (!box) return;
-    const id = new URLSearchParams(location.search).get('id') || '', all = nclSentList(), it = id ? all.find((x) => String(x.m.i) === id) : null;
+    const id = nmSentArgs().get('id') || '', all = nclSentList(), it = id ? all.find((x) => String(x.m.i) === id) : null;
     if (it) { box.dataset.view = 'read'; box.innerHTML = nmSentReadHtml(it); return; }
     if (id) history.replaceState(history.state, '', nmSentUrl());   // (gone meanwhile, deleted in another tab: the list)
     if (box.dataset.view !== 'list') { box.dataset.view = 'list'; box.innerHTML = nmSentFrameHtml(); }
@@ -15653,7 +15712,7 @@
     counts.no = counts.all - counts.re;
     if (old || (nmSentF !== 'all' && !counts[nmSentF])) nmSentF = 'all';   // (the one chosen has none now: All, as its chip has gone)
     const rows = all.filter((x) => (nmSentF === 'all' || (nmSentF === 're') === !!x.re) && (!q || goNorm(`${x.p.n} ${x.k} ${x.m.s || ''} ${nclPlainOf(x.m)}`).includes(q)));
-    const asked = Math.max(0, Number(new URLSearchParams(location.search).get('lower')) || 0), lower = asked < rows.length ? asked - (asked % NM_SENT_N) : 0, page = rows.slice(lower, lower + NM_SENT_N);
+    const asked = Math.max(0, Number(nmSentArgs().get('lower')) || 0), lower = asked < rows.length ? asked - (asked % NM_SENT_N) : 0, page = rows.slice(lower, lower + NM_SENT_N);
     const ids = new Set(all.map((x) => String(x.m.i)));
     for (const i of [...nmSentPick]) if (!ids.has(i)) nmSentPick.delete(i);   // (gone meanwhile: not ticked)
     const prev = lower > 0 ? nmSentUrl({ lower: lower - NM_SENT_N }) : '', next = lower + NM_SENT_N < rows.length ? nmSentUrl({ lower: lower + NM_SENT_N }) : '';
@@ -15734,7 +15793,7 @@
     if (t.closest('[data-nmsagain]')) {   // (its subject and words, to send someone else: the little window, or Neopets' own page with them in)
       const d = { to: '', subject: String(x.m.s || '').slice(0, 30), body: nclTextOf(x.m.t) };
       if (S.features.nmPopup) nmwOpen({ draft: d });
-      else { nmwDraftPut('', d); location.href = '/neomessages.phtml?type=send&bnpdraft=1'; }
+      else { nmwDraftPut('', d); location.href = '/neomessages.phtml?type=send#bnpdraft'; }
     }
   }
   function nmSentGone(gone) {   // (deleted: the list as it is now, and Undo for a while)
@@ -15825,7 +15884,7 @@
     if (nfFetch.busy) return;
     nfFetch.busy = true;
     try {
-      const doc = nmDoc(await (await fetch('/neofriends.phtml', { credentials: 'include' })).text());
+      const doc = nmDoc(await pageRead('/neofriends.phtml'));   // (opened as a visit opens it)
       const form = doc.querySelector('form[action*="process_neofriend"]');
       if (!form) return;
       const users = [...form.querySelectorAll('tr')].filter((r) => r.querySelector('input[name^="vip_"]') && r.cells[1]).map((r) => reClean(r.cells[1].textContent).toLowerCase()).filter(Boolean);
@@ -15955,7 +16014,7 @@
     }
     nmw.key = nmwDraftPut(nmw.key, { to: nmw.to.value, subject: nmw.subj.value, body: nmw.ta.value }, nmw.keep);
   }
-  function nmwFullHref() { const to = nmw.to.value.trim(); nmw.full.href = `/neomessages.phtml?type=send${to ? `&recipient=${encodeURIComponent(to)}` : ''}&bnpdraft=1`; }
+  function nmwFullHref() { const to = nmw.to.value.trim(); nmw.full.href = `/neomessages.phtml?type=send${to ? `&recipient=${encodeURIComponent(to)}` : ''}#bnpdraft`; }
   function nmwFit() {   // (the message box as tall as what's in it, up to about half the screen)
     const ta = nmw.ta;
     ta.style.height = 'auto';
@@ -16068,8 +16127,8 @@
   // as opening it on Neopets does; with several tabs, the one you're looking at looks for them all); what you send from here, Neopets'
   // own page or the little window is kept too. All of it in this browser, for each of your accounts
   // ═══════════════════════════════════════════════════════════════════════════
-  const NCL_PAGE = '/neomessages.phtml?folder=neo-chat';
-  const nclHere = () => location.pathname === '/neomessages.phtml' && /^(neo-chat|neochat-lite)$/.test(new URLSearchParams(location.search).get('folder') || '');   // (and its address from before it was NeoChat)
+  const NCL_PAGE = '/neomessages.phtml#neochat';   // (Neopets' own Neomail page, NeoChat after the #: NE's, never sent to Neopets)
+  const nclHere = () => location.pathname === '/neomessages.phtml' && (/^#neochat(?:=|$)/.test(location.hash) || /^(neo-chat|neochat-lite)$/.test(new URLSearchParams(location.search).get('folder') || ''));   // (and its addresses from before: ?folder=neo-chat, and from before it was NeoChat)
   const NCL_NOREPLY = new Set(['theneopetsteam']);   // (Neopets' own messages, sent by itself: read here, never answered)
   const NCL_EVERY = [['2', '2 min'], ['5', '5 min'], ['10', '10 min'], ['15', '15 min'], ['30', '30 min'], ['60', '1 hr'], ['120', '2 hr'], ['0', 'Only when I press Look now']];
   const nclMins = (m) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} hr${m % 60 ? ` ${m % 60} min` : ''}`);   // (12 min, 1 hr, 1 hr 20 min)
@@ -16398,7 +16457,7 @@
         b.className = 'bnp-ncl-alertbtn';
         b.setAttribute('data-bnp', 'nclalert');
         b.dataset.who = who;
-        b.href = `${NCL_PAGE}&ncuser=${encodeURIComponent(who)}`;
+        b.href = `${NCL_PAGE}=${encodeURIComponent(who)}`;   // (#neochat=who: their conversation open)
         b.textContent = 'Read in NeoChat';
         if (!document.getElementById('bnp-plus-style') && !document.getElementById('bnp-ncl-alertcss')) {   // (an old page in the old layout: none of our look on it, so the pill's own)
           const st = document.createElement('style');
@@ -17351,7 +17410,7 @@
     if (!box) return;
     const at = Number(get('nclChk', 0)), ago = nclAgo(at), m = nclEvery(), next = Math.max(0, Math.round((nclDue() - Date.now()) / 60000));
     const said = nclBusy ? 'Reading your Inbox…' : nclErr || (nclAway === 'stop' && m ? 'Paused till you’re back' : at ? `Looked ${ago === 'now' ? 'just now' : `${ago}${/min$/.test(ago) ? ' ago' : ''}`}` : 'Not looked yet');
-    const how = !m ? 'It looks only when you ask' : nclAway === 'stop' ? 'You’ve been away from Neopets 4 hours: it looks again when you’re back' : `It looks about every ${nclEveryWords(m)} while NeoChat is open or folded${nclAway === 'slow' ? ', less often while you’re away' : ''}${at ? `: next in about ${next ? nclMins(next) : 'a moment'}` : ''}`;
+    const how = !m ? 'It looks only when you ask' : nclAway === 'stop' ? `You’ve been away from Neopets ${awayWords(ACT_STOP)}: it looks again when you’re back` : `It looks about every ${nclEveryWords(m)} while NeoChat is open or folded${nclAway === 'slow' ? ', less often while you’re away' : ''}${at ? `: next in about ${next ? nclMins(next) : 'a moment'}` : ''}`;
     box.innerHTML = `<span>${esc(said)}</span><button type="button" class="bnp-pillbtn" data-ncl="check" title="Look for new Neomail now. ${esc(how)} (Settings › NeoChat)">${NCL_SVG.check}${m ? `Every ${nclMins(m)}` : 'Only when asked'}</button>`;
     nclCheckPaint();
   }
@@ -17564,6 +17623,7 @@
     if (!S.features.ncl) return;
     nclHbHoverPaint();
     nclMe();
+    nmHashWatch();
     if (nclHere()) nclPageMake();
     else {
       const st = nclState();
@@ -17595,7 +17655,7 @@
     nclCheck(false);
     nclFriendsMaybe();
     nclMyAvFresh();
-    const w = new URLSearchParams(location.search).get('ncuser');
+    const hw = /^#neochat=([^&]+)/.exec(location.hash), w = hw ? decodeURIComponent(hw[1]) : new URLSearchParams(location.search).get('ncuser');   // (#neochat=who; ?ncuser= from before)
     if (w) nclWho(w, true);
   }
   function nclHubPage() {   // (Settings › NeoChat)
@@ -18539,7 +18599,7 @@
         if (!st || st.searchScope !== 'entire' || typeof st.onSearch !== 'function' || (q && q.length < 2) || q === sdbSearchLast) return;   // (Page: Neopets' own shows as you type already)
         sdbSearchLast = q;
         st.onSearch();
-      }, 650);
+      }, 1200 + Math.random() * 600);   // (once you've stopped typing a moment, as you'd press Search: one ask a word, not one a letter)
     });
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') sdbSearchLast = String(inp.value || '').trim(); });   // (searched by Enter: not again by itself)
   }
@@ -18856,7 +18916,7 @@
     }
   }
   const smBtn = (href, label, cls = '') => `<a class="bnp-smbtn${cls ? ` ${cls}` : ''}" href="${esc(href)}">${label}</a>`;
-  const smBuyHref = (t, n) => `/stockmarket.phtml?type=buy&ticker=${encodeURIComponent(t)}${n ? `&bnpn=${n}` : ''}`;
+  const smBuyHref = (t, n) => `/stockmarket.phtml?type=buy&ticker=${encodeURIComponent(t)}${n ? `#bnpn=${n}` : ''}`;   // (how many, after the #: NE's, never sent to Neopets)
   const smChg = (ch, p) => { const pct = p - ch > 0 ? (ch / (p - ch)) * 100 : 0; return `<span class="bnp-smchg ${ch > 0 ? 'is-up' : ch < 0 ? 'is-down' : 'is-flat'}">${ch > 0 ? '▲' : ch < 0 ? '▼' : '•'} ${ch > 0 ? '+' : ch < 0 ? '−' : ''}${smFmt(Math.abs(ch))}<small>${ch ? ` (${smPctSay(pct)})` : ''}</small></span>`; };
   const smLogoImg = (t, size = 40) => { const c = smCo(t); return c.logo ? `<img class="bnp-smlogo" src="${esc(c.logo)}" alt="" width="${size}" height="${size}" loading="lazy">` : `<span class="bnp-smlogo is-none" style="width:${size}px;height:${size}px" aria-hidden="true">${esc(t.slice(0, 2))}</span>`; };   // (its logo once a page of Neopets' has shown it (the full list, your portfolio); its first letters till then)
   const smName = (t) => smCo(t).n || '';
@@ -18933,7 +18993,7 @@
     smFold(tc, [form]);
     const p = new URLSearchParams(location.search), tIn = form.querySelector('input[name="ticker_symbol"]'), nIn = form.querySelector('input[name="amount_shares"]');
     const left = SM_LIMIT - Math.min(smDay().n, SM_LIMIT), can = [...q.values()].filter((x) => x.p >= SM_MIN).sort((a, b) => a.p - b.p || a.t.localeCompare(b.t));
-    const start = (p.get('ticker') || tIn.value || (can[0] && can[0].t) || '').toUpperCase(), want = Math.max(1, Math.min(Number(p.get('bnpn')) || left || SM_LIMIT, SM_LIMIT));
+    const start = (p.get('ticker') || tIn.value || (can[0] && can[0].t) || '').toUpperCase(), want = Math.max(1, Math.min(Number((/^#bnpn=(\d+)$/.exec(location.hash) || [])[1] || p.get('bnpn')) || left || SM_LIMIT, SM_LIMIT));
     app.innerHTML = `<section class="bnp-smcard bnp-smbuy"><h3>Buy shares</h3>
       <div class="bnp-smbuy-grid">
         <label class="bnp-smf"><span>Company</span><select data-smbt aria-label="Company">${can.map((x) => `<option value="${esc(x.t)}"${x.t === start ? ' selected' : ''}>${esc(x.t)} · ${smFmt(x.p)} NP${smName(x.t) ? ` · ${esc(smName(x.t))}` : ''}</option>`).join('')}${start && !can.some((x) => x.t === start) ? `<option value="${esc(start)}" selected>${esc(start)}</option>` : ''}</select></label>
@@ -20918,7 +20978,7 @@
         const src = fullUrl(String((b && b.image) || '')), f = colImgOf(src) || colImgOf(`${NPI}items/${src.split('/').pop()}`);
         if (!f || seen.has(colImgKey(f))) continue;
         seen.add(colImgKey(f));
-        items.push([f, reClean(b.name || ''), reClean(b.desc || '')]);
+        items.push([f, reClean(b.name || ''), reClean(b.desc || ''), b.objInfoId != null ? String(b.objInfoId) : '']);   // (… and Neopets' own id for it)
       }
       const pets = (Array.isArray(cfg.pets) ? cfg.pets : []).filter((p) => p && p.name).map((p) => ({ name: String(p.name), thumb: fullUrl(String(p.thumbImage || '')), active: !!p.isActive }));
       return { n: Number(cfg.count) || items.length, items, neo: true, pets, face: fullUrl(String(cfg.currentPetImage || '')) };
@@ -20966,6 +21026,22 @@
   const colPetKey = (kind, pet) => `col-pet-${kind}-${String(pet).toLowerCase()}`;
   const colPetGet = (kind, pet) => idbGet(colPetKey(kind, pet)).catch(() => null);
   const colPetSet = (kind, pet, d) => idbSet(colPetKey(kind, pet), { ...d, pet, t: Date.now() }).catch(() => false);
+  async function colVisit(kinds, pet) {   // (a pet's lists as a visit opens them: its Books Read page, its Booktastic tab, its Gourmet Club page, one after another by their links (pageVisit). { books: html, bt: html, food: html })
+    const pages = await pageVisit(kinds.map((kind) => colHref(kind, pet))), out = {};
+    kinds.forEach((kind, i) => { out[kind] = pages[i]; });
+    return out;
+  }
+  async function colPetAdd(pet, books) {   // (books NE has just read to a pet: added to what's kept of its lists, as its Books Read page now shows them. When that page was last seen (t) stays as it was. books: [{ kind, img, name, id }])
+    for (const kind of ['books', 'bt']) {
+      const add = books.filter((b) => b.kind === kind);
+      const d = add.length ? await colPetGet(kind, pet) : null;
+      if (!d || !Array.isArray(d.items)) continue;   // (nothing kept: read afresh next time)
+      const have = new Set(d.items.map((x) => colImgKey(x[0]))), items = [...d.items];
+      let n = Number(d.n) || items.length;
+      for (const b of add) { if (have.has(colImgKey(b.img))) continue; have.add(colImgKey(b.img)); items.push([b.img, b.name, '', b.id]); n++; }   // (read before: Neopets doesn't count it again)
+      await idbSet(colPetKey(kind, pet), { ...d, items, n, upd: Date.now() }).catch(() => false);
+    }
+  }
   // the pets you track (this account's): up to two for each kind
   const colAcct = () => nclMe() || '-';
   function colTracked(kind) { const all = S.colPets && typeof S.colPets === 'object' ? S.colPets : {}, mine = all[colAcct()] || {}; return Array.isArray(mine[kind]) ? mine[kind].filter((x) => typeof x === 'string' && x) : []; }
@@ -21048,7 +21124,7 @@
     const root = document.createElement('div');
     root.className = 'bnp-col';
     root.setAttribute('data-bnp', 'col');
-    col = { kind, pet, root, d, cat: null, err: '', had: colHadMap(d), view: 'not', sort: P[`sort_${kind}`] || 'cheap', q: '', sub: -1, priced: !!P.priced, mode: P.mode === 'list' ? 'list' : 'grid', counts: {}, shown: 0, io: null };
+    col = { kind, pet, root, d, cat: null, err: '', had: colHadMap(d), view: 'not', sort: P[`sort_${kind}`] || 'cheap', q: '', sub: -1, priced: !!P.priced, noPrice: !P.priced && !!P.noprice, mode: P.mode === 'list' ? 'list' : 'grid', counts: {}, shown: 0, io: null };
     const neo = document.createElement('div');   // (Neopets' own page, all of it, out of sight under ours: one click shows it again)
     neo.className = 'bnp-col-neobox';
     neo.setAttribute('data-bnp', 'colneo');
@@ -21087,9 +21163,9 @@
     const key = `bnp-colboard-${kind}`;
     try { const kept = JSON.parse(localStorage.getItem(key) || 'null'); if (kept && Array.isArray(kept.at) && Date.now() - kept.t < DAY_MS) return kept; } catch (_) { /* */ }
     try {
-      const r = await fetch(`${COL_BOARD[kind][0]}?limit=200`, { credentials: 'include' });
-      if (/login/i.test(new URL(r.url).pathname)) return null;
-      const doc = new DOMParser().parseFromString(await r.text(), 'text/html'), at = [];
+      const html = await pageRead(`${COL_BOARD[kind][0]}?limit=200`).catch(() => '');   // (its Top 200, opened as a visit opens it; signed out: nothing)
+      if (!html) return null;
+      const doc = new DOMParser().parseFromString(html, 'text/html'), at = [];
       for (const tr of doc.querySelectorAll('tr')) {
         const c = tr.cells;
         if (c.length < 3 || !/^\d+$/.test(c[0].textContent.trim())) continue;
@@ -21170,6 +21246,7 @@
     if (col.sub >= 0) list = list.filter((x) => x.it[4] === col.sub);
     if (q) list = list.filter((x) => colNorm(x.it[1]).includes(q));
     if (col.priced && col.view !== 'had') list = list.filter((x) => !x.not || x.it[3] > 0);
+    else if (col.noPrice && col.view !== 'had') list = list.filter((x) => !x.not || !(x.it[3] > 0));   // (just the ones itemdb has no price for: its NC ones too, as "without one" counts them)
     const name = (a, b) => a.it[1].localeCompare(b.it[1], undefined, { sensitivity: 'base' }), price = (x) => (x.it[3] > 0 ? x.it[3] : Infinity);
     const by = col.view === 'had' && !['name', 'rare', 'rarelow', 'dear'].includes(col.sort) ? 'order' : col.sort;
     list.sort(by === 'order' ? (a, b) => b.order - a.order
@@ -21222,11 +21299,11 @@
         <label class="bnp-col-find"><svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m13 13 4.5 4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><input type="search" data-col-q placeholder="Find one by name" aria-label="Find one by name" spellcheck="false" autocomplete="off" value="${esc(col.q)}"></label>
         <label class="bnp-col-sort"><span>Sort</span><select data-col-sort aria-label="Sort">${sorts.map(([v, l]) => `<option value="${v}"${(col.view === 'had' && !['name', 'rare', 'rarelow', 'dear'].includes(col.sort) ? 'order' : col.sort) === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
         <span class="bnp-col-seg is-mode" role="group" aria-label="Look"><button type="button" data-col-mode="grid" aria-pressed="${col.mode !== 'list'}" title="Pictures in a grid">Grid</button><button type="button" data-col-mode="list" aria-pressed="${col.mode === 'list'}" title="${esc(kind === 'food' ? 'One a line, with its name' : 'One a line, with Neopets’ own words for the ones read')}">List</button></span>
-        ${col.view === 'had' ? '' : `<button type="button" class="bnp-col-tog" data-col-priced aria-pressed="${col.priced}" title="Leave out the ones itemdb has no price for (most can’t be bought now)"><i aria-hidden="true"></i>Only ones with a price</button>`}
       </div>
       ${err ? `<p class="bnp-col-err">${err}</p>` : ''}
-      ${col.view !== 'had' && total ? `<p class="bnp-col-cost">${todo.length.toLocaleString()} to go${priced ? ` · about <b>${colNp(cost)} NP</b> for the ${priced.toLocaleString()} with a price` : ''}${todo.length - priced > 0 ? ` · ${(todo.length - priced).toLocaleString()} without one` : ''}${todo.length ? `<button type="button" class="bnp-col-btn is-go bnp-col-buy" data-col-buy title="${esc(`Buy the ${k.what} ${pet} hasn’t ${k.did} from users’ shops: the ones you tick, one of each, never over your limits`)}"><span class="bnp-col-bic">${BM_CART}</span>Buy Mode</button>` : ''}</p>` : ''}
-      <div class="bnp-col-grid${col.mode === 'list' ? ' is-list' : ''}" data-col-grid>${col.busy && !total ? '<p class="bnp-col-empty">Reading itemdb’s list…</p>' : list.length ? list.map((x) => colTile(x)).join('') : `<p class="bnp-col-empty">${col.view === 'had' ? `None yet.` : total ? (col.q ? 'None by that name.' : `${esc(pet)} has had every one of them!`) : ''}</p>`}</div>
+      ${col.view !== 'had' && total ? `<p class="bnp-col-cost"><span>${todo.length.toLocaleString()} to go${priced ? ` · about <b>${colNp(cost)} NP</b> for the ${priced.toLocaleString()} with a price` : ''}${todo.length - priced > 0 ? (col.noPrice ? ' · all without a price' : ` · ${(todo.length - priced).toLocaleString()} without one`) : ''}</span>${todo.length ? `<button type="button" class="bnp-col-btn is-go bnp-col-buy" data-col-buy title="${esc(`Buy the ${k.what} ${pet} hasn’t ${k.did} from users’ shops: the ones you tick, one of each, never over your limits`)}"><span class="bnp-col-bic">${BM_CART}</span>Buy Mode</button>` : ''}
+        <span class="bnp-col-pricef" role="group" aria-label="By price"><button type="button" class="bnp-col-tog" data-col-priced aria-pressed="${col.priced}" title="Leave out the ones itemdb has no price for (most can’t be bought now)"><i aria-hidden="true"></i>Only ones with a price</button><button type="button" class="bnp-col-tog" data-col-noprice aria-pressed="${col.noPrice}" title="Just the ones itemdb has no price for (most can’t be bought now)"><i aria-hidden="true"></i>Only ones without a price</button></span></p>` : ''}
+      <div class="bnp-col-grid${col.mode === 'list' ? ' is-list' : ''}" data-col-grid>${col.busy && !total ? '<p class="bnp-col-empty">Reading itemdb’s list…</p>' : list.length ? list.map((x) => colTile(x)).join('') : `<p class="bnp-col-empty">${col.view === 'had' ? `None yet.` : total ? (col.q ? 'None by that name.' : col.priced || col.noPrice ? `None left ${col.priced ? 'with' : 'without'} a price: ${esc(pet)} has ${esc(k.did)} every one of those.` : `${esc(pet)} has had every one of them!`) : ''}</p>`}</div>
       <p class="bnp-col-foot">${col.cat ? `itemdb’s list of ${esc(k.what)}, read ${colAgo(col.cat.t)}. Prices are itemdb’s, approximate.` : ''} <button type="button" class="bnp-col-btn is-small" data-col-refresh title="itemdb’s list again, with today’s prices"${col.busy ? ' disabled' : ''}>${col.busy ? 'Reading…' : 'Read it again'}</button> <button type="button" class="bnp-col-btn is-small" data-col-neo aria-expanded="${document.documentElement.classList.contains('bnp-col-showneo')}">${document.documentElement.classList.contains('bnp-col-showneo') ? 'Hide Neopets’ own list' : 'Neopets’ own list'}</button></p>`;
     colRows();
   }
@@ -21265,7 +21342,7 @@
       if ('colBuy' in d) { bmOpen(col.kind); return; }
       if (d.colGoal != null) { col.goal = col.goal === d.colGoal ? '' : d.colGoal; colPaint(); return; }   // (a goal: what it takes, under them; again, shut)
       if (d.colGoaltick) { bmOpen(col.kind); bmTickCheapest(Number(d.colGoaltick) || 0, col.goal); return; }
-      if ('colGoallist' in d) { col.view = 'not'; col.sort = 'cheap'; col.priced = true; col.sub = -1; col.q = ''; colPaint(); const g = col.root.querySelector('[data-col-grid]'); if (g) g.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
+      if ('colGoallist' in d) { col.view = 'not'; col.sort = 'cheap'; col.priced = true; col.noPrice = false; col.sub = -1; col.q = ''; colPaint(); const g = col.root.querySelector('[data-col-grid]'); if (g) g.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
       if ('colTrack' in d) {
         const list = colTracked(col.kind), on = list.some((x) => x.toLowerCase() === col.pet.toLowerCase());
         if (on) { colTrackSet(col.kind, list.filter((x) => x.toLowerCase() !== col.pet.toLowerCase())); col.note = `Not tracking ${col.pet}’s ${COL_KINDS[col.kind].what} any more.`; }
@@ -21281,7 +21358,15 @@
       if (d.colMode) { col.mode = d.colMode === 'list' ? 'list' : 'grid'; colPSet('mode', col.mode); colPaint(); return; }
       if (d.colSub != null) { col.sub = Number(d.colSub); colPaint(); return; }
       if ('colAllsubs' in d) { col.allSubs = !col.allSubs; colPaint(); return; }
-      if ('colPriced' in d) { col.priced = !col.priced; colPSet('priced', col.priced); colPaint(); return; }
+      if ('colPriced' in d || 'colNoprice' in d) {   // (with a price, or without one: one at a time)
+        const on = 'colPriced' in d ? !col.priced : !col.noPrice;
+        col.priced = 'colPriced' in d && on;
+        col.noPrice = 'colNoprice' in d && on;
+        colPSet('priced', col.priced);
+        colPSet('noprice', col.noPrice);
+        colPaint();
+        return;
+      }
       if ('colNeo' in d) { const on = document.documentElement.classList.toggle('bnp-col-showneo'); t.textContent = on ? 'Hide Neopets’ own list' : 'Neopets’ own list'; t.setAttribute('aria-expanded', String(on)); return; }
     });
     root.addEventListener('change', (e) => { const t = e.target; if (t instanceof Element && t.matches('[data-col-sort]')) { col.sort = t.value; if (col.view !== 'had' || t.value !== 'order') colPSet(`sort_${col.kind}`, t.value); colPaint(); } });
@@ -21293,23 +21378,22 @@
     });
   }
   // what's kept, read again from Neopets' pages for the pets you track (Settings: one page at a time, as a person would)
-  async function colRefreshPets(say) {
-    const jobs = [];
-    for (const kind of COL_ORDER) for (const pet of colTracked(kind)) jobs.push([kind, pet]);
-    let done = 0;
-    for (const [kind, pet] of jobs) {
+  async function colRefreshPets(say) {   // (each pet's pages opened as a visit opens them, one after another by their links: its Books Read, Booktastic tab, Gourmet Club)
+    const byPet = new Map();
+    for (const kind of COL_ORDER) for (const pet of colTracked(kind)) { const k = pet.toLowerCase(); if (!byPet.has(k)) byPet.set(k, { pet, kinds: [] }); byPet.get(k).kinds.push(kind); }
+    const total = [...byPet.values()].reduce((s, x) => s + x.kinds.length, 0);
+    let done = 0, first = true;
+    for (const { pet, kinds } of byPet.values()) {
       while (document.visibilityState !== 'visible') await new Promise((ok) => setTimeout(ok, 2000));   // (only while you're on this tab)
-      try {
-        const r = await fetch(colHref(kind, pet), { credentials: 'include' });
-        if (/login/i.test(new URL(r.url).pathname)) { if (say) say('Neopets has signed you out: sign in, then try again.'); return; }
-        const d = colParse(kind, new DOMParser().parseFromString(await r.text(), 'text/html'));
-        if (d && !d.notYours) { await colPetSet(kind, pet, colSlim(colOrderFix(d, null))); done++; }
-      } catch (_) { /* */ }
-      if (say) say(`Read ${done} of ${jobs.length}…`);
-      await new Promise((ok) => setTimeout(ok, 3500 + Math.random() * 2500));
+      if (!first) await new Promise((ok) => setTimeout(ok, 3500 + Math.random() * 2500));
+      first = false;
+      let pages = null;
+      try { pages = await colVisit(kinds, pet); } catch (e) { if (/login/.test(String(e && e.message))) { if (say) say('Neopets has signed you out: sign in, then try again.'); return; } continue; }
+      for (const kind of kinds) { const d = colParse(kind, new DOMParser().parseFromString(pages[kind] || '', 'text/html')); if (d && !d.notYours) { await colPetSet(kind, pet, colSlim(colOrderFix(d, null))); done++; } }
+      if (say) say(`Read ${done} of ${total}…`);
     }
     colNeed = null;
-    if (say) say(`Read again: ${done} of ${jobs.length} lists.`);
+    if (say) say(`Read again: ${done} of ${total} lists.`);
   }
   // The boards: Neopets' table read (places, pets, counts, the trophies' places), drawn anew; the counts kept for the goals
   function colBoardParse(doc) {
@@ -21379,11 +21463,10 @@
       cb.busy = n;
       colBoardPaint();
       try {
-        const r = await fetch(`${COL_BOARD[cb.kind][0]}?limit=200`, { credentials: 'include' });
-        const d = colBoardParse(new DOMParser().parseFromString(await r.text(), 'text/html'));
+        const d = colBoardParse(new DOMParser().parseFromString(await pageRead(`${COL_BOARD[cb.kind][0]}?limit=${n}`), 'text/html'));   // (the Top asked for, opened unseen as its link opens it)
         if (!d.rows.length) throw new Error('no board');
         cb.all = d.rows;
-        cb.allMax = 200;
+        cb.allMax = n;
         if (d.tiers.length) cb.tiers = d.tiers;
       } catch (_) { cb.busy = 0; colBoardPaint(); pageSay('The board didn’t come just now: try again in a moment'); return; }
       cb.busy = 0;
@@ -21439,31 +21522,30 @@
     const q = colNorm(cb.q);
     for (const el of cb.root.querySelectorAll('[data-cb-name]')) el.hidden = !!q && !el.dataset.cbName.includes(q);
   }
-  const colReadPets = new Set();
+  const colReadPets = new Map();   // (pet → true while only NE's own reading in the SDB was heard: what's kept is up to date already)
   function colReadWatch() {   // (a book read to a pet you track, from your Inventory or your SDB: its lists read again a moment later, and the marks with them)
     if (colReadWatch.on) return;
     colReadWatch.on = true;
-    const heard = (pet) => {
+    const heard = (pet, local) => {
       if (sdrRunning()) return;   // (Read to a pet's run in the SDB: its lists read again once, at its end)
       if (!pet || !['books', 'bt'].some((k) => colTracked(k).some((x) => x.toLowerCase() === pet.toLowerCase()))) return;
-      colReadPets.add(pet);
+      colReadPets.set(pet, colReadPets.has(pet) ? colReadPets.get(pet) && local : local);
       clearTimeout(colReadWatch.t);
       colReadWatch.t = setTimeout(() => colReadAgain().catch(report), 1500 + Math.random() * 1500);   // (a few read one after another: once, after the last)
     };
-    document.addEventListener('bnp-inv-acted', (e) => { let d = null; try { d = JSON.parse(e.detail || '{}'); } catch (_) { return; } const m = d && d.status === 200 && /^Read to (.+)$/i.exec(String(d.act || '')); if (m) heard(m[1].trim()); });
-    document.addEventListener('bnp-col-read', (e) => { let d = null; try { d = JSON.parse(e.detail || '{}'); } catch (_) { return; } if (d && d.pet) heard(String(d.pet).trim()); });
+    document.addEventListener('bnp-inv-acted', (e) => { let d = null; try { d = JSON.parse(e.detail || '{}'); } catch (_) { return; } const m = d && d.status === 200 && /^Read to (.+)$/i.exec(String(d.act || '')); if (m) heard(m[1].trim(), false); });
+    document.addEventListener('bnp-col-read', (e) => { let d = null; try { d = JSON.parse(e.detail || '{}'); } catch (_) { return; } if (d && d.pet) heard(String(d.pet).trim(), !!d.local); });
   }
   async function colReadAgain() {
     const pets = [...colReadPets];
     colReadPets.clear();
-    for (const pet of pets) for (const kind of ['books', 'bt']) {
-      if (!colTracked(kind).some((x) => x.toLowerCase() === pet.toLowerCase())) continue;
+    for (const [pet, local] of pets) {
+      const kinds = local ? [] : ['books', 'bt'].filter((kind) => colTracked(kind).some((x) => x.toLowerCase() === pet.toLowerCase()));   // (NE's own reading: what's kept was brought up to date as it read, only the marks again)
+      if (!kinds.length) continue;
       try {
-        const r = await fetch(colHref(kind, pet), { credentials: 'include' });
-        const d = colParse(kind, new DOMParser().parseFromString(await r.text(), 'text/html'));
-        if (d && !d.notYours) await colPetSet(kind, pet, colSlim(colOrderFix(d, null)));
+        const pages = await colVisit(kinds, pet);   // (its pages opened as a visit opens them)
+        for (const kind of kinds) { const d = colParse(kind, new DOMParser().parseFromString(pages[kind] || '', 'text/html')); if (d && !d.notYours) await colPetSet(kind, pet, colSlim(colOrderFix(d, null))); }
       } catch (_) { /* (not read now: the marks stay as they were) */ }
-      await new Promise((ok) => setTimeout(ok, 900 + Math.random() * 900));
     }
     colNeed = null;
     await colMarksLoad();
@@ -21626,6 +21708,9 @@
     html.bnp-col-page .bnp-col-cost, html.bnp-col-page .bnp-col-err { margin: -2px 4px 0; color: var(--nb-muted); font: 13px/1.45 var(--nb-txt); }
     html.bnp-col-page .bnp-col-cost b { color: var(--nb-text); font-family: var(--nb-ui); }
     html.bnp-col-page .bnp-col-cost .bnp-col-buy { height: 28px; margin: 0 0 0 10px; padding: 0 12px 0 5px; font-size: 12.5px; vertical-align: middle; }   /* (Buy Mode, by what it buys from) */
+    html.bnp-col-page .bnp-col-cost { display: flex; flex-wrap: wrap; align-items: center; row-gap: 6px; }
+    html.bnp-col-page .bnp-col-pricef { display: inline-flex; gap: 8px; margin-left: auto; padding-left: 12px; }   /* (with a price or without one: at the end of the line that counts them) */
+    html.bnp-col-page .bnp-col-pricef .bnp-col-tog { height: 28px; }
     html.bnp-col-page .bnp-col-err { padding: 9px 14px; border: 2px solid #f0c2a8; border-radius: 12px; background: #fff6f0; color: #8a3b12; }
     html.bnp-col-page .bnp-col-err a { color: inherit !important; font-family: var(--nb-ui); }
     /* the items */
@@ -21992,10 +22077,9 @@
     saMine.total = pr.total;
     saMineSave();
   }
-  async function saGetDoc(url) {   // (one of Neopets' pages, read as you'd open it; null when it isn't the page asked for: logged out, or Neopets is busy)
-    const r = await fetch(url, { credentials: 'include' });
-    if (!r.ok || /\/login/i.test(r.url)) return null;
-    return new DOMParser().parseFromString(await r.text(), 'text/html');
+  async function saGetDoc(url) {   // (one of Neopets' pages, opened as a visit opens it; null when it doesn't come: signed out, or Neopets is busy)
+    const html = await pageRead(url).catch(() => '');
+    return html ? new DOMParser().parseFromString(html, 'text/html') : null;
   }
   async function saCountsFetch() {   // (the Overview, read: every page's count at once)
     const doc = await saGetDoc('/stamps.phtml?type=progress');
@@ -22200,7 +22284,7 @@
     document.documentElement.classList.add('bnp-sa-ready');
     saWire(root);
     saPaint();
-    if (kind === 'hub' && mine && !pr && (!saMine.countsT || Date.now() - saMine.countsT > 10 * 60e3) && saMine.acct) {   // (the front page shows no counts: the Overview's, read once in a while)
+    if (kind === 'hub' && mine && !pr && (!saMine.countsT || Date.now() - saMine.countsT > 6 * 3600e3) && saMine.acct) {   // (the front page shows no counts: the Overview's, opened as a visit opens it every six hours at most; your own visits there keep them too)
       saCountsFetch().then(() => saPaint()).catch((e) => { sa.note = e.message; saPaint(); });
     }
     if (kind === 'hub' || kind === 'theirs') saBoard().then(() => saPaint(true)).catch(() => {});
@@ -22395,7 +22479,7 @@
     const c = saCost(todo.map((t) => t.x));
     const avs = pages.map((st) => ({ st, av: saAvatar(st.pid) })).filter((x) => x.av), avKnown = avs.some((x) => x.av.have != null), avHave = avs.filter((x) => x.av.have).length;
     const r = sa.reading;
-    const read = !sa.mine || !M.acct ? '' : r ? `<span class="bnp-sa-reading" role="status">${r.paused ? 'Paused while this tab’s in the back' : `Reading page ${Math.min(r.done + 1, r.of || 1)} of ${r.of || '…'}`}<span class="bnp-sa-bar is-thin"><i style="width:${r.of ? Math.round((r.done / r.of) * 100) : 0}%"></i></span></span><button type="button" class="bnp-sa-btn is-small" data-sa-stop>Stop</button>`
+    const read = !sa.mine || !M.acct ? '' : r ? `<span class="bnp-sa-reading" role="status">${r.restUntil ? `A short break: carrying on at about ${esc(bmAt(r.restUntil))}` : r.paused ? 'Paused while this tab’s in the back' : `Reading page ${Math.min(r.done + 1, r.of || 1)} of ${r.of || '…'}`}<span class="bnp-sa-bar is-thin"><i style="width:${r.of ? Math.round((r.done / r.of) * 100) : 0}%"></i></span></span><button type="button" class="bnp-sa-btn is-small" data-sa-stop>Stop</button>`
       : unread.length ? `<button type="button" class="bnp-sa-btn is-go" data-sa-readall title="Your album’s pages, read one at a time as you’d turn them (only while this tab’s in front): every stamp you still need, priced">${SA_IC.grid}Read ${unread.length === 1 ? 'the page' : `the ${unread.length} pages`} not read yet</button>` : `<span class="bnp-sa-fine">All your pages are read${M.countsT ? ` · last checked with Neopets ${colAgo(M.countsT)}` : ''}</span>`;
     const tabs = [['pages', 'Pages', live.length], ['todo', 'Still to get', todo.length], ['avatars', 'Avatars', avs.length]];
     let body = '';
@@ -22679,7 +22763,8 @@
         saKeepPage(p, d);
         me.done++;
         saPaint(true);
-        if (me.done < me.of) for (const end = Date.now() + 4000 + Math.random() * 3000; Date.now() < end && !me.stop;) await saSleep(250);   // (a person's pause between pages; Stop ends it)
+        if (me.done < me.of && me.done >= (me.restAt || (me.restAt = runRestEvery()))) { if (!(await runRest(me, () => saPaint(true)))) break; me.restAt = me.done + runRestEvery(); }   // (a longer break now and then, as a person takes one)
+        else if (me.done < me.of) for (const end = Date.now() + 4000 + Math.random() * 3000; Date.now() < end && !me.stop;) await saSleep(250);   // (a person's pause between pages; Stop ends it)
       }
     } catch (e) { me.err = (e && e.message) || 'Something went wrong: try again in a moment.'; }
     sa.note = me.err || (me.stop ? `Stopped: ${me.done} of ${me.of} read.` : me.of ? `Read ${me.done === 1 ? 'one page' : `${me.done} pages`}: every stamp you still need is below.` : 'Every page is known already.');
@@ -23552,7 +23637,7 @@
     if (/\/cart\.phtml$/.test(p)) return { k: 'bag' };
     if (/\/checkout\.phtml$/.test(p)) return { k: 'checkout' };
     if (/\/wishlist\.phtml$/.test(p)) return { k: 'wish', group: Number(q.get('groupId')) || 0 };
-    const type = q.get('type') || '', cat = Number(q.get('cat')) || 0, bnp = q.get('bnp') || '';
+    const type = q.get('type') || '', cat = Number(q.get('cat')) || 0, bnp = (/^#bnp=([\w-]+)$/.exec(loc.hash || '') || [])[1] || q.get('bnp') || '';   // (NE's own views after the #, which never reaches Neopets; ?bnp= from before still works)
     if (bnp === 'soon' || bnp === 'sale') return { k: bnp };
     if (bnp === 'studio') return { k: 'aisle', cat: MALL_STUDIO };
     const own = Object.keys(MALL_OWN).find((c) => MALL_OWN[c].key === bnp);
@@ -23566,10 +23651,10 @@
     if (v.k === 'bag') return '/mall/cart.phtml';
     if (v.k === 'checkout') return '/mall/checkout.phtml';
     if (v.k === 'wish') return `/mall/wishlist.phtml${v.group ? `?groupId=${v.group}` : ''}`;
-    if (v.k === 'soon' || v.k === 'sale') return `/mall/shop.phtml?bnp=${v.k}`;
+    if (v.k === 'soon' || v.k === 'sale') return `/mall/shop.phtml#bnp=${v.k}`;
     if (v.k === 'search') return `/mall/search.phtml?${new URLSearchParams({ type: 'search', text: v.q })}`;
     if (v.k === 'list') return `/mall/search.phtml?type=${MALL_LISTS[v.list][0]}`;
-    if (v.k === 'aisle') return v.cat === MALL_STUDIO ? '/mall/shop.phtml?bnp=studio' : MALL_OWN[v.cat] ? `/mall/shop.phtml?bnp=${MALL_OWN[v.cat].key}` : `/mall/search.phtml?type=browse&cat=${v.cat}`;
+    if (v.k === 'aisle') return v.cat === MALL_STUDIO ? '/mall/shop.phtml#bnp=studio' : MALL_OWN[v.cat] ? `/mall/shop.phtml#bnp=${MALL_OWN[v.cat].key}` : `/mall/search.phtml?type=browse&cat=${v.cat}`;
     return '/mall/shop.phtml';
   }
   const mallSame = (a, b) => a.k === b.k && (a.cat || 0) === (b.cat || 0) && (a.list || '') === (b.list || '') && (a.q || '') === (b.q || '') && (a.group || 0) === (b.group || 0);
@@ -24395,14 +24480,12 @@
   }
   const MALL_DYE_FOUND_MS = 12 * 3600e3;   // (what was found for a base: kept this long, across the list's own half-hourly reads)
   const mallDyeFresh = (f) => !!f && typeof f === 'object' && 'at' in f && Date.now() - f.at < MALL_DYE_FOUND_MS;
-  async function mallDyeSet(maxAge = 30 * 60e3) {   // (the Dyeworks list as last read, read again when older than maxAge; kept where every Neopets address reads it)
-    const c = get(MALL_DYE_SET, null);
-    if (c && Array.isArray(c.bases) && Date.now() - (c.at || 0) < maxAge) return c;
+  async function mallDyeSet(maxAge = 3 * 3600e3) {   // (the Dyeworks list as last read, read again when older than maxAge (it changes once in a while); kept where every Neopets address reads it)
+    const c = get(MALL_DYE_SET, null), here = location.hostname === 'www.neopets.com' && /^\/mall\/dyeworks\/?$/.test(location.pathname);
+    if (!here && c && Array.isArray(c.bases) && Date.now() - (c.at || 0) < maxAge) return c;
     let html = '';
     try {
-      const r = await fetch(`${SITE}/mall/dyeworks/`, { credentials: 'include' });
-      if (!r.ok) throw new Error(`the Dyeworks answered ${r.status}`);
-      html = await r.text();
+      html = here ? document.documentElement.outerHTML : ON_MALL ? await fromPageHtml('/mall/dyeworks/') : await pageRead('/mall/dyeworks/');   // (on its own page: as it is there, nothing asked for; else the page opened as a visit opens it)
     } catch (e) { if (c && Array.isArray(c.bases)) return c; throw e; }   // (no answer: the list as last read, if there is one)
     let bases = mallDyeData(html);
     if (!bases.length) bases = mallDyeRead(html).map((b) => ({ ...b, img: '', group: '', colors: [] }));   // (its object unreadable: its last-day items, by pattern, as before)
@@ -26508,7 +26591,7 @@
     const pkey = `clo-part-${cloAcct()}`, live = () => { if (!clo || clo.gen !== gen) throw CLO_GONE; };
     const say = () => (clo.items.length ? cloStripPaint() : cloPaint(true));   // (how far: the strip only, once something's shown)
     const at = from ? from.at : Date.now();
-    let items = from ? from.items.slice() : [], p = from ? from.p + 1 : 1, of = from ? from.of : 1, total = from ? from.total : -1, qty = from ? from.qty : -1, again = 0;
+    let items = from ? from.items.slice() : [], p = from ? from.p + 1 : 1, of = from ? from.of : 1, total = from ? from.total : -1, qty = from ? from.qty : -1, again = 0, restAt = p - 1 + runRestEvery();   // (restAt: a longer break after this many pages, as a person takes one)
     while (p <= of) {
       if (document.hidden) { clo.reading.paused = true; say(); await untilShown(); live(); }
       clo.reading = { ...clo.reading, p, of, paused: false };
@@ -26530,7 +26613,14 @@
       for (const x of d.items) { const id = Number(x.obj_info_id); if (!had.has(id)) { had.add(id); items.push(x); } }
       if (p < of) idbSet(pkey, { at, seen: Date.now(), total, qty, of, p, items: items.slice() }).catch(() => {});   // (so far: a visit cut short goes on from here)
       if (onPage) onPage(items, total, qty);
-      if (++p <= of) { await saSleep(2800 + Math.random() * 1600); live(); }
+      if (++p <= of && p - 1 >= restAt) {   // (half a minute to a minute and a half, shown; then on)
+        const until = Date.now() + 30000 + Math.random() * 60000;
+        clo.reading = { ...clo.reading, restUntil: until };
+        say();
+        while (Date.now() < until) { await saSleep(1000); live(); }
+        clo.reading = { ...clo.reading, restUntil: 0 };
+        restAt = p - 1 + runRestEvery();
+      } else if (p <= of) { await saSleep(2800 + Math.random() * 1600); live(); }
     }
     idbSet(pkey, null).catch(() => {});
     return { total, qty, items };
@@ -26592,6 +26682,7 @@
     if (clo.loading) {
       if (!n || !(r.of > 1 || r.paused)) return '';   // (nothing shown yet: the space below says it; a one-page closet's read is over in a moment)
       const meanwhile = r.paused ? 'Paused while this tab’s in the back.'
+        : r.restUntil ? `A short break, as you’d take one: carrying on at about ${bmAt(r.restUntil)}.`
         : r.bg ? (clo.part ? `Meanwhile, the ${n.toLocaleString()} items read before are shown.` : `Meanwhile, it’s shown as it was read ${clo.at ? colAgo(clo.at) : 'before'}.`)
         : `${n.toLocaleString()} of ${(clo.total || n).toLocaleString()} items so far${r.on ? ', going on from where it stopped last time' : ''}.`;
       return `<div class="bnp-clo-read${r.paused ? ' is-paused' : ''}"><p><b>${r.bg ? 'Reading your closet again' : 'Reading your closet'}: page ${r.p} of ${r.of}</b> ${meanwhile}</p>${meter(r.p - 1, r.of, 'Pages read')}</div>`;
@@ -29204,8 +29295,8 @@
     shopPmSay();
     return !shopPmHalt();
   }
-  async function shopPmIn() {   // (still logged in? This page asked for again, as a reload asks: Neopets sends a logged-out visit on to its login page)
-    try { const r = await fetch(location.pathname + location.search, { credentials: 'include', redirect: 'manual' }); return !(r.type === 'opaqueredirect' || /\/login\//.test(r.url)); } catch (_) { return true; }
+  async function shopPmIn() {   // (still logged in? This page opened again unseen, as a reload opens it: Neopets sends a logged-out visit on to its login page)
+    try { await pageRead(location.pathname + location.search); return true; } catch (e) { return !/login/.test(String(e && e.message)); }
   }
   async function shopPmLoop(rows, run) {   // (one at a time, a person's moment apart, only while this tab is in sight; told to come back later, waited out when that's on (three times in a row at most). true: every row done)
     const pm = shop.pm, src = run ? run.src : shopPmSrc(), o = { inAll: true, src, under: run ? run.under : shopPmUnder(), times: run ? run.times : shopPmTimes() };
@@ -29580,9 +29671,7 @@
     const url = new URL(href, location.href);
     sk.box.classList.add('is-busy');
     try {
-      const r = await fetch(url.href, { credentials: 'include' });
-      if (!r.ok) throw new Error(`Neopets answered ${r.status}`);
-      const doc = nmDoc(await r.text());
+      const doc = nmDoc(await pageRead(url.href));   // (opened unseen as a visit opens it; signed out: the page itself, below)
       if (doc.querySelector('form[action*="login"] input[type="password"]')) { location.href = url.href; return; }
       if (push) history.pushState({ bnpSk: 1 }, '', url.href);
       skShow(skRead(doc, url.href));
@@ -30391,15 +30480,24 @@
   // Neopets' own card wasn't told to): read with the same call as its View Details, one lot at a time ──
   const tpMore = new Map(), tpMoreOpen = new Set(), tpMoreWait = new Set(), tpMoreFail = new Map();   // (tpMoreFail: lot → why its items didn't come)
   let tpMoreBusy = false;
-  let tpListKept = null;   // ({ key: the search, lots: lot → its items }: one read a page of the search)
+  let tpListKept = null;   // ({ key: the search, lots: lot → its items }: the page's own answer to its search when NE heard it, else one read a page of the search)
+  const tpListKey = (o) => JSON.stringify({ type: 'browse', criteria: String(o.criteria || '20'), search_string: String(o.search_string || ''), sort: String(o.sort || 'newest'), page: Number(o.page) || 1 });   // (a search, the same however it was asked)
+  const tpListLots = (j) => new Map((j && Array.isArray(j.lots) ? j.lots : []).map((l) => [String(l.lot_id), l.items]));
+  document.addEventListener('bnp-heard', (e) => {   // (the page's own search, as it came: its lots' items are read from that)
+    if (!tpOn()) return;
+    let d = null, p = null, j = null;
+    try { d = JSON.parse(e.detail); } catch (_) { return; }
+    if (!d || !/\/tradingpost-list\.php/.test(d.u || '') || d.status !== 200) return;
+    try { p = JSON.parse(d.post || 'null'); j = JSON.parse(d.text || 'null'); } catch (_) { return; }
+    if (p && p.type === 'browse' && j && Array.isArray(j.lots)) tpListKept = { key: tpListKey(p), lots: tpListLots(j) };
+  });
   async function tpListItems(id) {
     const h = location.hash.indexOf('?'), q = new URLSearchParams(h >= 0 ? location.hash.slice(h + 1) : location.search.slice(1));
-    const body = { type: 'browse', criteria: q.get('criteria') || '20', search_string: q.get('search_string') || '', sort: q.get('sort') || 'newest', page: Number(q.get('page')) || 1 }, key = JSON.stringify(body);
-    if (!tpListKept || tpListKept.key !== key) {
+    const key = tpListKey({ criteria: q.get('criteria'), search_string: q.get('search_string'), sort: q.get('sort'), page: q.get('page') });
+    if (!tpListKept || tpListKept.key !== key) {   // (not heard: asked for once, as the page asks)
       const r = await fetch(`${TP_AJAX}tradingpost-list.php?`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'XMLHttpRequest' }, body: key });
       if (!r.ok) return { why: `Neopets answered ${r.status}` };
-      const j = await r.json();
-      tpListKept = { key, lots: new Map((j && Array.isArray(j.lots) ? j.lots : []).map((l) => [String(l.lot_id), l.items])) };
+      tpListKept = { key, lots: tpListLots(await r.json()) };
     }
     const raw = tpListKept.lots.get(String(id)), items = Array.isArray(raw) ? raw : raw && typeof raw === 'object' ? Object.values(raw) : null;
     return items && items.length ? { items } : { why: 'the search’s answer didn’t have that lot (it may have just sold)' };
@@ -30738,7 +30836,8 @@
       try { await tpLookUp(n); } catch (e) { report(e); tpLookErr = 'The Trading Post didn’t answer just now: try again in a moment.'; break; }
       tpLooking.n++;
       tpMultiPaint();
-      if (tpLooking.n < names.length) await new Promise((ok) => setTimeout(ok, 2500 + Math.random() * 1500));
+      if (tpLooking.n < names.length && tpLooking.n >= (tpLooking.restAt || (tpLooking.restAt = runRestEvery()))) { await runRest(tpLooking, tpMultiPaint); tpLooking.restAt = tpLooking.n + runRestEvery(); }   // (a longer break now and then, as a person takes one)
+      else if (tpLooking.n < names.length) await new Promise((ok) => setTimeout(ok, 2500 + Math.random() * 1500));
     }
     tpLooking = null;
     tpMultiPaint();
@@ -30801,7 +30900,7 @@
     queueMicrotask(() => { if (!fk) return; const g = el.querySelector(fk); if (g && document.activeElement !== g) { g.focus(); try { g.setSelectionRange(fs[0], fs[1]); } catch (_) { /* */ } } });   // (the box you were typing in: yours again, the cursor where it was)
     el.innerHTML = `${head}<div class="bnp-tpm-body"><h6>Your items</h6><p class="bnp-tpm-note">The first 50 items in your inventory, as Neopets lists them here (up to ${tpMax()} items to a lot). Each lot goes up with its own List it, as Start Trading! does, so nothing is posted that you didn’t press for.</p>${modeHtml}${pick}
       ${q.rows.length ? `<div class="bnp-tpm-rows">${q.rows.map(row).join('')}</div>` : `<p class="bnp-tpm-empty">${mode === 'one' ? 'Click items above to put them in a lot.' : 'Click items above: each one becomes a lot of its own.'}</p>`}
-      ${todo.length > 1 ? `<div class="bnp-tpm-all">${(() => { const m = tpLookNames().length; return tpLooking ? `<button type="button" class="bnp-tpbtn is-small" disabled>Looking… ${tpLooking.n + 1 > tpLooking.of ? tpLooking.of : tpLooking.n + 1} of ${tpLooking.of}</button>` : m > 1 ? `<button type="button" class="bnp-tpbtn is-small" data-tpm="lookall" title="Each item not looked up today, looked up on the Trading Post one at a time: its lowest Instant Buy, kept as if you'd looked">Look them all up (${m})</button>` : ''; })()}${tpLookErr ? `<span class="bnp-tpm-err" role="alert">${esc(tpLookErr)}</span>` : ''}<label class="bnp-tpm-f">One wishlist for all of them<input type="text" data-tpm-wlall maxlength="${prem ? 750 : 500}" placeholder="what you’d like for them" value="${esc(tpWlAll)}"></label><button type="button" class="bnp-tpbtn is-small" data-tpm="wlall">Use it for all</button><button type="button" class="bnp-tpbtn is-small" data-tpm="underall" title="Each lot just under the lowest Instant Buys you’ve seen for its items, as set in Settings (lots with one not looked up stay empty)">Each just under the lowest seen</button>${q.rows.some((r) => r.done) ? '<button type="button" class="bnp-tpbtn is-small" data-tpm="cleardone">Clear the listed ones</button>' : ''}</div>` : q.rows.some((r) => r.done) ? '<div class="bnp-tpm-all"><button type="button" class="bnp-tpbtn is-small" data-tpm="cleardone">Clear the listed ones</button></div>' : ''}</div>`;
+      ${todo.length > 1 ? `<div class="bnp-tpm-all">${(() => { const m = tpLookNames().length; return tpLooking ? `<button type="button" class="bnp-tpbtn is-small" disabled>${tpLooking.restUntil ? `A short break, till about ${bmAt(tpLooking.restUntil)}` : `Looking… ${tpLooking.n + 1 > tpLooking.of ? tpLooking.of : tpLooking.n + 1} of ${tpLooking.of}`}</button>` : m > 1 ? `<button type="button" class="bnp-tpbtn is-small" data-tpm="lookall" title="Each item not looked up today, looked up on the Trading Post one at a time: its lowest Instant Buy, kept as if you'd looked">Look them all up (${m})</button>` : ''; })()}${tpLookErr ? `<span class="bnp-tpm-err" role="alert">${esc(tpLookErr)}</span>` : ''}<label class="bnp-tpm-f">One wishlist for all of them<input type="text" data-tpm-wlall maxlength="${prem ? 750 : 500}" placeholder="what you’d like for them" value="${esc(tpWlAll)}"></label><button type="button" class="bnp-tpbtn is-small" data-tpm="wlall">Use it for all</button><button type="button" class="bnp-tpbtn is-small" data-tpm="underall" title="Each lot just under the lowest Instant Buys you’ve seen for its items, as set in Settings (lots with one not looked up stay empty)">Each just under the lowest seen</button>${q.rows.some((r) => r.done) ? '<button type="button" class="bnp-tpbtn is-small" data-tpm="cleardone">Clear the listed ones</button>' : ''}</div>` : q.rows.some((r) => r.done) ? '<div class="bnp-tpm-all"><button type="button" class="bnp-tpbtn is-small" data-tpm="cleardone">Clear the listed ones</button></div>' : ''}</div>`;
   }
   function tpIbTick(i, ib, prem) {   // (beside List it: a tick while its Instant Buy is a price Neopets will take, so you can see which lots have one)
     const v = tpPriceIn(ib), ok = v > 0 && v <= (prem ? 20000000 : 10000000);
@@ -31449,11 +31548,9 @@
       fill(t);
       try {
         const sub = f.querySelector('input[type="submit"], button[type="submit"]');
-        let fd;
-        try { fd = new FormData(f, sub || undefined); } catch (_) { fd = new FormData(f); }   // (its own button's name too, when it has one, as a press sends it)
-        const r = await fetch(new URL(f.getAttribute('action') || location.href, location.href), { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(fd).toString(), credentials: 'same-origin' });
+        const r = await pagePost(f, sub);   // (Neopets' own form, sent as its button sends it, its answer opening unseen)
         if (/\/login/i.test(new URL(r.url).pathname)) return { ok: false, why: 'Neopets wants you to log in again first: nothing was bought.' };
-        const doc = new DOMParser().parseFromString(await r.text(), 'text/html'), tx = doc.body ? doc.body.textContent : '', list = ticketsIn(tx);
+        const doc = new DOMParser().parseFromString(r.html, 'text/html'), tx = doc.body ? doc.body.textContent : '', list = ticketsIn(tx);
         const tok = doc.querySelector('form[action*="process_lottery"] input[name="_ref_ck"]'), mine = f.querySelector('input[name="_ref_ck"]');
         if (tok && mine && tok.value) mine.value = tok.value;   // (Neopets' key, as its page has it now)
         const np = doc.getElementById('npanchor'), npText = np ? np.textContent.trim() : '';
@@ -31560,9 +31657,10 @@
       const old = draw;
       draw = nextDraw(Math.max(Date.now(), old + 1000));
       try {
-        const r = await fetch(location.pathname, { credentials: 'same-origin' });
-        if (!/\/login/i.test(new URL(r.url).pathname)) {
-          const doc = new DOMParser().parseFromString(await r.text(), 'text/html'), tx = doc.body ? doc.body.textContent : '';
+        await untilShown();   // (while you're on this tab, as you'd reload it)
+        const html = await pageRead(location.pathname);   // (the page opened again as a reload opens it, unseen)
+        {
+          const doc = new DOMParser().parseFromString(html, 'text/html'), tx = doc.body ? doc.body.textContent : '';
           have = ticketsIn(tx);
           haveKeys = new Set(have.map(lottoKey));
           sold = (/tickets sold so far\s*:\s*([\d,]+)/i.exec(tx) || [])[1] || '';
@@ -31998,9 +32096,9 @@
     if (k.winAsk && k.winAsk.r === r && Date.now() - (k.winAsk.at || 0) < 30 * 60e3) return;   // (looked lately)
     fcKeepSet({ winAsk: { r, at: Date.now() } });
     try {
-      const res = await fetch('/pirates/foodclub.phtml', { credentials: 'include' });
-      if (!res.ok || /login/i.test(new URL(res.url).pathname)) return;
-      fcWinsRead(new DOMParser().parseFromString(await res.text(), 'text/html'));
+      const html = await pageRead('/pirates/foodclub.phtml').catch(() => '');   // (opened as a visit opens it)
+      if (!html) return;
+      fcWinsRead(new DOMParser().parseFromString(html, 'text/html'));
     } catch (_) { /* (another visit) */ }
   }
   function fcLogBet(sig, amt) {   // (a bet Neopets took: its picks by name, its odds and amount, and where it came from)
@@ -32387,19 +32485,20 @@
     me.set = Math.max(0, Number((k.setOf || {})[who]) || 0);
     fcKeepSet({ who });
     if (!again && kept && kept.round === me.round && Array.isArray(kept.sets) && kept.sets.length) { me.sets = kept.sets; me.at = kept.at; fcChoose(); return; }
+    if (!again && kept && kept.round === me.round && kept.miss && Date.now() - kept.at < 30 * 60e3) { Object.assign(me, { busy: false, err: kept.err || '', sets: [], at: kept.at }); fcChoose(); return; }   // (no bets there half an hour ago: not opened again till then, unless you ask)
     Object.assign(me, { busy: true, sets: null, bets: null });
     fcPaint();
     let sets = [], err = '';
     try {
-      const r = await fetch(`/~${encodeURIComponent(who)}`, { credentials: 'include' });
-      if (/login/i.test(new URL(r.url).pathname)) throw new Error('out');
-      const all = fcStrings(await r.text());
+      const html = await pageRead(`/~${encodeURIComponent(who)}`).catch((e) => { throw /login/.test(String(e && e.message)) ? new Error('out') : e; });   // (their petpage opened as a visit opens it)
+      const all = fcStrings(html);
       sets = all.filter((s) => s.round === me.round);
       if (!sets.length) err = all.length ? `~${who} hasn’t posted today’s bets yet: their page still has round ${Math.max(...all.map((s) => s.round)).toLocaleString()}’s. Try again a little later.` : `There are no bets on ~${who}’s page right now.`;
     } catch (e) { err = e && e.message === 'out' ? 'Neopets has signed you out: sign in again, then try again.' : `Couldn’t read ~${who}’s page just now. Try again in a moment.`; }
     if (fc !== me || me.who !== who) return;   // (someone else chosen meanwhile, or the tab changed)
     Object.assign(me, { busy: false, err, sets, at: Date.now() });
     if (sets.length) fcKeepSet({ src: { ...(fcKeep().src || {}), [who]: { round: me.round, at: me.at, sets } } });
+    else if (err && !/signed you out|Couldn’t read/.test(err)) fcKeepSet({ src: { ...(fcKeep().src || {}), [who]: { round: me.round, at: me.at, sets: [], miss: true, err } } });   // (not posted yet: kept, so the next visit doesn't open their page again at once)
     fcChoose();
   }
   function fcChoose() {   // (the list chosen: its bets)
@@ -32887,7 +32986,7 @@
       const pct = c.phase === 'price' ? (c.toPrice ? Math.round(100 * c.priced / c.toPrice) : 100) : (c.pages ? Math.round(100 * c.read / c.pages) : 4);
       top = `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${allLbl}</span>
         <div class="bnp-wt-prog"><div class="bnp-wt-track"><i style="width:${Math.max(4, Math.min(100, pct))}%"></i></div>
-        <span class="bnp-wt-sub">${c.phase === 'price' ? `Asking itemdb for prices: ${c.priced.toLocaleString()} of ${c.toPrice.toLocaleString()}…` : `${c.paused ? 'Waiting for you to come back to this tab: ' : 'Reading '}page ${c.read + (c.paused ? 0 : 1)}${c.pages ? ` of ${c.pages}` : ''}${key === 'safetydeposit' && c.pool === 'np' ? ' (your NC items after)' : key === 'safetydeposit' && c.pool === 'nc' ? ' (NC items)' : ''}…`}</span></div>
+        <span class="bnp-wt-sub">${c.phase === 'price' ? `Asking itemdb for prices: ${c.priced.toLocaleString()} of ${c.toPrice.toLocaleString()}…` : `${c.restUntil ? `A short break, carrying on at about ${bmAt(c.restUntil)}: next, ` : c.paused ? 'Waiting for you to come back to this tab: ' : 'Reading '}page ${c.read + (c.paused ? 0 : 1)}${c.pages ? ` of ${c.pages}` : ''}${key === 'safetydeposit' && c.pool === 'np' ? ' (your NC items after)' : key === 'safetydeposit' && c.pool === 'nc' ? ' (NC items)' : ''}…`}</span></div>
         <div class="bnp-wt-meta"><span>One page at a time, as you’d turn them; nothing is moved.</span><button type="button" class="bnp-wt-pb" data-wt="stop">Stop</button></div></div>`;
     } else if (paged && part) {   // (itemdb paused it partway: what's counted so far, and Carry on)
       const p = wt.part, end = wtPauseEnd();
@@ -32986,7 +33085,7 @@
   }
   function wtPickBar() {   // (under the lists: what's selected here, how many of each, and Select in your SDB; while it runs, how far; then what came of it)
     const tab = wt.tab === 'nc' ? 'nc' : 'np', set = wt.pick[tab], p = wt.picking, r = wt.picked && wt.picked.tab === tab ? wt.picked : null;
-    if (p) return `<div class="bnp-wt-pickrow"><b>Selecting ${Math.max(1, p.at).toLocaleString()} of ${p.n.toLocaleString()}</b><span class="bnp-wt-pickname">${esc(p.name)}</span><span class="bnp-wt-pickgo"><button type="button" class="bnp-wt-pb" data-wt="pickstop">Stop</button></span></div>
+    if (p) return `<div class="bnp-wt-pickrow"><b>${p.restUntil ? `A short break, till about ${bmAt(p.restUntil)}` : `Selecting ${Math.max(1, p.at).toLocaleString()} of ${p.n.toLocaleString()}`}</b><span class="bnp-wt-pickname">${esc(p.name)}</span><span class="bnp-wt-pickgo"><button type="button" class="bnp-wt-pb" data-wt="pickstop">Stop</button></span></div>
       <div class="bnp-wt-track"><i style="width:${Math.max(4, Math.round(100 * p.i / Math.max(1, p.n)))}%"></i></div>
       <p class="bnp-wt-picknote">Each one searched for in your SDB’s own list and selected there, a moment between; nothing is moved.</p>`;
     let out = '';
@@ -33136,7 +33235,8 @@
           wtPillPaint();
           wtWinPaint();
           if (p >= r.pages || !r.items.length) break;
-          await bmSleep(3000 + Math.random() * 2000);
+          if (me.read >= (me.restAt || (me.restAt = runRestEvery()))) { if (!(await runRest(me, () => { wtPillPaint(); wtWinPaint(); }))) throw new Error('stopped'); me.restAt = me.read + runRestEvery(); }   // (a longer break now and then, as a person takes one on a long count)
+          else await bmSleep(3000 + Math.random() * 2000);
         }
         if (pool === 'np' && POOLS.includes('nc')) await bmSleep(3000 + Math.random() * 2000);   // (and between the NP items and the NC ones)
       }
@@ -33296,7 +33396,8 @@
         set.delete(name);
         me.i++;
         wtPickPaint();
-        if (me.i < names.length && !me.stop) await bmSleep(2600 + Math.random() * 1600);
+        if (me.i < names.length && !me.stop && me.i >= (me.restAt || (me.restAt = runRestEvery()))) { if (!(await runRest(me, wtPickPaint))) break; me.restAt = me.i + runRestEvery(); }   // (a longer break now and then, as a person takes one)
+        else if (me.i < names.length && !me.stop) await bmSleep(2600 + Math.random() * 1600);
       }
     } catch (e) {
       const slow = !!(e && e.message === 'slow');
@@ -33319,9 +33420,11 @@
   // SDB: books read to a pet, several at once (the user, 2 November 2026: "ability to select multiple books at once and read to pet from
   // sdb, even multiple pages"). Neopets' own SDB reads one at a time: its pet actions are offered only with one item selected, though its
   // selection keeps what's chosen on every page. NE's Read to a pet: in its drawer while books are selected, and in its header for every
-  // book in it. A pet chosen, its Books Read pages read afresh and the books it has read left out; the rest read one at a time through
-  // the SDB's own Read to (its own request, one of each), a person's pause between, only while this tab's in front. An Archive book asks
-  // first, as Neopets' own does. A PIN your SDB asks for is used for this run only, never kept
+  // book in it. A pet chosen, the books it has read left out: from what NE keeps of its lists (your last visit to its Books Read page, and
+  // NE's own reading since), else that page opened unseen as a visit opens it. The rest read one at a time through the SDB's own Read to
+  // (its own request, one of each), going through its own list on Books as you would, a person's pause between and a longer break now and
+  // then; your list put back after (the user, 3 November 2026, after a read by hand was watched beside NE's: "make it look as normal as
+  // possible"). Archive books are never read. A PIN your SDB asks for is used for this run only, never kept
   // ═══════════════════════════════════════════════════════════════════════════
   const SDR_PET = 'bnp-sdr-pet';   // (the pet chosen last time, on this browser)
   const ARCH_KEY = 'bnp-archive-books', ARCH_WHY = 'An Archive book: it goes in your Archive Bookshelf, it isn’t read';   // (books Neopets has said are Archive books, by name: for the Archive Bookshelf's collection, never read (the user, 2026-11-02))
@@ -33441,11 +33544,20 @@
     c.className = `bnp-runchip ${o.busy ? 'is-busy' : 'is-done'}`;
     c.innerHTML = `<button type="button" class="bnp-runchip-go" data-runchip="go" title="${esc(o.tip || 'Open it')}"><span class="bnp-runchip-ic">${o.busy ? o.icon || '' : '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.5l3.6 3.6 7.4-8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'}</span><span class="bnp-runchip-tx"><b>${esc(o.title)}</b><small>${esc(o.text)}</small></span></button>${o.busy ? '' : '<button type="button" class="bnp-runchip-x" data-runchip="x" title="Dismiss" aria-label="Dismiss">×</button>'}<span class="bnp-runchip-track" aria-hidden="true"><i style="width:${pct}%"></i></span>`;
   }
+  const runRestEvery = () => 20 + Math.floor(Math.random() * 16);   // (a long run's longer break: after every 20 to 35, as a person takes one)
+  async function runRest(run, paint) {   // (half a minute to a minute and a half, shown with when it carries on; Stop ends it)
+    run.restUntil = Date.now() + 30000 + Math.random() * 60000;
+    paint();
+    while (Date.now() < run.restUntil && !run.stop) await bmSleep(Math.max(50, Math.min(1000, run.restUntil - Date.now())));
+    run.restUntil = 0;
+    paint();
+    return !run.stop;
+  }
   function sdrChip() {   // (Read to a pet at work, or just done, while its window is closed)
     if (!sdr) return;
     const run = sdr.run, busy = !!(run && !run.over);
     if (sdr.win.classList.contains('open') || !run || (!busy && !sdr.unseen)) { runChip('sdrchip', null); return; }
-    const n = run.read || 0, text = busy ? `Reading ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()} to ${sdr.pet}${run.at && run.at.st === 'now' ? `: ${run.at.name}` : ''}` : n ? `Done: ${n.toLocaleString()} ${n === 1 ? 'book' : 'books'} read to ${sdr.pet}` : `Done: nothing read to ${sdr.pet}`;
+    const n = run.read || 0, text = busy ? (run.restUntil ? `A short break, till about ${bmAt(run.restUntil)}` : `Reading ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()} to ${sdr.pet}${run.at && run.at.st === 'now' ? `: ${run.at.name}` : ''}`) : n ? `Done: ${n.toLocaleString()} ${n === 1 ? 'book' : 'books'} read to ${sdr.pet}` : `Done: nothing read to ${sdr.pet}`;
     runChip('sdrchip', { win: sdr.win, icon: COL_IC.books, title: 'Read to a pet', text, busy, pct: busy ? 100 * run.i / Math.max(1, run.n) : 100, tip: 'Open Read to a pet', open: sdrShow, dismiss: () => { sdr.unseen = false; sdrChip(); } });
   }
   function sdrOpen(src) {
@@ -33492,48 +33604,94 @@
   }
   function sdrClose() {
     if (!sdr || !sdr.win.classList.contains('open')) return;
-    if (!(sdr.run && !sdr.run.over)) { if (sdr.scan) sdr.scan.stop = true; sdr.pin = ''; const pf = sdr.win.querySelector('[data-sdrpin]'); if (pf) pf.value = ''; }   // (reading carries on, shown on the page, with its PIN for this run; anything else let go. Stop stops it)
+    if (!(sdr.run && !sdr.run.over)) { if (sdr.scan) sdr.scan.stop = true; sdr.pin = ''; const pf = sdr.win.querySelector('[data-sdrpin]'); if (pf) pf.value = ''; sdrViewBack(); }   // (reading carries on, shown on the page, with its PIN for this run; anything else let go, its own list as you had it. Stop stops it)
     sdr.win.classList.remove('open');
     sdr.veil.classList.remove('open');
     sdrChip();
     const b = $('[data-bnp="sdrbtn"]') || $('[data-bnp="sdrpill"]');
     if (b) b.focus({ preventScroll: true });
   }
-  async function sdrHad(pet) {   // (what a pet has read, from its own Books Read pages (both tabs), afresh once in ten minutes: Neopets' ids for them, else their pictures)
+  const SDR_FRESH = 60 * 60000;   // (a pet's lists as NE keeps them, from your last visit to its Books Read page and NE's own reading since: trusted for an hour, then its page opened again)
+  async function sdrHad(pet) {   // (what a pet has read: its lists as kept, else its Books Read page and Booktastic tab opened as a visit opens them. Neopets' ids for them where every one has its id, else their pictures)
     const k = pet.toLowerCase(), c = sdrHadKept.get(k);
     if (c && Date.now() - c.t < 10 * 60000) return c;
-    const out = { ids: new Set(), keys: new Set(), n: 0, bt: 0, t: Date.now() };
-    for (const kind of ['books', 'bt']) {
-      if (kind === 'bt') await wtSleep(900 + Math.random() * 900);   // (its second tab, as you'd go on to it)
-      const r = await fetch(colHref(kind, pet), { credentials: 'include' });
-      if (!r.ok) throw new Error('lists');
-      const doc = new DOMParser().parseFromString(await r.text(), 'text/html'), cfg = pageJson(doc, '__booksReadConfig'), d = colParse(kind, doc);
-      if (!d) throw new Error('lists');
-      if (d.notYours) throw new Error('mine');
-      for (const b of cfg && Array.isArray(cfg.books) ? cfg.books : []) if (b && b.objInfoId != null) out.ids.add(String(b.objInfoId));
-      for (const it of d.items) out.keys.add(colImgKey(it[0]));
-      out[kind === 'bt' ? 'bt' : 'n'] = Number(d.n) || 0;
-      colPetSet(kind, pet, colSlim(colOrderFix(d, null)));   // (kept for its Books Read page and the marks, as a visit there keeps it)
+    const out = { ids: new Set(), keys: new Set(), n: 0, bt: 0, t: Date.now() }, lists = {};
+    for (const kind of ['books', 'bt']) { const d = await colPetGet(kind, pet); if (d && Array.isArray(d.items) && Date.now() - (Number(d.t) || 0) < SDR_FRESH) lists[kind] = d; }
+    const need = ['books', 'bt'].filter((kind) => !lists[kind]);
+    if (need.length) {
+      const pages = await colVisit(need, pet).catch(() => null);
+      if (!pages) throw new Error('lists');
+      for (const kind of need) {
+        const d = colParse(kind, new DOMParser().parseFromString(pages[kind] || '', 'text/html'));
+        if (!d) throw new Error('lists');
+        if (d.notYours) throw new Error('mine');
+        lists[kind] = colSlim(colOrderFix(d, null));
+        colPetSet(kind, pet, lists[kind]);   // (kept for its Books Read page and the marks, as a visit there keeps it)
+      }
     }
+    let every = true;
+    for (const kind of ['books', 'bt']) {
+      for (const it of lists[kind].items) { out.keys.add(colImgKey(it[0])); if (it[3]) out.ids.add(String(it[3])); else every = false; }
+      out[kind === 'bt' ? 'bt' : 'n'] = Number(lists[kind].n) || 0;
+    }
+    if (!every) out.ids.clear();   // (ids for some and not the rest: all of them by their pictures)
     sdrHadKept.set(k, out);
     return out;
   }
   const sdrRead1 = (h, it) => (h.ids.size ? h.ids.has(String(it.obj_info_id)) : h.keys.has(colImgKey(it.obj_filename)));   // (read already: by Neopets' own id for it where the page gives them)
-  async function sdrScan(me) {   // (every book in your SDB: its Books, every page, asked for as its own list asks, a moment between pages)
-    const ck = (PAGE.__sdbData && PAGE.__sdbData.refCk) || '', out = [];
-    if (!ck) throw new Error('page');
-    for (let p = 1, pages = 1; p <= pages && p <= 30; p++) {
-      if (p > 1) await bmSleep(1800 + Math.random() * 1600);
-      while (document.hidden && !bmP().bg && !me.stop) await bmSleep(500);
+  async function sdrBooksView(st) {   // (its own list on Books, from its first page, as you'd choose it there: your page size and order as they are. How you had it is kept, to put back after)
+    if (sdr.backing) await sdr.backing;
+    if (!sdr.view0) sdr.view0 = { cat: String(st.selectedCategory == null ? '' : st.selectedCategory), page: Number(st.currentPage) || 1, search: String(st.searchQuery || ''), pool: st.viewFilter };
+    if (st.viewFilter === 'nc' && typeof st.setViewFilter === 'function') { st.setViewFilter('np'); if (!(await sdbIdle(st))) return false; }   // (books are on its NP side)
+    let ask = String(st.selectedCategory) !== SDR_BOOKS || (Number(st.currentPage) || 1) !== 1;
+    if (String(st.searchQuery || '').trim() && st.searchScope !== 'page') { st.searchQuery = ''; ask = true; }   // (a search through your whole SDB would leave books out: its box emptied, as you'd empty it)
+    if (!ask) return sdbIdle(st);   // (there already)
+    st.selectedCategory = SDR_BOOKS;
+    if (typeof st.onFilterChange === 'function') st.onFilterChange(); else st.onSearch();   // (what its own Category box does, in either version of the page)
+    return sdbIdle(st);
+  }
+  function sdrViewBack() {   // (its own list as you had it before NE put it on Books: your category, search and page, as you'd go back to them)
+    const v = sdr && sdr.view0;
+    if (!v || sdr.backing) return sdr && sdr.backing;
+    return (sdr.backing = (async () => {
+      const st = sdbVm();
+      try {
+        if (!st) return;
+        await sdbIdle(st);   // (a page of books still coming: after it)
+        if (v.pool !== st.viewFilter && typeof st.setViewFilter === 'function') { st.setViewFilter(v.pool); await sdbIdle(st); }
+        if (String(st.selectedCategory == null ? '' : st.selectedCategory) !== v.cat || String(st.searchQuery || '') !== v.search) {
+          st.selectedCategory = v.cat;
+          st.searchQuery = v.search;
+          if (typeof st.onFilterChange === 'function') st.onFilterChange(); else st.onSearch();
+          await sdbIdle(st);
+        }
+        if (v.page > 1 && (Number(st.currentPage) || 1) !== v.page) { await bmSleep(800 + Math.random() * 900); st.onPageChange(Math.min(v.page, Number(st.totalPages) || 1)); await sdbIdle(st); }
+      } catch (e) { report(e); } finally { sdr.view0 = null; sdr.backing = null; }
+    })());
+  }
+  async function sdrScan(me) {   // (every book in your SDB: its own list put on Books, as you'd choose it there, and looked through a page at a time at your page size, a moment between. Where each one was, to go to its page when it's read)
+    const st = sdbVm();
+    if (!st || !(PAGE.__sdbData && PAGE.__sdbData.refCk)) throw new Error('page');
+    while (document.hidden && !bmP().bg && !me.stop) await bmSleep(500);
+    if (me.stop) return null;
+    if (!(await sdrBooksView(st))) throw new Error('sdb');
+    const out = [];
+    me.pos = new Map();
+    for (let p = 1; ; p++) {
+      if (p > 1) {
+        await bmSleep(1800 + Math.random() * 1600);
+        while (document.hidden && !bmP().bg && !me.stop) await bmSleep(500);
+        if (me.stop) return null;
+        st.onPageChange(p);
+        if (!(await sdbIdle(st))) throw new Error('sdb');
+      }
       if (me.stop) return null;
+      const per = Number(st.perPage) || 30;
       me.page = p;
+      me.pages = Number(st.totalPages) || 1;
       sdrPaint();
-      const r = await fetch('/np-templates/ajax/safetydeposit/get-items.php', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'XMLHttpRequest' }, body: JSON.stringify({ page: p, per_page: 150, search: '', category: SDR_BOOKS, sort: 'name_asc', rarity_min: null, rarity_max: null, view_filter: 'np', _ref_ck: ck }) });
-      const d = await r.json().catch(() => null);
-      if (!d || !d.success || !d.data) throw new Error('sdb');
-      pages = Number(d.data.pagination && d.data.pagination.total_pages) || 1;
-      me.pages = pages;
-      for (const it of Array.isArray(d.data.items) ? d.data.items : []) if (it && it.can_read && !it.is_nc) out.push(it);
+      [...(st.items || [])].forEach((it, i) => { if (!it) return; me.pos.set(String(it.obj_info_id), (p - 1) * per + i); if (it.can_read && !it.is_nc) out.push(it); });
+      if (p >= me.pages || p >= 60) break;
     }
     return out;
   }
@@ -33541,7 +33699,7 @@
     if (!sdr || !sdr.pet || (sdr.run && !sdr.run.over)) return;
     const pet = sdr.pet, src = sdr.src, me = { stop: false, page: 0, pages: 0 };
     if (sdr.scan) sdr.scan.stop = true;
-    Object.assign(sdr, { state: 'check', books: [], had: null, err: '', scan: me, run: null });
+    Object.assign(sdr, { state: 'check', books: [], had: null, err: '', errLists: false, scan: me, run: null });
     sdrPaint();
     try {
       const had = await sdrHad(pet);
@@ -33550,16 +33708,17 @@
       sdrPaint();
       const list = src === 'all' ? await sdrScan(me) : sdrPicked();
       if (!list || me.stop || sdr.pet !== pet || sdr.src !== src) return;
-      const seen = new Set();
+      const seen = new Set(), pos = src === 'all' ? me.pos : null;   // (where each was in its Books list, when NE looked through it)
       sdr.books = list.filter((it) => { const k = String(it.obj_info_id); if (seen.has(k)) return false; seen.add(k); return true; })
-        .map((it) => { const arch = archIs(it.obj_name), done = arch || sdrRead1(had, it); return { it, id: String(it.obj_info_id), name: reClean(it.obj_name || ''), done, arch, on: !done, st: '', why: '', p: 0 }; });
+        .map((it) => { const id = String(it.obj_info_id), arch = archIs(it.obj_name), done = arch || sdrRead1(had, it); return { it, id, name: reClean(it.obj_name || ''), done, arch, on: !done, st: '', why: '', p: 0, at: pos && pos.has(id) ? pos.get(id) : null }; });
       await sdrPrices().catch(() => {});
       if (me.stop || sdr.pet !== pet || sdr.src !== src) return;   // (left meanwhile: another check has the window)
       sdr.state = 'ready';
     } catch (e) {
       if (me.stop || sdr.pet !== pet) return;
       const m = e && e.message;
-      sdr.err = m === 'mine' ? `Neopets says ${pet} isn’t yours.` : m === 'page' ? 'Your SDB’s page didn’t load all the way: reload it, then try again.' : m === 'sdb' ? 'Your SDB didn’t answer just now: try again in a moment.' : `${pet}’s Books Read pages didn’t load just now: try again in a moment.`;
+      sdr.err = m === 'mine' ? `Neopets says ${pet} isn’t yours.` : m === 'page' ? 'Your SDB’s page didn’t load all the way: reload it, then try again.' : m === 'sdb' ? 'Your SDB didn’t answer just now: try again in a moment.' : `${pet}’s Books Read page didn’t open just now. Try again in a moment, or open it yourself once: NE goes by what it shows for an hour.`;
+      sdr.errLists = !['mine', 'page', 'sdb'].includes(m);
       sdr.state = 'pick';
       if (!['mine', 'page', 'sdb', 'lists'].includes(m)) report(e);
     } finally { if (sdr.scan === me) sdr.scan = null; }
@@ -33577,56 +33736,97 @@
     } catch (_) { return { net: true }; }
     if (!d) return { net: true };
     if (d.needs_confirm) return { confirm: true, words: sdrWords(d.message_html || d.message || '') };
-    if (d.success) return { ok: true };
+    if (d.success) return { ok: true, html: String(d.message_html || ''), text: String(d.message || '') };   // (with what Neopets says, as its own pop-up shows it)
     if (d.error === 'pin_required' || d.error === 'pin_wrong') return { pin: true, why: reClean(String(d.message || '')) || (d.error === 'pin_wrong' ? 'That PIN doesn’t match.' : 'Your SDB asks for your PIN.') };
     return { why: sdrWords(d.message || d.error || '') || 'Neopets didn’t read it.' };
   }
   const sdrWords = (h) => { const t = document.createElement('template'); t.innerHTML = String(h || ''); return reClean(t.content.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 300); };   // (Neopets' words, as text)
-  async function sdrRun() {
+  const sdrWait = async (run, a, b, c = 0, d = 0, e = 0) => {   // (a person's moment, uneven, now and then longer; Stop ends it at once)
+    const until = Date.now() + a + Math.random() * b + (Math.random() < c ? d + Math.random() * e : 0);
+    while (Date.now() < until && !run.stop) await bmSleep(Math.max(20, Math.min(500, until - Date.now())));
+    return !run.stop;
+  };
+  function sdrResult(a) {   // (what Neopets says for a book read, as its own pop-up shows it: its words, and its picture of the pet with the book, which comes as it comes there, NE's window open or not)
+    const t = document.createElement('template');
+    t.innerHTML = String(a.html || '');
+    const pics = [...t.content.querySelectorAll('img[src]')].map((i) => fullUrl(i.getAttribute('src') || '')).filter((u) => /^https:\/\/(?:images|pets)\.neopets\.com\//.test(u)).slice(0, 2);
+    for (const u of pics) { const i = new Image(); i.src = u; }
+    return { pics, words: (reClean(t.content.textContent || '').replace(/\s+/g, ' ').trim() || reClean(String(a.text || ''))).slice(0, 300) };
+  }
+  const sdrResHtml = (run) => { const b = run && run.last, r = b && b.res; return r && (r.words || r.pics.length) ? `<div class="bnp-sdr-res" role="status">${r.pics[0] ? `<img src="${esc(r.pics[0])}" alt="" width="64" height="64">` : ''}<span><b>${esc(b.name)}</b><small>${esc(r.words)}</small></span></div>` : ''; };   // (the last one read: what Neopets said)
+  async function sdrRun() {   // (through its own list on Books from its first page, as you'd go through it: each one ticked there read where it is, a page on when none's left on it, straight to the page the next is on)
     if (!sdr || sdr.state !== 'ready' || (sdr.run && !sdr.run.over)) return;
     const list = sdrSorted().filter((b) => b.on), pet = sdr.pet, st = sdbVm();
     if (!list.length) return;
+    if (!st) { sdr.err = 'NE couldn’t reach your SDB’s list: reload the page, then try again.'; sdrPaint(); return; }
     if (sdrPinAsked() && !sdr.pin) { sdr.err = 'Your SDB asks for your PIN first.'; sdrPaint(); const p = sdr.win.querySelector('[data-sdrpin]'); if (p) p.focus(); return; }
     try { localStorage.setItem(SDR_PET, pet); } catch (_) { /* */ }
-    const run = sdr.run = { kind: sdrKindOf(), n: list.length, i: 0, read: 0, stop: false, over: false, at: null, fails: 0, pinStop: '' };
-    const go = new Set(list);
-    for (const b of sdr.books) { b.st = go.has(b) ? 'wait' : ''; b.why = ''; }   // (only the ones shown: a kind hidden isn't read)
+    const run = sdr.run = { kind: sdrKindOf(), n: list.length, i: 0, read: 0, stop: false, over: false, at: null, fails: 0, pinStop: '', halt: '', restUntil: 0, last: null };
+    const want = new Map(list.map((b) => [b.id, b])), gone = [], done = [];   // (gone: where the books read away were in the list, the last of their pile; done: the ones read)
+    for (const b of sdr.books) { b.st = want.get(b.id) === b ? 'wait' : ''; b.why = ''; b.res = null; }   // (only the ones shown: a kind hidden isn't read)
     sdr.err = '';
     sdr.state = 'run';
-    try { if (st) for (const b of list) if (!st.isSelected(b.it)) st.toggleSelection(b.it); } catch (_) { /* */ }   // (all of them selected in its own list while they wait, as you'd select them: what NE keeps of your SDB knows their names; each one read leaves the selection)
+    try { for (const b of list) if (!st.isSelected(b.it)) st.toggleSelection(b.it); } catch (_) { /* */ }   // (all of them selected in its own list while they wait, as you'd select them: what NE keeps of your SDB knows their names; each one read leaves the selection)
     sdrPaint();
-    for (const b of list) {
+    const per = () => Number(st.perPage) || 30, waiting = () => list.filter((b) => b.st === 'wait');
+    const pageOf = (b) => (b.at == null ? 0 : Math.floor((b.at - gone.filter((x) => x < b.at).length) / per()) + 1);   // (the page it's on now: where it was when looked through, less the books read away before it)
+    let restAt = runRestEvery(), wrapped = false, found = false;
+    if (!(await sdrBooksView(st))) run.halt = 'your SDB’s list didn’t load just now';
+    while (!run.halt && !run.stop) {
       while (document.hidden && !bmP().bg && !run.stop) await bmSleep(500);   // (in a background tab only if you've turned that off)
       if (run.stop) break;
+      if (String(st.selectedCategory) !== SDR_BOOKS) { run.moved = true; break; }   // (you've put its list on something else meanwhile: it's yours)
+      const b = [...(st.items || [])].map((it) => it && want.get(String(it.obj_info_id))).find((x) => x && x.st === 'wait');
+      if (!b) {   // (none left on this page: the page the next is on, as you'd click it)
+        const left = waiting();
+        if (!left.length) break;
+        const cur = Number(st.currentPage) || 1, pages = Number(st.totalPages) || 1, ahead = left.map(pageOf).filter((p) => p > cur);
+        let to = cur < pages ? Math.min(pages, ahead.length ? Math.min(...ahead) : cur + 1) : 0;
+        if (!to && !wrapped && cur > 1) { wrapped = true; to = 1; }   // (once more from its first page: one may have moved up while NE was further on)
+        if (!to) break;   // (the rest aren't in it any more)
+        if (!(await sdrWait(run, 1200, 1800))) break;
+        st.onPageChange(to);
+        if (!(await sdbIdle(st))) { run.halt = 'your SDB’s list didn’t load just now'; break; }
+        found = false;
+        continue;
+      }
+      if (!found) { found = true; if (!(await sdrWait(run, 800, 1400))) break; }   // (a page just come: a moment to find it there)
       run.at = b;
       b.st = 'now';
       sdrPaint();
       const pinNow = await sdrPinStatus();   // (as its own confirm asks on opening)
       if (pinNow && !sdr.pin) { b.st = 'wait'; run.pinStop = 'your SDB asks for your PIN now: Look again, type it, then Read'; break; }
-      await bmSleep(1200 + Math.random() * 1600);   // (the moment its confirm is read, and Confirm pressed)
-      if (run.stop) { b.st = 'wait'; break; }
+      if (!(await sdrWait(run, 1200, 1600))) { b.st = 'wait'; break; }   // (the moment its confirm is read, and Confirm pressed)
       let a = await sdrReadOne(b.it, pet, sdr.pin, false);
       if (a.confirm) { archAdd(b.name); b.arch = true; a = { kept: true }; }   // (an Archive book, Neopets says: for the Archive Bookshelf, never read; left, and remembered)
-      if (a.ok) { b.st = 'read'; b.why = ''; run.read++; run.fails = 0; try { if (st) { const y = window.scrollY, hid = !sdr.win.classList.contains('open'); st.onPageChange(Number(st.currentPage) || 1); await sdbIdle(st); if (hid && y) window.scrollTo({ top: y, behavior: 'instant' }); } } catch (e) { report(e); } }   // (its own list asked for again, as after its own Read to; with the window closed, your place on the page kept)   // (its own list asked for again, as after its own Read to)
+      if (a.ok) {
+        b.st = 'read'; b.why = ''; run.read++; run.fails = 0; b.res = sdrResult(a); run.last = b; done.push(b);
+        if ((Number(b.it.amount) || 1) <= 1 && b.at != null) gone.push(b.at);   // (the last of its pile: out of the list, the ones after it a place up)
+      }
       else if (a.kept) { b.st = 'kept'; b.why = ARCH_WHY; }
       else if (a.pin) { b.st = 'wait'; b.why = ''; run.pinStop = a.why; sdr.pin = ''; break; }
       else if (a.net) { b.st = 'no'; b.why = 'Neopets didn’t answer just now.'; if (++run.fails >= 2) { run.stop = true; run.netStop = true; } }
       else { b.st = 'no'; b.why = a.why; run.fails = 0; }
-      if (b.st === 'read' || b.st === 'kept') { try { if (st && st.isSelected(b.it)) st.toggleSelection(b.it); } catch (_) { /* */ } }   // (done with: out of the selection; the rest stay selected)
+      if (b.st === 'read' || b.st === 'kept') { try { if (st.isSelected(b.it)) st.toggleSelection(b.it); } catch (_) { /* */ } }   // (done with: out of the selection; the rest stay selected)
       run.i++;
       sdrPaint();
-      if (run.i < list.length && !run.stop) await bmSleep(2500 + Math.random() * 3500 + (Math.random() < 0.15 ? 3000 + Math.random() * 6000 : 0));   // (a person's pause before the next: mostly a few seconds, now and then longer)
+      if (a.ok) { try { const y = window.scrollY, hid = !sdr.win.classList.contains('open'); st.onPageChange(Number(st.currentPage) || 1); if (!(await sdbIdle(st))) run.halt = 'your SDB’s list didn’t load just now'; else if (hid && y) window.scrollTo({ top: y, behavior: 'instant' }); } catch (e) { report(e); } }   // (its own list asked for again, as after its own Read to; with the window closed, your place on the page kept)
+      if (run.stop || run.halt || !waiting().length) break;
+      if (run.i >= restAt) { if (!(await runRest(run, sdrPaint))) break; restAt = run.i + runRestEvery(); }   // (a longer break now and then, as a person takes one on a long list)
+      else if (!(await sdrWait(run, 3500, 4500, 0.15, 3000, 6000))) break;   // (a person's pause before the next: what Neopets said read, OK pressed, the next one found)
     }
     run.over = true;
     run.at = null;
     sdr.state = 'done';
-    if (!sdr.win.classList.contains('open')) { sdr.unseen = true; sdr.pin = ''; const pf = sdr.win.querySelector('[data-sdrpin]'); if (pf) pf.value = ''; }   // (done while its window was closed: said on the page; the PIN let go)
     for (const b of sdr.books) if (b.st === 'now') b.st = 'wait';
+    if (!run.stop && !run.pinStop && !run.halt && !run.moved) for (const b of waiting()) { b.st = 'no'; b.why = 'Not in your SDB’s list any more'; }   // (gone from it meanwhile: from another tab, say)
+    if (!sdr.win.classList.contains('open')) { sdr.unseen = true; sdr.pin = ''; const pf = sdr.win.querySelector('[data-sdrpin]'); if (pf) pf.value = ''; }   // (done while its window was closed: said on the page; the PIN let go)
     if (sdr.had && run.read) { for (const b of sdr.books) if (b.st === 'read') { sdr.had.ids.add(b.id); sdr.had.keys.add(colImgKey(b.it.obj_filename)); if (sdrBt(b)) sdr.had.bt++; else sdr.had.n++; } }   // (what it's read now, without asking again)
     sdrPaint();
-    if (run.read) {
-      document.dispatchEvent(new CustomEvent('bnp-col-read', { detail: JSON.stringify({ pet }) }));   // (its kept lists and the marks: read again)
-    }
+    if (done.length) await colPetAdd(pet, done.map((b) => ({ kind: sdrBt(b) ? 'bt' : 'books', img: `${b.it.obj_filename}.gif`, name: b.name, id: b.id }))).catch(report);   // (what's kept of its lists brought up to date: its Books Read page isn't opened again for them)
+    if (run.read) document.dispatchEvent(new CustomEvent('bnp-col-read', { detail: JSON.stringify({ pet, local: true }) }));   // (the marks: drawn again from what's kept)
+    if (run.moved) sdr.view0 = null;   // (you've put its list where you want it)
+    else if (sdr.view0) { await sdrWait({ stop: false }, 1800, 2400); if (sdr.state === 'done' && !sdrRunning()) await sdrViewBack(); }   // (a moment after, its list as you had it; not if you've started another look meanwhile)
   }
   function sdrClick(e) {
     const el = e.target instanceof Element ? e.target : null;
@@ -33677,7 +33877,7 @@
     const src = (picked && !busy) || sdr.src === 'sel' ? `<div class="bnp-sdr-src" role="group" aria-label="Which books"><button type="button" data-sdrsrc="sel" aria-pressed="${sdr.src === 'sel'}"${busy || !picked ? ' disabled' : ''}>Selected in your SDB${picked ? ` (${picked.toLocaleString()})` : ''}</button><button type="button" data-sdrsrc="all" aria-pressed="${sdr.src === 'all'}"${busy ? ' disabled' : ''}>Every book in your SDB</button></div>` : '';   // (only when books are selected in its own list: otherwise every book, ticked here)
     let main = '';
     if (!sdr.pet) main = `<p class="bnp-sdr-note">Choose a pet: NE looks at what it has read and leaves those books out.</p>${sdr.err ? `<p class="bnp-sdr-note is-err">${esc(sdr.err)}</p>` : ''}`;
-    else if (sdr.state === 'pick') main = `${sdr.err ? `<p class="bnp-sdr-note is-err">${esc(sdr.err)}</p>` : ''}<p class="bnp-sdr-note"><button type="button" class="bnp-sdr-lb" data-sdr="again">Try again</button></p>`;
+    else if (sdr.state === 'pick') main = `${sdr.err ? `<p class="bnp-sdr-note is-err">${esc(sdr.err)}</p>` : ''}<p class="bnp-sdr-note"><button type="button" class="bnp-sdr-lb" data-sdr="again">Try again</button>${sdr.errLists && sdr.pet ? ` <a class="bnp-sdr-go" href="${esc(colHref('books', sdr.pet))}" target="_blank" rel="noopener">${COL_IC.books}${esc(sdr.pet)}’s Books Read</a>` : ''}</p>`;   // (its page opened by you, in a tab of its own: what it shows kept for an hour)
     else if (sdr.state === 'check') { const sc = sdr.scan; main = `<p class="bnp-sdr-wait"><i class="bnp-sdr-spin" aria-hidden="true"></i>${!sdr.had ? `Looking at what ${esc(sdr.pet)} has read…` : sdr.src === 'all' ? `Looking through your SDB’s books${sc && sc.pages > 1 ? ` (page ${sc.page} of ${sc.pages})` : ''}…` : 'Looking at the books you’ve selected…'}</p>`; }
     else {
       const shown = sdrSorted(), todo = shown.filter((b) => !b.done), done = shown.filter((b) => b.done), can = sdr.state === 'ready', on = shown.filter((b) => b.on).length, h = sdr.had, by = sdrSortOf(), k = sdrKindOf(), noun = (n) => `${k === 'bt' ? 'Booktastic ' : ''}${n === 1 ? 'book' : 'books'}`;
@@ -33689,12 +33889,12 @@
       if (run) {
         const left = sdr.books.filter((b) => b.st === 'wait').length, nos = sdr.books.filter((b) => b.st === 'no').length, kept = sdr.books.filter((b) => b.st === 'kept').length;
         head = run.over
-          ? `<div class="bnp-sdr-sum is-done"><b>${run.read ? `${run.read.toLocaleString()} ${run.kind === 'bt' ? 'Booktastic ' : ''}${run.read === 1 ? 'book' : 'books'} read to ${esc(sdr.pet)}` : `Nothing read to ${esc(sdr.pet)}`}</b>${nos ? `<span>${nos.toLocaleString()} not read: Neopets’ reason is beside ${nos === 1 ? 'it' : 'each'}</span>` : ''}${kept ? `<span>${kept.toLocaleString()} Archive ${kept === 1 ? 'book isn’t' : 'books aren’t'} read: ${kept === 1 ? 'it goes' : 'they go'} in your Archive Bookshelf</span>` : ''}${left ? `<span>${run.pinStop ? `Stopped: ${esc(run.pinStop)}` : run.netStop ? 'Stopped: Neopets didn’t answer twice in a row' : 'Stopped'}. ${left.toLocaleString()} still to read ${left === 1 ? 'is' : 'are'} still selected</span>` : ''}</div>`
-          : `<div class="bnp-sdr-sum"><b>Reading ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()} to ${esc(sdr.pet)}</b><span>${run.at && run.at.st === 'now' ? esc(run.at.name) : ''}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
+          ? `<div class="bnp-sdr-sum is-done"><b>${run.read ? `${run.read.toLocaleString()} ${run.kind === 'bt' ? 'Booktastic ' : ''}${run.read === 1 ? 'book' : 'books'} read to ${esc(sdr.pet)}` : `Nothing read to ${esc(sdr.pet)}`}</b>${nos ? `<span>${nos.toLocaleString()} not read: Neopets’ reason is beside ${nos === 1 ? 'it' : 'each'}</span>` : ''}${kept ? `<span>${kept.toLocaleString()} Archive ${kept === 1 ? 'book isn’t' : 'books aren’t'} read: ${kept === 1 ? 'it goes' : 'they go'} in your Archive Bookshelf</span>` : ''}${left ? `<span>${run.pinStop ? `Stopped: ${esc(run.pinStop)}` : run.halt ? `Stopped: ${esc(run.halt)}` : run.netStop ? 'Stopped: Neopets didn’t answer twice in a row' : run.moved ? 'Stopped: your SDB’s list was put on something else' : 'Stopped'}. ${left.toLocaleString()} still to read ${left === 1 ? 'is' : 'are'} still selected</span>` : ''}</div>`
+          : `<div class="bnp-sdr-sum"><b>${run.restUntil ? 'A short break' : `Reading ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()} to ${esc(sdr.pet)}`}</b><span>${run.restUntil ? `as you’d take one: carrying on at about ${esc(bmAt(run.restUntil))}` : run.at && run.at.st === 'now' ? esc(run.at.name) : ''}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
       } else head = todo.length ? `<div class="bnp-sdr-sum"><b>${todo.length.toLocaleString()} ${noun(todo.length)} ${esc(sdr.pet)} hasn’t read</b>${done.filter((b) => !b.arch).length ? `<span>${done.filter((b) => !b.arch).length.toLocaleString()} it has read already ${done.filter((b) => !b.arch).length === 1 ? 'is' : 'are'} left out</span>` : ''}${done.some((b) => b.arch) ? `<span>${done.filter((b) => b.arch).length.toLocaleString()} Archive ${done.filter((b) => b.arch).length === 1 ? 'book isn’t' : 'books aren’t'} read</span>` : ''}${todo.length > 1 ? `<span class="bnp-sdr-tick"><label class="bnp-sdr-sortby"><span>Sort</span><select data-sdrsort aria-label="Sort the books">${[['cheap', 'Cheapest first'], ['dear', 'Priciest first'], ['name', 'A to Z']].map(([v, l]) => `<option value="${v}"${by === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label><button type="button" class="bnp-sdr-lb" data-sdr="all">All</button><button type="button" class="bnp-sdr-lb" data-sdr="none">None</button><span class="bnp-upto" title="Ticks the ones itemdb prices at or under this, and unticks the rest"><label><span>Up to</span><input type="text" inputmode="numeric" autocomplete="off" data-sdrupto value="${esc(((sdr.win.querySelector('[data-sdrupto]') || {}).value) || ((() => { try { return Number(localStorage.getItem('bnp-sdr-upto')) || 0; } catch (_) { return 0; } })() || 5000).toLocaleString())}" aria-label="Tick the ones up to this many Neopoints">NP</label><button type="button" class="bnp-sdr-lb" data-sdr="upto">Tick</button></span></span>` : ''}</div>`
         : `<div class="bnp-sdr-sum is-done"><b>${shown.length ? (shown.some((b) => !b.arch) ? `${esc(sdr.pet)} has read ${shown.filter((b) => !b.arch).length === 1 ? 'it' : `all ${shown.filter((b) => !b.arch).length.toLocaleString()}`} already` : 'Only Archive books here: they aren’t read') : sdr.books.length ? `No ${noun(2)} ${sdr.src === 'all' ? 'in your SDB' : 'selected'}` : sdr.src === 'all' ? 'No books in your SDB' : 'No books selected'}</b>${!shown.length && sdr.books.length ? `<span>Show ${k === 'bt' ? 'Books' : 'Booktastic'} or All for the others.</span>` : shown.length && sdr.src === 'sel' ? '<span>Choose another pet, or look through every book in your SDB.</span>' : ''}</div>`;
       const rows = `${todo.map((b) => sdrRowHtml(b, can)).join('')}${done.length ? `${todo.length ? `<p class="bnp-sdr-sep">Left out: ${done.some((b) => !b.arch) ? `the ones ${esc(sdr.pet)} has read${can ? ' (tick one to read it anyway)' : ''}` : ''}${done.some((b) => !b.arch) && done.some((b) => b.arch) ? ', and ' : ''}${done.some((b) => b.arch) ? 'Archive books, which aren’t read' : ''}</p>` : ''}${done.map((b) => sdrRowHtml(b, can)).join('')}` : ''}`;
-      main = `${count}${kinds}${head}${sdr.err ? `<p class="bnp-sdr-note is-err" role="alert">${esc(sdr.err)}</p>` : ''}${rows ? `<div class="bnp-sdr-list">${rows}</div>` : ''}`;
+      main = `${count}${kinds}${head}${sdrResHtml(run)}${sdr.err ? `<p class="bnp-sdr-note is-err" role="alert">${esc(sdr.err)}</p>` : ''}${rows ? `<div class="bnp-sdr-list">${rows}</div>` : ''}`;
       if (can && !on && todo.length) main += '<p class="bnp-sdr-note">Tick the books to read.</p>';
     }
     body.innerHTML = `<div class="bnp-sdr-pets" role="radiogroup" aria-label="Which pet">${chips}</div>${src}<div class="bnp-sdr-main">${main}</div>`;
@@ -33707,7 +33907,7 @@
     const had = foot.querySelector('[data-sdrpin]'), pv = had ? had.value : '';
     if (had) sdr.pin = pv;
     let h = '';
-    if (busy) h = `<span class="bnp-sdr-fnote">One at a time, a moment between${bmP().bg ? '' : ': it carries on while this tab is in front'}.</span><button type="button" class="button-default__2020 button-red__2020 bnp-sdr-btn" data-sdr="stop"${run.stop ? ' disabled' : ''}>${run.stop ? 'Stopping…' : 'Stop'}</button>`;
+    if (busy) h = `<span class="bnp-sdr-fnote">${run.restUntil ? `A short break: carrying on at about ${esc(bmAt(run.restUntil))}` : 'One at a time, a moment between, a break now and then'}${bmP().bg ? '' : ': it carries on while this tab is in front'}.</span><button type="button" class="button-default__2020 button-red__2020 bnp-sdr-btn" data-sdr="stop"${run.stop ? ' disabled' : ''}>${run.stop ? 'Stopping…' : 'Stop'}</button>`;
     else if (sdr.state === 'done') h = `<span class="bnp-sdr-fnote"></span>${sdr.books.some((b) => b.st === 'wait' || b.st === 'no') ? '<button type="button" class="bnp-sdr-lb" data-sdr="again">Look again</button>' : ''}<button type="button" class="button-default__2020 button-yellow__2020 bnp-sdr-btn" data-sdr="done">Done</button>`;
     else {
       const ready = sdr.state === 'ready' && on > 0;
@@ -33819,7 +34019,7 @@
     let text;
     if (busy) {
       const u = run.use, U = u && u.sdb ? BM_SDB : bmUse();
-      text = run.looking ? 'Looking at what you have' : run.waitUntil ? `Waiting out the ${bmWiz(run.src)}’s break, till about ${bmAt(run.waitUntil)}` : run.pause ? 'Paused: open it to Resume' : u && U ? `${U.doing} ${u.sending ? (u.n === 1 ? 'it' : `all ${u.n.toLocaleString()}`) : `${Math.min(u.i + 1, u.n).toLocaleString()} of ${u.n.toLocaleString()}`}${U.to(bm.pet)}` : `Buying ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()}${run.at && run.at.st === 'now' ? `: ${run.at.name}` : ''}`;
+      text = run.restUntil ? `A short break, till about ${bmAt(run.restUntil)}` : run.looking ? 'Looking at what you have' : run.waitUntil ? `Waiting out the ${bmWiz(run.src)}’s break, till about ${bmAt(run.waitUntil)}` : run.pause ? 'Paused: open it to Resume' : u && U ? `${U.doing} ${u.sending ? (u.n === 1 ? 'it' : `all ${u.n.toLocaleString()}`) : `${Math.min(u.i + 1, u.n).toLocaleString()} of ${u.n.toLocaleString()}`}${U.to(bm.pet)}` : `Buying ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()}${run.at && run.at.st === 'now' ? `: ${run.at.name}` : ''}`;
     } else {
       const got = bm.rows.filter((r) => r.st === 'got' && !r.mine && r.by === run).length;
       text = got ? `Done: bought ${got.toLocaleString()} for ${bmNp(run.spent)}` : 'Done: nothing bought';
@@ -33898,7 +34098,7 @@
       if (!run.over && run.looking) return '<div class="bnp-sdr-sum" data-bmsum><b>Looking at what you have</b><span>Your inventory and your SDB, so nothing’s bought twice</span></div>';
       const u = run.use, U = u && u.sdb ? BM_SDB : bmUse();
       if (!run.over && u && U) { const more = run.ending ? 0 : run.n - run.i; return `<div class="bnp-sdr-sum" data-bmsum><b>${U.doing} ${u.sending ? (u.n === 1 ? 'it' : `all ${u.n.toLocaleString()}`) : `${Math.min(u.i + 1, u.n).toLocaleString()} of ${u.n.toLocaleString()}`}${esc(U.to(bm.pet))}</b><span>${esc(u.sending ? 'Deposit ticked for them in Quick Stock, then Submit' : u.name || (u.qs ? 'Opening Quick Stock' : ''))}</span><span>${u.qs ? 'With Quick Stock, in one go · ' : ''}${run.useOnly ? 'From your inventory, one at a time' : more > 0 ? `Then back to buying: ${more.toLocaleString()} of ${run.n.toLocaleString()} left` : 'Then it’s done'} · spent ${esc(bmNp(run.spent))}</span><div class="bnp-sdr-track"><i style="width:${u.sending ? 100 : Math.max(4, Math.round(100 * u.i / Math.max(1, u.n)))}%"></i></div></div>`; }   // (its own progress while it's at it)
-      if (!run.over) return `<div class="bnp-sdr-sum" data-bmsum><b>${run.waitUntil ? 'Waiting out the wizard’s break' : run.pause ? 'Paused' : `Buying ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()}`}</b><span>${run.at && run.at.st === 'now' && !run.reading ? esc(run.at.name) : ''}</span><span>Spent ${esc(bmNp(run.spent))} of your ${esc(bmNp(run.budget))}${run.stopAt ? ` · bought ${run.bought.toLocaleString()} of ${run.stopAt.toLocaleString()}` : ''}${Number.isFinite(run.room) ? ` · inventory ${Math.max(0, 50 - run.room)} of 50` : ''}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
+      if (!run.over) return `<div class="bnp-sdr-sum" data-bmsum><b>${run.restUntil ? 'A short break' : run.waitUntil ? 'Waiting out the wizard’s break' : run.pause ? 'Paused' : `Buying ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()}`}</b><span>${run.restUntil ? `as you’d take one: carrying on at about ${esc(bmAt(run.restUntil))}` : run.at && run.at.st === 'now' && !run.reading ? esc(run.at.name) : ''}</span><span>Spent ${esc(bmNp(run.spent))} of your ${esc(bmNp(run.budget))}${run.stopAt ? ` · bought ${run.bought.toLocaleString()} of ${run.stopAt.toLocaleString()}` : ''}${Number.isFinite(run.room) ? ` · inventory ${Math.max(0, 50 - run.room)} of 50` : ''}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
       const unread = bmUnread();
       return `<div class="bnp-sdr-sum is-done" data-bmsum><b>${got.length ? `Bought ${got.length.toLocaleString()} for ${esc(bmNp(run.spent))}` : 'Nothing bought'}${run.read && bmUse() ? ` · ${run.read.toLocaleString()} ${esc(bmUse().done(bm.pet))}` : ''}${run.sdb ? ` · ${run.sdb.toLocaleString()} put in your SDB` : ''}${mine ? ` · ${mine.toLocaleString()} you had already` : ''}</b>${unread.length ? `<span class="bnp-sdr-tick"><button type="button" class="bnp-sdr-lb" data-bm="readnow">${esc(bmUse().now(unread.length === 1 ? 'one' : unread.length.toLocaleString(), bm.pet))}</button></span>` : ''}${why ? `<span>${esc(why === 'budget' ? 'Your budget for this run is used up.' : why === 'count' ? `Stopped at your limit of ${run.stopAt.toLocaleString()} bought: the rest are still ticked.` : why === 'ban' ? `Stopped while the ${bmWiz(run.src)} was on its break.` : why)}</span>` : run.stop ? '<span>Stopped.</span>' : ''}<span>${(() => { const left = got.filter((r) => !r.read && !r.sdb && !r.gone).length; return left ? (left === got.length ? 'They’re in your inventory. ' : `${left.toLocaleString()} still in your inventory. `) : ''; })()}Tick more and Start again any time.</span>${bmToolsHtml(false)}</div>`;
     }
@@ -33914,7 +34114,7 @@
   function bmFootPaint() {
     const foot = bm.win.querySelector('[data-bm-foot]'), run = bm.run, busy = !!(run && !run.over), on = bm.rows.filter((r) => r.on && r.st !== 'got').length;
     let h = '';
-    if (busy) h = `<span class="bnp-sdr-fnote">${run.waitUntil ? `Carrying on at about ${esc(bmAt(run.waitUntil))}.` : run.pause ? 'Paused: Resume carries on from here.' : `One at a time, a moment between${run.bg ? '' : ': it carries on while this tab is in front'}.`}</span>${run.waitUntil ? '' : `<button type="button" class="bnp-sdr-lb" data-bm="${run.pause ? 'resume' : 'pause'}">${run.pause ? 'Resume' : 'Pause'}</button>`}<button type="button" class="button-default__2020 button-red__2020 bnp-sdr-btn" data-bm="stop"${run.stop ? ' disabled' : ''}>${run.stop ? 'Stopping…' : 'Stop'}</button>`;
+    if (busy) h = `<span class="bnp-sdr-fnote">${run.restUntil ? `A short break: carrying on at about ${esc(bmAt(run.restUntil))}.` : run.waitUntil ? `Carrying on at about ${esc(bmAt(run.waitUntil))}.` : run.pause ? 'Paused: Resume carries on from here.' : `One at a time, a moment between, a break now and then${run.bg ? '' : ': it carries on while this tab is in front'}.`}</span>${run.waitUntil ? '' : `<button type="button" class="bnp-sdr-lb" data-bm="${run.pause ? 'resume' : 'pause'}">${run.pause ? 'Resume' : 'Pause'}</button>`}<button type="button" class="button-default__2020 button-red__2020 bnp-sdr-btn" data-bm="stop"${run.stop ? ' disabled' : ''}>${run.stop ? 'Stopping…' : 'Stop'}</button>`;
     else h = `<span class="bnp-sdr-fnote">${run && run.over ? '' : 'Never over your most for one item, or your budget.'}</span><button type="button" class="bnp-sdr-lb" data-bm="x">${run && run.over ? 'Done' : 'Cancel'}</button><button type="button" class="button-default__2020 button-green__2020 bnp-sdr-btn" data-bm="start"${on ? '' : ' disabled'}>${on ? (() => { const n = bmP().stop; return n && on > n ? `Start: buy ${n.toLocaleString()} of ${on.toLocaleString()}` : `Start: buy ${on.toLocaleString()}`; })() : 'Tick what to buy'}</button>`;
     foot.innerHTML = h;
   }
@@ -34037,6 +34237,10 @@
       const url = btn.getAttribute('data-buy-url');
       let j = null, status = 0;
       try { const res = await fromPage(shop, `${url}${url.includes('?') ? '&' : '?'}ajax=1`, { method: 'GET', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }); status = res.status; j = await res.json().catch(() => null); } catch (_) { j = null; }
+      if (j && j.success) {   // (bought: the shop's own page reloads its list behind its pop-up, its own way, so here too)
+        const g = doc.getElementById('bsp-grid-region'), owner = (g && g.getAttribute('data-owner')) || '', lower = (g && g.getAttribute('data-lower')) || '0';
+        if (owner) { await bmSleep(150 + Math.random() * 250); await fromPage(shop, `/np-templates/ajax/browseshop/get-items.php?owner=${encodeURIComponent(owner)}&lower=${encodeURIComponent(lower)}`, { method: 'GET', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }).catch(() => {}); }
+      }
       wwwShut(shop);
       if (j && j.success) return { got: true, price };
       if (!j) return { unsure: true };   // (no answer to its Buy: it may have been bought, so never tried at another shop)
@@ -34108,10 +34312,16 @@
     bmSumPaint();
     let read = 0;
     try {
-      const inv = await bmInv();
+      let inv = await bmInv(), fresh = true;
       if (!inv) { for (const r of list) { r.readWhy = 'your inventory didn’t open just now'; bmRowPaint(r); } return 0; }
       const used = new Set();
       for (const r of list) {
+        if (!fresh) {   // (after a use, its pop-up's Close and Refresh: the page loaded again before the next, as Neopets' own does)
+          if (!(await bmStep(run, 'look'))) break;
+          inv = await bmInv();
+          if (!inv) { for (const x of list) if (!x.read && !x.readWhy) { x.readWhy = 'your inventory didn’t open again just now'; bmRowPaint(x); } break; }
+          fresh = true;
+        }
         if (!(await bmStep(run, 'read'))) break;
         run.use.name = r.name;
         bmSumPaint();
@@ -34131,6 +34341,7 @@
         if (!act) { r.readWhy = `its pop-up didn’t offer ${U.offer(pet)}`; run.use.i++; bmRowPaint(r); continue; }
         await bmSleep(900 + Math.random() * 1100);   // (its choice made, Submit pressed)
         let words = '', ok = false;
+        fresh = false;   // (used: the page is loaded again before the next)
         try {
           const res = await fromPage(page, '/np-templates/views/useobject.phtml', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest', Accept: 'text/html, */*; q=0.01' }, body: wizParam({ obj_id: id, action: act, petcare: '0' }) });
           const h = await res.text();
@@ -34232,7 +34443,7 @@
       run.use.n = pick.length;
       run.use.sending = true;
       bmSumPaint();
-      await bmSleep(1400 + Math.random() * 1600);   // (its list looked at, Deposit ticked for them, Submit pressed: a person's few seconds. Neopets sees only the one Submit)
+      await bmSleep(1400 + Math.random() * 1600 + pick.length * (300 + Math.random() * 400));   // (its list looked at, Deposit ticked by each, Submit pressed: a person's few seconds, and a moment more for each one ticked. Neopets sees only the one Submit)
       if (!(await bmGate(run))) return { moved: 0, why: '' };
       let d = null;
       try {
@@ -34259,7 +34470,7 @@
     if (!bm || (bm.run && !bm.run.over)) return;
     const P = bmP(), ticked = bm.rows.filter((r) => r.on && r.st !== 'got');
     if (!ticked.length) return;
-    const run = bm.run = { stopAt: P.stop, bought: 0, n: ticked.length, i: 0, spent: 0, stop: false, pause: false, over: false, at: null, src: P.src, times: P.times, bg: P.bg, max: P.max, budget: P.budget, waitUntil: 0, why: '', room: Infinity, read: 0, sdb: 0, reading: 0, looking: true };
+    const run = bm.run = { stopAt: P.stop, bought: 0, n: ticked.length, i: 0, spent: 0, stop: false, pause: false, over: false, at: null, src: P.src, times: P.times, bg: P.bg, max: P.max, budget: P.budget, waitUntil: 0, why: '', room: Infinity, read: 0, sdb: 0, reading: 0, looking: true, restUntil: 0, restAt: runRestEvery() };
     const reading = P.read && bmReads(), full = P.full === 'use' && !bmReads() ? 'sdb' : P.full;
     run.fullMode = full;
     for (const r of bm.rows) if (r.st !== 'got') { r.st = ''; r.why = ''; }
@@ -34328,7 +34539,10 @@
       bmSumPaint();
       if (run.stop || run.halted) break;
       if (run.stopAt && run.bought >= run.stopAt) { if (r !== list[list.length - 1]) run.why = 'count'; break; }   // (as many as you said: the rest stay ticked)
-      if (r !== list[list.length - 1] && !(await bmStep(run))) break;
+      if (r !== list[list.length - 1]) {
+        if (run.i >= run.restAt) { if (!(await runRest(run, bmSumPaint))) break; run.restAt = run.i + runRestEvery(); }   // (a longer break now and then on a long list, as a person takes one)
+        else if (!(await bmStep(run))) break;
+      }
     }
     run.ending = true;   // (no more buying: what's said while the last are used)
     if (reading && !run.stop && bmUnread().length) await bmReadPending(run);   // (at the end: the books bought, read)
@@ -34413,8 +34627,10 @@
   const scOther = () => !!document.querySelector('.scg-btn, .scg-shade');   // (the old Token Gallery script, still switched on)
   let scHeld = null, scObs = null, scRaf = 0;   // (the bigger view: { panel, spot, shade, pad })
   // ── The Styling Studio: a fourth tab, Available — every style the Studio has right now, species A–Z, as its own window lists each species'
-  //    (new ones first; Prismatics by the style they recolour). Read three species at a time, the ones in sight first, only
-  //    while you're on it; kept 12 hours. A style's card opens the Studio's own window for its species, where you pick the pet and the token.
+  //    (new ones first; Prismatics by the style they recolour). Nothing read till you use it (user, 2026-11-04: "shouldn't load unless
+  //    opened and used, but make it load fast once it is"): then the species in sight, two at a time, the others as they come into sight,
+  //    or all of them for New, Limited, a style's name, Read all or Check again; only while you're on it; kept 12 hours. A style's card
+  //    opens the Studio's own window for its species, where you pick the pet and the token.
   //    Neopets' own tabs keep their job: theirs shows again the moment one is clicked
   const SS_AJAX = '/np-templates/ajax/stylingstudio/studio.php';
   const SS_KEEP = 'bnp-ssav', SS_FRESH = 12 * 3600000;
@@ -34495,7 +34711,7 @@
     if (!document.getElementById('bnp-ss-style')) { const st = document.createElement('style'); st.id = 'bnp-ss-style'; st.textContent = SS_CSS; (document.head || document.documentElement).append(st); }
     const ui = nbJson('bnp-ssav-ui', {});
     const kept = nbJson(SS_KEEP, null);
-    ss = { kept: kept && kept.v === 1 ? kept : { v: 1, t1: {}, t2: {} }, list: [], from: '', kind: ui.kind === 2 ? 2 : 1, filter: ['new', 'lim'].includes(ui.filter) ? ui.filter : 'all', own: !!ui.own, q: '', busy: false, redo: new Set(), inView: new Set(), fail: 0, err: '' };
+    ss = { kept: kept && kept.v === 1 ? kept : { v: 1, t1: {}, t2: {} }, list: [], from: '', kind: ui.kind === 2 ? 2 : 1, filter: ['new', 'lim'].includes(ui.filter) ? ui.filter : 'all', own: !!ui.own, q: '', qAll: false, busy: false, used: false, all: false, redo: new Set(), inView: new Set(), fail: 0, err: '' };
     ss.obs = new MutationObserver(ssSoon);
     ss.obs.observe(document.getElementById('app') || document.body, { childList: true, subtree: true });
     ssSoon();
@@ -34510,8 +34726,8 @@
       t.tabIndex = 0;
       t.textContent = 'Available';
       t.title = 'Every style the Studio has right now, species A–Z';
-      t.addEventListener('click', () => ssOpen(true));
-      t.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ssOpen(true); } });
+      t.addEventListener('click', () => ssOpen(true, true));
+      t.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ssOpen(true, true); } });
       row.append(t);
     }
     if (!row.dataset.bnpSsav) {   // (one of Neopets' tabs clicked: theirs again; their own click does the rest)
@@ -34521,7 +34737,7 @@
       row.addEventListener('keydown', (e) => { if (e.key === 'Enter') theirs(e); }, true);
     }
     if (ss.from !== 'studio' && ssVmSpecies().length) { ss.list = []; if (ss.panel) ssPaint(); }   // (the Studio's species came in after we drew NE's names: drawn again with its pictures)
-    if (!ss.opened) { ss.opened = true; let was = '0'; try { was = localStorage.getItem('bnp-ssav-open') || '0'; } catch (_) { /* */ } if (was === '1') ssOpen(true); }   // (open last time you were here, as Neopets' own tabs open on the last one)
+    if (!ss.opened) { ss.opened = true; let was = '0'; try { was = localStorage.getItem('bnp-ssav-open') || '0'; } catch (_) { /* */ } if (was === '1') ssOpen(true); }   // (open last time you were here, as Neopets' own tabs open on the last one: what's kept shows, and nothing's read till you use it)
     else if (ssOn()) ssPlace();
   }
   function ssVmSpecies() {
@@ -34538,8 +34754,9 @@
       : SC_SPECIES.map((n, i) => ({ id: String(i + 1), name: n, img: '' }));
     return list.map((x) => ({ ...x, mine: mine.has(x.id) })).sort((a, b) => a.name.localeCompare(b.name));
   }
-  function ssOpen(on) {
+  function ssOpen(on, byYou) {   // (byYou: the tab clicked, so it's in use; opened by itself as you left it, it waits for you)
     if (!ss) return;
+    if (on && byYou) ss.used = true;
     document.documentElement.classList.toggle('bnp-ssav-on', on);
     const t = document.querySelector('.bnp-ss-av');
     if (t) t.classList.toggle('active', on);
@@ -34568,7 +34785,16 @@
         <div class="bnp-ssav-state" data-ss="state" aria-live="polite"></div>
         <div class="bnp-ssav-list" data-ss="list"></div>`;
       p.addEventListener('click', ssClick);
-      p.querySelector('[data-ss="find"]').addEventListener('input', (e) => { ss.q = e.target.value.trim().toLowerCase(); ssFilter(); });
+      const use = () => { if (!ss || ss.used) return; ss.used = true; ssRun(); ssState(); };   // (in use: a click, a key, the wheel or a scroll in it)
+      for (const ev of ['pointerdown', 'keydown', 'wheel']) p.addEventListener(ev, use, { passive: true });
+      p.querySelector('[data-ss="list"]').addEventListener('scroll', use, { passive: true });
+      p.querySelector('[data-ss="find"]').addEventListener('input', (e) => {
+        ss.q = e.target.value.trim().toLowerCase();
+        ss.qAll = false;
+        ssFilter();
+        clearTimeout(ss.qT);
+        ss.qT = setTimeout(() => { if (!ss) return; ss.qAll = ss.q.length >= 3 && !ss.list.some((x) => x.name.toLowerCase().includes(ss.q)); if (ss.qAll) { ssRun(); ssFilter(); } }, 700);   // (once you stop typing, a word that's no species' name is a style's: every species is read for it)
+      });
       p.addEventListener('pointerover', (e) => { const c = e.target instanceof Element && e.target.closest('.bnp-ssav-card'); if (c && e.pointerType === 'mouse') { clearTimeout(ss.bigT); ss.bigT = setTimeout(() => ssBig(c), 380); } });
       p.addEventListener('pointerout', (e) => { const c = e.target instanceof Element && e.target.closest('.bnp-ssav-card'); if (c && !c.contains(e.relatedTarget)) { clearTimeout(ss.bigT); ssBig(null); } });
       p.querySelector('[data-ss="list"]').addEventListener('scroll', () => ssBig(null), { passive: true });
@@ -34581,8 +34807,8 @@
   function ssClick(e) {
     const b = e.target instanceof Element && e.target.closest('button');
     if (!b) return;
-    if (b.dataset.kind) { const k = Number(b.dataset.kind); if (k !== ss.kind) { ss.kind = k; ss.redo.clear(); ssSaveUi(); ssPaint(); ss.panel.querySelector('[data-ss="list"]').scrollTop = 0; ssRun(); } return; }
-    if (b.dataset.filter) { ss.filter = b.dataset.filter; ssSaveUi(); ssFilter(); return; }
+    if (b.dataset.kind) { const k = Number(b.dataset.kind); if (k !== ss.kind) { ss.kind = k; ss.redo.clear(); ss.all = false; ssSaveUi(); ssPaint(); ss.panel.querySelector('[data-ss="list"]').scrollTop = 0; ssRun(); } return; }
+    if (b.dataset.filter) { ss.filter = b.dataset.filter; ssSaveUi(); ssFilter(); ssRun(); return; }   // (New or Limited: every species is read for it)
     if (b.dataset.ss === 'own') { ss.own = !ss.own; ssSaveUi(); ssFilter(); return; }
     if (b.dataset.az) {   // (to that letter's first species: in the list, or the page if the list doesn't scroll)
       const list = ss.panel.querySelector('[data-ss="list"]'), r = [...list.querySelectorAll('.bnp-ssav-sp:not([hidden])')].find((x) => x.dataset.az === b.dataset.az);
@@ -34591,7 +34817,9 @@
       else r.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
-    if (b.dataset.ss === 'again') { ss.redo = new Set(ss.list.map((x) => x.id)); ss.fail = 0; ss.err = ''; ssRun(); ssState(); return; }
+    if (b.dataset.ss === 'again') { ss.redo = new Set(ss.list.map((x) => x.id)); ss.all = true; ss.fail = 0; ss.err = ''; ssRun(); ssState(); return; }   // (every species again)
+    if (b.dataset.ss === 'all') { ss.all = true; ss.fail = 0; ss.err = ''; ssRun(); ssState(); return; }   // (the ones not read yet, without scrolling to them)
+    if (b.dataset.ss === 'retry') { ss.fail = 0; ss.err = ''; ssRun(); ssState(); return; }   // (on from where it stopped)
     if (b.dataset.go) ssGo(b.dataset.go);
   }
   function ssPaint() {   // (the panel for the kind chosen: every species' row, its cards from what's kept)
@@ -34608,7 +34836,7 @@
       </section>`).join('') + '<p class="bnp-ssav-none" data-ss="none" hidden>Nothing here matches that.</p><p class="bnp-ssav-none" data-ss="empty" hidden></p>';
     if (ss.io) ss.io.disconnect();
     ss.inView.clear();
-    ss.io = new IntersectionObserver((ens) => { for (const en of ens) { const id = en.target.dataset.sp; if (en.isIntersecting) ss.inView.add(id); else ss.inView.delete(id); } }, { root: list, rootMargin: '200px 0px' });
+    ss.io = new IntersectionObserver((ens) => { let more = false; for (const en of ens) { const id = en.target.dataset.sp; if (en.isIntersecting) { ss.inView.add(id); if (!ssFresh(id)) more = true; } else ss.inView.delete(id); } if (more) ssRun(); }, { root: list, rootMargin: '250px 0px' });   // (in sight, or about to be: read now, once you've used the tab)
     list.querySelectorAll('.bnp-ssav-sp').forEach((r) => { ss.io.observe(r); ssRow(r.dataset.sp); });
     const az = new Set(ss.list.map((x) => x.name.charAt(0).toUpperCase()));
     p.querySelector('[data-ss="az"]').innerHTML = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c) => `<button type="button" data-az="${c}"${az.has(c) ? '' : ' disabled'}>${c}</button>`).join('');
@@ -34654,7 +34882,7 @@
       r.hidden = hide;
       if (!hide) shown++;
     }
-    p.querySelector('[data-ss="none"]').hidden = shown > 0;
+    p.querySelector('[data-ss="none"]').hidden = shown > 0 || ss.busy;   // (still reading: not "nothing" yet)
     const none = ss.list.filter((x) => { const e = ssEntry(x.id); return e && !e.s.length; }).map((x) => x.name), em = p.querySelector('[data-ss="empty"]');
     em.textContent = none.length ? `No ${ss.kind === 2 ? 'Prismatics' : 'styles'} yet for ${none.length > 1 ? `${none.slice(0, -1).join(', ')} or ${none[none.length - 1]}` : none[0]}.` : '';
     em.hidden = !none.length || !!ss.q || ss.own || ss.filter !== 'all';
@@ -34665,8 +34893,8 @@
     if (!p) return;
     const el = p.querySelector('[data-ss="state"]'), all = ss.list.length, k = ss.kept[`t${ss.kind}`];
     const read = ss.list.filter((x) => k[x.id]).length, waiting = ss.list.filter((x) => !ssFresh(x.id)).length;
-    const again = '<button type="button" class="bnp-ssav-again" data-ss="again">Check again</button>';
-    if (ss.err) { el.innerHTML = `${esc(ss.err)} ${again.replace('Check again', 'Try again')}`; return; }
+    const btn = (k, t) => `<button type="button" class="bnp-ssav-again" data-ss="${k}">${t}</button>`;
+    if (ss.err) { el.innerHTML = `${esc(ss.err)} ${btn('retry', 'Try again')}`; return; }
     if (ss.busy && waiting) {
       el.textContent = ss.paused ? `Paused while you’re away · ${read} of ${all} species read` : `Reading… ${read} of ${all} species read`;
       return;
@@ -34674,12 +34902,14 @@
     const styles = ss.list.reduce((n, x) => n + (k[x.id] ? k[x.id].s.length : 0), 0), nNew = ss.list.reduce((n, x) => n + (k[x.id] ? k[x.id].s.filter((s) => s.w).length : 0), 0), nLim = ss.list.reduce((n, x) => n + (k[x.id] ? k[x.id].s.filter((s) => s.l).length : 0), 0);
     const oldest = Math.min(...ss.list.map((x) => (k[x.id] ? k[x.id].at : Date.now())));
     const ago = (ms) => { const m = Math.round(ms / 60000); return m < 1 ? 'just now' : m < 60 ? `${m} minute${m === 1 ? '' : 's'} ago` : `${Math.round(m / 60)} hour${Math.round(m / 60) === 1 ? '' : 's'} ago`; };
-    el.innerHTML = read < all ? `${read} of ${all} species read ${again}` : `${styles} ${ss.kind === 2 ? 'Prismatics' : 'styles'} · ${nNew} new · ${nLim} limited · read ${ago(Date.now() - oldest)} ${again}`;
+    el.innerHTML = read < all ? `${read} of ${all} species read: the others as you scroll to them ${btn('all', 'Read all')}` : `${styles} ${ss.kind === 2 ? 'Prismatics' : 'styles'} · ${nNew} new · ${nLim} limited · read ${ago(Date.now() - oldest)} ${btn('again', 'Check again')}`;
   }
   const ssNap = (ms) => new Promise((ok) => setTimeout(ok, ms));
-  function ssNext() {   // (the next species to read: one in sight first, else A–Z)
-    const need = ss.list.filter((x) => !ssFresh(x.id) && !(ss.inflight && ss.inflight.has(x.id)));
-    return (need.find((x) => ss.inView.has(x.id)) || need[0] || {}).id || '';
+  const ssAll = () => ss.all || ss.filter !== 'all' || ss.qAll;   // (every species wanted: Read all or Check again pressed, New or Limited, or a style's name looked for)
+  function ssNext() {   // (the next species to read: one in sight first; the others, A–Z, only when the choice wants them all)
+    const mine = ss.own ? new Set(ss.list.filter((x) => x.mine).map((x) => x.id)) : null;
+    const need = ss.list.filter((x) => !ssFresh(x.id) && !(ss.inflight && ss.inflight.has(x.id)) && (!mine || mine.has(x.id)));
+    return (need.find((x) => ss.inView.has(x.id)) || (ssAll() ? need[0] : null) || {}).id || '';
   }
   async function ssFetch(kind, id) {
     const fd = new FormData();
@@ -34699,8 +34929,8 @@
     clearTimeout(ss.saveT);
     ss.saveT = setTimeout(() => nbJsonSet(SS_KEEP, ss.kept), 1200);
   }
-  async function ssRun() {   // (one species at a time, a moment apart, the ones in sight first, only while Available is open and you're here)
-    if (!ss || ss.busy || !ssOn() || ss.err) return;
+  async function ssRun() {   // (two at a time, a breath apart, the ones in sight first; only once you've used the tab, while it's open and you're here)
+    if (!ss || ss.busy || !ssOn() || ss.err || !ss.used) return;
     ss.busy = true;
     ss.inflight = new Set();
     const worker = async () => {
@@ -34712,7 +34942,7 @@
         try { if (vm && vm.tabActive === kind && Array.isArray(vm.stylesData[id])) have = vm.stylesData[id]; } catch (_) { have = null; }
         if (have) { ssKeep(kind, id, have); ssRow(id); ssFilter(); continue; }   // (the Studio read it already, for its own window)
         while (ss && ssOn() && (document.hidden || actIdle() > 5 * 60000)) { ss.paused = true; ssState(); await ssNap(3000); }   // (the tab in the background, or you away: it waits)
-        if (!ss || !ssOn() || kind !== ss.kind || ss.inflight.has(id)) continue;
+        if (!ss || !ssOn() || kind !== ss.kind || ss.inflight.has(id) || ssFresh(id, kind)) continue;   // (the other one got to it meanwhile)
         ss.paused = false;
         ss.inflight.add(id); ssRow(id); ssState();
         let styles = null;
@@ -34724,11 +34954,11 @@
         else await ssNap(3000);
         if (!ss) return;
         if (kind === ss.kind) { ssRow(id); ssFilter(); }
-        if (styles) await ssNap(1600 + Math.random() * 2200);   // (a moment before the next, as you'd pick it)
+        if (styles) await ssNap(150 + Math.random() * 350);   // (a breath before the next: never two in step)
       }
     };
-    try { await worker(); }
-    finally { if (ss) { ss.busy = false; ss.inflight.clear(); ssState(); } }
+    try { await Promise.all([worker(), ssNap(80 + Math.random() * 220).then(worker)]); }   // (two at a time, the second a moment behind the first)
+    finally { if (ss) { ss.busy = false; ss.inflight.clear(); ss.paused = false; ssFilter(); if (ssOn() && !ss.err && ssNext()) setTimeout(ssRun, 0); } }   // (something came into sight as it finished: on again)
   }
   function ssBig(card) {   // (a style's picture large beside its card, as the Studio's own window shows one)
     let big = document.querySelector('.bnp-ssav-big');
@@ -34761,7 +34991,7 @@
     if (ss.obs) ss.obs.disconnect();
     if (ss.io) ss.io.disconnect();
     if (ss.raf) cancelAnimationFrame(ss.raf);
-    clearTimeout(ss.saveT); clearTimeout(ss.bigT);
+    clearTimeout(ss.saveT); clearTimeout(ss.bigT); clearTimeout(ss.qT);
     nbJsonSet(SS_KEEP, ss.kept);
     document.documentElement.classList.remove('bnp-ssav-on');
     for (const x of document.querySelectorAll('.bnp-ss-av, .bnp-ssav, .bnp-ssav-big, #bnp-ss-style')) x.remove();
@@ -35440,10 +35670,9 @@
     const img = [...doc.querySelectorAll('td.content img')].map((i) => i.getAttribute('src') || '').find((s) => /guild/i.test(s) && !/question_mark|\/help\//i.test(s)) || '';
     return { name: /^neighbourhood/i.test(n) ? '' : n.slice(0, 60), logo: img ? new URL(fullUrl(img), SITE + '/guilds/').href : '' };
   }
-  async function guildFind() {
-    const r = await fetch(SITE + '/guilds/index.phtml', { credentials: 'include' });
-    if (!r.ok || /login/i.test(new URL(r.url).pathname)) throw new Error('not signed in');
-    const hq = new DOMParser().parseFromString(await r.text(), 'text/html');
+  async function guildFind() {   // (the Guild HQ, then your guild's page, each opened as a visit opens it)
+    const html = await pageRead(SITE + '/guilds/index.phtml').catch((e) => { throw /login/.test(String(e && e.message)) ? new Error('not signed in') : e; });
+    const hq = new DOMParser().parseFromString(html, 'text/html');
     if (hq.querySelector('form[action*="login"] input[type="password"]') || !hq.querySelector('#navprofiledropdown__2020, .user a[href*="userlookup"]')) throw new Error('not signed in');   // (logged out: nothing learned, nothing forgotten)
     const area = hq.querySelector('area[title="Jump to your Guild"], a[title="Jump to your Guild"]');
     const id = (/guild\.phtml\?id=(\d+)/.exec((area && area.getAttribute('href')) || '') || [])[1];
@@ -35451,14 +35680,14 @@
     const url = `${SITE}/guilds/guild.phtml?id=${id}`;
     let info = {};
     await new Promise((ok) => setTimeout(ok, 2000 + Math.random() * 3000));   // (its page a moment after the HQ's, as you'd click through)
-    try { info = guildRead(new DOMParser().parseFromString(await (await fetch(url, { credentials: 'include' })).text(), 'text/html')); } catch (_) { /* (its name another time) */ }
+    try { info = guildRead(new DOMParser().parseFromString(await pageRead(url), 'text/html')); } catch (_) { /* (its name another time) */ }
     set('guild', { url, name: info.name || '', logo: info.logo || '', at: Date.now() });
     return guildInfo();
   }
   function guildMaybeFind() {   // (a guild in your menus, not looked at for a week: looked at again, quietly, once the page is idle)
     let has = false;
     for (const list of Object.values(S.menus)) walk(list, (e) => { if (e.t === 'l' && e.special === 'guild' && !e.hide) has = true; });
-    if (!has || /^\/login/i.test(location.pathname) || Date.now() - guildInfo().at < 7 * DAY_MS || Date.now() - (Number(get('guildTry', 0)) || 0) < 6 * 3600e3) return;
+    if (ON_MALL || FRAME || !has || /^\/login/i.test(location.pathname) || Date.now() - guildInfo().at < 7 * DAY_MS || Date.now() - (Number(get('guildTry', 0)) || 0) < 6 * 3600e3) return;   // (on the NC Mall's address: left for a page of www, where it's a visit like any other, not asked through NE's frame there)
     set('guildTry', Date.now());   // (tried now: another tab opened together leaves it to this one)
     const go = () => untilShown().then(guildFind).then(() => { try { applyAll(); } catch (_) { /* */ } }).catch(() => { /* (another day) */ });
     if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 8000 }); else setTimeout(go, 3000);
@@ -38006,9 +38235,8 @@
     if (petsPanel) paintPets();
     let note = '';
     try {
-      const r = await fetch('/home/index.phtml', { credentials: 'include' });
-      if (/login/i.test(new URL(r.url).pathname)) throw new Error('signed out');
-      const list = readPets(new DOMParser().parseFromString(await r.text(), 'text/html'));
+      const html = await pageRead('/home/index.phtml');   // (My Pets opened unseen as a visit opens it; signed out: it says so)
+      const list = readPets(new DOMParser().parseFromString(html, 'text/html'));
       if (list.length) set('pets', { list, at: Date.now() });
       else note = 'No pets found on My Pets.';
     } catch (e) { note = 'Couldn’t read My Pets just now.'; }
@@ -38685,8 +38913,13 @@
       if (!r.ok || !j || j.error) throw new Error((j && j.error) || 'not switched');
       return;
     }
-    const r = await fetch(`/process_changepet.phtml?new_active_pet=${encodeURIComponent(name)}`, { credentials: 'include' });
-    if (/login/i.test(new URL(r.url).pathname)) throw new Error('signed out');
+    const to = `/process_changepet.phtml?new_active_pet=${encodeURIComponent(name)}`;
+    if (ON_MALL || FRAME) {   // (on the NC Mall's own address, or in a frame: asked as before)
+      const r = await fetch(to, { credentials: 'include' });
+      if (/login/i.test(new URL(r.url).pathname)) throw new Error('signed out');
+      return;
+    }
+    try { await pageGo(to); } catch (e) { throw new Error(/login page/.test(String(e && e.message)) ? 'signed out' : 'not switched'); }   // (the old address opened as its link opens it: the pet made active, then on to where it sends you)
   }
   async function qrMakeActive(name, el) {
     if (qr.busy) return;
@@ -42874,14 +43107,14 @@
     setTimeout(() => { if (pop.isConnected) document.addEventListener('pointerdown', away, true); }, 0);
     ok.focus({ preventScroll: true });
   }
-  const OFTEN = { nclEvery: { 2: 'about every 2 minutes' }, live: { 30: 'about every 30 seconds', 60: 'about every minute', 120: 'about every 2 minutes' }, boardLive: { 60: 'about every minute', 120: 'about every 2 minutes' } };   // (the choices that look often enough to say so)
+  const OFTEN = { nclEvery: { 2: 'about every 2 minutes' }, live: { 120: 'about every 2 minutes' }, boardLive: { 120: 'about every 2 minutes' } };   // (the choices that look often enough to say so)
   function oftenWarn(k, v) {   // (one of those, just picked: what it means)
     const how = (OFTEN[k] || {})[v];
     if (!how) return;
     const what = k === 'nclEvery' ? `NeoChat reads your Inbox ${how} while it’s open or folded. That’s once for all your tabs, not once each: only the one you’re on looks`   // (it said "in every tab" once, when NeoChat's in every tab, and read as every tab looking)
       : k === 'live' ? `the topic you’re on is loaded again ${how} while you’re looking at its last page`
       : `the board you’re on is loaded again ${how} while you’re looking at its first page`;
-    const stop = awayWords(k === 'nclEvery' ? ACT_STOP : nbStop(Number(v)));   // (NeoChat: 4 hours; the boards: an hour, or 30 minutes at every 30 seconds or minute)
+    const stop = awayWords(k === 'nclEvery' ? ACT_STOP : nbStop(Number(v)));   // (NeoChat: 4 hours; the boards: an hour)
     hubWarn(k === 'nclEvery' ? `[data-featv="nclEvery:${v}"]` : `[data-nbov="${k}:${v}"]`, `<b>That’s often:</b> ${what}. While you’re away from Neopets it looks less and less often (none after ${stop} away), and it’s back to this when you return.`);
   }
   function changed(msg, undo) {   // (every change: kept, the menus laid out again, and the page painted again)
@@ -43668,7 +43901,7 @@
     setTimeout(async () => {
       if (document.hidden || (stkCat() && stkCat().at > w)) return;
       set('stkwant', 0);   // (asked once: another tab won't too)
-      try { const r = await fetch('/settings/neoboards/', { credentials: 'include' }); if (r.ok) stkRead(new DOMParser().parseFromString(await r.text(), 'text/html')); } catch (e) { report(e); }
+      try { stkRead(new DOMParser().parseFromString(await pageRead('/settings/neoboards/'), 'text/html')); } catch (_) { /* (another time) */ }   // (opened as a visit opens it)
     }, 3000 + Math.random() * 5000);
   }
   // Newest items: what Neopets has just released, NP and NC, from itemdb's own search, newest first (sortBy=added; its rows have name,
@@ -43752,10 +43985,11 @@
     avOwnBusy = true;
     avOwnErr = '';
     try {
-      const r = await fetch('/settings/neoboards/', { credentials: 'include' });
-      const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
-      const o = avReadOwned(doc);
-      if (o) avOwnSave(o); else avOwnErr = /\/login/i.test(r.url) || doc.querySelector('form[action*="login"]') ? 'login' : 'page';
+      let html = '', out = false;
+      try { html = await pageRead('/settings/neoboards/'); } catch (e) { out = /login/.test(String(e && e.message)); }   // (opened as a visit opens it)
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const o = html && avReadOwned(doc);
+      if (o) avOwnSave(o); else avOwnErr = out || doc.querySelector('form[action*="login"]') ? 'login' : 'page';
     } catch (e) { avOwnErr = 'page'; report(e); }
     finally { avOwnBusy = false; avAfter(); }
   }
@@ -45195,9 +45429,9 @@
       await untilShown();
       for (const [k, path] of ['/games/hiscores.phtml', '/games/classic.phtml'].entries()) {
         if (k) await new Promise((ok) => setTimeout(ok, 2000 + Math.random() * 3000));   // (the second a moment after the first, as you'd go on to it)
-        const r = await fetch(SITE + path, { credentials: 'include' });
-        if (!r.ok) continue;
-        for (const g of gameRead(new DOMParser().parseFromString(await r.text(), 'text/html'))) if (!byId.has(g.i)) byId.set(g.i, g);
+        const html = await pageRead(SITE + path).catch(() => '');   // (opened unseen as a visit opens it)
+        if (!html) continue;
+        for (const g of gameRead(new DOMParser().parseFromString(html, 'text/html'))) if (!byId.has(g.i)) byId.set(g.i, g);
       }
       if (byId.size >= 50) {
         GAMES = { at: Date.now(), list: [...byId.values()].sort((a, b) => a.n.localeCompare(b.n)) };
@@ -46054,7 +46288,7 @@
         </div>
       </div>`],
       ['otherpages', `<div class="bnp-card"><h4>Styling Studio</h4>
-        ${sw('ssAvail', 'An Available tab: every style, species A–Z', 'A fourth tab beside Restyle with everything the Studio has right now: each species with its styles’ pictures and names, the newest first, New and Limited marked, and Prismatics too. Find a species or style, show only New or Limited, or only species you have. Pick one and the Studio’s own window opens for its species, to choose the pet and the token. NE reads three species at a time, the ones in sight first, only while you’re on the tab, and keeps the lists for 12 hours.')}
+        ${sw('ssAvail', 'An Available tab: every style, species A–Z', 'A fourth tab beside Restyle with everything the Studio has right now: each species with its styles’ pictures and names, the newest first, New and Limited marked, and Prismatics too. Find a species or style, show only New or Limited, or only species you have. Pick one and the Studio’s own window opens for its species, to choose the pet and the token. Nothing is read till you use the tab; then NE reads the species in sight, two at a time, and the others as you scroll to them (all of them for New, Limited, a style’s name or Read all), only while you’re on the tab, and keeps the lists for 12 hours.')}
       </div>`],
       ['otherpages', `<div class="bnp-card"><h4>Styling Chamber</h4>
         ${sw('scView', 'A bigger Poses view, a Species sort, and all your pets at once', 'A button beside Show All in the Poses box opens the same box much bigger, every button of Neopets’ still working (Esc, its red X or a click outside brings it back); it opens on the sort you chose last. Its sort menu gets Species too: the poses in A–Z groups, with how many each species has. All pets, beside the Neopets part’s sort menu, shows every pet at once instead of a few at a time behind its arrows: click one to style it.')}
@@ -48954,6 +49188,11 @@
     .bnp-sdr-sum > b { color: #262626; font: 18px/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
     .bnp-sdr-sum > span { color: #5d5845; font-size: 12.5px; }
     .bnp-sdr-sum .bnp-sdr-tick { display: inline-flex; gap: 6px; margin-left: auto; }
+    .bnp-sdr-res { flex: none; display: flex; align-items: center; gap: 11px; padding: 6px 12px 6px 6px; border-radius: 12px; background: #fff; box-shadow: inset 0 0 0 1.5px #e6e0cd; }   /* (what Neopets said for the last one read, with its picture, as its own pop-up shows it) */
+    .bnp-sdr-res img { flex: none; width: 64px; height: 64px; border-radius: 10px; object-fit: contain; background: color-mix(in srgb, var(--bnp-accent) 10%, #fff); }
+    .bnp-sdr-res span { display: grid; gap: 2px; min-width: 0; }
+    .bnp-sdr-res b { color: #262626; font: 13.5px/1.3 "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-sdr-res small { color: #4d4a3f; font: 12.5px/1.4 "MuseoSansRounded500", Arial, sans-serif; }
     .bnp-sdr-track { flex: 1 0 100%; height: 10px; margin-top: 6px; overflow: hidden; border-radius: 99px; background: rgba(255, 255, 255, .9); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--bnp-accent) 45%, #ccc); }
     .bnp-sdr-track i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(color-mix(in srgb, var(--bnp-accent) 75%, #fff), color-mix(in srgb, var(--bnp-accent) 92%, #000)); transition: width .4s ease; }
     .bnp-sdr-list { flex: 1 1 auto; min-height: 90px; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); align-content: start; gap: 6px; padding: 2px 3px 6px; overscroll-behavior: contain; }
@@ -51718,6 +51957,18 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.2.4', '2026-11-04', [
+      'Pages NE reads for you now open unseen as ordinary page visits instead of script requests',
+      'Board replies, lottery tickets and Neomail actions go through Neopets’ own forms',
+      'Long runs (Read to a pet, Buy Mode, Read all, Closet and SDB counts) take a short break now and then, and say when they’ll carry on',
+      'Neoboards: a topic’s new posts and a board’s topics look every 5 minutes by default, never on the dot; 2 minutes is the least',
+      'Read to a pet: uses the SDB’s own Books filter and pages, shows Neopets’ own words and picture for each book, and puts your view back after',
+      'Books Read, Booktastic, Gourmet: “Only ones without a price”, beside “Only ones with a price”',
+      'Styling Studio: the Available tab reads nothing until you use it, then the species in sight first; Read all for the rest',
+      'Buy Mode: your Inventory reloads between uses, and a shop’s list after a buy, as Neopets’ own pages do',
+      'Trading Post: a lot’s “and more” uses the search the page already has, without asking Neopets again',
+      'NeoChat, Sent and NE’s Mall views keep NE’s own names after a # in the address; old links still work',
+    ]],
     ['5.2.3', '2026-11-03', [
       'Trainer mode: keeps going while the school’s page is in another tab (its new “In another tab too” switch, on unless you turn it off)',
       'Neoboards: the topic’s bar at the top shows again as you scroll down (a slow, smooth scroll could slip past it)',
@@ -52070,7 +52321,7 @@
       'Settings: each page’s title with its Neopets picture (each menu’s own, from your theme), a little green dot by the page you’re on, and all its writing a touch bigger',
       'Tab icons: a lookup’s “Neopets’ own icon” is the Neopets star',
       'Menus: a link Neopets has taken out of its own menu says what it was (its name, from now on), with a note on what to do with it',
-      'What looks by itself again and again (NeoChat’s Inbox, a topic’s new posts, a board’s topics) looks less often while you’re away from Neopets and stops after 4 hours away; Settings says so when a choice looks often',
+      'What looks by itself again and again (NeoChat’s Inbox, a topic’s new posts, a board’s topics) looks less often while you’re away from Neopets and stops after a while away (NeoChat after 4 hours, the boards after an hour); Settings says so when a choice looks often',
       'Avatars: a new look: your count with its bars, every kind with its own, each kind’s part under a band; its menu picture can be the newest released avatar',
       'Folders: My Boards, My Games, Lands of Neopia and Recently Visited as tiles, like the Dailies page; Find a board, and a whole section in or out at once',
       'Settings: switches instead of tick boxes and calmer pages; the theme you wear is easy to spot; Peek only in Themes; the item buttons’ size on a slider',
@@ -52234,7 +52485,7 @@
       for (const k of ['fquest', 'fqfold']) GM_addValueChangeListener(KEY + k, (n, o, v, remote) => { if (remote) paintFq(); });   // (your faerie quest, changed in another tab)
     } catch (_) { /* */ }
   }
-  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { kadCheckRun, tabFlash, kadSwap, kadNextLook, kadPlan, lottoDrawn: () => lottoDrawnFn && lottoDrawnFn(), wwwAsk: (u, o) => fetch(u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }), (e) => ({ err: String(e && e.message) })), fromAsk: (p, u, o) => (p === 'html' ? fromPageHtml(u).then((t) => ({ text: t.slice(0, 300) })) : fromPage(p, u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }))).catch((e) => ({ err: String(e && e.message) })), wwwShut, nmSendNow, ncValue, remSoundOnce, sa: () => sa, saKnown, saState, saMarksLoad, saMark, saMineLoad, itSsw, sswPanel, mark: (id, how) => dailyMark(id, how || { full: true }), dstate: (id) => { const d = dailyById(id); return d ? dailyState(d) : null; }, dlogNow: () => dlog(), dproof: DAILY_PROOF, remEvents: (a, b, c) => remEvents(a, b, c).map((e) => ({ key: e.key, at: e.at, kind: e.kind, title: e.title, text: e.textNow ? e.textNow() : e.text })), remSchedule, remPerOn: (id) => remPerOn(dailyById(id)), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbLivePill, pageSay, nbSay, toast, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, themeChanged, nclUnhold: () => new Promise((r) => { if (nclHoldEnd) { nclHoldEnd(); setTimeout(r, 80); } else r(); }), nclOpen, nclMin, nclTell, nclFold, nclSentList, nmSentGo, myMainColour, myColouriseShift, myColoursNow, myAll: () => S.myThemes, myTurnNow: () => myTurn, soundDraw, nclGlance, captureChrome, acctCheck, dlog, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
+  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { pageRead, kadCheckRun, tabFlash, kadSwap, kadNextLook, kadPlan, lottoDrawn: () => lottoDrawnFn && lottoDrawnFn(), wwwAsk: (u, o) => fetch(u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }), (e) => ({ err: String(e && e.message) })), fromAsk: (p, u, o) => (p === 'html' ? fromPageHtml(u).then((t) => ({ text: t.slice(0, 300) })) : fromPage(p, u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }))).catch((e) => ({ err: String(e && e.message) })), wwwShut, nmSendNow, ncValue, remSoundOnce, sa: () => sa, saKnown, saState, saMarksLoad, saMark, saMineLoad, itSsw, sswPanel, mark: (id, how) => dailyMark(id, how || { full: true }), dstate: (id) => { const d = dailyById(id); return d ? dailyState(d) : null; }, dlogNow: () => dlog(), dproof: DAILY_PROOF, remEvents: (a, b, c) => remEvents(a, b, c).map((e) => ({ key: e.key, at: e.at, kind: e.kind, title: e.title, text: e.textNow ? e.textNow() : e.text })), remSchedule, remPerOn: (id) => remPerOn(dailyById(id)), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbLivePill, pageSay, nbSay, toast, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, themeChanged, nclUnhold: () => new Promise((r) => { if (nclHoldEnd) { nclHoldEnd(); setTimeout(r, 80); } else r(); }), nclOpen, nclMin, nclTell, nclFold, nclSentList, nmSentGo, myMainColour, myColouriseShift, myColoursNow, myAll: () => S.myThemes, myTurnNow: () => myTurn, soundDraw, nclGlance, captureChrome, acctCheck, dlog, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
   if (FRAME) { lookFrame(); return; }   // (the "Your look" window's page: Neoboard Settings alone, in the boards' look)
   // A page this makes over is never seen first as it was: the top bar is made over as soon as it's all there (Neopets puts it, the side
   // menu and their drop-downs before the page's own box, so that's before anything is drawn), and a page whose own layout changes much
@@ -52308,12 +52559,12 @@
   // You, about: when you last loaded a Neopets page or did anything on one (a click, a key, a scroll), in any tab, kept in this browser.
   // What looks at Neopets again and again by itself (NeoChat's Inbox, a topic's new posts, a board's topics) keeps to your setting while
   // you're about; once you've been away a while, its looks get further apart (a quarter of how long you've been gone), and after a while
-  // away it stops: NeoChat after 4 hours, the boards after an hour (30 minutes when a topic looks every minute or more often). Back on
+  // away it stops: NeoChat after 4 hours, the boards after an hour. Back on
   // Neopets, in this tab or another, it's back to your setting at once: you still hear of new Neomail while doing other things, without
   // looking busy all hours of the day
   const ACT_STOP = 4 * 3600e3;
   const NB_STOP = 3600e3;   // (the boards stop looking for new topics and posts after an hour away; NeoChat keeps its 4)
-  const nbStop = (sec) => (sec <= 60 ? NB_STOP / 2 : NB_STOP);   // (a topic's new posts every 30 seconds or every minute: after 30 minutes away)
+  const nbStop = () => NB_STOP;   // (the boards, whatever their setting: an hour away. Every 30 seconds or minute, which stopped at 30 minutes, isn't offered any more)
   const awayWords = (ms) => (ms % 3600e3 ? `${Math.round(ms / 60000)} minutes` : ms === 3600e3 ? 'an hour' : `${ms / 3600e3} hours`);   // (Settings says it from these numbers)
   const actAt = () => { let at = 0; try { at = Number(localStorage.getItem('bnp-active')) || 0; } catch (_) { /* */ } return Math.max(at, Number(get('active', 0)) || 0); };   // (the site's storage, or the script's own when the site's is full)
   function actNote() { const now = Date.now(), was = actAt(); if (now - was <= 20000) return; try { localStorage.setItem('bnp-active', String(now)); } catch (_) { set('active', now); } if (was && now - was > 5 * 60000) dispatchEvent(new Event('bnp-back')); }   // (bnp-back: back after a while away)
