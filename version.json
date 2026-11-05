@@ -1,11 +1,10 @@
 {
- "version": "5.2.6",
- "date": "2026-11-04",
+ "version": "5.2.7",
+ "date": "2026-11-05",
  "notes": [
-  "Auctions: the bid box no longer suggests a far too high bid",
-  "The Premium menu can be edited in Settings",
-  "Show more on your sales lists",
-  "Trading Post: Look again after a price is found",
-  "My Gallery’s title centred"
+  "Users’ shops: prices load after a buy or a new page, no refresh",
+  "Lottery, Food Club and Fishing runs keep going in a background tab",
+  "Fishing: Neopets’ fishing rod on the pet that’s fishing",
+  "Lottery: “Plan my 0 tickets” is gone at 20 of 20"
  ]
 }

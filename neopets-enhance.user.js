@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.2.6
+// @version      5.2.7
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -5667,7 +5667,7 @@
     if (p === '/auctions.phtml' || p === '/genie.phtml') return 'auctions';
     return '';
   }
-  const IT_WATCH = { inventory: '#invDisplay, .inv-display, #container__2020', quickstock: '#container__2020', safetydeposit: '#container__2020', closet: '#container__2020', market: '#market-your-app', tradingpost: '#tp_app__2025', questlog: '#QuestLogContent', npcquests: '#container__2020', usershops: 'ul.bsp-grid, #container__2020' };
+  const IT_WATCH = { inventory: '#invDisplay, .inv-display, #container__2020', quickstock: '#container__2020', safetydeposit: '#container__2020', closet: '#container__2020', market: '#market-your-app', tradingpost: '#tp_app__2025', questlog: '#QuestLogContent', npcquests: '#container__2020', usershops: '#bsp-grid-region, ul.bsp-grid, #container__2020' };   // (usershops: the region round its list: Neopets swaps everything inside it on a new page, a search or after a buy, so the list itself is gone by then (user, 2026-11-04: "after you buy something - it doesn't load prices"))
   function itStepAside() {   // (Item Helper is still switched on: its rows stay, ours go)
     if (!document.querySelector('.search-helper')) return false;
     $$('[data-bnp="it"]').forEach((x) => x.remove());
@@ -8406,13 +8406,12 @@
   function fishRunGet() { try { const r = JSON.parse(sessionStorage.getItem(FISH_RUN) || 'null'); return r && r.v === 1 && Array.isArray(r.list) && Date.now() - (r.at || 0) < 6 * 3600000 ? r : null; } catch (_) { return null; } }   // (this tab's, a few hours at most)
   function fishRunSet(r) { try { if (r) { r.at = Date.now(); sessionStorage.setItem(FISH_RUN, JSON.stringify(r)); } else sessionStorage.removeItem(FISH_RUN); } catch (_) { /* */ } }
   const fishGap = (k) => (k === 'cast' ? 2500 + Math.random() * 2500 : k === 'switch' ? 3000 + Math.random() * 3500 : 1200 + Math.random() * 1800) + (Math.random() < 0.2 ? 2000 + Math.random() * 4000 : 0);   // (a person's moment: before a cast, before the next pet, before the page; now and then a longer breath)
-  async function fishRunWait(ms) {   // (that moment, counted only while this tab is in front; false: stopped meanwhile)
+  async function fishRunWait(ms) {   // (that moment, on time in a tab out of sight too; false: stopped meanwhile)
     let left = ms;
     while (left > 0) {
       if (fishUi.stop) return false;
-      if (document.hidden) { fishUi.away = true; fishPaint(); await untilShown(); fishUi.away = false; fishPaint(); continue; }
       const step = Math.min(250, left);
-      await new Promise((ok) => setTimeout(ok, step));
+      await bmSleep(step);
       left -= step;
     }
     return !fishUi.stop;
@@ -8507,6 +8506,7 @@
     form.classList.remove('bnp-fish-gone');
     return form;
   }
+  const FISH_ROD = `${NPI}questlog/images/icons/Fishing.png`;   // (Neopets' own fishing rod, from its quest log, 40 by 40: the pet on the jetty's, and Fish in a row's)
   const FISH_BELL = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6v-5a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2Z"/></svg>';
   function fishPaint() {
     if (!fishUi || !fishUi.band.isConnected) return;
@@ -8524,7 +8524,7 @@
     const run = fishRunGet(), going = !!run && !run.paused, nRun = run ? run.list.length : 0;
     const WHY = { stop: 'stopped', away: 'you went to another page', switch: `Neopets didn’t make ${run && run.who} active`, odd: `the page after ${run && run.who}’s cast wasn’t a catch`, out: 'you seem to be logged out' };
     const runBar = !run || run.why === 'done' ? '' : going
-      ? `<div class="bnp-fish-run"><div class="bnp-fish-runhead"><span class="bnp-fish-lbl">Fishing in a row · ${Math.min(run.i + 1, nRun)} of ${nRun}</span><button type="button" class="bnp-fish-pill" data-fish-run="stop"${fishUi.stop ? ' disabled' : ''}>${fishUi.stop ? 'Stopping…' : 'Stop'}</button></div><i class="bnp-fish-meter is-run"><i style="width:${Math.round((100 * run.i) / Math.max(1, nRun))}%"></i></i>${run.orig ? `<label class="bnp-fish-backopt"><input type="checkbox" data-fish-backopt${f.back ? ' checked' : ''}><span>Switch back to ${esc(run.orig)} at the end</span></label>` : ''}<span class="bnp-fish-runsay">${fishUi.away ? 'Waiting for this tab to be in front' : run.list[run.i] ? `${esc(run.list[run.i])} ${run.step === 'switch' ? 'next, made active in a moment' : run.step === 'read' ? 'casting…' : 'on the jetty, casting in a moment'}` : 'Putting your active pet back'}${run.list[run.i + 1] ? ` · then ${esc(run.list[run.i + 1])}` : ''}</span></div>`
+      ? `<div class="bnp-fish-run"><div class="bnp-fish-runhead"><span class="bnp-fish-lbl has-rod"><img src="${FISH_ROD}" alt="" width="28" height="28">Fishing in a row · ${Math.min(run.i + 1, nRun)} of ${nRun}</span><button type="button" class="bnp-fish-pill" data-fish-run="stop"${fishUi.stop ? ' disabled' : ''}>${fishUi.stop ? 'Stopping…' : 'Stop'}</button></div><i class="bnp-fish-meter is-run"><i style="width:${Math.round((100 * run.i) / Math.max(1, nRun))}%"></i></i>${run.orig ? `<label class="bnp-fish-backopt"><input type="checkbox" data-fish-backopt${f.back ? ' checked' : ''}><span>Switch back to ${esc(run.orig)} at the end</span></label>` : ''}<span class="bnp-fish-runsay">${run.list[run.i] ? `${esc(run.list[run.i])} ${run.step === 'switch' ? 'next, made active in a moment' : run.step === 'read' ? 'casting…' : 'on the jetty, casting in a moment'}` : 'Putting your active pet back'}${run.list[run.i + 1] ? ` · then ${esc(run.list[run.i + 1])}` : ''}</span></div>`
       : `<div class="bnp-fish-run is-paused"><span class="bnp-fish-lbl">Fishing in a row · stopped at ${Math.min(run.i + 1, nRun)} of ${nRun}</span><span class="bnp-fish-runsay">${esc(run.why === 'stop' ? 'Stopped.' : `It stopped: ${WHY[run.why] || 'it was stopped'}.`)}${run.got.length ? ` ${run.got.length} fished so far.` : ''}</span><span class="bnp-fish-runbtns"><button type="button" class="bnp-fish-pill is-go" data-fish-run="carry">Carry on</button><button type="button" class="bnp-fish-pill" data-fish-run="forget">Forget it</button></span></div>`;
     if (run && run.why === 'done') {   // (the string done: what each pet caught)
       const caught = run.got.filter((g) => g.kind === 'catch'), soon = run.got.length - caught.length;
@@ -8568,9 +8568,9 @@
     const bellsOn = all.length && all.every((p) => f.rem[p.name]);
     const tile = (p) => {
       const rec = f.pets[p.name] || {}, at = nx(p), on = !!f.rem[p.name], isMe = p.name === me, sk = skillOf(p.name), busy = fishUi.busy === p.name, pick = f.string.includes(p.name), nPick = order.indexOf(p.name) + 1;
-      const chip = isMe ? '<em class="bnp-fish-chip is-now">On the jetty</em>' : busy ? '<em class="bnp-fish-chip">Switching…</em>' : at ? `<em class="bnp-fish-chip is-wait" title="${esc(`Caught something at ${fmtNst(rec.at)} NST; counted ready at ${fmtNst(at)} NST`)}">Caught ${esc(fmtLeft(now - rec.at))} ago</em>` : '<em class="bnp-fish-chip is-ready">Ready</em>';
-      return `<li class="bnp-fish-tile${isMe ? ' is-active' : ''}${at ? ' is-wait' : ' is-ready'}${fishUi.focus === p.name ? ' is-focus' : ''}${pick ? ' is-chosen' : ''}${fishUi.choosing ? ' is-choosing' : ''}" data-fish-pet="${esc(p.name)}">
-        ${pick ? `<span class="bnp-fish-check" title="${esc(`In your string: ${nPick} of ${order.length}`)}">${nPick}</span>` : ''}
+      const fishing = isMe && going && run.list[run.i] === p.name, chip = isMe ? `<em class="bnp-fish-chip is-now">${fishing ? 'Fishing' : 'On the jetty'}</em>` : busy ? '<em class="bnp-fish-chip">Switching…</em>' : at ? `<em class="bnp-fish-chip is-wait" title="${esc(`Caught something at ${fmtNst(rec.at)} NST; counted ready at ${fmtNst(at)} NST`)}">Caught ${esc(fmtLeft(now - rec.at))} ago</em>` : '<em class="bnp-fish-chip is-ready">Ready</em>';
+      return `<li class="bnp-fish-tile${isMe ? ' is-active' : ''}${fishing ? ' is-fishing' : ''}${at ? ' is-wait' : ' is-ready'}${fishUi.focus === p.name ? ' is-focus' : ''}${pick ? ' is-chosen' : ''}${fishUi.choosing ? ' is-choosing' : ''}" data-fish-pet="${esc(p.name)}">
+        ${pick ? `<span class="bnp-fish-check" title="${esc(`In your string: ${nPick} of ${order.length}`)}">${nPick}</span>` : ''}${isMe ? `<img class="bnp-fish-rod" src="${FISH_ROD}" alt="" width="40" height="40">` : ''}
         <button type="button" class="bnp-fish-pick" ${fishUi.choosing ? `data-fish-tog="${esc(p.name)}" aria-pressed="${pick}" title="${esc(pick ? `Take ${p.name} out of your string` : `Add ${p.name} to your string`)}"` : `data-fish-act="${esc(p.name)}"${isMe || fishUi.busy || fishUi.running || going ? ' disabled' : ''} title="${esc(isMe ? `${p.name} is on the jetty` : `Make ${p.name} your active pet`)}"`}>
           ${p.image ? `<img src="${esc(fishBig(p.image))}" alt="" width="88" height="88" loading="lazy">` : '<span class="bnp-fish-nopic"></span>'}
           <b>${esc(p.name)}</b><span>${sk != null ? `Skill ${sk.toLocaleString()}` : 'Skill ?'}</span>${chip}</button>
@@ -8582,8 +8582,8 @@
     const stringBar = !all.length || going ? '' : fishUi.choosing
       ? `<div class="bnp-fish-string is-choosing"><span class="bnp-fish-strwho"><b>Choose your string</b><span>Press pets to add or take them out · ${order.length} chosen</span></span><span class="bnp-fish-runbtns"><button type="button" class="bnp-fish-pill" data-fish-pickall="ready">All ready</button><button type="button" class="bnp-fish-pill" data-fish-pickall="all">Every pet</button><button type="button" class="bnp-fish-pill" data-fish-pickall="none">None</button><button type="button" class="bnp-fish-pill is-go" data-fish-choose>Done</button></span></div>`
       : order.length
-        ? `<div class="bnp-fish-string"><span class="bnp-fish-strwho"><b>Fish in a row</b><span>${order.length} in your string: ${esc(strNames)}</span></span><span class="bnp-fish-runbtns">${me ? `<label class="bnp-fish-backopt" title="${esc(`When the string's done, ${me} is made your active pet again; off, its last pet stays active`)}"><input type="checkbox" data-fish-backopt${f.back ? ' checked' : ''}><span>Switch back to ${esc(me)} after</span></label>` : ''}<button type="button" class="bnp-fish-pill" data-fish-choose>Change</button><button type="button" class="bnp-fish-pill is-go" data-fish-run="start"${fishUi.running || (run && !run.paused) ? ' disabled' : ''}>Start fishing (${order.length})</button></span></div>`
-        : `<div class="bnp-fish-string"><span class="bnp-fish-strwho"><b>Fish in a row</b><span>Choose pets, then Start: each one fishes in turn, a moment apart, as you would.</span></span><span class="bnp-fish-runbtns"><button type="button" class="bnp-fish-pill is-go" data-fish-choose>Choose pets</button></span></div>`;
+        ? `<div class="bnp-fish-string"><span class="bnp-fish-strwho has-rod"><img src="${FISH_ROD}" alt="" width="40" height="40"><b>Fish in a row</b><span>${order.length} in your string: ${esc(strNames)}</span></span><span class="bnp-fish-runbtns">${me ? `<label class="bnp-fish-backopt" title="${esc(`When the string's done, ${me} is made your active pet again; off, its last pet stays active`)}"><input type="checkbox" data-fish-backopt${f.back ? ' checked' : ''}><span>Switch back to ${esc(me)} after</span></label>` : ''}<button type="button" class="bnp-fish-pill" data-fish-choose>Change</button><button type="button" class="bnp-fish-pill is-go" data-fish-run="start"${fishUi.running || (run && !run.paused) ? ' disabled' : ''}>Start fishing (${order.length})</button></span></div>`
+        : `<div class="bnp-fish-string"><span class="bnp-fish-strwho has-rod"><img src="${FISH_ROD}" alt="" width="40" height="40"><b>Fish in a row</b><span>Choose pets, then Start: each one fishes in turn, a moment apart, as you would.</span></span><span class="bnp-fish-runbtns"><button type="button" class="bnp-fish-pill is-go" data-fish-choose>Choose pets</button></span></div>`;
     fishUi.pets.innerHTML = all.length
       ? `<div class="bnp-fish-petshead"><h3>Your pets</h3><span class="bnp-fish-count">${ready.length === all.length ? `All ${all.length} ready to fish` : `${ready.length} of ${all.length} ready to fish`}</span>
         <span class="bnp-fish-chips" role="group" aria-label="Show">${chips.map(([k, l, n]) => `<button type="button" data-fish-show="${k}" aria-pressed="${show === k}">${l}<i>${n}</i></button>`).join('')}</span>
@@ -8731,6 +8731,15 @@
     html.bnp-fish-page .bnp-fish-tile.is-wait:not(.is-active) .bnp-fish-pick img { filter: saturate(.6); opacity: .82; }   /* (resting: the ready ones stand out) */
     html.bnp-fish-page .bnp-fish-tile.is-active .bnp-fish-pick { border-color: var(--nb-bar); box-shadow: 0 0 0 2px color-mix(in srgb, var(--nb-bar) 30%, #fff), 0 2px 0 var(--nb-bar); }
     html.bnp-fish-page .bnp-fish-tile.is-focus .bnp-fish-pick { animation: bnp-fish-glow 1.6s ease-out 2; }
+    html.bnp-fish-page .bnp-fish-rod { position: absolute; top: 58px; left: calc(50% + 12px); z-index: 1; width: 40px; height: 40px; pointer-events: none; transform-origin: 75% 85%; filter: drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff) drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff) drop-shadow(0 1px 1px rgba(0, 0, 0, .35)); }   /* (at its own size, at the corner of the picture of the pet on the jetty; a thin white edge, so it stands apart from any picture) */
+    html.bnp-fish-page .bnp-fish-tile.is-fishing .bnp-fish-rod { animation: bnp-fish-rod 1.9s ease-in-out infinite; }
+    @keyframes bnp-fish-rod { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+    @media (prefers-reduced-motion: reduce) { html.bnp-fish-page .bnp-fish-tile.is-fishing .bnp-fish-rod { animation: none; } }
+    html.bnp-fish-page .bnp-fish-strwho.has-rod { grid-template-columns: 40px minmax(0, 1fr); column-gap: 10px; align-items: center; }
+    html.bnp-fish-page .bnp-fish-strwho.has-rod img { grid-row: 1 / span 2; display: block; width: 40px; height: 40px; }
+    html.bnp-fish-page .bnp-fish-strwho.has-rod b, html.bnp-fish-page .bnp-fish-strwho.has-rod span { grid-column: 2; }
+    html.bnp-fish-page .bnp-fish-lbl.has-rod { display: inline-flex; align-items: center; gap: 6px; }
+    html.bnp-fish-page .bnp-fish-lbl.has-rod img { display: block; width: 28px; height: 28px; }
     @keyframes bnp-fish-glow { 0% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--nb-bar) 55%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; } }
     html.bnp-fish-page .bnp-fish-bell { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 28px; height: 28px; margin: 0; padding: 0; border: 2px solid var(--nb-line); border-radius: 50%; background: #fff; color: #a39a80; cursor: pointer; }
     html.bnp-fish-page .bnp-fish-bell:hover { border-color: var(--fish-edge); color: var(--nb-text); }
@@ -31600,7 +31609,7 @@
         <div class="bnp-lotto-pick"><div class="bnp-lotto-ticket"><b class="bnp-lotto-tlabel">Your ticket</b><div class="bnp-lotto-chosen" aria-label="Your ticket">${[0, 1, 2, 3, 4, 5].map((i) => (pick[i] ? `<i class="bnp-lball" style="--b:url('${NPI}images/ball${((pick[i] - 1) % 6) + 1}.gif')">${pick[i]}</i>` : '<i class="bnp-lball is-empty"></i>')).join('')}</div></div>
           <p class="bnp-lotto-glabel">All 30 numbers: pick six</p>
           <div class="bnp-lotto-balls" role="group" aria-label="Pick six numbers">${Array.from({ length: 30 }, (_, i) => ball(i + 1, `aria-pressed="${pick.includes(i + 1)}"`)).join('')}</div>
-          <div class="bnp-lotto-tools"><button type="button" class="bnp-lpill" data-lt="random">Random</button>${get(lk, null) ? '<button type="button" class="bnp-lpill" data-lt="lucky">My lucky numbers</button>' : ''}<button type="button" class="bnp-lpill" data-lt="save"${pick.length === 6 ? '' : ' disabled'}>Keep these as my lucky ones</button><button type="button" class="bnp-lpill" data-lt="clear">Clear</button><button type="button" class="bnp-lpill is-main" data-lt="plan">${plan ? 'Plan them again' : `Plan my ${Math.max(0, 20 - have.length)} tickets`}</button></div>
+          <div class="bnp-lotto-tools"><button type="button" class="bnp-lpill" data-lt="random">Random</button>${get(lk, null) ? '<button type="button" class="bnp-lpill" data-lt="lucky">My lucky numbers</button>' : ''}<button type="button" class="bnp-lpill" data-lt="save"${pick.length === 6 ? '' : ' disabled'}>Keep these as my lucky ones</button><button type="button" class="bnp-lpill" data-lt="clear">Clear</button>${room() ? `<button type="button" class="bnp-lpill is-main" data-lt="plan">${plan ? 'Plan them again' : `Plan my ${room()} ticket${room() === 1 ? '' : 's'}`}</button>` : ''}</div>
           <p class="bnp-lotto-say" aria-live="polite"></p></div>`;
       bottom.innerHTML = `${plan ? `<div class="bnp-lotto-plan"><h3>Your plan for this draw <button type="button" class="bnp-lpill is-small" data-lt="unplan"${run ? ' disabled' : ''}>Clear plan</button></h3><ol>${plan.list.map((t) => { const got = haveKeys.has(lottoKey(t)), nx = !got && t === nextPlan; return `<li class="${got ? 'is-got' : nx ? 'is-next' : ''}">${row(t)}<small>${got ? 'Bought ✓' : nx ? 'Next: on your ticket' : 'To buy'}</small></li>`; }).join('')}</ol></div>` : ''}
         ${have.length ? `<div class="bnp-lotto-yours"><h3>${stale ? 'Your tickets from the last draw <small class="bnp-lotto-stale">Neopets hasn’t cleared them yet</small>' : 'Your tickets for this draw'}</h3><ol class="bnp-lotto-ylist">${have.map((t, i) => `<li><b>${i + 1}</b>${row(t)}</li>`).join('')}</ol></div>` : ''}`;
@@ -31681,7 +31690,7 @@
       paint();
       for (const t of q) {
         if (run.stop || !room()) break;
-        if (k) { await new Promise((ok) => { const w = setTimeout(ok, 2000 + Math.random() * 2500); run.wake = () => { clearTimeout(w); ok(); }; }); await untilShown(); if (run.stop) break; }   // (a person's moment between two, cut short by Stop; only while this tab is in sight)
+        if (k) { await new Promise((ok) => { bmSleep(2000 + Math.random() * 2500).then(ok); run.wake = ok; }); if (run.stop) break; }   // (a person's moment between two, on time in a tab out of sight too, cut short by Stop)
         say(`Buying ${k + 1} of ${n}…`);
         const r = await buyOne(t);
         if (!r.ok) { why = r.why; break; }
@@ -32515,13 +32524,13 @@
       fcPaint();
       return;
     }
-    await new Promise((ok) => setTimeout(ok, 250));
+    await bmSleep(250);
     const again = document.getElementById('fc-placed-again');
     if (again && again.offsetParent !== null) again.click();   // (Neopets' "placed" window closed for you: the next one's in reach)
     me.placing = -1;
     if (!me.queue.length) me.all = false;
     fcPaint();
-    if (me.queue.length) setTimeout(() => { if (fc === me) untilShown().then(() => { if (fc === me) fcPlaceNext(); }); }, 1600 + Math.random() * 2400);   // (a moment between two, as a person's clicks; only while this tab is in sight)
+    if (me.queue.length) bmSleep(1600 + Math.random() * 2400).then(() => { if (fc === me) fcPlaceNext(); });   // (a moment between two, as a person's clicks; on time in a tab out of sight too)
   }
   const fcPlacedN = () => Number(fc.form.dataset.betsPlaced) || 0;
   const fcMaxN = () => Number(fc.form.dataset.maxBets) || 10;
@@ -32670,7 +32679,7 @@
     const me = fc, bet = me && me.bets && me.bets[i];
     if (!bet || me.filling) return;
     me.filling = true;
-    const form = me.form, tick = () => new Promise((ok) => setTimeout(ok, 30));
+    const form = me.form, tick = () => bmSleep(30);
     try {
       const reset = document.getElementById('fc-bet-reset');
       if (reset && !reset.classList.contains('fc-btn-disabled')) { reset.click(); await tick(); }
@@ -52085,6 +52094,12 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.2.7', '2026-11-05', [
+      'Users’ shops: prices show again after you buy something or go to another page, no refresh needed',
+      'The Lottery’s Buy all, Food Club’s Place all and Fish in a row keep going while their tab isn’t the active one',
+      'Underwater Fishing: Neopets’ own fishing rod on the pet on the jetty and on Fish in a row',
+      'Lottery: no more “Plan my 0 tickets” once you have all 20',
+    ]],
     ['5.2.6', '2026-11-04', [
       'Auctions: the bid box fills in the right lowest bid (it could pick up another number on the page and suggest far too much)',
       'Settings › Menus: the Premium menu can be edited, its Super Shop Wizard, Bankroll and Dailies too; Shop’s NP and NC share one split tab, and NC has the NC Mall’s picture',
