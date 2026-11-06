@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.2.7
+// @version      5.2.8
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -1968,7 +1968,7 @@
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, tillLog: true, tpSales: true, auSales: true,
     scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: true, oldBtns: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldGalleries: false, oldShops: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
-    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, kpopPlay: true, kadHelp: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trBg: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, fcHelp: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
+    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, kpopPlay: true, kadHelp: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trBg: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, soupLog: true, fcHelp: true, fcHist: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, tone: '', vol: 100, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,   // (tone: '' each its own, or one of the sounds for all; vol: how loud, 5 to 100)
@@ -10095,7 +10095,8 @@
     set(labKey(), [...labLog(), { at: Date.now(), pet, what: what.slice(0, 200), av: !!j.avatarHtml }].slice(-200));
     labLogPaint();
   }
-  let labOnly = '';
+  const LAB_LOG_STEP = 10;   // (zaps shown at a time: Show more brings the next, so the log never runs on down the page (user, 2026-11-06: "rather than extending forever"))
+  let labOnly = '', labShown = LAB_LOG_STEP;
   function labLogPaint() {   // (under the lab: the zaps, newest first, by pet if you like)
     if (location.pathname !== '/lab.phtml') return;
     const app = document.getElementById('lab-vue-app');
@@ -10107,15 +10108,25 @@
       box = document.createElement('section');
       box.className = 'bnp-lablog';
       box.setAttribute('data-bnp', 'lablog');
-      box.addEventListener('click', (e) => { const b = e.target instanceof Element ? e.target.closest('[data-labonly]') : null; if (!b) return; labOnly = b.dataset.labonly; labLogPaint(); });
+      box.addEventListener('click', (e) => {
+        const t = e.target instanceof Element ? e.target : null, b = t && t.closest('[data-labonly]'), m = t && t.closest('[data-labmore]');
+        if (b) { labOnly = b.dataset.labonly; labShown = LAB_LOG_STEP; labLogPaint(); return; }
+        if (!m) return;
+        const less = m.dataset.labmore === 'less', y = m.getBoundingClientRect().top;
+        labShown = less ? LAB_LOG_STEP : labShown + LAB_LOG_STEP;
+        labLogPaint();
+        const next = box.querySelector(`[data-labmore="${m.dataset.labmore}"]`) || box.querySelector('[data-labmore]');
+        if (next) { next.focus({ preventScroll: true }); if (less) scrollBy(0, next.getBoundingClientRect().top - y); }   // (folded up: the button stays under your hand, never lost off the top of a page that's just got shorter)
+      });
       app.after(box);
     }
     if (labOnly && !pets.includes(labOnly)) labOnly = '';
     const pic = (name) => { const p = ((PAGE.__labData && PAGE.__labData.pets) || []).find((x) => x.name === name); return p ? p.img : ''; };
-    const shown = all.filter((z) => !labOnly || z.pet === labOnly).slice(0, 40);
+    const list = all.filter((z) => !labOnly || z.pet === labOnly), shown = list.slice(0, labShown), left = list.length - shown.length;
     box.innerHTML = `<h3>Your zap log <small>${all.length.toLocaleString()} zap${all.length === 1 ? '' : 's'} kept on this computer</small></h3>
       ${pets.length > 1 ? `<div class="bnp-lablog-pets" role="group" aria-label="Show the zaps of">${['', ...pets].map((p) => `<button type="button" class="bnp-lpill is-small" data-labonly="${esc(p)}" aria-pressed="${labOnly === p}">${p ? esc(p) : 'All'}</button>`).join('')}</div>` : ''}
-      <ol class="bnp-lablog-list">${shown.map((z) => { const u = pic(z.pet); return `<li>${u ? `<img src="${esc(u)}" alt="" width="40" height="40" loading="lazy">` : '<i aria-hidden="true"></i>'}<div><b>${esc(z.pet || 'A pet')}</b> <span>${esc(z.what || 'zapped')}</span>${z.av ? ' <em>avatar!</em>' : ''}</div><time>${esc(labDay(z.at))} · ${esc(fmtNst(z.at))} NST</time></li>`; }).join('')}</ol>`;
+      <ol class="bnp-lablog-list">${shown.map((z) => { const u = pic(z.pet); return `<li>${u ? `<img src="${esc(u)}" alt="" width="40" height="40" loading="lazy">` : '<i aria-hidden="true"></i>'}<div><b>${esc(z.pet || 'A pet')}</b> <span>${esc(z.what || 'zapped')}</span>${z.av ? ' <em>avatar!</em>' : ''}</div><time>${esc(labDay(z.at))} · ${esc(fmtNst(z.at))} NST</time></li>`; }).join('')}</ol>
+      ${left > 0 || shown.length > LAB_LOG_STEP ? `<p class="bnp-lablog-more">${left > 0 ? `<button type="button" class="bnp-lpill is-small" data-labmore="more">Show ${Math.min(LAB_LOG_STEP, left)} more</button>` : ''}${shown.length > LAB_LOG_STEP ? '<button type="button" class="bnp-lpill is-small" data-labmore="less">Show fewer</button>' : ''}${left > 0 ? `<span>${left.toLocaleString()} more below these</span>` : ''}</p>` : ''}`;
   }
   function labPage() {   // (the Lab Ray: your pets as pictures over Neopets' own menu; your zap log under the lab)
     if (location.pathname !== '/lab.phtml') return;
@@ -10178,6 +10189,193 @@
     sel.addEventListener('change', mark);
     sel.before(box);
     mark();
+  }
+  // The Soup Kitchen: your donations and what they brought. Neopets' page shows a prize or an avatar once and never lists them again, so each donation's own answer is kept
+  // (how much from what the page sent, never your balance) and nothing more is asked of Neopets. The dailies' record knows of earlier ones: when, and any prize, never how much.
+  // Months go by Neopian time. The avatars' rules are what players have found (SunnyNeo, 2026-11-06), not Neopets' word, so they're told as that
+  const SOUP_KINDAV = ['soup_faerie_kind.gif', 'Soup Faerie'], SOUP_GIFTAV = ['soup_kitchen_donation.gif', 'Soup Faerie - Donation'];
+  const SOUP_GOAL = 10000000, SOUP_KEEP = 1000, SOUP_ROWS = 15, SOUP_PRIZES = 12;
+  const SOUP_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const soupKey = () => acctKey('bnp-souplog');
+  const soupHere = () => !FRAME && location.pathname === '/soupkitchen.phtml' && S.features.soupLog !== false;
+  const soupPic = (u) => { const s = String(u || '').replace(/^\/\//, 'https://').replace(/^http:/, 'https:'); return /^https:\/\/images\.neopets\.com\/[^"'<>\s]+$/.test(s) ? s : ''; };   // (Neopets' own pictures only)
+  function soupGet() {   // ({ rows: [{ at, np, pn: the prize, pi: its picture, av: [avatars' files], say: Neopets' other words, old: from the dailies' record, no amount }], months: { "2026-11": [NP, how many] } })
+    let v = null;
+    try { v = JSON.parse(localStorage.getItem(soupKey()) || 'null'); } catch (_) { /* */ }
+    if (v && Array.isArray(v.rows)) return { rows: v.rows.filter((r) => r && r.at > 0), months: myPlain(v.months) ? v.months : {} };
+    const said = (get(dkey().replace(/^dlog/, 'dprize'), []) || []).filter((x) => Array.isArray(x) && x[0] === 'soup' && Number(x[1]) > 0);   // (before anything's kept here: what the dailies' record says)
+    return { rows: said.map(([, at, t]) => { const m = /^donated · (.+)$/.exec(String(t)); return { at: Number(at), old: 1, ...(m ? { pn: m[1] } : {}) }; }).sort((a, b) => a.at - b.at), months: {} };
+  }
+  function soupPut(L) {   // (the newest 1,000; one that brought something always stays, and the months' totals are never trimmed)
+    let over = L.rows.length - SOUP_KEEP;
+    const rows = L.rows.filter((r) => { if (over <= 0 || r.pn || r.av) return true; over--; return false; });
+    try { localStorage.setItem(soupKey(), JSON.stringify({ v: 1, rows, months: L.months })); } catch (_) { /* */ }
+  }
+  function earSoup(d) {   // (a donation's answer: how much, and what it gave you, kept)
+    if (!/\/soupkitchen\/donate\.php/.test(d.u) || S.features.soupLog === false) return;
+    let j = null, np = 0;
+    try { j = JSON.parse(d.text); } catch (_) { return; }
+    if (!j || j.success !== true) return;
+    try { np = Math.round(Number(JSON.parse(d.post || '{}').amount)) || 0; } catch (_) { /* */ }
+    const L = soupGet(), row = { at: Date.now() }, p = j.prize && typeof j.prize === 'object' ? j.prize : null, pic = p ? soupPic(p.img) : '', av = [...new Set([...String(j.avatarHtml || '').matchAll(/\/neoboards\/avatars\/([\w.-]+\.(?:gif|png|jpe?g))/gi)].map((m) => m[1]))];
+    if (np > 0) { const m = nstOf(row.at).month, t = L.months[m] || [0, 0]; row.np = np; L.months[m] = [t[0] + np, t[1] + 1]; }
+    if (p && (p.name || pic)) { row.pn = String(p.name || 'A prize').replace(/\s+/g, ' ').trim().slice(0, 120); if (pic) row.pi = pic; }
+    if (av.length) row.av = av; else if (String(j.avatarHtml || '').trim()) row.av = [''];
+    const say = String(j.message || '').replace(/Thanks so much for your donation!|It.s going to make a lot of hungry Neopets very happy\. :\)/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240);   // (anything but its usual thanks)
+    if (say) row.say = say;
+    L.rows.push(row);
+    soupPut(L);
+    soupPaint();
+  }
+  const soupMany = (n, w) => `${n.toLocaleString()} ${w}${n === 1 ? '' : 's'}`;
+  const soupDay = (t) => { const n = nstOf(t), now = Date.now(); return n.day === nstOf(now).day ? 'Today' : n.day === nstOf(now - DAY_MS).day ? 'Yesterday' : `${SOUP_MONTHS[n.mo - 1].slice(0, 3)} ${n.d}`; };
+  const soupWhen = (t) => `${esc(soupDay(t))} · ${esc(fmtNst(t))}`;
+  const soupMonthBefore = (ym) => { const y = Number(ym.slice(0, 4)), m = Number(ym.slice(5)); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`; };
+  const soupAvName = (f) => { const k = avKey(f), mine = [SOUP_KINDAV, SOUP_GIFTAV].find((a) => avKey(a[0]) === k), l = !mine && f ? avList() : null, a = l && l.list.find((x) => avKey(x.f) === k); return mine ? mine[1] : (a && a.n) || 'A new avatar'; };
+  const soupAvPic = (f, size) => (f ? `<img src="${NPI}neoboards/avatars/${esc(f)}" alt="" width="${size}" height="${size}" loading="lazy">` : '');
+  const soupPrizes = (L) => L.rows.slice().sort((a, b) => b.at - a.at).flatMap((r) => [...(r.av || []).map((f) => ({ at: r.at, np: r.np, av: f })), ...(r.pn ? [{ at: r.at, np: r.np, n: r.pn, i: r.pi }] : [])]);
+  const soupItemPic = (p, size) => (p.i ? `<img src="${esc(p.i)}" alt="" width="${size}" height="${size}" loading="lazy">` : `<img${p.n === 'a prize' ? '' : ` data-soup-pic="${esc(p.n)}"`} alt="" width="${size}" height="${size}">`);   // (from the dailies' record: its name alone, the picture itemdb has for it)
+  function soupBandHtml(L) {   // (the months' totals, the prizes, and the two avatars: yours, or how far off)
+    const now = nstOf(Date.now()), ym = now.month, was = soupMonthBefore(ym), [npNow, nNow] = L.months[ym] || [0, 0], [npWas, nWas] = L.months[was] || [0, 0], old = L.rows.filter((r) => r.old);
+    const oldIn = (m) => old.filter((r) => nstOf(r.at).month === m).length, tot = Object.values(L.months).reduce((a, m) => [a[0] + m[0], a[1] + m[1]], [0, 0]), prizes = soupPrizes(L), nAv = prizes.filter((p) => p.av !== undefined).length, kinds = new Set(prizes.filter((p) => p.n).map((p) => p.n)).size;
+    const count = (n, o) => [n ? soupMany(n, 'donation') : '', o ? `${o.toLocaleString()} without an amount` : ''].filter(Boolean).join(' · ');
+    const stat = (label, value, np, small, unknown) => `<div class="bnp-soup-stat"><span>${label}</span><b>${unknown && !value ? '—' : `${value.toLocaleString()}${np ? '<i>NP</i>' : ''}`}</b><small>${small}</small></div>`;
+    const stats = !L.rows.length ? '' : `<div class="bnp-soup-stats">${stat('This month', npNow, true, count(nNow, oldIn(ym)) || 'None yet', oldIn(ym))}${stat('Last month', npWas, true, count(nWas, oldIn(was)) || 'None', oldIn(was))}${stat('All together', tot[0], true, count(tot[1], old.length), old.length)}${stat('Prizes', prizes.length, false, [kinds > 1 ? `${kinds.toLocaleString()} different` : '', nAv ? soupMany(nAv, 'avatar') : ''].filter(Boolean).join(' · ') || (prizes.length ? 'So far' : 'None yet'))}</div>`;
+    const own = avOwn(), has = (f) => L.rows.some((r) => (r.av || []).some((x) => avKey(x) === avKey(f))) || (!!own && own.list.some((x) => avKey(x[0]) === avKey(f)));
+    const card = (a, body) => { const got = has(a[0]); return `<div class="bnp-soup-av${got ? ' is-got' : ''}">${soupAvPic(a[0], 50)}<div><b>${esc(a[1])}</b>${got ? '<small>You have this one</small>' : body}</div></div>`; };
+    const fmt = (n) => n.toLocaleString(), lastDay = new Date(Date.UTC(Number(ym.slice(0, 4)), now.mo, 0)).getUTCDate(), meter = (x) => `<i class="bnp-soup-meter" aria-hidden="true"><i style="width:${x > 0 ? Math.max(2, Math.min(100, x * 100)).toFixed(1) : 0}%"></i></i>`;
+    const toGift = npWas >= SOUP_GOAL ? `${meter(1)}<small>${fmt(npWas)} NP last month: players say any donation this month brings it.</small>`
+      : npNow >= SOUP_GOAL ? `${meter(1)}<small>${fmt(npNow)} NP this month: players say any donation from ${SOUP_MONTHS[now.mo % 12]} 1 brings it.</small>`
+        : `<span class="bnp-soup-to">${fmt(npNow)} of ${fmt(SOUP_GOAL)} NP this month</span>${meter(npNow / SOUP_GOAL)}<small>Players say: ${fmt(SOUP_GOAL)} NP within one month, then any donation the month after. This month ends ${SOUP_MONTHS[now.mo - 1].slice(0, 3)} ${lastDay} at midnight NST.</small>`;
+    return `${stats}<div class="bnp-soup-avs">${card(SOUP_KINDAV, `<small>Players say it can come at random when you donate ${fmt(5000)} NP or more, or when a pet eats here.</small>`)}${card(SOUP_GIFTAV, toGift)}</div>${L.rows.length ? '' : '<p class="bnp-soup-first">Your donations and what they bring show here from your next one.</p>'}`;
+  }
+  function soupListsHtml(L) {   // (each donation, newest first under its month; every prize and avatar, as pictures)
+    if (!L.rows.length) return '';
+    const all = L.rows.slice().sort((a, b) => b.at - a.at), prizes = soupPrizes(L), more = (k, total, shown, step, what) => (total > shown ? `<p class="bnp-soup-more"><button type="button" class="bnp-soup-pill" data-soup-more="${k}">Show ${Math.min(step, total - shown).toLocaleString()} more</button><span>${soupMany(total - shown, `more ${what}`)} below these</span></p>` : '');
+    let month = '';
+    const rows = all.slice(0, soupUi.rows).map((r) => {
+      const m = nstOf(r.at).month, t = L.months[m] || [0, 0], o = m === month ? 0 : all.filter((x) => x.old && nstOf(x.at).month === m).length;
+      const head = m === month ? '' : `<tr class="is-month"><th colspan="3" scope="colgroup"><span><b>${SOUP_MONTHS[Number(m.slice(5)) - 1]} ${m.slice(0, 4)}</b><span>${[t[0] ? `${t[0].toLocaleString()} NP` : '', t[1] ? soupMany(t[1], 'donation') : '', o ? `${o.toLocaleString()} without an amount` : ''].filter(Boolean).join(' · ')}</span></span></th></tr>`;
+      month = m;
+      const got = [...(r.av || []).map((f) => `<span class="bnp-soup-got">${soupAvPic(f, 40)}<span><b>${esc(soupAvName(f))}</b><small>Avatar</small></span></span>`), ...(r.pn ? [`<span class="bnp-soup-got">${soupItemPic({ n: r.pn, i: r.pi }, 40)}<span><b>${esc(r.pn)}</b></span></span>`] : [])].join('');
+      return `${head}<tr><td class="is-when">${soupWhen(r.at)}</td><td class="is-np">${r.np ? `<b>${r.np.toLocaleString()} NP</b>` : '<span class="bnp-soup-unk" title="From before Neopets Enhance noted how much">Not noted</span>'}</td><td>${got}${r.say ? `<small class="bnp-soup-say">${esc(r.say)}</small>` : ''}</td></tr>`;
+    }).join('');
+    const tiles = prizes.slice(0, soupUi.prizes).map((p) => `<li class="bnp-soup-prize"><span class="bnp-soup-pic">${p.av !== undefined ? soupAvPic(p.av, 50) : soupItemPic(p, 80)}</span><b>${esc(p.av !== undefined ? soupAvName(p.av) : p.n)}</b><small>${p.av !== undefined ? 'Avatar · ' : ''}${soupWhen(p.at)}${p.np ? `<br>from ${p.np.toLocaleString()} NP` : ''}</small></li>`).join('');
+    return `<section class="bnp-soup-card" aria-label="Your donations"><h3>Your Donations</h3><div class="bnp-soup-scroll"><table class="bnp-soup-t"><thead><tr><th scope="col">When <small>NST</small></th><th scope="col" class="is-np">Donated</th><th scope="col">Prize</th></tr></thead><tbody>${rows}</tbody></table></div>${more('rows', all.length, soupUi.rows, SOUP_ROWS, 'donation')}<p class="bnp-soup-foot">Neopets doesn’t list these anywhere, so NE keeps them in this browser, for each account.${all.some((r) => r.old) ? ' The ones without an amount come from NE’s dailies record, which didn’t note how much.' : ''}</p></section>
+      ${prizes.length ? `<section class="bnp-soup-card" aria-label="Your prizes"><h3>Your Prizes</h3><ul class="bnp-soup-prizes">${tiles}</ul>${more('prizes', prizes.length, soupUi.prizes, SOUP_PRIZES, 'prize')}</section>` : ''}`;
+  }
+  let soupUi = null;   // (the section on this page: { root, rows, prizes }, how many of each are shown)
+  function soupPaint() {
+    if (!soupHere()) return;
+    const form = document.getElementById('sk-donate'), L = soupGet();
+    if (!soupUi || !soupUi.root.isConnected) {
+      const box = form || document.getElementById('container__2020');
+      if (!box || (!form && !L.rows.length)) return;   // (this account can't donate just now, and nothing's kept: nothing to show)
+      soupStyles();
+      try { nbTheme(); } catch (e) { report(e); }
+      const root = document.createElement('section');
+      root.className = 'bnp-soup';
+      root.setAttribute('data-bnp', 'soup');
+      root.setAttribute('aria-label', 'Your donations and prizes');
+      root.innerHTML = '<div class="bnp-soup-band" data-bnp="soupband"></div><div class="bnp-soup-cols"></div>';
+      root.addEventListener('click', (e) => {   // (Show more: the next ones, under these; the page stays where it is)
+        const b = e.target instanceof Element ? e.target.closest('[data-soup-more]') : null;
+        if (!b) return;
+        const k = b.dataset.soupMore;
+        soupUi[k] += k === 'rows' ? SOUP_ROWS : SOUP_PRIZES;
+        soupPaint();
+        const next = root.querySelector(`[data-soup-more="${k}"]`);
+        if (next) next.focus({ preventScroll: true });
+      });
+      if (form) form.after(root); else box.append(root);
+      soupUi = { root, rows: SOUP_ROWS, prizes: SOUP_PRIZES };
+      shopBandPic(root.firstElementChild);
+    }
+    soupUi.root.firstElementChild.innerHTML = soupBandHtml(L);
+    soupUi.root.lastElementChild.innerHTML = soupListsHtml(L);
+    const want = new Map(), cache = itPriceCache();   // (a prize known by name alone: its picture, kept with its price, or asked for together, as Sales History's)
+    for (const img of soupUi.root.querySelectorAll('img[data-soup-pic]')) { const nm = img.getAttribute('data-soup-pic'), c = cache[nm]; if (c && c.r && c.r.img) img.src = c.r.img; else want.set(nm, [...(want.get(nm) || []), img]); }
+    for (const [nm, imgs] of want) itPriceAsk(nm, (res) => { if (res && res.img) for (const i of imgs) i.src = res.img; });
+  }
+  function soupBoot() {
+    if (!soupHere()) return;
+    soupPaint();
+    addEventListener('storage', (e) => { if (e.key === soupKey()) soupPaint(); });   // (given in another tab)
+  }
+  function soupStyles() {
+    document.documentElement.classList.add('bnp-soup-page');
+    if (document.getElementById('bnp-soup-style')) return;
+    const st = document.createElement('style');
+    st.id = 'bnp-soup-style';
+    st.textContent = `
+    @font-face { font-family: "Cafeteria"; src: url("https://images.neopets.com/js/fonts/cafeteria-black.otf") format("opentype"); font-display: swap; }
+    @font-face { font-family: "MuseoSansRounded500"; src: url("https://images.neopets.com/js/fonts/museosansrounded-500.woff") format("woff"); font-display: swap; }
+    @font-face { font-family: "MuseoSansRounded700"; src: url("https://images.neopets.com/js/fonts/museosansrounded-700.woff") format("woff"); font-display: swap; }
+    html.bnp-soup-page { --nb-acc: #fed123; --nb-pat: none; --nb-patsz: 121px 58px; --nb-patpos: 50% -10px; --nb-frame: #faa819; --nb-panel: #fffacd;
+      --nb-band: var(--nb-pat) var(--nb-patpos) / var(--nb-patsz), var(--nb-acc); --nb-line: color-mix(in srgb, var(--nb-frame) 30%, #fff);
+      --nb-bar: #2e72c0; --nb-bar-ink: #fff; --nb-bar-edge: color-mix(in srgb, var(--nb-bar) 68%, #000); --nb-muted: #5f5a4a; --nb-text: #262626;
+      --nb-by: color-mix(in srgb, var(--nb-panel) 32%, #fff); --nb-alt: color-mix(in srgb, var(--nb-bar) 8%, #fff);
+      --nb-ui: "MuseoSansRounded700", Arial, sans-serif; --nb-txt: "MuseoSansRounded500", Arial, sans-serif;
+      --soup-edge: color-mix(in srgb, var(--nb-frame) 74%, #000); }   /* (soup-edge: each box's outline, a deeper shade of your theme's frame) */
+    html.bnp-soup-page .bnp-soup { display: grid; gap: 14px; max-width: 980px; margin: 0 auto 24px; color: var(--nb-text); font: 13.5px/1.4 var(--nb-txt); text-align: left; clear: both; }
+    html.bnp-soup-page .bnp-soup small { font: 12px/1.35 var(--nb-txt); }
+    html.bnp-soup-page .bnp-soup-band { display: grid; gap: 10px; padding: 14px; border: 2px solid var(--nb-frame); border-radius: 20px; background: var(--nb-band); box-shadow: 0 3px 0 var(--nb-frame); }
+    html.bnp-soup-page .bnp-soup-band.is-cover { background: var(--nb-pat) 50% 50% / cover no-repeat, var(--nb-acc); }
+    html.bnp-soup-page .bnp-soup-band.has-grad { background: var(--nb-pat) var(--nb-patpos) / var(--nb-patsz), var(--shop-grad), var(--nb-acc); }
+    html.bnp-soup-page .bnp-soup-band.has-grad.is-cover { background: var(--nb-pat) 50% 50% / cover no-repeat, var(--shop-grad), var(--nb-acc); }
+    html.bnp-soup-page .bnp-soup-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+    html.bnp-soup-page .bnp-soup-stat, html.bnp-soup-page .bnp-soup-av { border: 2px solid var(--soup-edge); border-radius: 13px; background: rgba(255, 255, 255, .96); box-shadow: 0 2px 0 var(--soup-edge); }
+    html.bnp-soup-page .bnp-soup-stat { display: grid; align-content: start; gap: 2px; padding: 8px 13px 9px; }
+    html.bnp-soup-page .bnp-soup-stat > span { color: var(--nb-muted); font: 13px/1.25 var(--nb-ui); }
+    html.bnp-soup-page .bnp-soup-stat > b { color: var(--nb-text); font: 26px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; overflow-wrap: anywhere; }
+    html.bnp-soup-page .bnp-soup-stat > b > i { margin-left: 5px; color: var(--nb-muted); font: 15px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-soup-page .bnp-soup-stat > small, html.bnp-soup-page .bnp-soup-av small { color: var(--nb-muted); }
+    html.bnp-soup-page .bnp-soup-avs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+    html.bnp-soup-page .bnp-soup-av { display: grid; grid-template-columns: 50px minmax(0, 1fr); align-items: center; gap: 12px; padding: 10px 13px; }
+    html.bnp-soup-page .bnp-soup-av > img { display: block; width: 50px; height: 50px; border-radius: 8px; }
+    html.bnp-soup-page .bnp-soup-av > div { display: grid; gap: 3px; min-width: 0; }
+    html.bnp-soup-page .bnp-soup-av b { color: var(--nb-text); font: 17px/1.15 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-soup-page .bnp-soup-av.is-got small { color: #2e7d32; font: 13px var(--nb-ui); }
+    html.bnp-soup-page .bnp-soup-to { color: var(--nb-text); font: 13px var(--nb-ui); }
+    html.bnp-soup-page .bnp-soup-meter { display: block; height: 8px; overflow: hidden; border-radius: 4px; background: color-mix(in srgb, var(--nb-line) 70%, #fff); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08); font-style: normal; }
+    html.bnp-soup-page .bnp-soup-meter > i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, color-mix(in srgb, var(--nb-bar) 70%, #fff), var(--nb-bar)); }
+    html.bnp-soup-page .bnp-soup-first { max-width: none; margin: 0; padding: 7px 12px; border: 2px solid var(--soup-edge); border-radius: 13px; background: rgba(255, 255, 255, .96); box-shadow: 0 2px 0 var(--soup-edge); color: var(--nb-muted); font: 13px var(--nb-txt); text-align: center; }
+    html.bnp-soup-page .bnp-soup-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); align-items: start; gap: 14px; }
+    html.bnp-soup-page .bnp-soup-cols:empty { display: none; }
+    html.bnp-soup-page .bnp-soup-card { min-width: 0; overflow: hidden; border: 2px solid var(--nb-frame); border-radius: 15px; background: #fff; box-shadow: 0 3px 0 var(--nb-frame); }
+    html.bnp-soup-page .bnp-soup-card > h3 { margin: 0; padding: 6px 12px 7px; border: 0; background: var(--nb-bar); color: var(--nb-bar-ink); font: 21px/1.15 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; text-align: center; text-shadow: ${nctRing('var(--nb-bar-edge)')}; }
+    html.bnp-soup-page .bnp-soup-scroll { overflow-x: auto; }
+    html.bnp-soup-page table.bnp-soup-t { width: 100%; margin: 0; border-collapse: collapse; font: 13.5px var(--nb-txt); }
+    html.bnp-soup-page .bnp-soup-t th { padding: 6px 10px; border-bottom: 2px solid var(--nb-line); background: none; color: var(--nb-muted); font: 12px var(--nb-ui); text-align: left; white-space: nowrap; }
+    html.bnp-soup-page .bnp-soup-t th small { font: 11px var(--nb-txt); }
+    html.bnp-soup-page .bnp-soup-t td { padding: 5px 10px; border-bottom: 1px solid color-mix(in srgb, var(--nb-line) 55%, #fff); background: #fff; color: var(--nb-text); text-align: left; vertical-align: middle; }
+    html.bnp-soup-page .bnp-soup-t :is(th, td).is-np { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    html.bnp-soup-page .bnp-soup-t .is-when { white-space: nowrap; }
+    html.bnp-soup-page .bnp-soup-t td b { font: 13.5px var(--nb-ui); }
+    html.bnp-soup-page .bnp-soup-t tr.is-month th { padding: 6px 10px; border-bottom: 1px solid var(--nb-line); background: var(--nb-by); color: var(--nb-text); white-space: normal; }
+    html.bnp-soup-page .bnp-soup-t tr.is-month th > span { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; }
+    html.bnp-soup-page .bnp-soup-t tr.is-month b { font: 15px "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-soup-page .bnp-soup-t tr.is-month b + span { color: var(--nb-muted); font: 12.5px var(--nb-ui); }
+    html.bnp-soup-page .bnp-soup-unk { color: var(--nb-muted); font: 12.5px var(--nb-txt); }
+    html.bnp-soup-page .bnp-soup-got { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    html.bnp-soup-page .bnp-soup-got + .bnp-soup-got { margin-top: 4px; }
+    html.bnp-soup-page .bnp-soup-got img { flex: none; width: 40px; height: 40px; border-radius: 8px; }
+    html.bnp-soup-page .bnp-soup img:not([src]) { visibility: hidden; }
+    html.bnp-soup-page .bnp-soup-got > span { display: grid; min-width: 0; }
+    html.bnp-soup-page .bnp-soup-got small { color: var(--nb-muted); }
+    html.bnp-soup-page .bnp-soup-say { display: block; margin-top: 3px; color: var(--nb-muted); }
+    html.bnp-soup-page .bnp-soup-prizes { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; margin: 0; padding: 10px; list-style: none; }
+    html.bnp-soup-page .bnp-soup-prize { display: grid; justify-items: center; align-content: start; gap: 4px; padding: 10px 6px; border: 2px solid var(--nb-line); border-radius: 13px; background: #fff; text-align: center; list-style: none; }
+    html.bnp-soup-page .bnp-soup-pic { display: grid; place-items: center; width: 80px; height: 80px; }
+    html.bnp-soup-page .bnp-soup-pic img { display: block; border-radius: 8px; }
+    html.bnp-soup-page .bnp-soup-prize b { color: var(--nb-text); font: 13px/1.25 var(--nb-ui); overflow-wrap: anywhere; }
+    html.bnp-soup-page .bnp-soup-prize small { color: var(--nb-muted); }
+    html.bnp-soup-page .bnp-soup-more { max-width: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 12px; margin: 10px 10px 4px; color: var(--nb-muted); font: 12.5px var(--nb-txt); }
+    html.bnp-soup-page .bnp-soup-foot { max-width: none; margin: 8px 12px 10px; color: var(--nb-muted); font: 12px/1.4 var(--nb-txt); text-align: center; }
+    html.bnp-soup-page .bnp-soup-pill { display: inline-flex; align-items: center; justify-content: center; height: 32px; margin: 0; padding: 0 15px; border: 2px solid var(--nb-line); border-radius: 999px; background: linear-gradient(#fff 40%, color-mix(in srgb, var(--soup-edge) 8%, #fff)); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), 0 2px 0 var(--nb-line); color: var(--nb-text); font: 13px var(--nb-ui); white-space: nowrap; cursor: pointer; }
+    html.bnp-soup-page .bnp-soup-pill:hover { border-color: var(--soup-edge); }
+    html.bnp-soup-page .bnp-soup-pill:focus-visible { outline: 2px solid var(--nb-bar); outline-offset: 2px; }`;
+    document.documentElement.append(st);
   }
   function frameEar() {   // (a game's frame: the ear alone, before its own script, telling the game's page what it hears)
     const put = () => { const sc = document.createElement('script'); sc.textContent = `(${PAGE_EAR.toString()})(${JSON.stringify('/pirate_slots\\.php|/(?:np-templates/)?ajax/')}, true);`; (document.head || document.documentElement).append(sc); sc.remove(); };
@@ -10257,6 +10455,7 @@
       try { earTrudy(d); } catch (err) { report(err); }
       try { earLab(d); } catch (err) { report(err); }
       try { earKpop(d); } catch (err) { report(err); }
+      try { earSoup(d); } catch (err) { report(err); }   // (before the dailies' record, which would count this one twice)
       try { dailyHeard(d); } catch (err) { report(err); }
     });
   }
@@ -22050,6 +22249,17 @@
     saMine.counts[pid] = d.n;
     saMineSave();
   }
+  function saStampIn(name) {   // (a stamp just put in your album, counted in at once where NE knows its place, without reading the page; true if it was. saMineSave after)
+    const at = saKnown().byName.get(String(name || '').toLowerCase());
+    if (!at || !saMine) return false;
+    if (!saMine.pages[at[0]]) saMine.pages[at[0]] = { t: Date.now(), have: [], n: Number(saMine.counts[at[0]]) || 0 };   // (a page with none yet: its first)
+    const pg = saMine.pages[at[0]];
+    if (!Array.isArray(pg.have) || pg.have.includes(at[1])) return false;
+    pg.have.push(at[1]);
+    pg.n = (Number(pg.n) || 0) + 1;
+    saMine.counts[at[0]] = pg.n;
+    return true;
+  }
   function saState(pid) {   // (one page of yours, as far as it's known: its places, which you have (null: not known yet), Neopets' count)
     const slots = saKnown().pages[pid] || Array(25).fill(null), M = saMine || saBlank();
     const pg = M.pages[pid], n = M.counts[pid] != null ? M.counts[pid] : pg ? pg.n : null;
@@ -33586,6 +33796,11 @@
     const st = sdbVm();
     try { return st ? [...(st.selectedItemsList || [])].filter((x) => x && x.can_read) : []; } catch (_) { return []; }
   }
+  function sdbPills(bar) {   // (NE's pills at the end of the SDB's header bar, kept together however narrow the page)
+    let w = bar.querySelector(':scope > [data-bnp="sdbpills"]');
+    if (!w) { w = document.createElement('span'); w.className = 'bnp-sdr-pills'; w.setAttribute('data-bnp', 'sdbpills'); bar.append(w); }
+    return w;
+  }
   function sdrBoot() {   // (its two ways in, kept in place as Neopets' list and drawer come and go)
     if (!sdrOn() || sdrBoot.on) return;
     sdrBoot.on = true;
@@ -33628,7 +33843,7 @@
       const th = themeHead();
       if (th && th.bg) { p.style.setProperty('--bnp-sdr-c', th.bg); p.style.setProperty('--bnp-sdr-ink', inkReads(th.ink, th.bg)); }   // (your theme's colour, as its pop-ups' headers wear it)
       p.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); sdrOpen(sdrPicked().length ? 'sel' : 'all'); });
-      bar.append(p);
+      sdbPills(bar).prepend(p);
     }
   }
   function runChip(id, o) {   // (a run whose window is closed, on the page: what it's doing, how far, and a click brings its window back; finished, a × too. o null: gone. o = { win, icon, title, text, busy, pct, tip, open, dismiss })
@@ -33668,6 +33883,7 @@
   }
   function sdrOpen(src) {
     if (!sdrOn()) return;
+    if (salRunning()) { salShow(); return; }   // (stamps going in, its own list on Album Item just now: that window; this one when that's done)
     styles();
     if (!sdr) {
       const veil = document.createElement('div'), win = document.createElement('div');
@@ -33745,25 +33961,26 @@
     return out;
   }
   const sdrRead1 = (h, it) => (h.ids.size ? h.ids.has(String(it.obj_info_id)) : h.keys.has(colImgKey(it.obj_filename)));   // (read already: by Neopets' own id for it where the page gives them)
-  async function sdrBooksView(st) {   // (its own list on Books, from its first page, as you'd choose it there: your page size and order as they are. How you had it is kept, to put back after)
-    if (sdr.backing) await sdr.backing;
-    if (!sdr.view0) sdr.view0 = { cat: String(st.selectedCategory == null ? '' : st.selectedCategory), page: Number(st.currentPage) || 1, search: String(st.searchQuery || ''), pool: st.viewFilter };
-    if (st.viewFilter === 'nc' && typeof st.setViewFilter === 'function') { st.setViewFilter('np'); if (!(await sdbIdle(st))) return false; }   // (books are on its NP side)
-    let ask = String(st.selectedCategory) !== SDR_BOOKS || (Number(st.currentPage) || 1) !== 1;
-    if (String(st.searchQuery || '').trim() && st.searchScope !== 'page') { st.searchQuery = ''; ask = true; }   // (a search through your whole SDB would leave books out: its box emptied, as you'd empty it)
+  async function sdbCatView(h, st, cat) {   // (its own list on that category, from its first page, as you'd choose it there: your page size and order as they are. How you had it is kept, to put back after. h: the window's own record)
+    if (h.backing) await h.backing;
+    if (!h.view0) h.view0 = { cat: String(st.selectedCategory == null ? '' : st.selectedCategory), page: Number(st.currentPage) || 1, search: String(st.searchQuery || ''), pool: st.viewFilter };
+    if (st.viewFilter === 'nc' && typeof st.setViewFilter === 'function') { st.setViewFilter('np'); if (!(await sdbIdle(st))) return false; }   // (these are on its NP side)
+    let ask = String(st.selectedCategory) !== cat || (Number(st.currentPage) || 1) !== 1;
+    if (String(st.searchQuery || '').trim() && st.searchScope !== 'page') { st.searchQuery = ''; ask = true; }   // (a search through your whole SDB would leave some out: its box emptied, as you'd empty it)
     if (!ask) return sdbIdle(st);   // (there already)
-    st.selectedCategory = SDR_BOOKS;
+    st.selectedCategory = cat;
     if (typeof st.onFilterChange === 'function') st.onFilterChange(); else st.onSearch();   // (what its own Category box does, in either version of the page)
     return sdbIdle(st);
   }
-  function sdrViewBack() {   // (its own list as you had it before NE put it on Books: your category, search and page, as you'd go back to them)
-    const v = sdr && sdr.view0;
-    if (!v || sdr.backing) return sdr && sdr.backing;
-    return (sdr.backing = (async () => {
+  const sdrBooksView = (st) => sdbCatView(sdr, st, SDR_BOOKS);
+  function sdbViewBack(h) {   // (its own list as you had it before NE put it on a category: your category, search and page, as you'd go back to them)
+    const v = h && h.view0;
+    if (!v || h.backing) return h && h.backing;
+    return (h.backing = (async () => {
       const st = sdbVm();
       try {
         if (!st) return;
-        await sdbIdle(st);   // (a page of books still coming: after it)
+        await sdbIdle(st);   // (a page still coming: after it)
         if (v.pool !== st.viewFilter && typeof st.setViewFilter === 'function') { st.setViewFilter(v.pool); await sdbIdle(st); }
         if (String(st.selectedCategory == null ? '' : st.selectedCategory) !== v.cat || String(st.searchQuery || '') !== v.search) {
           st.selectedCategory = v.cat;
@@ -33772,15 +33989,16 @@
           await sdbIdle(st);
         }
         if (v.page > 1 && (Number(st.currentPage) || 1) !== v.page) { await bmSleep(800 + Math.random() * 900); st.onPageChange(Math.min(v.page, Number(st.totalPages) || 1)); await sdbIdle(st); }
-      } catch (e) { report(e); } finally { sdr.view0 = null; sdr.backing = null; }
+      } catch (e) { report(e); } finally { h.view0 = null; h.backing = null; }
     })());
   }
-  async function sdrScan(me) {   // (every book in your SDB: its own list put on Books, as you'd choose it there, and looked through a page at a time at your page size, a moment between. Where each one was, to go to its page when it's read)
+  const sdrViewBack = () => sdbViewBack(sdr);
+  async function sdbCatScan(me, h, cat, keep, paint) {   // (everything of a kind in your SDB: its own list put on that category, as you'd choose it there, and looked through a page at a time at your page size, a moment between. Where each one was, to go to its page when its turn comes)
     const st = sdbVm();
     if (!st || !(PAGE.__sdbData && PAGE.__sdbData.refCk)) throw new Error('page');
     while (document.hidden && !bmP().bg && !me.stop) await bmSleep(500);
     if (me.stop) return null;
-    if (!(await sdrBooksView(st))) throw new Error('sdb');
+    if (!(await sdbCatView(h, st, cat))) throw new Error('sdb');
     const out = [];
     me.pos = new Map();
     for (let p = 1; ; p++) {
@@ -33795,12 +34013,13 @@
       const per = Number(st.perPage) || 30;
       me.page = p;
       me.pages = Number(st.totalPages) || 1;
-      sdrPaint();
-      [...(st.items || [])].forEach((it, i) => { if (!it) return; me.pos.set(String(it.obj_info_id), (p - 1) * per + i); if (it.can_read && !it.is_nc) out.push(it); });
+      paint();
+      [...(st.items || [])].forEach((it, i) => { if (!it) return; me.pos.set(String(it.obj_info_id), (p - 1) * per + i); if (keep(it)) out.push(it); });
       if (p >= me.pages || p >= 60) break;
     }
     return out;
   }
+  const sdrScan = (me) => sdbCatScan(me, sdr, SDR_BOOKS, (it) => it.can_read && !it.is_nc, sdrPaint);
   async function sdrCheck() {   // (the pet chosen: what it's read, then the books to read it)
     if (!sdr || !sdr.pet || (sdr.run && !sdr.run.over)) return;
     const pet = sdr.pet, src = sdr.src, me = { stop: false, page: 0, pages: 0 };
@@ -34022,6 +34241,378 @@
     foot.innerHTML = h;
     const np = foot.querySelector('[data-sdrpin]');
     if (np) { np.value = pv || sdr.pin || ''; np.addEventListener('input', () => { sdr.pin = np.value; if (sdr.err) { sdr.err = ''; const n = sdr.win.querySelector('.bnp-sdr-main .is-err'); if (n) n.remove(); } }); }
+  }
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SDB: stamps put in your album, several at once (the user, 5 November 2026: "can you add a bulk stamp albumer to SDB, like how the books one is
+  // but for stamps"). Neopets' own SDB does several at once here: what's selected goes in with one Put in Stamp Album, whichever pages it's on. NE's
+  // window as Read to a pet's: every stamp in your SDB, or the ones you've selected, the ones already in your album left out (from what NE keeps of
+  // your album; a page of it NE knows nothing of opened unseen, as a visit opens it). Through its own list on Album Item as you'd go through it: what's
+  // ticked on a page sent with its own request, its list asked for again, on to the next page, a person's moment between. One of each goes in, whatever's
+  // in the pile. Coins and sea shells go the same way. itemdb's prices are only shown. A PIN your SDB asks for is used for this run only, never kept
+  // ═══════════════════════════════════════════════════════════════════════════
+  const SAL_CAT = '15', SAL_MOST = 30, SAL_SORT = 'bnp-sal-sort';   // (the SDB's own Album Item category; the most one go sends, about a page of its list; how they're listed)
+  const SAL_KINDS = { coin: 'Coin', shell: 'Sea shell' };   // (what Neopets' album_kind says when it isn't a stamp)
+  const SAL_PIC = `${NPI}themes/h5/basic/images/v3/stamps-icon.svg`;
+  const salSortOf = () => { try { const v = localStorage.getItem(SAL_SORT); return v === 'dear' || v === 'name' || v === 'page' ? v : 'cheap'; } catch (_) { return 'cheap'; } };
+  let sal = null;
+  const salRunning = () => !!(sal && sal.run && !sal.run.over);
+  const salOn = () => !FRAME && location.pathname === '/safetydeposit.phtml' && S.features.sdbStamps !== false;
+  function salPicked() {   // (the album items among what's selected in Neopets' own list, on every page of it)
+    const st = sdbVm();
+    try { return st ? [...(st.selectedItemsList || [])].filter((x) => x && x.can_stamp_album) : []; } catch (_) { return []; }
+  }
+  function salSorted() {   // (as listed: the ones still to go in, in your order, then the ones already in, by name)
+    const by = salSortOf(), name = (a, b) => a.name.localeCompare(b.name);
+    const order = by === 'name' ? name : by === 'page' ? (a, b) => ((a.page || 999) - (b.page || 999)) || (a.place - b.place) || name(a, b) : by === 'dear' ? (a, b) => ((b.p || -1) - (a.p || -1)) || name(a, b) : (a, b) => ((a.p || Infinity) - (b.p || Infinity)) || name(a, b);
+    return [...sal.rows.filter((b) => !b.done).sort(order), ...sal.rows.filter((b) => b.done).sort(name)];
+  }
+  function salBoot() {   // (its two ways in, kept in place as Neopets' list and drawer come and go)
+    if (!salOn() || salBoot.on) return;
+    salBoot.on = true;
+    styles();
+    let t = 0;
+    const ours = (m) => { const el = m.target instanceof Element ? m.target : m.target.parentElement; return !el || !!el.closest('[data-bnp], .sdb-pagination'); };   // (NE's own changing, or the page buttons: nothing new selected)
+    new MutationObserver((ms) => {
+      if (t || ms.every(ours)) return;
+      t = setTimeout(() => { t = 0; salEntries(); }, 150);   // (at most every 150 ms, however busy the page is)
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    salEntries();
+  }
+  function salEntries() {
+    if (!salOn()) return;
+    const row = $('.sdb-drawer .sdb-drawer-action-row'), n = row ? salPicked().length : 0;
+    let b = $('[data-bnp="salbtn"]');
+    if (row && n) {
+      if (!b || b.parentElement !== row) {
+        if (b) b.remove();
+        b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'np-button button-default__2020 button-yellow__2020 bnp-sdr-drawbtn';
+        b.setAttribute('data-bnp', 'salbtn');
+        b.addEventListener('click', () => salOpen('sel'));
+        row.append(b);
+      }
+      const l = n === 1 ? 'Put in your album' : `Put ${n} in your album`;
+      if (b.textContent !== l) b.textContent = l;
+      b.title = `${l}: NE leaves out any that are in it already`;
+    } else if (b) b.remove();
+    const bar = $('.sdb-header-bar');
+    if (bar && !$('[data-bnp="salpill"]')) {
+      const p = document.createElement('button');
+      p.type = 'button';
+      p.className = 'bnp-sdr-pill';
+      p.setAttribute('data-bnp', 'salpill');
+      p.title = 'Put the stamps in your SDB in your album, the ones it hasn’t got, several at once';
+      p.innerHTML = `<span class="bnp-sdr-pic" aria-hidden="true"><img src="${SAL_PIC}" alt="" width="18" height="18"></span>Put stamps in your album`;
+      const th = themeHead();
+      if (th && th.bg) { p.style.setProperty('--bnp-sdr-c', th.bg); p.style.setProperty('--bnp-sdr-ink', inkReads(th.ink, th.bg)); }   // (your theme's colour, as its pop-ups' headers wear it)
+      p.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); salOpen(salPicked().length ? 'sel' : 'all'); });
+      sdbPills(bar).append(p);
+    }
+  }
+  function salChip() {   // (at work, or just done, while its window is closed)
+    if (!sal) return;
+    const run = sal.run, busy = !!(run && !run.over);
+    if (sal.win.classList.contains('open') || !run || (!busy && !sal.unseen)) { runChip('salchip', null); return; }
+    const n = run.put || 0, text = busy ? (run.restUntil ? `A short break, till about ${bmAt(run.restUntil)}` : `${run.i.toLocaleString()} of ${run.n.toLocaleString()} done`) : n ? `Done: ${n.toLocaleString()} put in your album` : 'Done: nothing put in your album';
+    runChip('salchip', { win: sal.win, icon: `<img src="${SAL_PIC}" alt="" width="18" height="18">`, title: 'Put in your album', text, busy, pct: busy ? 100 * run.i / Math.max(1, run.n) : 100, tip: 'Open Put in your album', open: salShow, dismiss: () => { sal.unseen = false; salChip(); } });
+  }
+  function salOpen(src) {
+    if (!salOn()) return;
+    if (sdrRunning()) { sdrShow(); return; }   // (Read to a pet has its own list on Books just now: its window; this one when that's done)
+    styles();
+    if (!sal) {
+      const veil = document.createElement('div'), win = document.createElement('div');
+      veil.className = 'bnp-veil';
+      veil.setAttribute('data-bnp', 'salveil');
+      win.className = 'bnp-go bnp-sdr';
+      win.setAttribute('data-bnp', 'salwin');
+      win.setAttribute('role', 'dialog');
+      win.setAttribute('aria-modal', 'true');
+      win.setAttribute('aria-label', 'Put in your album');
+      win.innerHTML = '<div class="popup-header__2020 bnp-hub-head"><h3>Put in your album</h3><button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-sdr-x" data-sal="x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button><div class="popup-header-pattern__2020"></div></div><div class="bnp-sdr-body" data-sal-body></div><div class="bnp-sdr-foot" data-sal-foot></div>';
+      document.body.append(veil, win);
+      veil.addEventListener('click', () => salClose());
+      win.addEventListener('click', salClick);
+      win.addEventListener('change', salChange);
+      win.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.matches('[data-salupto]')) { e.preventDefault(); salUpTo(); return; } if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.matches('[data-salpin]')) { e.preventDefault(); const go = win.querySelector('[data-sal="go"]'); if (go && !go.disabled) go.click(); } });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sal && sal.win.classList.contains('open')) { e.preventDefault(); salClose(); } });
+      sal = { win, veil, src: 'sel', state: 'pick', rows: [], err: '', note: '', run: null, pin: '', scan: null };
+      addEventListener('beforeunload', (e) => { if (sal && sal.run && !sal.run.over) { e.preventDefault(); e.returnValue = ''; } });   // (leaving the page ends it: asked first)
+    }
+    if (sal.run && (!sal.run.over || sal.unseen)) { salShow(); return; }   // (at work, or done while it was closed: the window as it is)
+    if (sdr && sdr.unseen) { sdr.unseen = false; sdrChip(); }   // (Read to a pet's "done" chip, in the same place)
+    Object.assign(sal, { src: src === 'all' || !salPicked().length ? 'all' : 'sel', state: 'pick', rows: [], err: '', note: '', run: null, pin: '', scan: null });
+    salShow();
+    salCheck().catch(report);
+  }
+  function salShow() {
+    sal.unseen = false;
+    themeWin(sal.win);
+    sal.veil.classList.add('open');
+    sal.win.classList.add('open');
+    salPaint();
+    salChip();
+    const f = sal.win.querySelector('[data-sal="x"]');
+    if (f) f.focus({ preventScroll: true });
+  }
+  function salClose() {
+    if (!sal || !sal.win.classList.contains('open')) return;
+    if (!salRunning()) { if (sal.scan) sal.scan.stop = true; sal.pin = ''; const pf = sal.win.querySelector('[data-salpin]'); if (pf) pf.value = ''; sdbViewBack(sal); }   // (at work it carries on, shown on the page, with its PIN for this run; anything else let go, its own list as you had it. Stop stops it)
+    sal.win.classList.remove('open');
+    sal.veil.classList.remove('open');
+    salChip();
+    const b = $('[data-bnp="salbtn"]') || $('[data-bnp="salpill"]');
+    if (b) b.focus({ preventScroll: true });
+  }
+  const salWhere = (name, file) => { const K = saKnown(); return K.byName.get(name.toLowerCase()) || K.byFile.get(`${file}.gif`.toLowerCase()) || null; };   // ([page, place] in your album, where NE knows it)
+  async function salAlbum(me, rows) {   // (your album as NE knows it: its Overview if NE hasn't looked lately, then each page these belong on that NE knows nothing of, opened as a visit opens it, a moment between. What's read is kept: never read twice)
+    await saMineLoad();
+    if (!saMine.acct) return;
+    if (!saMine.countsT || Date.now() - saMine.countsT > 10 * 60e3) { me.album = { done: 0, of: 0 }; salPaint(); await saCountsFetch(); if (me.stop) return; }
+    const pages = new Set(rows.map((r) => (salWhere(r.name, r.it.obj_filename) || [])[0]).filter(Boolean));
+    const todo = [...pages].filter((p) => { const s = saState(p); return !s.have || s.stale || s.over; }).sort((a, b) => a - b);
+    me.album = { done: 0, of: todo.length };
+    salPaint();
+    let restAt = runRestEvery();
+    for (const p of todo) {
+      while (document.hidden && !bmP().bg && !me.stop) await bmSleep(500);
+      if (me.stop) return;
+      const doc = await saGetDoc(`/stamps.phtml?type=album&page_id=${p}`), d = doc && saParse(doc);
+      if (!d) throw new Error('album');
+      saKeepNames(d.names);
+      saLearn(p, d.slots);
+      saKeepPage(p, d);
+      me.album.done++;
+      salPaint();
+      if (me.album.done >= me.album.of) break;
+      if (me.album.done >= restAt) { if (!(await runRest(me, salPaint))) return; restAt = me.album.done + runRestEvery(); }   // (a longer break now and then, as a person takes one)
+      else if (!(await sdrWait(me, 4000, 3000))) return;   // (a person's pause between pages; closing it ends it)
+    }
+  }
+  function salPrices() {   // (each one's itemdb price, only to sort by and show)
+    let t = 0;
+    const soon = () => { clearTimeout(t); t = setTimeout(() => { if (!sal || sal.state !== 'ready') return; const a = document.activeElement; if (a && sal.win.contains(a) && a.matches('input')) { soon(); return; } salPaint(); }, 300); };   // (not while you're typing in it)
+    for (const b of sal.rows.filter((x) => !x.done)) {   // (the ones your album has aren't asked for)
+      const c = itPriceCache()[b.name];
+      if (c) b.p = (c.r && c.r.p) || 0;
+      else itPriceAsk(b.name, (r) => { b.p = (r && r.p) || 0; soon(); });
+    }
+  }
+  async function salCheck() {   // (your stamps, and which of them your album has already)
+    if (!sal || salRunning()) return;
+    const src = sal.src, me = { stop: false, page: 0, pages: 0, album: null };
+    if (sal.scan) sal.scan.stop = true;
+    Object.assign(sal, { state: 'check', rows: [], err: '', note: '', scan: me, run: null });
+    salPaint();
+    try {
+      const list = src === 'all' ? await sdbCatScan(me, sal, SAL_CAT, (it) => it.can_stamp_album && !it.is_nc, salPaint) : salPicked();
+      if (!list || me.stop || sal.src !== src) return;
+      const seen = new Set(), pos = src === 'all' ? me.pos : null;
+      const rows = list.filter((it) => { const k = String(it.obj_info_id); if (seen.has(k)) return false; seen.add(k); return true; })
+        .map((it) => { const id = String(it.obj_info_id); return { it, id, name: reClean(it.obj_name || ''), kind: String(it.album_kind || 'stamp'), page: 0, place: 0, done: false, on: true, st: '', why: '', p: 0, at: pos && pos.has(id) ? pos.get(id) : null }; });
+      try { await salAlbum(me, rows); }
+      catch (e) { if (me.stop) return; sal.note = 'Your album didn’t open just now, so NE can’t tell which of these are in it already. Neopets says no to any that are.'; if (e && e.message !== 'album' && !/Overview/.test(String(e && e.message))) report(e); }
+      if (me.stop || sal.src !== src) return;
+      for (const r of rows) {
+        const at = salWhere(r.name, r.it.obj_filename);
+        if (!at) continue;
+        const s = saState(at[0]);
+        Object.assign(r, { page: at[0], place: at[1], done: !!(s.have && s.have.has(at[1])) });
+        r.on = !r.done;
+      }
+      sal.rows = rows;
+      salPrices();
+      sal.state = 'ready';
+    } catch (e) {
+      if (me.stop) return;
+      const m = e && e.message;
+      sal.err = m === 'page' ? 'Your SDB’s page didn’t load all the way: reload it, then try again.' : 'Your SDB didn’t answer just now: try again in a moment.';
+      sal.state = 'pick';
+      if (!['page', 'sdb'].includes(m)) report(e);
+    } finally { if (sal.scan === me) sal.scan = null; }
+    salPaint();
+  }
+  async function salPut(list, pin) {   // (these, as the SDB's own Put in Stamp Album sends what's selected, through the page's own fetch so what NE keeps of your SDB hears it as it hears Neopets' own)
+    const ck = (PAGE.__sdbData && PAGE.__sdbData.refCk) || '';
+    const init = { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'XMLHttpRequest' }, body: JSON.stringify({ moves: list.map((b) => ({ obj_info_id: b.it.obj_info_id, quantity: 1, action: 'stamp_album' })), pin, _ref_ck: ck }) };
+    let d = null;
+    try {
+      const f = typeof PAGE.fetch === 'function' ? PAGE.fetch : fetch;
+      const r = await f.call(PAGE, '/np-templates/ajax/safetydeposit/move-items.php', typeof cloneInto === 'function' ? cloneInto(init, PAGE) : init);
+      if (!r.ok) return { net: true };
+      d = await r.json();
+    } catch (_) { return { net: true }; }
+    if (!d) return { net: true };
+    if (d.success) return { ok: true };
+    if (d.error === 'pin_required' || d.error === 'pin_wrong') return { pin: true, why: reClean(String(d.message || '')) || (d.error === 'pin_wrong' ? 'That PIN doesn’t match.' : 'Your SDB asks for your PIN.') };
+    return { why: sdrWords(d.message || d.error || '') || 'Neopets didn’t put it in.' };
+  }
+  async function salRun() {   // (through its own list on Album Item from its first page, as you'd go through it: what's ticked on a page put in together, that page's list asked for again, straight to the page the next is on)
+    if (!sal || sal.state !== 'ready' || salRunning()) return;
+    const list = salSorted().filter((b) => b.on), st = sdbVm();
+    if (!list.length) return;
+    if (!st) { sal.err = 'NE couldn’t reach your SDB’s list: reload the page, then try again.'; salPaint(); return; }
+    if (sdrPinAsked() && !sal.pin) { sal.err = 'Your SDB asks for your PIN first.'; salPaint(); const p = sal.win.querySelector('[data-salpin]'); if (p) p.focus(); return; }
+    const run = sal.run = { n: list.length, i: 0, put: 0, now: 0, stop: false, over: false, fails: 0, pinStop: '', halt: '', restUntil: 0 };
+    const want = new Map(list.map((b) => [b.id, b])), gone = [];   // (gone: where the ones put in were in the list, the last of their pile)
+    for (const b of sal.rows) { b.st = want.get(b.id) === b ? 'wait' : ''; b.why = ''; }
+    sal.err = '';
+    sal.state = 'run';
+    try { for (const b of list) if (!st.isSelected(b.it)) st.toggleSelection(b.it); } catch (_) { /* */ }   // (all of them selected in its own list while they wait, as you'd select them: what NE keeps of your SDB knows their names; each one put in leaves the selection)
+    salPaint();
+    const per = () => Number(st.perPage) || 30, waiting = () => list.filter((b) => b.st === 'wait');
+    const pageOf = (b) => (b.at == null ? 0 : Math.floor((b.at - gone.filter((x) => x < b.at).length) / per()) + 1);   // (the page it's on now: where it was when looked through, less the ones gone before it)
+    const back = (take) => { for (const b of take) b.st = 'wait'; run.now = 0; };
+    let restAt = runRestEvery(), wrapped = false;
+    try {
+      if (!(await sdbCatView(sal, st, SAL_CAT))) run.halt = 'your SDB’s list didn’t load just now';
+      while (!run.halt && !run.stop) {
+        while (document.hidden && !bmP().bg && !run.stop) await bmSleep(500);   // (in a background tab only if you've turned that off)
+        if (run.stop) break;
+        if (String(st.selectedCategory) !== SAL_CAT) { run.moved = true; break; }   // (you've put its list on something else meanwhile: it's yours)
+        const here = [...(st.items || [])].map((it) => it && want.get(String(it.obj_info_id))).filter((x) => x && x.st === 'wait');
+        if (!here.length) {   // (none left on this page: the page the next is on, as you'd click it)
+          const left = waiting();
+          if (!left.length) break;
+          const cur = Number(st.currentPage) || 1, pages = Number(st.totalPages) || 1, ahead = left.map(pageOf).filter((p) => p > cur);
+          let to = cur < pages ? Math.min(pages, ahead.length ? Math.min(...ahead) : cur + 1) : 0;
+          if (!to && !wrapped && cur > 1) { wrapped = true; to = 1; }   // (once more from its first page: one may have moved up while NE was further on)
+          if (!to) break;   // (the rest aren't in it any more)
+          if (!(await sdrWait(run, 1200, 1800))) break;
+          st.onPageChange(to);
+          if (!(await sdbIdle(st))) { run.halt = 'your SDB’s list didn’t load just now'; break; }
+          continue;
+        }
+        const take = here.slice(0, SAL_MOST);
+        for (const b of take) b.st = 'now';
+        run.now = take.length;
+        salPaint();
+        if (!(await sdrWait(run, 800 + take.length * 300, take.length * 400))) { back(take); break; }   // (a moment to find them on this page and tick them)
+        const pinNow = await sdrPinStatus();   // (as its own confirm asks on opening)
+        if (pinNow && !sal.pin) { back(take); run.pinStop = 'your SDB asks for your PIN now: Look again, type it, then Put'; break; }
+        if (!(await sdrWait(run, 1200, 1600))) { back(take); break; }   // (the moment its confirm is read, and Confirm pressed)
+        const a = await salPut(take, sal.pin);
+        if (a.pin) { back(take); run.pinStop = a.why; sal.pin = ''; break; }
+        const y = window.scrollY, hid = !sal.win.classList.contains('open');
+        let listed = false;
+        try { st.onPageChange(Number(st.currentPage) || 1); listed = await sdbIdle(st); if (listed && hid && y) window.scrollTo({ top: y, behavior: 'instant' }); } catch (e) { report(e); }   // (its own list asked for again, as after its own; with the window closed, your place on the page kept)
+        const now = new Map([...(st.items || [])].filter(Boolean).map((it) => [String(it.obj_info_id), Number(it.amount) || 1]));   // (what it lists now says which went in, when Neopets says only some did or didn't answer)
+        let inNow = 0;
+        for (const b of take) {
+          const was = Number(b.it.amount) || 1;
+          if (a.ok || (listed && (now.get(b.id) || 0) < was)) {
+            b.st = 'put'; b.why = ''; run.put++; inNow++;
+            if (was <= 1 && b.at != null) gone.push(b.at);   // (the last of its pile: out of the list, the ones after it a place up)
+            try { if (st.isSelected(b.it)) st.toggleSelection(b.it); } catch (_) { /* */ }   // (done with: out of the selection; the rest stay selected)
+          } else { b.st = 'no'; b.why = a.why || 'Neopets didn’t answer just now.'; }
+        }
+        if (!a.ok && inNow && S.features.worth !== false) { try { wtSdbChange(take.filter((b) => b.st === 'put').map((b) => ({ id: b.it.obj_info_id, n: b.name, dq: -1, nc: false, img: sdrPic(b.it) }))); } catch (e) { report(e); } }   // (Neopets didn't say they all went in, so what NE keeps of your SDB's worth heard nothing: told which did)
+        run.i += take.length;
+        run.now = 0;
+        run.fails = inNow ? 0 : run.fails + 1;
+        if (run.fails >= 2) { run.stop = true; run.noneStop = true; }   // (nothing went in, twice in a row: something's up)
+        if (!listed) run.halt = 'your SDB’s list didn’t load just now';
+        salPaint();
+        if (run.stop || run.halt || !waiting().length) break;
+        if (run.i >= restAt) { if (!(await runRest(run, salPaint))) break; restAt = run.i + runRestEvery(); }   // (a longer break now and then, as a person takes one on a long list)
+        else if (!(await sdrWait(run, 2500, 3500, 0.15, 3000, 6000))) break;   // (a person's pause before the next: what Neopets said read, OK pressed, the next ones found)
+      }
+    } catch (e) { run.halt = 'something went wrong'; report(e); }
+    run.over = true;
+    run.now = 0;
+    sal.state = 'done';
+    for (const b of sal.rows) if (b.st === 'now') b.st = 'wait';
+    if (!run.stop && !run.pinStop && !run.halt && !run.moved) for (const b of waiting()) { b.st = 'no'; b.why = 'Not in your SDB’s list any more'; }   // (gone from it meanwhile: from another tab, say)
+    if (!sal.win.classList.contains('open')) { sal.unseen = true; sal.pin = ''; const pf = sal.win.querySelector('[data-salpin]'); if (pf) pf.value = ''; }   // (done while its window was closed: said on the page; the PIN let go)
+    if (run.put) { try { for (const b of sal.rows) if (b.st === 'put') saStampIn(b.name); saMineSave(); } catch (e) { report(e); } }   // (your album: the ones put in, counted in at once)
+    salPaint();
+    if (run.moved) sal.view0 = null;   // (you've put its list where you want it)
+    else if (sal.view0) { await sdrWait({ stop: false }, 1800, 2400); if (sal.state === 'done' && !salRunning()) await sdbViewBack(sal); }   // (a moment after, its list as you had it; not if you've started another look meanwhile)
+  }
+  function salClick(e) {
+    const el = e.target instanceof Element ? e.target : null;
+    if (!el || !sal) return;
+    const sv = el.closest('[data-salsrc]');
+    if (sv) { if (salRunning()) return; const s = sv.dataset.salsrc === 'all' ? 'all' : 'sel'; if (s !== sal.src || sal.state === 'done') { sal.src = s; salCheck().catch(report); } return; }
+    const t = el.closest('[data-sal]');
+    if (!t) return;
+    const a = t.dataset.sal;
+    if (a === 'x' || a === 'done') salClose();
+    else if (a === 'go') salRun().catch(report);
+    else if (a === 'stop') { if (sal.run) { sal.run.stop = true; salPaint(); } }
+    else if (a === 'again') salCheck().catch(report);
+    else if (a === 'all' || a === 'none') { for (const b of sal.rows) if (!b.done) b.on = a === 'all'; salPaint(); }
+    else if (a === 'upto') salUpTo();
+  }
+  function salUpTo() {   // (the ones itemdb prices at or under the price written ticked, the rest not)
+    const i = sal.win.querySelector('[data-salupto]'), v = i ? bmParse(i.value) : 0;
+    if (!v || sal.state !== 'ready') return;
+    try { localStorage.setItem('bnp-sal-upto', String(v)); } catch (_) { /* */ }
+    for (const b of sal.rows) if (!b.done) b.on = b.p > 0 && b.p <= v;
+    salPaint();
+    const n = sal.win.querySelector('[data-salupto]');
+    if (n) n.focus();
+  }
+  function salChange(e) {
+    if (e.target instanceof HTMLInputElement && e.target.matches('[data-salbg]')) { bmPSet('bg', e.target.checked); return; }
+    if (e.target instanceof HTMLSelectElement && e.target.matches('[data-salsort]') && sal) { try { localStorage.setItem(SAL_SORT, e.target.value); } catch (_) { /* */ } salPaint(); const f = sal.win.querySelector('[data-salsort]'); if (f) f.focus(); return; }
+    const i = e.target;
+    if (!(i instanceof HTMLInputElement) || !sal) return;
+    if (i.dataset.salitem) { const b = sal.rows.find((x) => x.id === i.dataset.salitem); if (b && sal.state === 'ready') { b.on = i.checked; salPaintFoot(); const row = i.closest('.bnp-sdr-row'); if (row) row.classList.toggle('is-off', !i.checked); } }
+  }
+  function salRowHtml(b, can, first) {
+    const pic = sdrPic(b.it), st = b.st, mark = { put: '<i class="bnp-sdr-st is-read" title="In your album">✓</i>', no: '<i class="bnp-sdr-st is-no" title="Not put in">!</i>', now: '<i class="bnp-sdr-st is-now" aria-label="Going in"></i>' }[st] || '';
+    const where = b.page ? `${saPageName(b.page)}, No. ${b.place + 1}` : 'NE doesn’t know its place yet';
+    const why = b.why ? `<small class="bnp-sdr-why">${esc(b.why)}</small>` : b.done && !st ? '<small>In your album already</small>' : !st || st === 'wait' ? `<small>${esc(where)} · ${b.p ? `itemdb ≈ ${b.p.toLocaleString()} NP` : 'No itemdb price'}${Number(b.it.amount) > 1 ? ` · ${Number(b.it.amount).toLocaleString()} in your SDB, one goes in` : ''}</small>` : '';
+    return `<label class="bnp-sdr-row${b.on ? '' : ' is-off'}${st ? ` is-${st === 'put' ? 'read' : st}` : ''}"${first ? ' data-salnow' : ''}>${can ? `<input type="checkbox" data-salitem="${esc(b.id)}"${b.on ? ' checked' : ''}>` : ''}<span class="bnp-sdr-bk">${pic ? `<img src="${esc(pic)}" alt="" width="40" height="40" loading="lazy">` : ''}</span><span class="bnp-sdr-nm"><b>${esc(b.name)}</b>${why}</span>${SAL_KINDS[b.kind] ? `<i class="bnp-sdr-bt">${SAL_KINDS[b.kind]}</i>` : ''}${mark}</label>`;
+  }
+  function salPaint() {
+    if (!sal) return;
+    salChip();
+    if (!sal.win.classList.contains('open')) return;
+    const body = sal.win.querySelector('[data-sal-body]'), y = (sal.win.querySelector('.bnp-sdr-list') || { scrollTop: 0 }).scrollTop, run = sal.run, busy = !!(run && !run.over), picked = salPicked().length;
+    const src = (picked && !busy) || sal.src === 'sel' ? `<div class="bnp-sdr-src" role="group" aria-label="Which stamps"><button type="button" data-salsrc="sel" aria-pressed="${sal.src === 'sel'}"${busy || !picked ? ' disabled' : ''}>Selected in your SDB${picked ? ` (${picked.toLocaleString()})` : ''}</button><button type="button" data-salsrc="all" aria-pressed="${sal.src === 'all'}"${busy ? ' disabled' : ''}>Every stamp in your SDB</button></div>` : '';   // (only when stamps are selected in its own list: otherwise every stamp, ticked here)
+    let main = '';
+    if (sal.state === 'pick') main = `${sal.err ? `<p class="bnp-sdr-note is-err">${esc(sal.err)}</p>` : ''}<p class="bnp-sdr-note"><button type="button" class="bnp-sdr-lb" data-sal="again">Try again</button></p>`;
+    else if (sal.state === 'check') { const sc = sal.scan, al = sc && sc.album; main = `<p class="bnp-sdr-wait"><i class="bnp-sdr-spin" aria-hidden="true"></i>${sc && sc.restUntil ? `A short break, as you’d take one: carrying on at about ${esc(bmAt(sc.restUntil))}…` : al ? (al.of ? `Looking at your album (page ${Math.min(al.done + 1, al.of).toLocaleString()} of ${al.of.toLocaleString()})…` : 'Looking at your album…') : sal.src === 'all' ? `Looking through your SDB’s stamps${sc && sc.pages > 1 ? ` (page ${sc.page} of ${sc.pages})` : ''}…` : 'Looking at the stamps you’ve selected…'}</p>`; }
+    else {
+      const shown = salSorted(), todo = shown.filter((b) => !b.done), done = shown.filter((b) => b.done), can = sal.state === 'ready', on = shown.filter((b) => b.on).length, by = salSortOf(), allStamps = sal.rows.every((b) => !SAL_KINDS[b.kind]), noun = (n) => (allStamps ? (n === 1 ? 'stamp' : 'stamps') : (n === 1 ? 'album item' : 'album items'));
+      const M = saMine, inAlbum = M && M.acct ? Object.values(M.counts).reduce((t, x) => t + (Number(x) || 0), 0) : 0;
+      const count = M && M.acct && inAlbum ? `<p class="bnp-sdr-count">Your album has <b>${inAlbum.toLocaleString()}</b> of ${saAllN().toLocaleString()}${run && run.put ? ` <em>(${run.put.toLocaleString()} just now)</em>` : ''}<a class="bnp-sdr-go" href="/stamps.phtml?type=album"><img src="${SAL_PIC}" alt="" width="15" height="15">Stamp Album</a></p>` : '';
+      let head = '';
+      if (run) {
+        const left = sal.rows.filter((b) => b.st === 'wait').length, nos = sal.rows.filter((b) => b.st === 'no').length;
+        head = run.over
+          ? `<div class="bnp-sdr-sum is-done"><b>${run.put ? `${run.put.toLocaleString()} put in your album` : 'Nothing put in your album'}</b>${nos ? `<span>${nos.toLocaleString()} not put in: Neopets’ reason is beside ${nos === 1 ? 'it' : 'each'}</span>` : ''}${left ? `<span>${run.pinStop ? `Stopped: ${esc(run.pinStop.replace(/[.]+$/, ""))}` : run.halt ? `Stopped: ${esc(run.halt)}` : run.noneStop ? 'Stopped: nothing went in twice in a row' : run.moved ? 'Stopped: your SDB’s list was put on something else' : 'Stopped'}. ${left.toLocaleString()} still to go in ${left === 1 ? 'is' : 'are'} still selected</span>` : ''}</div>`
+          : `<div class="bnp-sdr-sum"><b>${run.restUntil ? 'A short break' : `${run.i.toLocaleString()} of ${run.n.toLocaleString()} done`}</b><span>${run.restUntil ? `as you’d take one: carrying on at about ${esc(bmAt(run.restUntil))}` : run.now ? `${run.now.toLocaleString()} going in now` : ''}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
+      } else head = todo.length ? `<div class="bnp-sdr-sum"><b>${todo.length.toLocaleString()} ${noun(todo.length)} not in your album yet</b>${done.length ? `<span>${done.length.toLocaleString()} already in it ${done.length === 1 ? 'is' : 'are'} left out</span>` : ''}${todo.length > 1 ? `<span class="bnp-sdr-tick"><label class="bnp-sdr-sortby"><span>Sort</span><select data-salsort aria-label="Sort them">${[['cheap', 'Cheapest first'], ['dear', 'Priciest first'], ['page', 'By album page'], ['name', 'A to Z']].map(([v, l]) => `<option value="${v}"${by === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label><button type="button" class="bnp-sdr-lb" data-sal="all">All</button><button type="button" class="bnp-sdr-lb" data-sal="none">None</button><span class="bnp-upto" title="Ticks the ones itemdb prices at or under this, and unticks the rest"><label><span>Up to</span><input type="text" inputmode="numeric" autocomplete="off" data-salupto value="${esc(((sal.win.querySelector('[data-salupto]') || {}).value) || ((() => { try { return Number(localStorage.getItem('bnp-sal-upto')) || 0; } catch (_) { return 0; } })() || 5000).toLocaleString())}" aria-label="Tick the ones up to this many Neopoints">NP</label><button type="button" class="bnp-sdr-lb" data-sal="upto">Tick</button></span></span>` : ''}</div>`
+        : `<div class="bnp-sdr-sum is-done"><b>${shown.length ? `Your album has ${shown.length === 1 ? 'it' : `all ${shown.length.toLocaleString()}`} already` : sal.src === 'all' ? 'No stamps in your SDB' : 'No stamps selected'}</b>${shown.length && sal.src === 'sel' ? '<span>Or look through every stamp in your SDB.</span>' : ''}</div>`;
+      let first = true;
+      const row = (b) => { const f = first && b.st === 'now'; if (f) first = false; return salRowHtml(b, can, f); };
+      const rows = `${todo.map(row).join('')}${done.length ? `${todo.length ? `<p class="bnp-sdr-sep">Left out: the ones your album has${can ? ' (tick one to try it anyway)' : ''}</p>` : ''}${done.map(row).join('')}` : ''}`;
+      main = `${count}${head}${sal.note ? `<p class="bnp-sdr-note is-err">${esc(sal.note)}</p>` : ''}${sal.err ? `<p class="bnp-sdr-note is-err" role="alert">${esc(sal.err)}</p>` : ''}${rows ? `<div class="bnp-sdr-list">${rows}</div>` : ''}`;
+      if (can && !on && todo.length) main += '<p class="bnp-sdr-note">Tick the ones to put in.</p>';
+    }
+    body.innerHTML = `${src}<div class="bnp-sdr-main">${main}</div>`;
+    const l = body.querySelector('.bnp-sdr-list');
+    if (l) { l.scrollTop = y; const now = l.querySelector('[data-salnow]'); if (now) { const r = now.getBoundingClientRect(), lr = l.getBoundingClientRect(); if (r.top < lr.top || r.bottom > lr.bottom) l.scrollTop += r.top - lr.top - lr.height / 3; } }
+    salPaintFoot();
+  }
+  function salPaintFoot() {
+    const foot = sal.win.querySelector('[data-sal-foot]'), run = sal.run, busy = !!(run && !run.over), ticked = sal.rows.filter((b) => b.on), on = ticked.length, pin = sdrPinAsked();
+    const had = foot.querySelector('[data-salpin]'), pv = had ? had.value : '';
+    if (had) sal.pin = pv;
+    let h = '';
+    if (busy) h = `<span class="bnp-sdr-fnote">${run.restUntil ? `A short break: carrying on at about ${esc(bmAt(run.restUntil))}` : 'A page of your SDB at a time, a moment between'}${bmP().bg ? '' : ': it carries on while this tab is in front'}.</span><button type="button" class="button-default__2020 button-red__2020 bnp-sdr-btn" data-sal="stop"${run.stop ? ' disabled' : ''}>${run.stop ? 'Stopping…' : 'Stop'}</button>`;
+    else if (sal.state === 'done') h = `<span class="bnp-sdr-fnote"></span>${sal.rows.some((b) => b.st === 'wait' || b.st === 'no') ? '<button type="button" class="bnp-sdr-lb" data-sal="again">Look again</button>' : ''}<button type="button" class="button-default__2020 button-yellow__2020 bnp-sdr-btn" data-sal="done">Done</button>`;
+    else {
+      const ready = sal.state === 'ready' && on > 0, worth = ticked.reduce((t, b) => t + (b.p || 0), 0);
+      h = `<label class="bnp-sdr-bgchk" title="Off: it waits while you’re in another tab, and carries on when you’re back (Buy Mode goes by this too)"><input type="checkbox" data-salbg${bmP().bg ? ' checked' : ''}> Keep going in a background tab</label>${pin ? '<label class="bnp-sdr-pin"><span>Your PIN</span><input type="password" inputmode="numeric" autocomplete="off" maxlength="8" data-salpin aria-label="Your SDB PIN"></label>' : `<span class="bnp-sdr-fnote">${worth ? `About ${worth.toLocaleString()} NP by itemdb’s guide. ` : ''}What goes in your album stays there.</span>`}<button type="button" class="bnp-sdr-lb" data-sal="x">Cancel</button><button type="button" class="button-default__2020 button-green__2020 bnp-sdr-btn" data-sal="go"${ready ? '' : ' disabled'}>${ready ? `Put ${on.toLocaleString()} in your album` : 'Put in your album'}</button>`;
+    }
+    foot.innerHTML = h;
+    const np = foot.querySelector('[data-salpin]');
+    if (np) { np.value = pv || sal.pin || ''; np.addEventListener('input', () => { sal.pin = np.value; if (sal.err) { sal.err = ''; const n = sal.win.querySelector('.bnp-sdr-main .is-err'); if (n) n.remove(); } }); }
   }
   // ═══════════════════════════════════════════════════════════════════════════
   // Buy Mode (the user, 2 November 2026: "Buy Mode for buyable books/gourmets/stamps you dont have yet, travel to shops and buy as
@@ -34478,19 +35069,7 @@
       if (bm.kind !== 'stamps' && col && col.pet === pet && col.kind === bm.kind) { for (const r of bm.rows) if (r.read && r.file && !col.had.has(colImgKey(r.file))) col.had.set(colImgKey(r.file), [col.had.size + 1, r.name, r.file, '']); colPaint(); }   // (this page shows them read, or eaten)
       if (bm.kind === 'stamps') {   // (your album: the stamps put in, counted in at once)
         try {
-          const K = saKnown();
-          for (const r of bm.rows) {
-            if (!r.read || r.counted) continue;
-            const at = K.byName.get(r.name.toLowerCase());
-            if (!at || !saMine) continue;
-            if (!saMine.pages[at[0]]) saMine.pages[at[0]] = { t: Date.now(), have: [], n: Number(saMine.counts[at[0]]) || 0 };   // (a page with none yet: its first)
-            const pg = saMine.pages[at[0]];
-            if (!Array.isArray(pg.have) || pg.have.includes(at[1])) continue;
-            pg.have.push(at[1]);
-            pg.n = (Number(pg.n) || 0) + 1;
-            saMine.counts[at[0]] = pg.n;
-            r.counted = true;
-          }
+          for (const r of bm.rows) if (r.read && !r.counted && saStampIn(r.name)) r.counted = true;
           saMineSave();
           if (sa && sa.root) saPaint(true);
         } catch (e) { report(e); }
@@ -37535,7 +38114,7 @@
     return body;
   }
   function themeChanged() {   // (everything BetaNav Plus dresses in your theme, dressed again)
-    setTimeout(() => { for (const b of $$('[data-bnp="shopband"]')) shopBandPic(b); }, 300);   // (the shop's band: the new theme's picture, whole or repeating)
+    setTimeout(() => { for (const b of $$('[data-bnp="shopband"], [data-bnp="soupband"]')) shopBandPic(b); }, 300);   // (the shop's band: the new theme's picture, whole or repeating)
     themeHeadKept = null;
     themeBarKept = null;
     themeFootKept = undefined;
@@ -37555,6 +38134,7 @@
     for (const a of $$('.bqr[data-bnp="qr"]')) qrAccent(a);
     if (document.getElementById('bnp-nc-look')) { ncLookKey = ''; ncLookApply(); }
     try { nbRetheme(); } catch (e) { report(e); }
+    if (soupUi) { try { nbTheme(); } catch (e) { report(e); } }   // (the Soup Kitchen's section: the colours read again for this theme)
     if ($('.bnp-ncl, .bnp-ncl-phead') && !/\bbnp-(st|nm|nb)\b/.test(document.documentElement.className)) { try { nbTheme(); } catch (e) { report(e); } }   // (NeoChat on any other page: the boards' colours read again for this theme — only the boards, Neomail and Settings did, so it wore the last theme's: user, 2026-10-26)
     for (const el of $$('.bnp-ncl, .bnp-ncl-phead')) { try { nclLook(el); } catch (_) { /* */ } }   // (NeoChat: the boards' colours for this theme, and its round button's)
     nclBubLook();
@@ -38354,7 +38934,7 @@
         const byName = `https://pets.neopets.com/cpn/${encodeURIComponent(p.name)}/1/2.png`;   // (Neopets' picture of a pet by its name: when the one My Pets gave is missing or won't load)
         return `<button type="button" class="bnp-pet${is ? ' is-active' : ''}" data-pet="${esc(p.name)}" title="${esc(`${is ? `${p.name} is your active pet` : `Make ${p.name} your active pet`}${what && !showInfo ? `\n${what}` : ''}`)}">`
           + `<img src="${esc(picOf(p.image) || byName)}" data-alt="${esc(byName)}" alt="" loading="lazy"><b>${esc(p.name)}</b>${showInfo && what ? `${kind ? `<small class="bnp-pet-kind">${esc(kind)}</small>` : ''}${lv ? `<small class="bnp-pet-lv">${esc(lv)}</small>` : ''}` : ''}`
-          + (is ? '<i class="bnp-tag">Active</i>' : showHunger && hungry(p.hunger) ? `<i class="bnp-tag is-hungry" title="${esc(p.name)} is ${esc(p.hunger)}">${esc(cap(p.hunger))}</i>` : '') + '</button>';
+          + (is ? `<span class="bnp-pet-star"><img src="${QR_ART.on}" alt="" width="17" height="15"><span>Active</span></span>` : showHunger && hungry(p.hunger) ? `<i class="bnp-tag is-hungry" title="${esc(p.name)} is ${esc(p.hunger)}">${esc(cap(p.hunger))}</i>` : '') + '</button>';
       }).join('')}</div>`
         : `<p class="bnp-pets-note">${petsLoading ? 'Looking at your pets…' : 'Your pets show here once My Pets has been looked at: Refresh does it now.'}</p>`);
   }
@@ -44680,6 +45260,7 @@
         <label class="bnp-switch"><input type="checkbox" data-feat="sdbAll"${f.sdbAll !== false ? ' checked' : ''}><span>Safety Deposit Box: search all of it<small>Neopets’ search starts on Entire SDB instead of the page shown. Its own Page switch is still there for the other way.</small></span></label>
         <label class="bnp-switch"><input type="checkbox" data-feat="sdbTop"${f.sdbTop !== false ? ' checked' : ''}><span>Safety Deposit Box: page buttons at the top too<small>Beside its Grid and List switch: the same buttons as under your items, so a long box needs no scrolling down to turn the page.</small></span></label>
         <label class="bnp-switch"><input type="checkbox" data-feat="sdbRead"${f.sdbRead !== false ? ' checked' : ''}><span>Safety Deposit Box: read books to a pet, several at once<small>Read to a pet in its drawer when books are selected (on any of its pages), and Read books to a pet by its totals for every book in it. NE leaves out the ones the pet has read and reads the rest one at a time, a moment between.</small></span></label>
+        <label class="bnp-switch"><input type="checkbox" data-feat="sdbStamps"${f.sdbStamps !== false ? ' checked' : ''}><span>Safety Deposit Box: put stamps in your album, several at once<small>Put in your album in its drawer when stamps are selected (on any of its pages), and Put stamps in your album by its totals for every stamp in it. NE leaves out the ones your album has and puts the rest in a page of your SDB at a time, as its own Put in Stamp Album does.</small></span></label>
         <label class="bnp-switch"><input type="checkbox" data-itx="descHide"${set.descHide ? ' checked' : ''}><span>Users’ shops without their descriptions<small>The owner’s words and pictures above their items go (some are very long).</small></span></label>
       </div>`;
   }
@@ -46348,6 +46929,9 @@
         <label class="bnp-f bnp-fc-setf"><span>Bettors</span><input type="text" data-feat="fcBettors" value="${esc(f.fcBettors == null ? FC_DEF : f.fcBettors)}" spellcheck="false" autocomplete="off" title="Their petpage names, with commas between"></label>
         <label class="bnp-f"><span>Each bet</span><select data-feat="fcAmt"><option value="cap"${f.fcAmt !== 'max' ? ' selected' : ''}>Max bet, not past the 1M cap</option><option value="max"${f.fcAmt === 'max' ? ' selected' : ''}>Always max bet</option></select></label>
       </div>`],
+      ['dailies', `<div class="bnp-card"><h4>Soup Kitchen</h4>
+        ${sw('soupLog', 'Your donations and prizes', 'Under its donation box: each donation and what it brought, totals by month, every prize and avatar, and how close you are to the Soup Faerie avatars. Neopets doesn’t list these anywhere, so NE keeps them in this browser, for each account. Nothing more is asked of Neopets.')}
+      </div>`],
       ['dailies', `<div class="bnp-card"><h4>Faerie quests</h4>
         ${sw('fqSw', 'The Shop Wizard during a faerie quest', 'While you’re on a faerie quest, Neopets shows only your quest on the Shop Wizard. This puts its own search back, your quest’s item a click from being filled in, and the Shop Wizard back in the quest card’s buttons. You press Search, as ever.')}
         ${sw('fquest', 'Your faerie quest in the corner', 'While you’re on a faerie quest (or a faerie has just asked you), a little card in the bottom corner of every page: the faerie, what she wants, and one click to look for it on the Trading Post, Auctions, your SDB or itemdb (Neopets closes the Shop Wizard during a quest). Fold it to a round button. It goes when the Faerie Quests page says you’re done.')}
@@ -47546,6 +48130,11 @@
     .bnp-pet small.bnp-pet-lv { display: block; margin-top: -1px; }
     .bnp-pet .bnp-tag { position: absolute; top: 5px; right: 5px; padding: 1px 6px; border-radius: 999px; background: color-mix(in srgb, currentColor 16%, transparent); font: 10px "MuseoSansRounded700", Arial, sans-serif; font-style: normal; }
     .bnp-pet .bnp-tag.is-hungry { background: #c0392b; color: #fff; }
+    .bnp-pet .bnp-pet-star { position: absolute; top: 3px; right: 3px; display: inline-flex; align-items: center; box-sizing: border-box; height: 28px; padding: 0 3.5px; border: 2px solid #f2c230; border-radius: 999px; background: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, .3); color: #6b5300; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }   /* (Quick Ref's star on a pet's tile; "Active" slides out beside it as you reach for it, as its bigger star tab does) */
+    .bnp-pet .bnp-pet-star img { flex: none; width: 17px; height: auto; }
+    .bnp-pet .bnp-pet-star > span { max-width: 0; overflow: hidden; opacity: 0; transition: max-width .2s, margin .2s, opacity .2s; }
+    .bnp-pet:hover .bnp-pet-star > span, .bnp-pet:focus-visible .bnp-pet-star > span { max-width: 60px; margin: 0 3px 0 4px; opacity: 1; }
+    @media (prefers-reduced-motion: reduce) { .bnp-pet .bnp-pet-star > span { transition: none; } }
     /* QuickRef: Neopets' new Quick Ref as the base (its cards, stat strip, star tab, picture corners, petpet row, icon buttons, Quick Links), NE's parts in it, in the theme's colours */
     .bqr-orig { display: none !important; }
     .bq { --bqr-head: #fed123; --bqr-headink: #363636; --bqr-line: color-mix(in srgb, var(--bqr-head) 78%, #000); --bq-h: var(--bqr-head); --bq-hi: var(--bqr-headink); padding: 4px 16px 26px; color: #363636; font: 14px/1.45 "MuseoSansRounded500", Arial, sans-serif; text-align: left; }
@@ -49264,6 +49853,9 @@
     .bnp-sdr-pill:hover, .bnp-sdr-pill:focus-visible { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 3px 0 color-mix(in srgb, var(--bnp-sdr-c, #c9a227) 70%, #000), 0 5px 12px rgba(0, 0, 0, .16); outline: none; }
     .bnp-sdr-pill .bnp-sdr-pic { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: rgba(255, 255, 255, .85); color: #5c4a0a; }
     .bnp-sdr-pill .bnp-sdr-pic svg { width: 15px; height: 15px; }
+    .bnp-sdr-pill .bnp-sdr-pic img { display: block; width: 18px; height: 18px; }
+    .bnp-sdr-pills { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin: 0 0 0 auto; }
+    .bnp-sdr-pills .bnp-sdr-pill { margin: 0; }
     .sdb-drawer .sdb-drawer-action-row .bnp-sdr-drawbtn { width: auto; min-width: 160px; margin: 0 0 0 10px; padding: 0 16px; white-space: nowrap; }
     .bnp-go.bnp-sdr { width: min(660px, calc(100vw - 24px)); max-height: min(760px, 88vh); top: 6vh; }
     .bnp-sdr-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 6px; overflow: hidden; }
@@ -50855,6 +51447,8 @@
     .bnp-lablog-list li > div { flex: 1; min-width: 0; }
     .bnp-lablog-list em { color: #2f7d22; font-style: normal; font-weight: 700; }
     .bnp-lablog-list time { flex: none; color: #6f6a58; font-size: 12px; white-space: nowrap; }
+    .bnp-lablog-more { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; max-width: none; margin: 8px 0 2px; color: #6f6a58; font: 12.5px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-lablog-more .bnp-lpill.is-small { margin: 0; }
     .bnp-lotto-ylist { display: grid; grid-template-columns: repeat(auto-fill, minmax(243px, max-content)); gap: 6px 10px; margin: 0; padding: 0; list-style: none; }   /* (each card as wide as a ticket: as many across as fit) */
     .bnp-lotto-ylist > li { display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border: 1px solid #ebe2c4; border-radius: 12px; background: #fffdf4; }
     .bnp-lotto-ylist > li > b { flex: none; width: 24px; height: 24px; border-radius: 50%; background: #f3ead0; color: #6b5a2c; font: 700 12px/24px "MuseoSansRounded700", Arial, sans-serif; text-align: center; }
@@ -52094,6 +52688,12 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.2.8', '2026-11-06', [
+      'Soup Kitchen: your donations and prizes under the donation box, with month totals and progress towards the Soup Faerie avatars',
+      'Safety Deposit Box: put stamps, coins and shells in your album several at once, as with reading books to a pet',
+      'Switch Pet: Quick Ref’s star marks your active pet',
+      'Lab Ray: the zap log shows 10 at a time with Show more, and older zaps can now be reached',
+    ]],
     ['5.2.7', '2026-11-05', [
       'Users’ shops: prices show again after you buy something or go to another page, no refresh needed',
       'The Lottery’s Buy all, Food Club’s Place all and Fish in a row keep going while their tab isn’t the active one',
@@ -52801,7 +53401,7 @@
     setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 4000 + Math.random() * 12000);   // (the Turmaculus' due hours, if they're needed: a moment after the page, not at once)
     document.addEventListener('visibilitychange', () => { if (document.hidden) return; clearTimeout(turmacRead.t); turmacRead.t = setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 3000 + Math.random() * 6000); });
     try { startKeep(); } catch (e) { report(e); }
-    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, sdrBoot, labPage, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, kpopPage, kadPage, kadCheckBoot, kadLookupRead, kadFeedPage, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
+    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, sdrBoot, salBoot, labPage, soupBoot, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, kpopPage, kadPage, kadCheckBoot, kadLookupRead, kadFeedPage, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
     themeAfter(themeChanged);   // (an old page, its theme's sheets still coming: everything of ours dressed again once they're in)
     whenLoaded(() => { setTimeout(() => { try { boxFootNote(); } catch (e) { report(e); } }, 900); try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } setTimeout(() => { updCheck(false).catch(report); try { updSeen(); } catch (e) { report(e); } }, 1500); try { const w = myWorn(), sw = w && themeData().sw[myLive(w).base]; if (w && (!sw || sw.v !== 7)) themeSwatches(); } catch (e) { report(e); } });   // (a theme of yours: its base's sheet read, if it hasn't been yet)   // (a random event Neopets adds a moment later; theme pictures for the tab)
     if (document.getElementById('navtop__2020') || document.getElementById('navbottom__2020')) startOnce();

@@ -1,10 +1,10 @@
 {
- "version": "5.2.7",
- "date": "2026-11-05",
+ "version": "5.2.8",
+ "date": "2026-11-06",
  "notes": [
-  "Users’ shops: prices load after a buy or a new page, no refresh",
-  "Lottery, Food Club and Fishing runs keep going in a background tab",
-  "Fishing: Neopets’ fishing rod on the pet that’s fishing",
-  "Lottery: “Plan my 0 tickets” is gone at 20 of 20"
+  "Soup Kitchen: donation and prize history",
+  "SDB: put several stamps in your album at once",
+  "Switch Pet: a star on your active pet",
+  "Lab Ray: zap log with Show more"
  ]
 }
