@@ -1,10 +1,10 @@
 {
- "version": "5.3",
+ "version": "5.4",
  "date": "2026-11-07",
  "notes": [
-  "Users’ shops: the Bargain Finder (itemdb deals, whole shop, Buy)",
-  "Buy Mode: counts of what was bought, and why not",
-  "Neoboards: new pages show at once; the new-posts note goes when seen",
-  "Avatar window: full screen fixed"
+  "Neoboards and Neomail: a softer, finished look (buttons, cards, titles, names)",
+  "Neoboards: Neopets’ star for favorites; pets Large by default",
+  "NeoChat: the same gentle finish",
+  "Bargain Finder: your own % and Saving at least NP"
  ]
 }

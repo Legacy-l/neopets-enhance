@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.3
+// @version      5.4
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -11324,6 +11324,144 @@
     html.bnp-nb #boardCreateTopic .bnp-nbcomp { margin: 12px 0 0; border: 0; border-radius: 0; box-shadow: none; }
     html.bnp-nb #boardCreateTopic .topicCreateTitle { margin: 4px 18px 0 !important; }
     @media (max-width: 640px) { html.bnp-nb .bnp-nbbar-home span, html.bnp-nb .bnp-nbbar-w { display: none; } html.bnp-nb .bnp-nbbar-btn { padding: 0 9px; } html.bnp-nb .bnp-nbbar { gap: 5px; } html.bnp-nb #boardCreateTopic .topicCreateInputField-wrap { grid-template-columns: 1fr; } }
+    /* ── Neoboards: the finish (5.4, 2026-11-07: "a bit more aesthetic, nicer buttons like we've done in other areas… subtle
+       improvements… spread across"). The same look, with a little depth everywhere: buttons lit at the top with a ledge under them (as
+       Quick Ref's, in the boards' own frames), cards just off the page, the topic's title on a lighter pill, the index's title bigger with
+       an outline, the poster's name on a line of its own level with the post's date ── */
+    html.bnp-nb { --nb4-soft: 0 12px 24px -16px rgba(0, 0, 0, .32); --nb4-up: 0 4px 9px -3px rgba(0, 0, 0, .11); --nb4-lit: inset 0 1px 0 rgba(255, 255, 255, .3); --nb4-lit2: inset 0 1px 0 rgba(255, 255, 255, .45); --nb4-white: linear-gradient(#fff 45%, color-mix(in srgb, var(--nb-frame) 5%, #fff)); --nb4-title: var(--nb-ink); --nb4-hfill: #fff; --nb4-hring: var(--nb-ink); }
+    /* every card a little off the page, under its own hard edge */
+    html.bnp-nb #boardList > ul, html.bnp-nb #boardTopic ul .topicNavTop, html.bnp-nb #boardTopic li.bnp-nbpost > .boardPostByline, html.bnp-nb #boardTopic li.bnp-nbpost > .boardPost, html.bnp-nb .bnp-nbcomp, html.bnp-nb #boardCreateTopic, html.bnp-nb .bnp-nbbox, html.bnp-nb #boardIndex li.bnp-nb-board, html.bnp-nb #boardIndex > ul > li.bnp-nb-hero, html.bnp-nb #boardIndex li.bnp-nb-prem, html.bnp-nb .bnp-nbme, html.bnp-nb .bnp-nbbub { box-shadow: 0 3px 0 var(--nb-frame), var(--nb4-soft); }
+    html.bnp-nb #boardIndex > ul > li.bnp-nb-sec { box-shadow: 0 3px 0 var(--nb-bar-edge), var(--nb4-soft); }
+    html.bnp-nb #boardIndex li.bnp-nb-board:hover { box-shadow: 0 5px 0 var(--nb-frame), 0 13px 22px -14px rgba(0, 0, 0, .32); }
+    html.bnp-nb #boardTopic ul li.bnp-nbpost.bnp-nb-op > .boardPostByline { box-shadow: 0 3px 0 var(--nb-bar-edge), var(--nb4-soft); }
+    html.bnp-nb #boardTopic ul li.bnp-nbpost.bnp-nb-fol > .boardPost, html.bnp-nb #boardTopic ul li.bnp-nbpost.bnp-nb-fol > .boardPostByline { box-shadow: 0 3px 0 #d39b00, var(--nb4-soft); }
+    html.bnp-nb #boardTopic ul li.bnp-nbpost.bnp-nb-atme > .boardPost { box-shadow: 0 3px 0 var(--nb-frame), inset 4px 0 0 #d42326, var(--nb4-soft); }
+    /* the Neoboards bar and the topic's slim one: lit from above */
+    html.bnp-nb .bnp-nbbar { background: linear-gradient(color-mix(in srgb, var(--nb-panel) 91%, #fff), var(--nb-panel)); box-shadow: var(--nb4-lit), 0 3px 0 var(--nb-frame), var(--nb4-soft); }
+    html.bnp-nb .bnp-nbsticky { background: linear-gradient(color-mix(in srgb, var(--nb-panel) 91%, #fff), var(--nb-panel)); box-shadow: var(--nb4-lit), 0 3px 0 var(--nb-frame), 0 10px 24px rgba(0, 0, 0, .18); }
+    html.bnp-nb .bnp-nbbar-b:hover { box-shadow: 0 4px 0 var(--nb-pop), var(--nb4-up); }
+    /* white buttons: white at the top, a breath of the frame's colour at the foot; lifted off the page under the pointer */
+    html.bnp-nb .bnp-nbbar-btn, html.bnp-nb .bnp-nbsticky-b, html.bnp-nb .bnp-nbgear, html.bnp-nb .bnp-nblookbtn, html.bnp-nb .bnp-nb-hero .chatRulesLabel, html.bnp-nb .bnp-nbme-sw, html.bnp-nb .bnp-nbme-look, html.bnp-nb .bnp-nbjump, html.bnp-nb .bnp-nbpanel-h button, html.bnp-nb .bnp-nbpager button { background: var(--nb4-white); }
+    html.bnp-nb #boardList .pageNav .boardPageButton, html.bnp-nb #boardTopic .pageNav .boardPageButton { background: var(--nb4-white) !important; }
+    html.bnp-nb .bnp-nbbar-btn:hover, html.bnp-nb .bnp-nbbar-btn[aria-expanded="true"], html.bnp-nb #boardList .pageNav .boardPageButton:hover, html.bnp-nb #boardTopic .pageNav .boardPageButton:hover, html.bnp-nb .bnp-nbme-sw:hover, html.bnp-nb .bnp-nbme-sw:focus-visible, html.bnp-nb .bnp-nbme-look:hover, html.bnp-nb .bnp-nbme-look:focus-visible { box-shadow: 0 3px 0 var(--nb-frame), var(--nb4-up); }
+    html.bnp-nb .bnp-nbgear:hover, html.bnp-nb .bnp-nbgear:focus-visible, html.bnp-nb .bnp-nblookbtn:hover, html.bnp-nb .bnp-nblookbtn:focus-visible { box-shadow: 0 4px 0 var(--nb-frame), var(--nb4-up); }
+    /* the page you're on, in the bars' colour, lit the same way */
+    html.bnp-nb #boardList .pageNav .boardPageButton-active, html.bnp-nb #boardTopic .pageNav .boardPageButton-active { background: linear-gradient(color-mix(in srgb, var(--nb-bar) 88%, #fff), var(--nb-bar)) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 2px 0 var(--nb-bar-edge); }
+    /* the panel's buttons (Bookmark, New posts?, Reply, A− A+, Favorite): its colour, lighter at the top, a shade deeper at the foot */
+    html.bnp-nb .bnp-nbhb, html.bnp-nb .bnp-nbchip, html.bnp-nb .bnp-nbzoom { background: linear-gradient(color-mix(in srgb, var(--nb-panel) 87%, #fff), color-mix(in srgb, var(--nb-panel) 97%, #000)); box-shadow: var(--nb4-lit), 0 2px 0 var(--nb-frame); }
+    html.bnp-nb .bnp-nbhb:hover, html.bnp-nb .bnp-nbchip:hover { box-shadow: var(--nb4-lit2), 0 3px 0 var(--nb-frame), var(--nb4-up); }
+    html.bnp-nb .bnp-nbhb:active, html.bnp-nb .bnp-nbchip:active { box-shadow: inset 0 2px 3px rgba(0, 0, 0, .16), 0 1px 0 var(--nb-frame); }
+    html.bnp-nb .bnp-nbzoom button:hover:not(:disabled) { background: color-mix(in srgb, var(--nb-pink) 16%, transparent); }   /* (the panel's own writing, faintly: it reads on a dark panel and a light one) */
+    /* the bars' buttons (New topic, Post your reply, Show more): the same light, in the bars' colour */
+    html.bnp-nb .bnp-nbact { background: linear-gradient(color-mix(in srgb, var(--nb-bar) 88%, #fff), color-mix(in srgb, var(--nb-bar) 96%, #000)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 3px 0 var(--nb-bar-edge); }
+    html.bnp-nb .bnp-nbact:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .34), 0 4px 0 var(--nb-bar-edge), var(--nb4-up); }
+    html.bnp-nb .bnp-nbact:active { box-shadow: inset 0 2px 3px rgba(0, 0, 0, .18), 0 1px 0 var(--nb-bar-edge); }
+    html.bnp-nb .bnp-nbcf .bnp-nbact { min-height: 42px; padding: 0 22px; font-size: 12.5pt; }
+    /* a board's filters, its "new topics" button and its reply counts */
+    html.bnp-nb .bnp-nbflt { background: var(--nb4-white); box-shadow: 0 2px 0 var(--nb-line); }
+    html.bnp-nb .bnp-nbflt:hover { box-shadow: 0 2px 0 var(--nb-frame); }
+    html.bnp-nb .bnp-nbflt[aria-pressed="true"] { background: linear-gradient(color-mix(in srgb, var(--nb-bar) 88%, #fff), var(--nb-bar)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 2px 0 var(--nb-bar-edge); }
+    html.bnp-nb .bnp-nbflt.is-readall { background: transparent; box-shadow: none; }
+    html.bnp-nb .bnp-nbfresh { background: linear-gradient(#5dd352, #36b82a); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 2px 0 #2b8a27; transition: transform .1s, box-shadow .1s; }
+    html.bnp-nb .bnp-nbfresh:hover { background: linear-gradient(#6fe264, #3bc92e); color: #fff; transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 3px 0 #2b8a27, var(--nb4-up); }
+    html.bnp-nb #boardList ul li .replies > .bnp-nbrep { background: linear-gradient(color-mix(in srgb, var(--nb-panel) 93%, #fff), color-mix(in srgb, var(--nb-panel) 98%, #000)); background-color: var(--nb-panel); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 2px 0 var(--nb-frame); }   /* (small and many down a list: barely any shading (user: "lessened just a tiny bit")) */
+    /* the bars: lit from above */
+    html.bnp-nb #boardIndex h3.bnp-nb-cat, html.bnp-nb .bnp-nbcomp .topicReplyTitle, html.bnp-nb #boardCreateTopic h1 { background: linear-gradient(color-mix(in srgb, var(--nb-bar) 91%, #fff), var(--nb-bar)) !important; }
+    html.bnp-nb .bnp-nbcols { background: linear-gradient(color-mix(in srgb, var(--nb-bar) 91%, #fff), var(--nb-bar)); }
+    /* a topic: its title on a lighter pill of the band's colour (its writing worked out to read there), raised like the buttons. (A halo of
+       the band round the board's name, the way back and the boxes' titles came off: "this glow around the board section title… looks off") */
+    html.bnp-nb #boardTopic .topicNavTop h1 { padding: 6px 18px 8px !important; border: 2px solid var(--nb-frame); background: linear-gradient(color-mix(in srgb, var(--nb-acc) 10%, #fff), color-mix(in srgb, var(--nb-acc) 17%, #fff)); color: var(--nb4-title) !important; box-shadow: inset 0 1px 0 #fff, 0 3px 0 var(--nb-frame), 0 10px 18px -10px rgba(0, 0, 0, .4); }
+    /* the index's title: bigger, light letters with a ring of the theme's deep colour round them (the letters' own shadow all round, never
+       a drawn stroke); the megaphone at its own size */
+    html.bnp-nb .bnp-nb-hero .boardTitle { min-height: 84px; }
+    html.bnp-nb .bnp-nb-hero .boardTitle h1 { color: var(--nb4-hfill) !important; font-size: 38pt !important; letter-spacing: 1pt; -webkit-text-stroke: 0 !important; text-shadow: 3px 0 0 var(--nb4-hring), 2.77px 1.15px 0 var(--nb4-hring), 2.12px 2.12px 0 var(--nb4-hring), 1.15px 2.77px 0 var(--nb4-hring), 0 3px 0 var(--nb4-hring), -1.15px 2.77px 0 var(--nb4-hring), -2.12px 2.12px 0 var(--nb4-hring), -2.77px 1.15px 0 var(--nb4-hring), -3px 0 0 var(--nb4-hring), -2.77px -1.15px 0 var(--nb4-hring), -2.12px -2.12px 0 var(--nb4-hring), -1.15px -2.77px 0 var(--nb4-hring), 0 -3px 0 var(--nb4-hring), 1.15px -2.77px 0 var(--nb4-hring), 2.12px -2.12px 0 var(--nb4-hring), 2.77px -1.15px 0 var(--nb4-hring); }
+    html.bnp-nb .bnp-nbhero-ic { margin: -2px 16px 0 0; }   /* (the megaphone as it is: its own outline, no ring (user: "not sure the icon here needs the same border as the text")) */
+    @container bnphero (max-width: 720px) { html.bnp-nb .bnp-nb-hero .boardTitle h1 { font-size: 32pt !important; } }
+    /* pages: "Pages:" readable on white (the panel's writing was white there in a dark theme); on a board's coloured foot, as it was */
+    html.bnp-nb #boardList .pageNav .pageNavTitle, html.bnp-nb #boardTopic .pageNav .pageNavTitle { color: var(--nb-muted); }
+    html.bnp-nb #boardList ul .boardNavBottom .pageNav .pageNavTitle { color: var(--nb-pink); }
+    /* a post's card: as it was, the name beside the avatar (a name line of its own across the card was tried and taken back: "I want the
+       whole thing back to how it was"). A long name a step smaller there, broken after an underscore first; full size over a big avatar */
+    html.bnp-nb:not(.bnp-nb-bigav):not(.bnp-nb-midav) #boardTopic li.bnp-nbpost h3.postAuthorName[style*="--nb4-fit"], html.bnp-nb .bnp-nbme h3[style*="--nb4-fit"] { font-size: var(--nb4-fit) !important; }
+    html.bnp-nb #boardTopic li.bnp-nbpost .postPetInfo h4, html.bnp-nb .bnp-nbme h4 span { overflow-wrap: break-word; }
+    html.bnp-nb:not(.bnp-nb-pet80):not(.bnp-nb-pet150):not(.bnp-nb-pet225):not(.bnp-nb-pet300) #boardTopic li.bnp-nbpost .postPetInfo h4.bnp-nb4-long, html.bnp-nb:not(.bnp-nb-pet80):not(.bnp-nb-pet150):not(.bnp-nb-pet225):not(.bnp-nb-pet300) .bnp-nbme h4 span.bnp-nb4-long { font-size: 11pt !important; }
+    html.bnp-nb:not(.bnp-nb-pet80):not(.bnp-nb-pet150):not(.bnp-nb-pet225):not(.bnp-nb-pet300) #boardTopic li.bnp-nbpost .postPetInfo h4.bnp-nb4-longer, html.bnp-nb:not(.bnp-nb-pet80):not(.bnp-nb-pet150):not(.bnp-nb-pet225):not(.bnp-nb-pet300) .bnp-nbme h4 span.bnp-nb4-longer { font-size: 10pt !important; }
+    html.bnp-nb:not(.bnp-nb-pet80):not(.bnp-nb-pet150):not(.bnp-nb-pet225):not(.bnp-nb-pet300) #boardTopic li.bnp-nbpost .postPetInfo h4.bnp-nb4-longest, html.bnp-nb:not(.bnp-nb-pet80):not(.bnp-nb-pet150):not(.bnp-nb-pet225):not(.bnp-nb-pet300) .bnp-nbme h4 span.bnp-nb4-longest { font-size: 9pt !important; letter-spacing: -.1px; }
+    /* quotes: one framed box in the poster's-side tint with a bar of the frame's colour down its side, "Quote:" a quiet label over it,
+       Neopets' own inner box (a thin black frame) gone, the quoted name in the links' colour; a little room before the reply */
+    html.bnp-nb #boardTopic li .boardPostMessage blockquote, html.bnp-nb .bnp-nbwys blockquote { margin: 6px 0 12px; padding: 7px 14px 9px; border: 2px solid var(--nb-line); border-left: 5px solid var(--nb-frame); border-radius: 6px 12px 12px 6px; background: var(--nb-by); }
+    html.bnp-nb #boardTopic li .boardPostMessage blockquote > b:first-child, html.bnp-nb .bnp-nbwys blockquote > b:first-child { display: block; margin: 0 0 3px; color: var(--nb-muted); font: 11px/1.4 var(--nb-ui); letter-spacing: .3px; }
+    html.bnp-nb #boardTopic li .boardPostMessage blockquote .quote, html.bnp-nb .bnp-nbwys blockquote .quote { margin: 0 !important; padding: 0 !important; border: 0 !important; background: none !important; }
+    html.bnp-nb #boardTopic li .boardPostMessage blockquote .quote > b:first-child, html.bnp-nb .bnp-nbwys blockquote .quote > b:first-child { color: var(--nb-link); }
+    html.bnp-nb .bnp-nbbadge.is-op { background: linear-gradient(color-mix(in srgb, var(--nb-bar) 88%, #fff), var(--nb-bar)); }
+    /* the box to write in: its toolbar lit like the bar, its buttons faint tiles, so they read as buttons */
+    html.bnp-nb .bnp-nbtb { background: linear-gradient(color-mix(in srgb, var(--nb-panel) 91%, #fff), var(--nb-panel)); }
+    html.bnp-nb .bnp-nbtb button { background: color-mix(in srgb, var(--nb-pink) 9%, transparent); }
+    /* a ring round whatever the keyboard is on */
+    html.bnp-nb .bnp-nba:focus-visible, html.bnp-nb .bnp-nbhb:focus-visible, html.bnp-nb .bnp-nbact:focus-visible, html.bnp-nb .bnp-nbflt:focus-visible, html.bnp-nb .pageNav a:focus-visible, html.bnp-nb .bnp-nbtb button:focus-visible, html.bnp-nb .bnp-nbbar-btn:focus-visible, html.bnp-nb .bnp-nbbar-b:focus-visible, html.bnp-nb .bnp-nbzoom button:focus-visible { outline: 3px solid color-mix(in srgb, var(--nb-bar) 50%, transparent); outline-offset: 2px; }
+    /* ── round 2 (2026-11-07: "could you do similar types of updates to these areas as well": the index's sections and board cards, the
+       sidebar, the index's title, the bar's white buttons; and the patterned bands, "always been very flat") ── */
+    /* the bands with your theme's pattern: lit from the top, a shade deeper at the foot, a bright edge under the frame and a soft shadow
+       along the bottom, so the pattern sits in a band with some depth instead of a flat print */
+    html.bnp-nb { --nb-band: linear-gradient(rgba(255, 255, 255, .05), rgba(255, 255, 255, 0) 50%), var(--nb-pat) var(--nb-patpos) / var(--nb-patsz), var(--nb-acc); }
+    html.bnp-nb #boardTopic ul .topicNavTop::before, html.bnp-nb #boardList ul li.boardNavTop::before, html.bnp-nb #boardIndex > ul > li.bnp-nb-hero::before { box-shadow: inset 0 2px 0 rgba(255, 255, 255, .1); }
+    html.bnp-nb .bnp-nbbox-h, html.bnp-nb .bnp-nbpanel-h, html.bnp-nb .bnp-nbpop-h { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12); }
+    /* the soft panels at the foot of things (a board card's counts, a box's pager, a board's pages, the reply box's foot): lit the same way */
+    html.bnp-nb .bnp-nbbf, html.bnp-nb .bnp-nbbox-foot, html.bnp-nb .bnp-nbcf { background: linear-gradient(color-mix(in srgb, var(--nb-panel) 91%, #fff), var(--nb-panel)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18); }
+    html.bnp-nb #boardList ul .boardNavBottom { background: linear-gradient(color-mix(in srgb, var(--nb-panel) 91%, #fff), var(--nb-panel)) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18); }
+    html.bnp-nb .bnp-nbbox-foot > button, html.bnp-nb .bnp-nbdraft button { background: var(--nb4-white); color: #333; }
+    /* the index: a row of board cards ends in line, whatever their words; counts as solid white chips with a little ledge */
+    html.bnp-nb #boardIndex li.bnp-nb-board { grid-template-rows: 1fr auto; }
+    html.bnp-nb #boardIndex h3.bnp-nb-cat em { padding: 0 10px; background: #fff; color: var(--nb-bar-edge); font: 11px/20px var(--nb-ui); box-shadow: 0 2px 0 color-mix(in srgb, var(--nb-bar-edge) 70%, #000); }
+    html.bnp-nb .bnp-nbbox-h em { padding: 0 9px; background: #fff; color: var(--nb4-title); font: 11px/19px var(--nb-ui); box-shadow: 0 2px 0 var(--nb-frame); }
+    html.bnp-nb #boardIndex li.bnp-nb-sec > h3.bnp-nb-cat { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16) !important; }
+    /* "N new": raised like the buttons; in the sidebar's narrow lists it sits on the board's picture as a count, as the menu's own
+       alerts do, so the starter's name beside it isn't cut to two letters */
+    html.bnp-nb .bnp-nbnewp, html.bnp-nb .bnp-nbbar-btn em.is-new { background: linear-gradient(#e6403f, #c71d21); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 2px 0 #8f1214; }
+    html.bnp-nb .bnp-nbside .bnp-nb-trow .bnp-nbnewp { position: absolute; top: 2px; left: 38px; z-index: 1; min-width: 21px; height: 21px; padding: 0 5px; border: 2px solid #fff; border-radius: 999px; font-size: 0; line-height: 17px; text-align: center; box-sizing: border-box; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); }
+    html.bnp-nb .bnp-nbside .bnp-nb-trow .bnp-nbnewp::before { content: attr(data-n); font: 10.5px/17px var(--nb-ui); }
+    /* round 2b: Neopets' own pictures for Read lately (Imiya's Alarm Clock) and Board colours (the Yurble Artist Palette), cut out of their
+       white (nb4IcFill); Neopets' own star (the Active Pet one) for favorites; the index title's buttons one height and one family */
+    html.bnp-nb .bnp-nb4-ic { display: inline-block; flex: none; width: 22px; height: 22px; background-repeat: no-repeat; opacity: 0; transition: opacity .15s; }
+    html.bnp-nb .bnp-nb4-ic.is-in { opacity: 1; }
+    html.bnp-nb .bnp-nbbox-star { width: 22px; height: 20px; font-size: 0 !important; text-shadow: none; background: url("https://images.neopets.com/themes/h5/basic/images/active-icon.svg") center / contain no-repeat; }
+    html.bnp-nb .bnp-nb-star { font-size: 0 !important; }
+    html.bnp-nb .bnp-nb-star::before { content: ""; display: block; width: 20px; height: 18px; margin: 6px auto 0; background: url("https://images.neopets.com/themes/h5/basic/images/inactive-icon.svg") center / contain no-repeat; }
+    html.bnp-nb .bnp-nb-star[aria-pressed="true"]::before { background-image: url("https://images.neopets.com/themes/h5/basic/images/active-icon.svg"); }
+    html.bnp-nb .bnp-nb4-star { flex: none; width: 18px; height: auto; vertical-align: -3px; }
+    html.bnp-nb .bnp-nb-hero .chatRulesLabel { height: 36px; margin: -18px 0 0 !important; padding: 0 14px; border-radius: 11px; font: 12.5px/32px var(--nb-ui) !important; box-sizing: border-box; box-shadow: 0 2px 0 var(--nb-frame), 0 3px 6px -4px rgba(0, 0, 0, .1); transition: margin .1s, box-shadow .1s; }
+    html.bnp-nb .bnp-nb-hero .chatRulesLabel:hover { margin-top: -20px !important; box-shadow: 0 4px 0 var(--nb-frame), var(--nb4-up); }
+    html.bnp-nb .bnp-nbgear, html.bnp-nb .bnp-nblookbtn { box-shadow: 0 2px 0 var(--nb-frame), 0 3px 6px -4px rgba(0, 0, 0, .1); }
+    html.bnp-nb .bnp-nblookbtn { border-radius: 11px; }
+    @container bnphero (max-width: 720px) { html.bnp-nb .bnp-nb-hero .chatRulesLabel, html.bnp-nb .bnp-nb-hero .chatRulesLabel:hover { margin: 0 !important; } }
+    /* a button that's on (a bookmarked topic, a favorite board): no band behind it any more (on a board's own band it melted in), and no
+       loud colour either: its own picture says it (the ribbon or the star in gold) and its words do */
+    html.bnp-nb .bnp-nbhb[aria-pressed="true"] { background: linear-gradient(color-mix(in srgb, var(--nb-panel) 87%, #fff), color-mix(in srgb, var(--nb-panel) 97%, #000)); color: var(--nb-pink) !important; }
+    /* a board's Favorite: just the star (user, 2026-11-07: "the 'A favorite' text isnt needed beyond the star… kind of an eye sore"); its words
+       slide out beside it when you point at it or reach it by keyboard, as Quick Ref's Active Pet star does */
+    html.bnp-nb .bnp-nbhb[data-nbstar] { gap: 0; min-width: 36px; padding: 0 8px; justify-content: center; }
+    html.bnp-nb .bnp-nbhb[data-nbstar] .bnp-nb4-star { width: 20px; }
+    html.bnp-nb .bnp-nbhb[data-nbstar] > span { max-width: 0; overflow: hidden; opacity: 0; white-space: nowrap; transition: max-width .2s, margin .2s, opacity .2s; }
+    html.bnp-nb .bnp-nbhb[data-nbstar]:hover > span, html.bnp-nb .bnp-nbhb[data-nbstar]:focus-visible > span { max-width: 120px; margin-left: 6px; opacity: 1; }
+    @media (prefers-reduced-motion: reduce) { html.bnp-nb .bnp-nbhb[data-nbstar] > span { transition: none; } }
+    /* a board's own name, bigger (user, 2026-11-07: "titles for board sections could be even bigger text"); a little less on a narrow window */
+    html.bnp-nb #boardList .boardNavTop h1 { font-size: 29pt !important; letter-spacing: .5pt; }
+    @media (max-width: 800px) { html.bnp-nb #boardList .boardNavTop h1 { font-size: 24pt !important; } }
+    /* page buttons under the pointer: the bars' colour and their writing, as a theme's own boards' colours have them (the user's: white
+       numbers on the bar's colour). The finish's white shading painted over that colour and left them white on white (user, 2026-11-07:
+       "hovering on these just makes the numbers go white, instead of a proper hover") */
+    html.bnp-nb #boardList ul .pageNav a.boardPageButton:hover, html.bnp-nb #boardTopic ul .pageNav a.boardPageButton:hover, html.bnp-nb #boardList .pageNav a.boardPageButton:hover, html.bnp-nb #boardTopic .pageNav a.boardPageButton:hover { border-color: var(--nb-bar-edge) !important; background: linear-gradient(color-mix(in srgb, var(--nb-bar) 90%, #fff), var(--nb-bar)) !important; color: var(--nb-bar-ink) !important; }
+    /* names on posts a touch bigger (user, 2026-11-07: "make the usernames/pet names on board posts just slightly larger"): posters' 13.5pt,
+       pets' 12.5pt, your own card's alike; a long one still steps down to fit its line (the rules above, a point up to match) */
+    html.bnp-nb #boardTopic li.bnp-nbpost h3.postAuthorName, html.bnp-nb .bnp-nbme h3 { font-size: 13.5pt !important; }
+    html.bnp-nb #boardTopic li.bnp-nbpost .postPetInfo h4, html.bnp-nb .bnp-nbme h4 { font-size: 12.5pt !important; }
+    /* a post's top line (and the poster's name line beside it) a little lighter: 5% of the frame's colour, not 7% (user, 2026-11-07:
+       "make this top area we added just slightly lighter than it is now") */
+    html.bnp-nb { --nb-posthead: color-mix(in srgb, var(--nb-frame) 5%, transparent); }
+    /* the line under a post's top line (and under the poster's name) lightened to match its lighter tint: 20% of the frame's colour, not 30%
+       (user, 2026-11-07: "the line should be lightened as well to match"); the lines between topics in lists stay as they are */
+    html.bnp-nb { --nb4-headline: color-mix(in srgb, var(--nb-frame) 20%, #fff); }
+    html.bnp-nb #boardTopic li.bnp-nbpost h6.boardPostDate, html.bnp-nb #boardTopic li.bnp-nbpost .bnp-nbpm { border-bottom-color: var(--nb4-headline); }
     /* hidden things stay hidden */
     html.bnp-nb #boardIndex li.bnp-nb-out, html.bnp-nb #boardIndex h3.bnp-nb-out, html.bnp-nb #boardList ul li.bnp-nb-out, html.bnp-nb #boardList ul li.bnp-nb-gone, html.bnp-nb #boardTopic ul li.bnp-nb-gone, html.bnp-nb .bnp-nb-out, html.bnp-nb [hidden] { display: none !important; }
     html.bnp-nb.bnp-nb-adtop #boardList ul li.boardNavTop, html.bnp-nb.bnp-nb-adtop #boardTopic ul .topicNavTop { margin-top: 0 !important; }
@@ -11338,11 +11476,11 @@
   const NB_TOPICS = 40;   // (topics a page on a board)
   const nbKind = () => { const p = location.pathname; return /^\/neoboards\/(index\.phtml)?$/.test(p) ? 'index' : p === '/neoboards/boardlist.phtml' ? 'board' : p === '/neoboards/topic.phtml' ? 'topic' : p === '/neoboards/create_topic.phtml' ? 'create' : ''; };
   const nbOn = () => !!(S.features.nb2 && nbKind());
-  const NB_DEF = { bar: true, stick: true, pages: true, marks: true, live: 300, boardLive: 300, acts: true, who: 'hover', links: true, pics: 'np', mutes: 'fold', avatars: 'normal', pet: 's', mePet: true, drafts: true, keys: true, pen: true, mine: true, peek: true, inplace: true, mineTint: true, per: 40 };
+  const NB_DEF = { bar: true, stick: true, pages: true, marks: true, live: 300, boardLive: 300, acts: true, who: 'hover', links: true, pics: 'np', mutes: 'fold', avatars: 'normal', pet: 'l', mePet: true, drafts: true, keys: true, pen: true, mine: true, peek: true, inplace: true, mineTint: true, per: 40 };
   const nbOpt = () => { const o = Object.assign({}, NB_DEF, S.nb || {}); if (o.boardLive > 0 && o.boardLive < 120) o.boardLive = 120; if (o.live > 0 && o.live < 120) o.live = 120; return o; };   // (a board's topics every minute, or a topic's new posts every 30 seconds or minute, aren't offered any more (user, 2026-11-04: "keep 2mins as lowest"): every 2)
   // (your theme, as its own parts wear it: pop-up headers and their pattern, the menus' colours and frames, the pet box, and the boards' own bars and links)
   const NB_VARS = { acc: '--nb-acc', ink: '--nb-ink', pic: '--nb-pat', patsz: '--nb-patsz', patpos: '--nb-patpos', frame: '--nb-frame', panel: '--nb-panel', pink: '--nb-pink', rule: '--nb-rule', pop: '--nb-pop', bar: '--nb-bar', barInk: '--nb-bar-ink', blink: '--nb-blink' };
-  const nbPaintVars = (t) => { const root = document.documentElement; for (const [k, v] of Object.entries(NB_VARS)) if (t && t[k] && t[k] !== 'none') root.style.setProperty(v, t[k]); };
+  const nbPaintVars = (t) => { const root = document.documentElement; for (const [k, v] of Object.entries(NB_VARS)) if (t && t[k] && t[k] !== 'none') root.style.setProperty(v, t[k]); nb4Vars(); };
   function nbEarly() {   // (the very start of the page: its new look, before anything is drawn; the colours your theme had last time)
     if (!nbOn() || !document.documentElement) return;
     const root = document.documentElement, o = nbOpt();
@@ -11562,12 +11700,13 @@
     const all = boardList(), mine = S.boards.map((id) => all.find((b) => b.id === id)).filter(Boolean), here = nbHere.board || 0;
     const marks = nbMarks(), fresh = marks.filter((m) => (m.rc || 0) > (m.r || 0)).length;
     bar.innerHTML = `<a class="bnp-nbbar-home" href="/neoboards/index.phtml">${nbIc('home')}<span>Neoboards</span></a>
-      <div class="bnp-nbbar-boards">${mine.length ? mine.map((b) => `<a class="bnp-nbbar-b" href="/neoboards/boardlist.phtml?board=${b.id}" title="${esc(b.name || b.label || '')}" aria-label="${esc(b.name || b.label || '')}"${b.id === here ? ' aria-current="page"' : ''} style="background-image:url('${esc(cssUrl(b.icon || ''))}')"></a>`).join('') : '<span class="bnp-nbbar-hint">☆ a board to make it a favorite</span>'}</div>
+      <div class="bnp-nbbar-boards">${mine.length ? mine.map((b) => `<a class="bnp-nbbar-b" href="/neoboards/boardlist.phtml?board=${b.id}" title="${esc(b.name || b.label || '')}" aria-label="${esc(b.name || b.label || '')}"${b.id === here ? ' aria-current="page"' : ''} style="background-image:url('${esc(cssUrl(b.icon || ''))}')"></a>`).join('') : `<span class="bnp-nbbar-hint">${nb4Star(false)} a board to make it a favorite</span>`}</div>
       <button type="button" class="bnp-nbbar-btn" data-nbp="marks" aria-expanded="false" title="Your bookmarked topics" aria-label="Bookmarks">${nbRib(true)}<span class="bnp-nbbar-w"> Bookmarks</span>${marks.length ? ` <em${fresh ? ' class="is-new"' : ''}>${fresh ? `${fresh} new` : marks.length}</em>` : ''}</button>
-      <button type="button" class="bnp-nbbar-btn" data-nbp="hist" aria-expanded="false" title="The topics you read lately" aria-label="Read lately">${NB_SVG.clock}<span class="bnp-nbbar-w">Read lately</span></button>
-      <button type="button" class="bnp-nbbar-btn is-ic" data-nbp="cols" title="Board colours: each part in a colour of your own" aria-label="Board colours">${NB_SVG.palette}</button>
+      <button type="button" class="bnp-nbbar-btn" data-nbp="hist" aria-expanded="false" title="The topics you read lately" aria-label="Read lately">${nb4Ic('clock')}<span class="bnp-nbbar-w">Read lately</span></button>
+      <button type="button" class="bnp-nbbar-btn is-ic" data-nbp="cols" title="Board colours: each part in a colour of your own" aria-label="Board colours">${nb4Ic('palette')}</button>
       <button type="button" class="bnp-nbbar-btn is-ic" data-nbp="set" title="Neoboards settings" aria-label="Neoboards settings">${nbIc('set') || NB_SVG.gear}</button>
       <div class="bnp-nbpanel" data-g="nbpanel" hidden></div>`;
+    nb4IcFill(bar);
   }
   function nbPanel(which) {   // (★ Bookmarks or Read lately, dropped down from the bar; again, or anywhere else, closes it)
     const bar = $('[data-bnp="nbbar"]'), p = bar && bar.querySelector('[data-g="nbpanel"]');
@@ -11583,7 +11722,7 @@
     const bd = boardList().find((b) => b.id === Number(t.b)) || {}, bic = bd.icon || '', bname = t.bn || bd.name || 'Neoboards';
     const who = t.a ? `<span class="bnp-nb-tby">${t.av ? `<i style="background-image:url('${esc(cssUrl(t.av))}')"></i>` : ''}${esc(t.a)}</span>` : '';
     const when = t.v || t.at ? `read ${avAgo(t.v || t.at)}` : '';
-    return `<a class="bnp-nb-trow${mine ? ' is-mine' : ''}" href="${esc(nbTopicUrl(t.id, n ? (t.r || 0) + 1 : t.r || 0))}" title="${esc(`${t.t || `Topic ${t.id}`}\n${bname}${t.a ? ` · started by ${t.a}` : ''}${mine ? ' (yours)' : ''}`)}"><i class="bnp-nb-tbi"${bic ? ` style="background-image:url('${esc(cssUrl(bic))}')"` : ''} aria-hidden="true"></i><span class="bnp-nb-tbody"><span class="bnp-nb-tname">${mine ? '<span class="bnp-nbmine">Yours</span>' : ''}${esc(t.t || `Topic ${t.id}`)}</span><span class="bnp-nb-tmeta">${n ? `<span class="bnp-nbnewp">${n} new</span>` : ''}${who}<span class="bnp-nb-twhen">${who ? '' : `${esc(bname)}${when ? ' · ' : ''}`}${esc(when)}</span></span></span>${x ? `<button type="button" class="bnp-nb-x" data-nbx="${esc(x)}" title="Take it off the list" aria-label="Take it off the list">×</button>` : ''}</a>`;
+    return `<a class="bnp-nb-trow${mine ? ' is-mine' : ''}" href="${esc(nbTopicUrl(t.id, n ? (t.r || 0) + 1 : t.r || 0))}" title="${esc(`${t.t || `Topic ${t.id}`}\n${bname}${t.a ? ` · started by ${t.a}` : ''}${mine ? ' (yours)' : ''}`)}"><i class="bnp-nb-tbi"${bic ? ` style="background-image:url('${esc(cssUrl(bic))}')"` : ''} aria-hidden="true"></i><span class="bnp-nb-tbody"><span class="bnp-nb-tname">${mine ? '<span class="bnp-nbmine">Yours</span>' : ''}${esc(t.t || `Topic ${t.id}`)}</span><span class="bnp-nb-tmeta">${n ? `<span class="bnp-nbnewp" data-n="${n > 99 ? '99+' : n}" title="${n} new since you read it">${n} new</span>` : ''}${who}<span class="bnp-nb-twhen">${who ? '' : `${esc(bname)}${when ? ' · ' : ''}`}${esc(when)}</span></span></span>${x ? `<button type="button" class="bnp-nb-x" data-nbx="${esc(x)}" title="Take it off the list" aria-label="Take it off the list">×</button>` : ''}</a>`;
   }
   const nbPg = { panel: 0, marks: 0, hist: 0 };   // (which page of each list: the panel's, and the boxes beside the boards')
   function nbPaged(list, key) {   // (a list's page: as many as fit a page, the page kept in range)
@@ -11783,10 +11922,11 @@
     const ago = (b) => (b.mins < 1 ? 'just now' : b.mins < 60 ? `${b.mins} min ago` : b.mins < 1440 ? `${Math.round(b.mins / 60)} h ago` : `${Math.round(b.mins / 1440)} d ago`);
     const head = (t, n, ic = '') => `<h3 class="bnp-nbbox-h">${ic}<span>${t}</span>${n ? `<em>${n}</em>` : ''}</h3>`;
     if (nbFavDragging) return;   // (a favorite being moved: the panel stays as it is till it's put down)
-    box.innerHTML = `<section class="bnp-nbbox">${head('Favorites', mine.length, '<i class="bnp-nbbox-star" aria-hidden="true">★</i>')}<div class="bnp-nbbox-b">${mine.length ? `<div class="bnp-nbtiles">${mine.map((b) => `<a class="bnp-nbtile${b.mins <= 10 ? ' is-hot' : ''}" href="/neoboards/boardlist.phtml?board=${b.id}" data-nbfav="${esc(String(b.id))}" draggable="false" title="${esc(b.name)}${b.when ? `: last post ${esc(b.when)}` : ''} (drag to move it; Alt+← or → too)"><i style="--pic:url('${esc(cssUrl(b.icon))}')"></i><span>${esc(b.name)}</span>${b.when ? `<small>${esc(ago(b))}</small>` : ''}</a>`).join('')}</div>` : '<p class="bnp-nbhint">☆ a board to make it a favorite: here, in the bar on every board page, and in the Community menu’s My Boards.</p>'}</div></section>
+    box.innerHTML = `<section class="bnp-nbbox">${head('Favorites', mine.length, '<i class="bnp-nbbox-star" aria-hidden="true">★</i>')}<div class="bnp-nbbox-b">${mine.length ? `<div class="bnp-nbtiles">${mine.map((b) => `<a class="bnp-nbtile${b.mins <= 10 ? ' is-hot' : ''}" href="/neoboards/boardlist.phtml?board=${b.id}" data-nbfav="${esc(String(b.id))}" draggable="false" title="${esc(b.name)}${b.when ? `: last post ${esc(b.when)}` : ''} (drag to move it; Alt+← or → too)"><i style="--pic:url('${esc(cssUrl(b.icon))}')"></i><span>${esc(b.name)}</span>${b.when ? `<small>${esc(ago(b))}</small>` : ''}</a>`).join('')}</div>` : `<p class="bnp-nbhint">${nb4Star(false)} a board to make it a favorite: here, in the bar on every board page, and in the Community menu’s My Boards.</p>`}</div></section>
       <section class="bnp-nbbox">${head('Bookmarks', marks.length, nbRib(true))}${marks.length ? `${pm.rows.map((m) => nbTrow(m, `mark:${m.id}`)).join('')}${pm.pages > 1 ? `<div class="bnp-nbbox-foot">${nbPager('marks', pm)}</div>` : ''}` : '<div class="bnp-nbbox-b"><p class="bnp-nbhint">Bookmark a topic (at its top, or the ribbon beside it on its board) and it’s kept here, with how many new posts it has.</p></div>'}</section>
-      <section class="bnp-nbbox">${head('Read lately', 0, `<i class="bnp-nbbox-svg" aria-hidden="true">${NB_SVG.clock}</i>`)}${hist.length ? `${ph.rows.map((h) => nbTrow(h, `hist:${h.id}`)).join('')}<div class="bnp-nbbox-foot">${nbPager('hist', ph)}<button type="button" data-nbx="histall">Clear it</button></div>` : '<div class="bnp-nbbox-b"><p class="bnp-nbhint">The topics you read come here, and open where you left off.</p></div>'}</section>
+      <section class="bnp-nbbox">${head('Read lately', 0, nb4Ic('clock'))}${hist.length ? `${ph.rows.map((h) => nbTrow(h, `hist:${h.id}`)).join('')}<div class="bnp-nbbox-foot">${nbPager('hist', ph)}<button type="button" data-nbx="histall">Clear it</button></div>` : '<div class="bnp-nbbox-b"><p class="bnp-nbhint">The topics you read come here, and open where you left off.</p></div>'}</section>
       <section class="bnp-nbbox">${head('Lively now', 0, nbBoxIc(['el:.nav-community-icon__2020', 'nat:community-neoboards-icon']))}<div class="bnp-nbbox-b">${lively.length ? lively.map((b) => `<a class="bnp-nblive-row" href="/neoboards/boardlist.phtml?board=${b.id}"><i style="background-image:url('${esc(cssUrl(b.icon))}')"></i><b>${esc(b.name)}</b><small>${esc(ago(b))}</small></a>`).join('') : '<p class="bnp-nbhint">Quiet right now: nothing new in the last half hour.</p>'}</div></section>`;
+    nb4IcFill(box);
     nbFavDrag();
   }
   let nbFavDragging = false;
@@ -11877,7 +12017,7 @@
     for (const s of $$('[data-nbstar]')) {
       const on = S.boards.includes(Number(s.dataset.nbstar));
       s.setAttribute('aria-pressed', String(on));
-      if (s.classList.contains('bnp-nbhb')) s.innerHTML = on ? '★ <span>A favorite</span>' : '☆ <span>Favorite</span>';
+      if (s.classList.contains('bnp-nbhb')) s.innerHTML = on ? `${nb4Star(true)}<span>A favorite</span>` : `${nb4Star(false)}<span>Favorite</span>`;
       else s.textContent = on ? '★' : '☆';
       s.title = on ? 'One of your favorites (also in My Boards in the Community menu): click to take it out' : 'Make it a favorite: in the bar on every board page, and in My Boards in the Community menu';
       s.setAttribute('aria-label', s.title);
@@ -12747,6 +12887,7 @@
       if (Date.now() - at < 30 * DAY_MS) { const s = document.createElement('span'); s.className = 'bnp-nbago'; s.setAttribute('data-bnp', 'nbago'); s.textContent = ` · ${avAgo(at)}`; date.append(s); }
     }
     nbMsg(li);
+    nb4Names(by);
     nbPostWho(li, me);
   }
   const NB_MON = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
@@ -12775,6 +12916,109 @@
     li.classList.toggle('bnp-nb-gone', mute && nbOpt().mutes === 'hide');
     const meta = li.querySelector('[data-bnp="nbpm"]');
     if (meta) meta.innerHTML = `${at ? '<span class="bnp-nbbadge is-at" title="This post @mentions you, or quotes you">Mentions you</span>' : ''}${w && w.t ? nbTagHtml(li.dataset.name, w) : ''}${fol ? '<span class="bnp-nbbadge is-fol">★ Following</span>' : ''}${op ? '<span class="bnp-nbbadge is-op">Topic starter</span>' : ''}${mine ? '<span class="bnp-nbbadge is-me">You</span>' : ''}${li.dataset.nbnew ? '<span class="bnp-nbnewpill" data-bnp="nbnewpill" title="New since you last had this topic open">New</span>' : ''}${k > 0 ? `<a class="bnp-nbnum" href="#nbp-${k}" data-nbnum="${k}" title="Reply #${k}: click to copy a link straight to it">#${k}</a>` : ''}`;
+  }
+  function nb4Vars() {   // (the Neoboards finish: colours worked out from your theme's. The topic's title on its lighter pill: the band's own writing where it reads there, else a deep shade of the band. The index's title: white letters ringed in the band's writing when that is dark; its own light letters ringed in a deep shade of the band when it isn't)
+    const root = document.documentElement;
+    if (!root.classList.contains('bnp-nb') && !root.classList.contains('bnp-nm')) return;   // (the boards, and Neomail: its title the same)
+    try {
+      const cs = getComputedStyle(root), hex = (v) => nbcHexOf(cs.getPropertyValue(v).trim()), ok = (c) => /^#[0-9a-f]{6}$/.test(c);
+      if (!cs.getPropertyValue('--nb-acc').trim() || !cs.getPropertyValue('--nb-ink').trim()) return;   // (no colours yet, at the very start of a first visit: the sheet's own until the theme is read)
+      const acc = hex('--nb-acc'), ink = hex('--nb-ink');
+      if (!ok(acc) || !ok(ink)) return;
+      const mix = (a, b, p) => { const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16); return `#${[16, 8, 0].map((n) => Math.round(((x >> n) & 255) * p + ((y >> n) & 255) * (1 - p)).toString(16).padStart(2, '0')).join('')}`; };   // (p of a, the rest of b)
+      const deep = (c, on) => { let t = c; for (let k = 0.15; nbcContrast(t, on) < 4.5 && k < 0.95; k += 0.15) t = mix('#000000', c, k); return t; };   // (a colour, darkened only as far as it needs to read on that)
+      const ring = (fill) => { let r = acc; for (let k = 0.15; (nbcContrast(r, fill) < 4.5 || nbcContrast(r, acc) < 1.6) && k < 0.95; k += 0.15) r = mix('#000000', acc, k); return r; };   // (an outline that reads round light letters AND shows against the band: on a dark band, darker still)
+      const pill = mix(acc, '#ffffff', 0.28), dark = nbcContrast(ink, '#ffffff') >= 4.5;
+      const vals = [['--nb4-title', nbcContrast(ink, pill) >= 4.5 ? ink : deep(acc, pill)], ['--nb4-hfill', dark ? '#ffffff' : ink], ['--nb4-hring', dark ? ink : ring(ink)]];
+      for (const [k, v] of vals) if (root.style.getPropertyValue(k) !== v) root.style.setProperty(k, v);
+    } catch (_) { /* */ }
+  }
+  function nb4Fit(h) {   // (a poster's name sized to fit its line beside the avatar, measured in its own font once the fonts are in: 13.5pt at most, 10pt at the least; past that it wraps, after an underscore first)
+    const go = () => {
+      if (!h.isConnected) return;
+      const room = h.clientWidth;
+      if (!room) return;
+      const cs = getComputedStyle(h), g = nb4Fit.g || (nb4Fit.g = document.createElement('canvas').getContext('2d'));
+      g.font = `${cs.fontStyle} ${cs.fontWeight} 100px ${cs.fontFamily}`;
+      const w = g.measureText(reClean(h.textContent)).width;
+      if (!w) return;
+      const px = Math.max(13.33, Math.min(18, ((room - 3) / w) * 100));
+      h.style.setProperty('--nb4-fit', `${px.toFixed(2)}px`);
+    };
+    (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => requestAnimationFrame(go)).catch(() => {});
+  }
+  function nb4Names(root) {   // (a long name a little smaller, and only ever broken after an underscore, never a long name split mid-word)
+    if (!root) return;
+    for (const h of root.querySelectorAll('h3.postAuthorName, .postPetInfo h4, .bnp-nbme h3, .bnp-nbme h4 span')) {
+      if (h.dataset.nb4) continue;
+      h.dataset.nb4 = '1';
+      const n = reClean(h.textContent).length, [a, b, c] = h.tagName === 'H3' ? [13, 16, 99] : [12, 15, 17];   // (a poster's name has its card's width; a pet's, the room beside its picture)
+      h.classList.toggle('bnp-nb4-long', n >= a && n < b);
+      h.classList.toggle('bnp-nb4-longer', n >= b && n < c);
+      h.classList.toggle('bnp-nb4-longest', n >= c);
+      if (h.tagName === 'H3') nb4Fit(h);
+      const walk = document.createTreeWalker(h, NodeFilter.SHOW_TEXT), texts = [];
+      while (walk.nextNode()) texts.push(walk.currentNode);
+      for (const t of texts) {
+        if (!t.nodeValue.includes('_')) continue;
+        const f = document.createDocumentFragment();
+        t.nodeValue.split('_').forEach((part, i) => { if (i) f.append('_', document.createElement('wbr')); if (part) f.append(part); });
+        t.replaceWith(f);
+      }
+    }
+  }
+  const NB4_ART = {   // (Neopets' own pictures for Read lately (the Premium menu's Dailies clock) and Board colours, cut out of their white where they're on white. The palette is a wearable: its hanger mark, bottom left, cleared)
+    clock: { u: `${NPI}themes/h5/basic/images/dailies-widget/dailieswidget-icon.png`, size: 22, svg: () => NB_SVG.clock },   // (the Premium menu's Dailies clock)
+    palette: { u: `${NPI}items/sch_yurble_artpallet.gif`, size: 25, clear: [0, 63, 18, 17], svg: () => NB_SVG.palette },
+  };
+  const nb4Made = new Map();   // (each picture once: at hand at once when the bar is drawn again)
+  function nb4Art(k) {   // (cut out of its white, its mark cleared, then made small here, in halves with the smoothest scaling, at your screen's own pixels: the browser shrinking a background itself left it jagged (user, 2026-11-07: "these look pretty pixelated"))
+    if (nb4Made.has(k)) return nb4Made.get(k);
+    const a = NB4_ART[k], dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1));
+    const boxOf = (d, W, H) => { let x0 = W, y0 = H, x1 = -1, y1 = -1; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (d[(y * W + x) * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } return x1 >= 0 ? [x0, y0, x1 - x0 + 1, y1 - y0 + 1] : [0, 0, W, H]; };
+    const small = (im) => new Promise((ok) => {
+      try {
+        let cv = document.createElement('canvas');
+        cv.width = im.naturalWidth || im.width; cv.height = im.naturalHeight || im.height;
+        const g = cv.getContext('2d', { willReadFrequently: true });
+        g.drawImage(im, 0, 0);
+        if (a.clear) g.clearRect(...a.clear);
+        const [x0, y0, w, h] = boxOf(g.getImageData(0, 0, cv.width, cv.height).data, cv.width, cv.height), sc = a.size / Math.max(w, h), cw = Math.max(1, Math.round(w * sc)), ch = Math.max(1, Math.round(h * sc)), pw = Math.round(cw * dpr), ph = Math.round(ch * dpr);
+        let src = document.createElement('canvas');
+        src.width = w; src.height = h;
+        src.getContext('2d').drawImage(cv, x0, y0, w, h, 0, 0, w, h);
+        while (src.width / 2 >= pw && src.height / 2 >= ph) { const n = document.createElement('canvas'); n.width = Math.round(src.width / 2); n.height = Math.round(src.height / 2); const ng = n.getContext('2d'); ng.imageSmoothingQuality = 'high'; ng.drawImage(src, 0, 0, n.width, n.height); src = n; }
+        cv = document.createElement('canvas');
+        cv.width = pw; cv.height = ph;
+        const og = cv.getContext('2d');
+        og.imageSmoothingQuality = 'high';
+        og.drawImage(src, 0, 0, pw, ph);
+        cv.toBlob((b) => ok(b ? { url: URL.createObjectURL(b), w: cw, h: ch } : null), 'image/png');
+      } catch (_) { ok(null); }   // (a picture that won't be read: the drawn icon)
+    });
+    const load = (u) => new Promise((ok) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => ok(im); im.onerror = () => ok(null); im.src = u; });
+    const pr = picCut(a.u).then((c) => load(c ? c.url : a.u)).then((im) => (im ? small(im) : null));   // (not on white: as it is)
+    nb4Made.set(k, pr);
+    pr.then((r) => { nb4Made.done = nb4Made.done || {}; nb4Made.done[k] = r; });
+    return pr;
+  }
+  const nb4Ic = (k) => `<i class="bnp-nb4-ic" data-nb4ic="${k}" aria-hidden="true"></i>`;
+  const nb4Star = (on) => `<img class="bnp-nb4-star" src="${NPI}themes/h5/basic/images/${on ? 'active' : 'inactive'}-icon.svg" alt="${on ? '★' : '☆'}" width="18" height="16">`;   // (Neopets' own star, the Active Pet one: gold when it's a favorite, white with a grey edge when it isn't)
+  function nb4IcFill(root) {   // (each picture in its place at its own size or smaller, never stretched; one that won't come at all: the drawn icon, as before)
+    if (!root || !root.querySelectorAll) return;
+    for (const i of root.querySelectorAll('i[data-nb4ic]:not([data-nb4on])')) {
+      const k = i.dataset.nb4ic, a = NB4_ART[k];
+      if (!a) continue;
+      i.dataset.nb4on = '1';
+      const put = (r) => {
+        if (!i.isConnected) return;
+        if (!r) { i.outerHTML = a.svg(); return; }
+        Object.assign(i.style, { width: `${r.w}px`, height: `${r.h}px`, backgroundImage: `url("${r.url}")`, backgroundSize: '100% 100%', backgroundPosition: '0 0' });
+        i.classList.add('is-in');
+      };
+      const done = nb4Made.done && nb4Made.done[k];
+      if (done !== undefined) put(done); else nb4Art(k).then(put);
+    }
   }
   function nbAtMe(li, me) {   // (a post that @mentions you, or quotes you: "[quote][b]you:[/b]")
     if (!me) return false;
@@ -13210,7 +13454,7 @@
     const html = `<div class="bnp-nbme-au"><i class="bnp-nbme-av" style="background-image:url('${esc(cssUrl(av))}')"></i><div class="bnp-nbme-info"><h3>${esc(name)}</h3>${title ? `<p class="is-title"><i>${esc(title)}</i></p>` : ''}${lines}</div></div>`
       + (petName ? `<div class="bnp-nbme-pet"><span class="bnp-nbme-petpic"><img src="${esc(petImg)}" alt=""></span><div class="bnp-nbme-petinfo"><h4><span>${esc(petName)}</span>${S.features.pets ? `<button type="button" class="bnp-nbme-sw" data-pets-open title="Switch your active pet" aria-label="Switch your active pet">${NB_SVG.swap}</button>` : ''}</h4><p>Active Neopet</p></div></div>` : '')
       + `<button type="button" class="bnp-nbme-look" data-nblook="${esc(v)}" title="Your avatar, NeoTitle, NeoHTML and signature${v !== '0' ? ': this pen’s' : ''}">${NB_SVG.pen}<span>Change your look</span></button>`;
-    if (box.dataset.sig !== html) { box.innerHTML = html; box.dataset.sig = html; }
+    if (box.dataset.sig !== html) { box.innerHTML = html; box.dataset.sig = html; nb4Names(box); }
   }
   function nbWysPaint() {   // (the box you write in, inside your NeoHTML as Neopets will wrap your words: its words round it, its style on yours, your signature under)
     const f = nbForm;
@@ -13930,9 +14174,10 @@
   function nbcApply() {   // (your colours, on this page)
     const css = nbcCss();
     let st = document.getElementById('bnp-nbc-style');
-    if (!css) { if (st) st.remove(); return; }
+    if (!css) { if (st) st.remove(); nb4Vars(); return; }
     if (!st) { st = document.createElement('style'); st.id = 'bnp-nbc-style'; document.documentElement.append(st); }   // (after the boards' own sheet)
     if (st.textContent !== css) st.textContent = css;
+    nb4Vars();
   }
   const nbcStrip = () => { const cols = nbcCols(), ks = NBC_PARTS.filter((p) => !p.tog && nbHex(cols[p.k])); return ks.length ? `<span class="bnp-nbc-strip" title="${esc(ks.map((p) => p.l).join(', '))}">${ks.slice(0, 16).map((p) => `<i style="background:${nbHex(cols[p.k])}"></i>`).join('')}</span>` : ''; };
   function nbcHexOf(css) {   // (a colour as the page works it out, as #rrggbb)
@@ -15270,6 +15515,41 @@
       html.bnp-nm .bnp-nmacts { margin-left: 0; }
       html.bnp-nm form.bnp-nmsend > table > tbody > tr { grid-template-columns: minmax(0, 1fr); }
     }
+    /* ── Neomail: the Neoboards finish (5.4, 2026-11-07: "neomail needs the same treatment as neoboards"), at the boards' final, softened
+       values: buttons lit faintly at the top over their ledge, cards just off the page, the band with a touch of light, the title bigger
+       with the boards' outline ring ── */
+    html.bnp-nm { --nb4-soft: 0 12px 24px -16px rgba(0, 0, 0, .32); --nb4-up: 0 4px 9px -3px rgba(0, 0, 0, .11); --nb4-lit: inset 0 1px 0 rgba(255, 255, 255, .3); --nb4-white: linear-gradient(#fff 45%, color-mix(in srgb, var(--nb-frame) 5%, #fff)); --nb4-hfill: #fff; --nb4-hring: var(--nb-ink);
+      --nb-band: linear-gradient(rgba(255, 255, 255, .05), rgba(255, 255, 255, 0) 50%), var(--nb-pat) var(--nb-patpos) / var(--nb-patsz), var(--nb-acc); }
+    /* cards just off the page */
+    html.bnp-nm .bnp-nmhead, html.bnp-nm form.bnp-nmform, html.bnp-nm form.bnp-nmsend, html.bnp-nm td.content .contentModule, html.bnp-nm table.bnp-nmread tr.bnp-nm-from, html.bnp-nm .bnp-nmfr { box-shadow: 0 3px 0 var(--nb-frame), var(--nb4-soft); }
+    html.bnp-nm .bnp-nmfr.is-on { box-shadow: 0 3px 0 #2b8a27, var(--nb4-soft); }
+    /* the header's band: a touch of light at the top; its title bigger, light letters ringed in the theme's deep colour (as the boards' own) */
+    html.bnp-nm .bnp-nmhead-band { box-shadow: inset 0 2px 0 rgba(255, 255, 255, .1); }
+    html.bnp-nm .bnp-nmhead h1 { color: var(--nb4-hfill); font-size: 31pt; letter-spacing: 1pt; -webkit-text-stroke: 0; text-shadow: 3px 0 0 var(--nb4-hring), 2.77px 1.15px 0 var(--nb4-hring), 2.12px 2.12px 0 var(--nb4-hring), 1.15px 2.77px 0 var(--nb4-hring), 0 3px 0 var(--nb4-hring), -1.15px 2.77px 0 var(--nb4-hring), -2.12px 2.12px 0 var(--nb4-hring), -2.77px 1.15px 0 var(--nb4-hring), -3px 0 0 var(--nb4-hring), -2.77px -1.15px 0 var(--nb4-hring), -2.12px -2.12px 0 var(--nb4-hring), -1.15px -2.77px 0 var(--nb4-hring), 0 -3px 0 var(--nb4-hring), 1.15px -2.77px 0 var(--nb4-hring), 2.12px -2.12px 0 var(--nb4-hring), 2.77px -1.15px 0 var(--nb4-hring); }
+    /* white buttons and boxes: white, a breath of the frame's colour at the foot; lifted a little under the pointer */
+    html.bnp-nm .bnp-nmcap, html.bnp-nm .bnp-nmhelp, html.bnp-nm .bnp-nmtabs a, html.bnp-nm .bnp-nmtab-pop, html.bnp-nm .bnp-nmmini-more > button, html.bnp-nm .bnp-nmmini-cap span, html.bnp-nm .bnp-nmbtn, html.bnp-nm .bnp-nmpager a, html.bnp-nm .bnp-nmsub a, html.bnp-nm .bnp-nmrange { background-image: var(--nb4-white); }
+    html.bnp-nm .bnp-nmtabs a:hover, html.bnp-nm .bnp-nmtab-pop:hover, html.bnp-nm .bnp-nmmini-more > button:hover, html.bnp-nm .bnp-nmbtn:hover { box-shadow: 0 3px 0 var(--nb-frame), var(--nb4-up); }
+    html.bnp-nm .bnp-nmtab-pop:hover, html.bnp-nm .bnp-nmsub a:hover, html.bnp-nm .bnp-nmrange:hover { background-image: none; }
+    html.bnp-nm .bnp-nmbtn.is-del { background-image: none; }
+    /* the bars' colour (the page you're on, Go, chosen filters, Send, Neopets' own buttons): lit faintly the same way */
+    html.bnp-nm .bnp-nmtabs a[aria-current="page"], html.bnp-nm .bnp-nmmini-more > button.is-on, html.bnp-nm .bnp-nmbtn.is-go, html.bnp-nm .bnp-nmchip[aria-pressed="true"], html.bnp-nm .bnp-nmhelp[aria-expanded="true"] { background-image: linear-gradient(color-mix(in srgb, var(--nb-bar) 88%, #fff), color-mix(in srgb, var(--nb-bar) 96%, #000)); }
+    html.bnp-nm form.bnp-nmsend input[type="submit"], html.bnp-nm td.content input[type="submit"]:not(.bnp-ncl *), html.bnp-nm td.content input[type="button"]:not(.bnp-ncl *), html.bnp-nm td.content button:not([class*="bnp-"]):not(.bnp-ncl *) { background-image: linear-gradient(color-mix(in srgb, var(--nb-bar) 88%, #fff), color-mix(in srgb, var(--nb-bar) 96%, #000)); }
+    html.bnp-nm form.bnp-nmsend input[type="submit"] { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 3px 0 var(--nb-bar-edge); transition: transform .1s, box-shadow .1s; }
+    html.bnp-nm form.bnp-nmsend input[type="submit"]:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .34), 0 4px 0 var(--nb-bar-edge), var(--nb4-up); }
+    html.bnp-nm td.content input[type="submit"]:not(.bnp-ncl *):hover, html.bnp-nm td.content input[type="button"]:not(.bnp-ncl *):hover { box-shadow: 0 3px 0 var(--nb-bar-edge), var(--nb4-up); }
+    /* the filters: white with a little ledge, as the boards' */
+    html.bnp-nm .bnp-nmchip { background-image: var(--nb4-white); box-shadow: 0 2px 0 var(--nb-line); }
+    html.bnp-nm .bnp-nmchip:hover { box-shadow: 0 2px 0 var(--nb-frame); }
+    html.bnp-nm .bnp-nmchip[aria-pressed="true"] { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 2px 0 var(--nb-bar-edge); }
+    /* the bars: lit from above, faintly */
+    html.bnp-nm tr.bnp-nmcols, html.bnp-nm form.bnp-nmsend::before { background-image: linear-gradient(color-mix(in srgb, var(--nb-bar) 91%, #fff), var(--nb-bar)); }
+    html.bnp-nm td.content .contentModuleHeader, html.bnp-nm td.content .contentModuleHeaderAlt { background-image: linear-gradient(color-mix(in srgb, var(--nb-bar) 91%, #fff), var(--nb-bar)) !important; }
+    /* the soft panels (the list's tools, Send's foot): lit the same way */
+    html.bnp-nm .bnp-nmbar, html.bnp-nm form.bnp-nmsend > div { background-image: linear-gradient(color-mix(in srgb, var(--nb-panel) 91%, #fff), var(--nb-panel)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18); }
+    /* "new": raised like the buttons */
+    html.bnp-nm .bnp-nm-new, html.bnp-nm .bnp-nmtabs a em { background: linear-gradient(#e6403f, #c71d21); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 2px 0 #8f1214; }
+    /* a ring round whatever the keyboard is on */
+    html.bnp-nm .bnp-nmtabs a:focus-visible, html.bnp-nm .bnp-nmbtn:focus-visible, html.bnp-nm .bnp-nmchip:focus-visible, html.bnp-nm .bnp-nmpager a:focus-visible, html.bnp-nm .bnp-nmhelp:focus-visible { outline: 3px solid color-mix(in srgb, var(--nb-bar) 50%, transparent); outline-offset: 2px; }
   `;
   function nmEarly() {   // (the very start: its look, with the colours your theme had last time)
     if (!nmOn() || !document.documentElement) return;
@@ -35333,8 +35613,9 @@
   const BF_SORTS = [['save', 'Most saved'], ['pct', 'Biggest % off'], ['price', 'Lowest price'], ['shop', 'The shop’s order']];
   let bf = null;
   const BF_MINS = [0, 10, 25, 50];   // (how far under itemdb's price a bargain has to be: any, or a share of it)
-  const bfP = () => { const v = saJson(BF_KEY, {}); return { open: v.open === true, scope: v.scope === 'shop' ? 'shop' : 'page', show: v.show === 'all' ? 'all' : 'deals', sort: BF_SORTS.some(([k]) => k === v.sort) ? v.sort : 'save', min: BF_MINS.includes(Number(v.min)) ? Number(v.min) : 0 }; };
-  const bfIsDeal = (d, min) => d.save > 0 && Math.round(d.pct * 100) >= min;   // (by the share it's shown with, so 24.6% counts as the 25% it says)
+  const bfP = () => { const v = saJson(BF_KEY, {}); return { open: v.open === true, scope: v.scope === 'shop' ? 'shop' : 'page', show: v.show === 'all' ? 'all' : 'deals', sort: BF_SORTS.some(([k]) => k === v.sort) ? v.sort : 'save', ...(() => { const m = Math.round(Number(v.min)), n = Math.round(Number(v.np)), min = m > 0 && m < 100 ? m : 0; return { min, minOwn: v.minOwn === 1 && min > 0, np: n > 0 ? Math.min(n, 2e9) : 0 }; })() }; };   // (Off by: any, a share from the chips or your own; and Saving at least: any, or so many Neopoints)
+  const bfIsDeal = (d, P) => d.save > 0 && Math.round(d.pct * 100) >= (P.min || 0) && d.save >= (P.np || 0);   // (by the share it's shown with, so 24.6% counts as the 25% it says; and at least the Neopoints you asked for, when you did: both at once)
+  const bfWant = (P, by) => (by ? [P.min ? `${P.min}% or more` : '', P.np ? `at least ${P.np.toLocaleString()} NP` : ''].filter(Boolean).join(' and ') : [P.min ? `${P.min}% off or more` : '', P.np ? `saving ${P.np.toLocaleString()} NP or more` : ''].filter(Boolean).join(' · '));   // (what you asked for, in words)
   const bfPSet = (k, v) => { try { localStorage.setItem(BF_KEY, JSON.stringify({ ...saJson(BF_KEY, {}), [k]: v })); } catch (_) { /* */ } };
   const bfShopKey = (owner) => `bnp-bf-shop:${String(owner).toLowerCase()}`;
   const bfSearching = () => { const q = new URLSearchParams(location.search).get('q') || '', i = document.getElementById('bsp-search-input'); return String((i && i.value) || q).trim().length >= 3; };   // (the shop's own search on: its pages are the search's)
@@ -35445,6 +35726,20 @@
     win.addEventListener('click', bfClick);
     win.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !(e.target instanceof HTMLSelectElement)) { bfOpen(false); bf.tab.focus({ preventScroll: true }); } });
     win.addEventListener('change', (e) => { const t = e.target; if (t instanceof HTMLSelectElement && t.matches('[data-bfsort]')) { bfPSet('sort', t.value); bf.shown = BF_SHOW; bfPaint(); } });
+    win.addEventListener('input', (e) => {   // (your own % or Neopoints, typed: the list follows a moment after you stop, the box as you left it)
+      const t = e.target instanceof HTMLInputElement && e.target.matches('[data-bfnum]') ? e.target : null;
+      if (!t) return;
+      clearTimeout(bf.numT);
+      bf.numT = setTimeout(() => {
+        const k = t.dataset.bfnum, n = Number(t.value.replace(/\D/g, '')) || 0, at = t.value.length - (t.selectionEnd ?? t.value.length);   // (the caret counted from the end: the number comes back with its commas)
+        if (k === 'min') { bfPSet('min', Math.min(99, n)); bfPSet('minOwn', n > 0 ? 1 : 0); } else bfPSet('np', n);
+        bfPSet('show', 'deals');
+        bf.shown = BF_SHOW;
+        bfPaint();
+        const back = bf.win.querySelector(`[data-bfnum="${k}"]`);
+        if (back) { back.focus({ preventScroll: true }); const p = Math.max(0, back.value.length - at); try { back.setSelectionRange(p, p); } catch (_) { /* */ } }
+      }, 450);
+    });
     bfOpen(bfP().open, true);
   }
   function bfTop() {   // (just under Neopets' own bars at the top, which stay over the page: its menu, and its Neopoints and Neocash at the right)
@@ -35469,10 +35764,10 @@
   function bfPaintSoon() { if (!bf || bf.paintQ) return; bf.paintQ = requestAnimationFrame(() => { bf.paintQ = 0; bfPaint(); }); }
   function bfTiles() {   // (the shop's own tiles: a bargain, as far under itemdb as you chose, has its price in green with how far under, and NE's itemdb price on it (when you show those) solid green)
     if (!bf) return;
-    const min = bfP().min;
+    const P = bfP();
     for (const li of document.querySelectorAll('li.bsp-item')) {
       const b = li.querySelector('.bsp-item__buy'), name = b ? reClean(b.getAttribute('data-name') || '') : '', price = b ? shopNum(b.getAttribute('data-price')) : 0;
-      const r = name ? bf.prices.get(name) : null, d = r && r.p > 0 && price > 0 ? { save: r.p - price, pct: (r.p - price) / r.p } : null, deal = !!d && bfIsDeal(d, min);
+      const r = name ? bf.prices.get(name) : null, d = r && r.p > 0 && price > 0 ? { save: r.p - price, pct: (r.p - price) / r.p } : null, deal = !!d && bfIsDeal(d, P);
       if (li.classList.contains('bnp-bf-deal') !== deal) li.classList.toggle('bnp-bf-deal', deal);
       const pe = li.querySelector('.bsp-item__price');
       let off = pe ? pe.querySelector('[data-bnp="bfoff"]') : null;
@@ -35489,7 +35784,7 @@
   function bfList(scope) {   // (the items for this view, as chosen: bargains or all, in the chosen order)
     const P = bfP(), src = scope === 'shop' ? (bf.shop ? bf.shop.items : []) : [...bf.page.values()];
     const rows = src.map((it) => ({ it, d: bfDeal(it) }));
-    const deals = rows.filter((x) => bfIsDeal(x.d, P.min) && !x.it.gone);
+    const deals = rows.filter((x) => bfIsDeal(x.d, P) && !x.it.gone);
     const list = P.show === 'all' ? rows : deals;
     const by = { save: (a, b) => (b.d.save ?? -Infinity) - (a.d.save ?? -Infinity), pct: (a, b) => (b.d.pct ?? -Infinity) - (a.d.pct ?? -Infinity), price: (a, b) => a.it.price - b.it.price, shop: (a, b) => a.it.at - b.it.at }[P.sort];
     list.sort((a, b) => (a.it.gone ? 1 : 0) - (b.it.gone ? 1 : 0) || by(a, b) || a.it.at - b.it.at);
@@ -35511,15 +35806,15 @@
     const where = onThis ? (bf.here.search ? 'in this search' : pages > 1 ? `on page ${Math.floor(bf.here.lower / BF_PER) + 1} of ${pages}` : 'in this shop') : 'in this shop';
     const counted = onThis ? `${L.rows.length.toLocaleString()} item${L.rows.length === 1 ? '' : 's'} ${bf.here.search ? 'found' : 'here'}` : sh ? `${sh.items.length.toLocaleString()} item${sh.items.length === 1 ? '' : 's'} on ${(sh.done ? sh.pages : Math.ceil((sh.next || 0) / BF_PER)).toLocaleString()} page${(sh.done ? sh.pages : Math.ceil((sh.next || 0) / BF_PER)) === 1 ? '' : 's'}` : bf.total ? `${bf.total.toLocaleString()} items on ${pages.toLocaleString()} page${pages === 1 ? '' : 's'}` : 'All its pages, then everything on them';
     const hold = !!bf.blocked && waitN > 0 && !n, asking = hold ? 'Waiting on itemdb’s prices' : 'Looking up itemdb’s prices…';   // (itemdb holding them back: said as it is)
-    const banner = `<div class="bnp-bf-banner"><div class="bnp-bf-big">${(onThis || sh) && (n || !waitN) ? `<b>${n.toLocaleString()}</b><span>${n === 1 ? 'bargain' : 'bargains'} ${esc(where)}</span>` : `<span class="is-ask">${onThis ? asking : 'Every page of this shop'}</span>`}<small>${esc(counted)}${(onThis || sh) && P.min ? ` · ${P.min}% off or more` : ''}${(onThis || sh) && L.none ? ` · ${L.none.toLocaleString()} with no itemdb price` : ''}${(onThis || sh) && waitN && n ? ` · ${waitN.toLocaleString()} still to price` : ''}</small></div></div>`;
+    const banner = `<div class="bnp-bf-banner"><div class="bnp-bf-big">${(onThis || sh) && (n || !waitN) ? `<b>${n.toLocaleString()}</b><span>${n === 1 ? 'bargain' : 'bargains'} ${esc(where)}</span>` : `<span class="is-ask">${onThis ? asking : 'Every page of this shop'}</span>`}<small>${esc(counted)}${(onThis || sh) && (P.min || P.np) ? ` · ${esc(bfWant(P))}` : ''}${(onThis || sh) && L.none ? ` · ${L.none.toLocaleString()} with no itemdb price` : ''}${(onThis || sh) && waitN && n ? ` · ${waitN.toLocaleString()} still to price` : ''}</small></div></div>`;
     const seg = (k, l) => `<button type="button" data-bfscope="${k}" aria-pressed="${scope === k}">${l}</button>`;
     const scopes = `<div class="bnp-bf-scope" role="group" aria-label="Which items">${seg('page', bf.here.search ? 'This search' : 'This page')}${seg('shop', `Whole shop${pages > 1 ? ` · ${pages.toLocaleString()} pages` : ''}`)}</div>`;
     let mid = '';
     if (!onThis) mid = bfShopHtml(busy);
     const showList = onThis || (sh && sh.items.length);
-    const tools = showList ? `<div class="bnp-bf-tools"><span class="bnp-bf-seg" role="group" aria-label="Show">${[['deals', 'Bargains'], ['all', 'Everything']].map(([k, l]) => `<button type="button" data-bfshow="${k}" aria-pressed="${P.show === k}">${l}</button>`).join('')}</span><label><span>Sort</span><select data-bfsort aria-label="Sort them">${BF_SORTS.map(([k, l]) => `<option value="${k}"${P.sort === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>${P.show === 'deals' ? `<span class="bnp-bf-offby" role="group" aria-label="How far under itemdb’s price"><span>Off by</span>${BF_MINS.map((m) => `<button type="button" data-bfmin="${m}" aria-pressed="${P.min === m}" title="${esc(m ? `Only those at least ${m}% under itemdb’s price` : 'Anything under itemdb’s price')}">${m ? `${m}%+` : 'any'}</button>`).join('')}</span>` : ''}</div>` : '';
+    const tools = showList ? `<div class="bnp-bf-tools"><span class="bnp-bf-seg" role="group" aria-label="Show">${[['deals', 'Bargains'], ['all', 'Everything']].map(([k, l]) => `<button type="button" data-bfshow="${k}" aria-pressed="${P.show === k}">${l}</button>`).join('')}</span><label><span>Sort</span><select data-bfsort aria-label="Sort them">${BF_SORTS.map(([k, l]) => `<option value="${k}"${P.sort === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>${P.show === 'deals' ? `<span class="bnp-bf-offby" role="group" aria-label="How far under itemdb’s price"><span>Off by</span>${BF_MINS.map((m) => `<button type="button" data-bfmin="${m}" aria-pressed="${!P.minOwn && P.min === m}" title="${esc(m ? `Only those at least ${m}% under itemdb’s price` : 'Anything under itemdb’s price')}">${m ? `${m}%+` : 'any'}</button>`).join('')}<label class="bnp-bf-num${P.minOwn ? ' is-on' : ''}" title="Your own: at least this % under itemdb’s price"><input type="text" inputmode="numeric" maxlength="2" data-bfnum="min" value="${P.minOwn ? P.min : ''}" placeholder="__" aria-label="Your own % off" autocomplete="off" spellcheck="false">%</label></span><span class="bnp-bf-saveby" role="group" aria-label="How many Neopoints under itemdb’s price"><span>Saving at least</span><label class="bnp-bf-num is-np${P.np ? ' is-on' : ''}" title="Only those at least this many Neopoints under itemdb’s price (and the % above too, when you’ve chosen one)"><input type="text" inputmode="numeric" maxlength="13" data-bfnum="np" value="${P.np ? P.np.toLocaleString() : ''}" placeholder="any" aria-label="Saving at least this many Neopoints" autocomplete="off" spellcheck="false">NP</label>${P.np ? '<button type="button" class="bnp-bf-numx" data-bfnpx title="Any amount" aria-label="Any amount">×</button>' : ''}</span>` : ''}</div>` : '';
     const shown = L.list.slice(0, bf.shown), more = L.list.length - shown.length;
-    const rows = showList ? `<div class="bnp-bf-list">${shown.map((x) => bfRowHtml(x.it, x.d, onThis)).join('')}${more > 0 ? `<p class="bnp-bf-more"><button type="button" class="bnp-sdr-lb" data-bf="more">Show ${Math.min(BF_SHOW, more).toLocaleString()} more</button><span>${more.toLocaleString()} more below these</span></p>` : ''}${!L.list.length ? `<p class="bnp-bf-empty">${waitN ? (hold ? 'No prices from itemdb yet.' : 'Looking up itemdb’s prices…') : P.show === 'deals' ? `Nothing ${onThis ? 'here' : 'in this shop'} is ${P.min ? `${P.min}% or more ` : ''}under itemdb’s price.${P.min && L.rows.some((x) => x.d.save > 0) ? ' <button type="button" class="bnp-sdr-lb" data-bfmin="0">Any saving</button>' : L.rows.length ? ' <button type="button" class="bnp-sdr-lb" data-bfshow="all">Show everything</button>' : ''}` : 'No items.'}</p>` : ''}</div>` : '';
+    const rows = showList ? `<div class="bnp-bf-list">${shown.map((x) => bfRowHtml(x.it, x.d, onThis)).join('')}${more > 0 ? `<p class="bnp-bf-more"><button type="button" class="bnp-sdr-lb" data-bf="more">Show ${Math.min(BF_SHOW, more).toLocaleString()} more</button><span>${more.toLocaleString()} more below these</span></p>` : ''}${!L.list.length ? `<p class="bnp-bf-empty">${waitN ? (hold ? 'No prices from itemdb yet.' : 'Looking up itemdb’s prices…') : P.show === 'deals' ? `Nothing ${onThis ? 'here' : 'in this shop'} is under itemdb’s price${P.min || P.np ? ` by ${esc(bfWant(P, true))}` : ''}.${(P.min || P.np) && L.rows.some((x) => x.d.save > 0) ? ' <button type="button" class="bnp-sdr-lb" data-bfany>Any saving</button>' : L.rows.length ? ' <button type="button" class="bnp-sdr-lb" data-bfshow="all">Show everything</button>' : ''}` : 'No items.'}</p>` : ''}</div>` : '';
     const blocked = bf.blocked === 'visit' ? '<p class="bnp-bf-note">itemdb shares its prices once you’ve visited it today. <a class="bnp-sdr-lb" href="https://itemdb.com.br/" target="_blank" rel="noopener">Open itemdb</a> <button type="button" class="bnp-sdr-lb" data-bf="again">Try again</button></p>' : bf.blocked === 'busy' ? '<p class="bnp-bf-note">itemdb asked for a short pause: the rest of the prices come in a few minutes, by themselves.</p>' : '';
     const got = bf.gotN ? `<p class="bnp-bf-got">You bought ${bf.gotN.toLocaleString()} here: ${bmNp(bf.spent)}</p>` : '';
     body.innerHTML = `${banner}${scopes}${mid}${blocked}${tools}${rows}${got}<p class="bnp-bf-foot">itemdb’s prices are a guide: <span>the Shop Wizard has the real ones.</span></p>`;
@@ -35534,7 +35829,7 @@
     const vs = d.save > 0 ? `<em class="is-save">Save ${esc(bmNp(d.save))} · ${Math.max(1, Math.round(d.pct * 100))}% off</em>` : d.p && d.save < 0 ? `<em class="is-over">${Math.round(-d.pct * 100)}% over itemdb</em>` : d.p ? '<em>Same as itemdb</em>' : '';
     const bits = [vs, sold ? '<b class="is-sold">Sold out</b>' : `${it.qty.toLocaleString()} in stock`, !onThis && (bf.pagesN || 1) > 1 ? (here ? 'This page' : `Page ${pg}`) : ''].filter(Boolean).join(' · ');
     const mine = bf.bought.get(it.key) || 0;
-    return `<div class="bnp-bf-row${bfIsDeal(d, bfP().min) ? ' is-deal' : ''}${sold ? ' is-sold' : ''}" data-bfk="${esc(it.key)}">
+    return `<div class="bnp-bf-row${bfIsDeal(d, bfP()) ? ' is-deal' : ''}${sold ? ' is-sold' : ''}" data-bfk="${esc(it.key)}">
       <button type="button" class="bnp-bf-pic" data-bf="show" title="${esc(here ? 'Show it in the shop' : `Show it in the shop: page ${pg}`)}"><img src="${esc(it.img)}" alt="" width="40" height="40" loading="lazy"></button>
       <span class="bnp-bf-nm"><b title="${esc(it.name)}">${esc(it.name)}</b><span class="bnp-bf-pr"><b>${esc(bmNp(it.price))}</b>${idb}</span><small>${bits}${mine ? ` · <b class="is-got">You bought ${mine.toLocaleString()}</b>` : ''}</small></span>
       <span class="bnp-bf-acts"><button type="button" class="button-default__2020 button-yellow__2020 bnp-bf-buy" data-bf="buy"${sold ? ' disabled' : ''} title="${esc(sold ? 'None left' : here ? `Buy it for ${bmNp(it.price)}: the shop asks if you’re sure` : `Buy it for ${bmNp(it.price)}: its page opens, then the shop asks if you’re sure`)}">Buy</button><button type="button" class="bnp-bf-sw" data-bf="sw" title="${esc(`${itPremium() ? 'Super Shop Wizard' : 'Shop Wizard'}: ${it.name}`)}" aria-label="Look it up on the Shop Wizard"><img src="${esc(BF_ICON)}" alt="" width="22" height="22"></button></span>
@@ -35559,8 +35854,10 @@
     if (sc) { bfPSet('scope', sc.dataset.bfscope); bf.shown = BF_SHOW; bfPaint(); return; }
     const sv = el.closest('[data-bfshow]');
     if (sv) { bfPSet('show', sv.dataset.bfshow); bf.shown = BF_SHOW; bfPaint(); return; }
+    if (el.closest('[data-bfany]')) { bfPSet('min', 0); bfPSet('minOwn', 0); bfPSet('np', 0); bfPSet('show', 'deals'); bf.shown = BF_SHOW; bfPaint(); return; }   // (nothing found that far under: any saving at all)
+    if (el.closest('[data-bfnpx]')) { bfPSet('np', 0); bf.shown = BF_SHOW; bfPaint(); return; }
     const mv = el.closest('[data-bfmin]');
-    if (mv) { bfPSet('min', Number(mv.dataset.bfmin) || 0); bfPSet('show', 'deals'); bf.shown = BF_SHOW; bfPaint(); return; }   // (how far under: the list, the counts and the shop's own tiles follow)
+    if (mv) { bfPSet('min', Number(mv.dataset.bfmin) || 0); bfPSet('minOwn', 0); bfPSet('show', 'deals'); bf.shown = BF_SHOW; bfPaint(); return; }   // (how far under: the list, the counts and the shop's own tiles follow)
     const t = el.closest('[data-bf]');
     if (!t) return;
     const a = t.dataset.bf, row = t.closest('[data-bfk]'), it = row ? bfItem(row.dataset.bfk) : null;
@@ -50542,6 +50839,17 @@
     .bnp-bf-offby button { height: 24px; margin: 0; padding: 0 10px; border: 1.5px solid #c3d3ea; border-radius: 999px; background: #fff; color: #1c4070; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
     .bnp-bf-offby button:hover { border-color: #3b79d6; }
     .bnp-bf-offby button[aria-pressed="true"] { border-color: #1d6e22; background: #2f9e2a; color: #fff; }
+    .bnp-bf-saveby { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; color: #2b4f80; font: 12px "MuseoSansRounded700", Arial, sans-serif; }   /* (Saving at least: so many Neopoints, with the % above or on its own) */
+    .bnp-bf-saveby > span { margin-right: 3px; }
+    .bnp-bf-num { display: inline-flex; align-items: center; gap: 2px; height: 24px; margin: 0; padding: 0 9px 0 2px; border: 1.5px solid #c3d3ea; border-radius: 999px; background: #fff; color: #1c4070; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; box-sizing: border-box; cursor: text; }   /* (your own %: typed, in a pill like the chips) */
+    .bnp-bf-num input { width: 24px; height: 20px; margin: 0; padding: 0 0 0 6px; border: 0; background: transparent; color: #1c4070; font: inherit; text-align: right; outline: none; box-shadow: none; }
+    .bnp-bf-num.is-np input { width: 78px; }
+    .bnp-bf-num input::placeholder { color: #9aaac0; opacity: 1; }
+    .bnp-bf-num:hover { border-color: #3b79d6; }
+    .bnp-bf-num:focus-within { border-color: #3b79d6; box-shadow: 0 0 0 3px rgba(59, 121, 214, .18); }
+    .bnp-bf-num.is-on { border-color: #1d6e22; background: #eaf7e8; }
+    .bnp-bf-numx { display: grid; place-items: center; width: 22px; height: 22px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #7a8698; font: 15px/1 Arial, sans-serif; cursor: pointer; }
+    .bnp-bf-numx:hover, .bnp-bf-numx:focus-visible { background: #eef4fc; color: #1c4070; outline: none; }
     /* a bargain on the shop's own tiles: its price in green, how far under itemdb beside it; NE's itemdb price on it (when shown) solid green */
     li.bsp-item.bnp-bf-deal .bsp-item__price { color: #1d7a22; }
     .bnp-bf-off { display: inline-block; margin-left: 5px; padding: 0 6px; border-radius: 999px; background: #2f9e2a; color: #fff; font: 700 10.5px/1.6 "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; vertical-align: 1px; }
@@ -53246,9 +53554,40 @@
       .bnp-hub .bnp-cols { grid-template-columns: 1fr; }
       .bnp-hub .bnp-tag { display: none; }
     }
+    /* ── NeoChat: the Neoboards finish (5.4, 2026-11-07: "maybe neochat could use some polishing as well… keep it a bit subtle").
+       Only light and shade over your NeoChat theme's own colours, never colours of its own: the band lit from the top, the buttons lit at the
+       top over their ledge and lifted a little under the pointer, the messages just off the page ── */
+    .bnp-ncl, .bnp-ncl-phead, .bnp-ncl-toasts:not(.bnp-ncl *) { --nb-band: linear-gradient(rgba(255, 255, 255, .05), rgba(255, 255, 255, 0) 50%), var(--nb-pat) var(--nb-patpos) / var(--nb-patsz), var(--nb-acc); --nb4-lift: linear-gradient(rgba(255, 255, 255, .1), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, .018)); }
+    .bnp-ncl .bnp-hub-head { box-shadow: inset 0 2px 0 rgba(255, 255, 255, .1); }
+    .bnp-ncl .bnp-ncl-hb:not(.button-default__2020), .bnp-ncl .bnp-ncl-hb:not(.button-default__2020):hover, .bnp-ncl .bnp-ncl-hb:not(.button-default__2020)[aria-pressed="true"] { background-image: var(--nb4-lift); }
+    .bnp-ncl .bnp-ncl-hb:not(.button-default__2020) { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 2px 0 var(--nct-hbEdge, rgba(0, 0, 0, .18)); transition: transform .1s, box-shadow .1s, filter .1s; }
+    .bnp-ncl .bnp-ncl-hb:not(.button-default__2020):hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .38), 0 3px 0 var(--nct-hbEdge, rgba(0, 0, 0, .18)), 0 4px 8px -2px rgba(0, 0, 0, .09); }
+    .bnp-ncl-tabs button, .bnp-ncl-tabs button:not([aria-selected="true"]):hover { background-image: var(--nb4-lift); }
+    .bnp-ncl-tabs button { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 3px 0 var(--nct-tabEdge, var(--nb-frame)); transition: transform .1s, box-shadow .1s; }
+    .bnp-ncl-tabs button:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .38), 0 4px 0 var(--nct-tabEdge, var(--nb-frame)), 0 4px 8px -3px rgba(0, 0, 0, .09); }
+    .bnp-ncl .bnp-pillbtn, .bnp-ncl .bnp-pillbtn:hover, .bnp-ncl-phead .bnp-pillbtn, .bnp-ncl-phead .bnp-pillbtn:hover, .bnp-ncl-toasts .bnp-pillbtn, .bnp-ncl-toasts .bnp-pillbtn:hover { background-image: var(--nb4-lift); }
+    .bnp-ncl .bnp-pillbtn, .bnp-ncl-phead .bnp-pillbtn, .bnp-ncl-toasts .bnp-pillbtn { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 2px 0 var(--nct-pillEdge, var(--nb-frame)); }
+    .bnp-ncl .bnp-ncl-act, .bnp-ncl .bnp-ncl-act:hover { background-image: var(--nb4-lift); }
+    .bnp-ncl .bnp-ncl-act { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 2px 0 var(--nct-actEdge, var(--nb-frame)); }
+    .bnp-ncl .bnp-ncl-snipbtn { background-image: linear-gradient(#fff 45%, color-mix(in srgb, var(--nb-frame, #e3dfd2) 5%, #fff)); box-shadow: inset 0 1px 0 #fff, 0 2px 0 var(--nb-frame, #e3dfd2); transition: transform .1s, box-shadow .1s; }
+    .bnp-ncl .bnp-ncl-snipbtn:hover { transform: translateY(-1px); box-shadow: 0 3px 0 var(--nb-frame, #e3dfd2), 0 4px 8px -2px rgba(0, 0, 0, .08); }
+    .bnp-ncl-b { box-shadow: 0 var(--nct-bShadow, 3px) 0 var(--nct-theirEdge, var(--nb-frame)), 0 10px 18px -14px rgba(0, 0, 0, .4); }
+    .bnp-ncl-run.is-me .bnp-ncl-b { box-shadow: 0 var(--nct-bShadow, 3px) 0 var(--nct-mineEdge, var(--nct-theirEdge, var(--nb-frame))), 0 10px 18px -14px rgba(0, 0, 0, .4); }
+    .bnp-ncl.is-narrow.is-home .bnp-ncl-tabs button[aria-selected="true"]:not(:hover) { background-image: var(--nb4-lift); }   /* (Home: neither tab lit, both alike) */
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.4', '2026-11-07', [
+      'Neoboards: a softer, finished look: buttons and cards with a little depth, bands with a touch of light, everything in your theme',
+      'Neoboards: a topic’s title on a lighter pill; the index’s title bigger and outlined; board titles bigger',
+      'Neoboards: posters’ and pets’ names a touch bigger; a long name sized to fit beside the avatar',
+      'Neoboards: Neopets’ own star for favorites (just the star on a board), and real pictures for Read lately and Board colours',
+      'Neoboards: new-post counts sit on each board’s picture in the sidebar; quotes framed; page buttons hover in your bar’s colour',
+      'Neoboards: pets Large by default (a size you’ve chosen stays yours)',
+      'Neomail: the same finish as the boards: its buttons, cards and band, and a bigger outlined title',
+      'NeoChat: the same gentle finish, over your NeoChat theme’s own colours',
+      'Users’ shops: the Bargain Finder takes your own % off and a Saving at least amount in NP, either or both',
+    ]],
     ['5.3', '2026-11-07', [
       'Users’ shops: the Bargain Finder, in the Shop Wizard’s colours: each item against itemdb’s price, the best deals first, for the page you’re on or the whole shop',
       'Users’ shops: Off by any, 10, 25 or 50%; a bargain’s price turns green on the shop itself; Buy goes to its page and the shop asks if you’re sure, as ever',
