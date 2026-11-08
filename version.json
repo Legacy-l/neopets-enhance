@@ -1,10 +1,10 @@
 {
- "version": "5.4",
- "date": "2026-11-07",
+ "version": "5.4.1",
+ "date": "2026-11-08",
  "notes": [
-  "Neoboards and Neomail: a softer, finished look (buttons, cards, titles, names)",
-  "Neoboards: Neopets’ star for favorites; pets Large by default",
-  "NeoChat: the same gentle finish",
-  "Bargain Finder: your own % and Saving at least NP"
+  "Stamp Album: stamps you put in count at once, by hand or with NE",
+  "Stamp Album: Check every page",
+  "Stamp Album: missing stamps stay faded when chosen; arrow keys move between stamps",
+  "New for your album: two full rows, newest first, green ticks"
  ]
 }

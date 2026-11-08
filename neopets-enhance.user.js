@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.4
+// @version      5.4.1
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -6457,8 +6457,13 @@
           const u = this.__bnpPost, q = typeof body === 'string' ? new URLSearchParams(body) : null, k = q && /deposit/i.test(q.get('action') || '') ? `i${++sdbN}` : '';   // (into your SDB: told as it goes, by the item's id alone)
           if (k) document.dispatchEvent(new CustomEvent('bnp-sdb-send', { detail: JSON.stringify({ k, where: 'inv', obj: q.get('obj_id') || '', nc: /process_cash_object/.test(u) }) }));
           const read = /useobject\.phtml/.test(u) && q && /^Read to /i.test(q.get('action') || '') ? q.get('action') : '';   // (a book read to a pet: which pet, for its lists)
+          const opt = document.querySelector('#iteminfo_select_action option:checked'), how = `${(q && q.get('action')) || ''} ${opt ? opt.textContent : ''}`;
+          const albNow = /useobject\.phtml/.test(u) && !!q && /album/i.test(how) && !/tcg|trading card|neodeck/i.test(how), im = albNow ? document.querySelector(`.item-img[data-objid="${String(q.get('obj_id') || '').replace(/[^\w-]/g, '')}"]`) : null;
+          const alb = albNow ? { n: (im && im.getAttribute('data-itemname')) || '', img: (im && im.getAttribute('data-image')) || '' } : null;   // (a stamp, coin or shell put in your album: its name and picture from its card, before the grid changes)
           this.addEventListener('loadend', () => {
-            document.dispatchEvent(new CustomEvent('bnp-inv-acted', { detail: JSON.stringify({ u, status: this.status, act: read }) }));
+            let said = '';
+            if (alb) try { said = String(this.responseText || '').slice(0, 4000); } catch (_) { said = ''; }
+            document.dispatchEvent(new CustomEvent('bnp-inv-acted', { detail: JSON.stringify({ u, status: this.status, act: read, alb, said }) }));
             if (k) document.dispatchEvent(new CustomEvent('bnp-sdb-done', { detail: JSON.stringify({ k, ok: this.status === 200 }) }));
           });
         }
@@ -6487,7 +6492,7 @@
         if (/^post$/i.test(String((init && init.method) || (input && input.method) || '')) && (OUT.test(u) || QS.test(u))) {
           const b = JSON.parse(String((init && init.body) || '{}')) || {};
           if (OUT.test(u)) {
-            const moves = Array.isArray(b.moves) ? b.moves.map((m) => ({ id: m.obj_info_id, q: Number(m.quantity) || 1 })) : b.obj_info_id != null ? [{ id: b.obj_info_id, q: Number(b.quantity) || 1 }] : [];
+            const moves = Array.isArray(b.moves) ? b.moves.map((m) => ({ id: m.obj_info_id, q: Number(m.quantity) || 1, a: String(m.action || '').slice(0, 30) })) : b.obj_info_id != null ? [{ id: b.obj_info_id, q: Number(b.quantity) || 1 }] : [];
             if (moves.length) { k = `s${++n}`; say('bnp-sdb-send', { k, where: 'sdb', moves }); }
           } else {
             const adds = [];
@@ -6507,7 +6512,7 @@
         if (/\/safetydeposit\/pet-action\.php/.test(u)) { const b = JSON.parse(String((init && init.body) || '{}')) || {}; if (/read/i.test(String(b.verb || '')) && b.pet_name) p.then((r) => r.clone().json()).then((d) => { if (d && d.success === true) say('bnp-col-read', { pet: String(b.pet_name) }); }, () => {}); }   // (a book read to a pet from here: which pet, for its lists)
       } catch (_) { /* */ }
       try {
-        if (k) p.then((r) => r.clone().json()).then((d) => say('bnp-sdb-done', { k, ok: !!(d && d.success === true) }), () => say('bnp-sdb-done', { k, ok: false }));
+        if (k) p.then((r) => r.clone().json()).then((d) => say('bnp-sdb-done', { k, ok: !!(d && d.success === true), err: d && typeof d.error === 'string' ? d.error.slice(0, 40) : '', sc: d && d.success_count != null ? Number(d.success_count) : null }), () => say('bnp-sdb-done', { k, ok: false, err: 'net' }));
         else if (QSL.test(u)) {
           p.then((r) => r.clone().json()).then((d) => {
             for (const it of d && Array.isArray(d.items) ? d.items : []) {
@@ -10488,15 +10493,17 @@
     const where = html.trim() ? html : JSON.stringify(j.avatarData || j);
     for (const m of where.matchAll(/(?:https?:)?\/\/images\.neopets\.com\/neoboards\/avatars\/[\w.-]+\.(?:gif|png|jpe?g)/gi)) avGot(fullUrl(m[0].replace(/^\/\//, 'https://')));
   }
-  function sdbEar() {   // (the very start of the SDB, Quick Stock and the Inventory: what goes into or out of your SDB heard, so its counted worth follows without counting again)
-    const p = location.pathname;
-    if (FRAME || S.features.worth === false || !['/safetydeposit.phtml', '/quickstock.phtml', '/inventory.phtml'].includes(p)) return;
+  function sdbEar() {   // (the very start of the SDB, Quick Stock and the Inventory: what goes into or out of your SDB heard, so its counted worth follows without counting again; and what goes in your album from the SDB or the Inventory, counted in)
+    const p = location.pathname, worth = S.features.worth !== false, album = S.features.stamps !== false && p !== '/quickstock.phtml';
+    if (FRAME || !['/safetydeposit.phtml', '/quickstock.phtml', '/inventory.phtml'].includes(p) || (!worth && !album)) return;
+    if (album) saEar(p);   // (stamps put in your album from here, Neopets' own way or NE's)
     if (p !== '/inventory.phtml' && !document.getElementById('bnp-sdb-ear')) {   // (the Inventory's own ear tells of what's put in from there)
       const sc = document.createElement('script');
       sc.id = 'bnp-sdb-ear';
       sc.textContent = `(${SDB_EAR.toString()})();`;
       document.documentElement.append(sc);
     }
+    if (!worth) return;   // (its counted worth is off: only the album's ear)
     const sent = new Map(), read = (e) => { try { return JSON.parse(e.detail); } catch (_) { return null; } };
     document.addEventListener('bnp-sdb-send', (e) => {
       const d = read(e);
@@ -22535,9 +22542,9 @@
       if (!pages[p]) pages[p] = Array(25).fill(null);
       for (const [i, x] of Object.entries(at)) if (Array.isArray(x) && x[0] && Number(i) >= 0 && Number(i) < 25) pages[p][Number(i)] = [String(x[0]), String(x[1] || '')];
     }
-    const byName = new Map(), byFile = new Map();
-    pages.forEach((slots, p) => (slots || []).forEach((x, i) => { if (!x) return; byName.set(x[1].toLowerCase(), [p, i]); byFile.set(x[0].toLowerCase(), [p, i]); }));
-    return (saKnownMemo = { pages, byName, byFile });
+    const byName = new Map(), byFile = new Map(), byKey = new Map();
+    pages.forEach((slots, p) => (slots || []).forEach((x, i) => { if (!x) return; byName.set(x[1].toLowerCase(), [p, i]); byFile.set(x[0].toLowerCase(), [p, i]); const k = saKey(x[1]); if (k) byKey.set(k, [p, i]); }));
+    return (saKnownMemo = { pages, byName, byFile, byKey });
   }
   function saLearn(pid, slots) {   // (an album page seen, anyone's: a stamp in a place the list has empty, or has another in, kept for next time)
     const was = saKnown().pages[pid] || [], add = {};
@@ -22557,48 +22564,136 @@
   }
   // your album, as read from its pages: kept in this browser for each account
   const saAcct = () => nclMe() || '';
-  let saMine = null;   // ({ pages: { page: { t, have: [places], n } }, counts: { page: Neopets' count }, countsT, total })
-  const saBlank = () => ({ v: 1, pages: {}, counts: {}, countsT: 0, total: 0 });
-  async function saMineLoad() {
-    if (saMine && saMine.acct === saAcct()) return saMine;
+  let saMine = null;   // ({ pages: { page: { t, have: [places], n: Neopets' count when they were right, loc: [places NE counted in itself, not seen on the page since] } }, counts: { page: Neopets' count }, countsT, total, heard: when NE last heard of a stamp going in that it couldn't be sure of })
+  const saBlank = () => ({ v: 1, pages: {}, counts: {}, countsT: 0, total: 0, heard: 0 });
+  async function saMineLoad(fresh) {   // (fresh: read again, as another tab may have changed it since)
     const a = saAcct();
+    if (!fresh && saMine && saMine.acct === a) return saMine;
     const d = a ? await idbGet(`sa-album-${a}`).catch(() => null) : null;
-    saMine = d && d.pages && d.counts ? d : saBlank();
+    if (d && d.pages && d.counts) saMine = d;
+    else if (!(fresh && saMine && saMine.acct === a)) saMine = saBlank();   // (nothing kept, or a browser that can't keep it: this tab's own copy, when it has one)
     saMine.acct = a;
+    saTabsHear();
     return saMine;
   }
-  function saMineSave() {
-    if (!saMine || !saMine.acct) return;
-    idbSet(`sa-album-${saMine.acct}`, saMine).catch(() => {});
-    try { localStorage.setItem(`bnp-sa-any:${saMine.acct}`, Object.keys(saMine.pages).length || Object.keys(saMine.counts).length ? '1' : ''); } catch (_) { /* */ }
+  let saPings = 0;
+  function saMineSave() {   // (kept, then the other tabs told. A promise)
+    if (!saMine || !saMine.acct) return Promise.resolve(false);
+    const a = saMine.acct;
+    try { localStorage.setItem(`bnp-sa-any:${a}`, Object.keys(saMine.pages).length || Object.keys(saMine.counts).length ? '1' : ''); } catch (_) { /* */ }
     saNeed = null;
+    return idbSet(`sa-album-${a}`, saMine).catch(() => false).then((ok) => { try { localStorage.setItem('bnp-sa-ping', `${a}|${Date.now()}|${++saPings}`); } catch (_) { /* */ } return ok; });
   }
-  function saKeepPage(pid, d) {   // (a page of yours, just seen: which places have a stamp, and Neopets' own count)
-    if (!saMine || !saMine.acct) return;
-    saMine.pages[pid] = { t: Date.now(), have: d.slots.map((x, i) => (x ? i : -1)).filter((i) => i >= 0), n: d.n };
-    saMine.counts[pid] = d.n;
-    saMineSave();
+  let saQ = Promise.resolve();
+  function saEdit(fn) {   // (a change to what's kept of your album, made to the newest copy of it (another tab may have read a page since) and kept, one at a time. A promise of what fn gives)
+    const go = saQ.then(async () => {
+      if (!saAcct()) return null;
+      await saMineLoad(true);
+      const r = fn(saMine);
+      await saMineSave();
+      return r;
+    });
+    saQ = go.catch(() => null);
+    return go;
   }
-  function saStampIn(name) {   // (a stamp just put in your album, counted in at once where NE knows its place, without reading the page; true if it was. saMineSave after)
-    const at = saKnown().byName.get(String(name || '').toLowerCase());
-    if (!at || !saMine) return false;
-    if (!saMine.pages[at[0]]) saMine.pages[at[0]] = { t: Date.now(), have: [], n: Number(saMine.counts[at[0]]) || 0 };   // (a page with none yet: its first)
-    const pg = saMine.pages[at[0]];
-    if (!Array.isArray(pg.have) || pg.have.includes(at[1])) return false;
-    pg.have.push(at[1]);
+  function saTabsHear() {   // (another tab changed what's kept of your album: what this one shows of it follows)
+    if (saTabsHear.on || FRAME) return;
+    saTabsHear.on = true;
+    addEventListener('storage', (e) => {
+      if (e.key !== 'bnp-sa-ping' || !e.newValue || !saMine || S.features.stamps === false) return;
+      if (String(e.newValue).split('|')[0] !== saMine.acct || saMine.acct !== saAcct()) return;
+      clearTimeout(saTabsHear.t);
+      saTabsHear.t = setTimeout(() => { saQ = saQ.then(() => saMineLoad(true)).then(() => saAfter()).catch(() => null); }, 150 + Math.random() * 250);   // (a moment, so several changes come in together; after any change of this tab's own)
+    });
+  }
+  function saCountTo(M, pid, n) {   // (a page's count as Neopets has it now: the album's total follows)
+    const was = M.counts[pid];
+    if (M.total > 0 && was != null && Number.isFinite(Number(was))) M.total = Math.max(0, M.total + Number(n) - Number(was));
+    M.counts[pid] = Number(n);
+  }
+  function saKeepPage(pid, d) {   // (a page of yours, just seen: which places have a stamp, and Neopets' own count. A promise)
+    return saEdit((M) => { M.pages[pid] = { t: Date.now(), have: d.slots.map((x, i) => (x ? i : -1)).filter((i) => i >= 0), n: d.n }; saCountTo(M, pid, d.n); });
+  }
+  function saKey(s) { return String(s || '').toLowerCase().replace(/&amp;/g, '&').replace(/[^a-z0-9&]+/g, ''); }   // (a name however it's spelt: quotes, dashes and spaces left out)
+  function saPlace(name, pic) {   // ([page, place] a stamp goes in, where NE knows it: by its name, else its picture; null when it doesn't)
+    const K = saKnown(), n = reClean(String(name || '')).toLowerCase(), k = saKey(n), raw = String(pic || '').trim();
+    const f = (saFile(raw) || (/^[\w.-]+$/.test(raw) ? (/\.(?:gif|png|jpe?g)$/i.test(raw) ? raw : `${raw}.gif`) : '')).toLowerCase();
+    return (n && K.byName.get(n)) || (k && K.byKey.get(k)) || (f && K.byFile.get(f)) || null;
+  }
+  const saPgOk = (M, p) => { const pg = M.pages[p]; return pg && Array.isArray(pg.have) && pg.have.length === Number(pg.n) && (M.counts[p] == null || Number(M.counts[p]) === Number(pg.n)) ? pg : null; };   // (a page of yours that's read, and hasn't changed since by Neopets' count)
+  function saStampInM(M, at) {   // (one stamp counted into what's kept, at its place: its page's count and the album's total one more. 'in'; 'had': NE had it there already; '': its page isn't read and its count isn't known)
+    const [p, i] = at, pg = M.pages[p], c = M.counts[p] != null ? Number(M.counts[p]) : null;
+    if (!pg) {   // (a page NE hasn't read: one with none in it yet has this one now; any other, only its count goes up)
+      if (c == null) return '';
+      if (c === 0) M.pages[p] = { t: Date.now(), have: [i], n: 1, loc: [i] };
+      M.counts[p] = c + 1;
+      if (M.total > 0) M.total++;
+      return 'in';
+    }
+    if (!Array.isArray(pg.have) || pg.have.includes(i)) return 'had';
+    pg.have.push(i);
+    pg.loc = [...(Array.isArray(pg.loc) ? pg.loc : []), i];
+    M.counts[p] = (c != null ? c : Number(pg.n) || 0) + 1;
     pg.n = (Number(pg.n) || 0) + 1;
-    saMine.counts[at[0]] = pg.n;
-    return true;
+    if (M.total > 0) M.total++;
+    return 'in';
+  }
+  function saAlbumed(list, o = {}) {   // (stamps just put in your album ({ n: name, img: picture }), heard from Neopets or done by NE: counted in at once where NE knows their place, without reading a page. o.how: 'sure' (Neopets said so), 'likely' (counted, and checked with Neopets' Overview when your album's front page next opens), 'unsure' (only that check). o.of: Neopets put that many of them in without saying which. o.again: some may be counted already. A promise of how many were counted)
+    const how = o.how || 'sure', items = (Array.isArray(list) ? list : []).filter((x) => x && (x.n || x.img));
+    if (S.features.stamps === false || !saAcct() || (!items.length && how === 'sure')) return Promise.resolve(0);
+    return saEdit((M) => {
+      let n = 0, check = how !== 'sure' || !items.length, go = how === 'unsure' ? [] : items;
+      if (o.of != null && go.length) {   // (only some went in: the ones NE knew weren't in your album yet, when that's how many went in; otherwise none counted, and the check)
+        const st = go.map((x) => { const at = saPlace(x.n, x.img), pg = at && saPgOk(M, at[0]); return !pg ? '' : pg.have.includes(at[1]) ? 'had' : 'new'; });
+        const fresh = go.filter((x, k) => st[k] === 'new');
+        if (st.every(Boolean) && fresh.length === Number(o.of)) go = fresh; else { go = []; check = true; }
+      }
+      for (const x of go) { const at = saPlace(x.n, x.img), r = at ? saStampInM(M, at) : ''; if (r === 'in') n++; else if (!(r === 'had' && o.again)) check = true; }
+      if (check) M.heard = Date.now();
+      return n;
+    }).then((n) => { saAfter(); return n || 0; }).catch((e) => { report(e); return 0; });
+  }
+  function saAfter() {   // (what this page shows of your album, drawn again: the album itself, the marks on items, and the SDB albumer's count)
+    if (sa && sa.root && sa.root.isConnected) saPaint(true);
+    try { salCountPaint(); } catch (e) { report(e); }
+    if (saMarksOn() && document.querySelector('.bnp-it-col.is-stamp')) saMarksAgain();
+  }
+  function saEar(p) {   // (stamps put in your album from your SDB (Neopets' own Put in Stamp Album, one or several selected at once, or NE's) or from your Inventory (its pop-up's): counted in what NE keeps of your album as Neopets answers, so the album, its marks and Buy Mode know at once (the user, 2026-11-08: "doesn't always correctly count a stamp as albumed"))
+    if (saEar.on || FRAME || S.features.stamps === false) return;
+    saEar.on = true;
+    const read = (e) => { try { return JSON.parse(e.detail); } catch (_) { return null; } };
+    if (p === '/safetydeposit.phtml') {
+      const sent = new Map();
+      document.addEventListener('bnp-sdb-send', (e) => {
+        const d = read(e), alb = d && d.where === 'sdb' && Array.isArray(d.moves) ? d.moves.filter((m) => m && m.a === 'stamp_album') : [];
+        if (alb.length) sent.set(d.k, sdbMoving(alb).map((x) => ({ n: x.n, img: x.img })));   // (their names and pictures, from the SDB's own list as they're sent)
+      });
+      document.addEventListener('bnp-sdb-done', (e) => {
+        const d = read(e), list = d && sent.get(d.k);
+        if (!list) return;
+        sent.delete(d.k);
+        if (d.ok) saAlbumed(list, { how: 'sure' });
+        else if (d.err === 'partial_error') saAlbumed(list, { how: 'sure', of: Number(d.sc) || 0 });   // (some went in: Neopets doesn't say which)
+        else if (d.err === 'net') saAlbumed(list, { how: 'unsure' });   // (no answer came: they may have gone in)
+      });
+    } else if (p === '/inventory.phtml') {
+      document.addEventListener('bnp-inv-acted', (e) => {
+        const d = read(e);
+        if (!d || !d.alb) return;
+        const words = d.status === 200 ? sdrWords(d.said) : '';
+        saAlbumed([d.alb], { how: words && !/already|can.?t|cannot|unable|not able|isn.?t able|error|sorry|don.?t have|do not have|not yours|no longer|try again/i.test(words) ? 'likely' : 'unsure' });
+      });
+    }
   }
   function saState(pid) {   // (one page of yours, as far as it's known: its places, which you have (null: not known yet), Neopets' count)
     const slots = saKnown().pages[pid] || Array(25).fill(null), M = saMine || saBlank();
-    const pg = M.pages[pid], n = M.counts[pid] != null ? M.counts[pid] : pg ? pg.n : null;
+    const pg = M.pages[pid], n = M.counts[pid] != null ? Number(M.counts[pid]) : pg ? Number(pg.n) : null;
     const exists = slots.filter(Boolean).length;
     let have = pg ? new Set(pg.have) : null, how = pg ? 'read' : '';
-    const stale = !!(pg && n != null && pg.have.length !== n);   // (Neopets counts another number now: a stamp's gone in since it was read)
+    const stale = !!(pg && n != null && (n !== Number(pg.n) || (Array.isArray(pg.have) ? pg.have.length : -1) !== n));   // (Neopets counts another number now than when NE's places for it were right (a stamp's gone in that NE didn't see), or NE's places don't add up to it (one an older NE counted in on a page it hadn't read))
     if ((!have || stale) && n === 0) { have = new Set(); how = 'none'; }
     else if ((!have || stale) && n != null && exists && n === exists) { have = new Set(slots.map((x, i) => (x ? i : -1)).filter((i) => i >= 0)); how = 'full'; }
-    return { pid, slots, have, n, exists, how, read: pg ? pg.t : 0, stale: stale && how === 'read', over: n != null && n > exists };
+    return { pid, slots, have, n, exists, how, read: pg ? pg.t : 0, stale: stale && how === 'read', over: n != null && n > exists, loc: pg && Array.isArray(pg.loc) ? pg.loc.length : 0 };
   }
   // marks wherever items show: the stamps your album is known to still need
   let saNeed = null, saNeedAsk = null;   // (a stamp's name → [page, place])
@@ -22635,6 +22730,19 @@
       if (!box) { box = document.createElement('span'); box.className = 'bnp-it-cols'; row.append(box); }
       box.append(m);
     }
+  }
+  function saMarksAgain() {   // (the marks on this page as what's kept says now: gone from the stamps your album has)
+    saNeed = null;
+    saMarksLoad().then((need) => {
+      for (const m of document.querySelectorAll('.bnp-it-col.is-stamp')) {
+        const row = m.closest('[data-item]'), k = row ? reClean(row.dataset.item || '').toLowerCase() : '';
+        if (k && need.has(k)) continue;
+        const box = m.parentElement;
+        m.remove();
+        if (box && box.classList.contains('bnp-it-cols') && !box.children.length) box.remove();
+      }
+      saMarkAll();
+    }).catch(() => {});
   }
   function saMarksBoot(now) {   // (any page with item rows: once what's kept is read, marks on them; again a moment later, for rows drawn late. now: an item's row is being drawn here)
     if (S.features.stamps === false || saKind()) return;
@@ -22701,24 +22809,25 @@
     const t = /total of\s*([\d,]+)\s*stamps/i.exec(reClean(box.textContent));
     return { counts, total: t ? Number(t[1].replace(/,/g, '')) : Object.values(counts).reduce((s, n) => s + n, 0), names: saNamesFrom(box) };
   }
-  function saKeepCounts(pr) {
-    if (!saMine || !saMine.acct || !pr) return;
-    saMine.counts = { ...saMine.counts, ...pr.counts };
-    saMine.countsT = Date.now();
-    saMine.total = pr.total;
-    saMineSave();
+  function saKeepCounts(pr) {   // (the Overview's counts, kept. A promise)
+    if (!pr) return Promise.resolve(null);
+    return saEdit((M) => { M.counts = { ...M.counts, ...pr.counts }; M.countsT = Date.now(); M.total = pr.total; });
   }
   async function saGetDoc(url) {   // (one of Neopets' pages, opened as a visit opens it; null when it doesn't come: signed out, or Neopets is busy)
     const html = await pageRead(url).catch(() => '');
     return html ? new DOMParser().parseFromString(html, 'text/html') : null;
   }
-  async function saCountsFetch() {   // (the Overview, read: every page's count at once)
-    const doc = await saGetDoc('/stamps.phtml?type=progress');
-    const pr = doc && saParseProgress(doc);
-    if (!pr) throw new Error('Neopets didn’t show your album’s Overview just now (are you logged in?)');
-    saKeepNames(pr.names);
-    saKeepCounts(pr);
-    return pr;
+  let saCountsAsk = null;
+  function saCountsFetch() {   // (the Overview, read: every page's count at once. One at a time: asked again while it's coming, the same answer)
+    if (saCountsAsk) return saCountsAsk;
+    return (saCountsAsk = (async () => {
+      const doc = await saGetDoc('/stamps.phtml?type=progress');
+      const pr = doc && saParseProgress(doc);
+      if (!pr) throw new Error('Neopets didn’t show your album’s Overview just now (are you logged in?)');
+      saKeepNames(pr.names);
+      await saKeepCounts(pr);
+      return pr;
+    })().finally(() => { saCountsAsk = null; }));
   }
   // prices: itemdb's, as the item buttons ask for them (once a day; your itemdb visit lets them in)
   function saPrice(name) {   // ({ p, r, slug } once it's come; null till then)
@@ -22896,9 +23005,9 @@
     try { nbTheme(); } catch (e) { report(e); }
     const pid = kind === 'page' ? Number(q.get('page_id')) : 0;
     await saMineLoad();
-    if (d) { saKeepNames(d.names); saLearn(pid, d.slots); if (mine) saKeepPage(pid, d); else saKeepTheirs(owner, pid, d); }
+    if (d) { saKeepNames(d.names); saLearn(pid, d.slots); if (mine) await saKeepPage(pid, d); else saKeepTheirs(owner, pid, d); }
     if (kind === 'theirs') saKeepNames(saNamesFrom(box));
-    if (pr) { saKeepNames(pr.names); saKeepCounts(pr); }
+    if (pr) { saKeepNames(pr.names); await saKeepCounts(pr); }
     const P = saP(), root = document.createElement('div');
     root.className = 'bnp-sa';
     root.setAttribute('data-bnp', 'sa');
@@ -22915,7 +23024,7 @@
     document.documentElement.classList.add('bnp-sa-ready');
     saWire(root);
     saPaint();
-    if (kind === 'hub' && mine && !pr && (!saMine.countsT || Date.now() - saMine.countsT > 6 * 3600e3) && saMine.acct) {   // (the front page shows no counts: the Overview's, opened as a visit opens it every six hours at most; your own visits there keep them too)
+    if (kind === 'hub' && mine && !pr && saMine.acct && (!saMine.countsT || Date.now() - saMine.countsT > 6 * 3600e3 || (saMine.heard || 0) > saMine.countsT)) {   // (the front page shows no counts: the Overview's, opened as a visit opens it every six hours at most, or the first time since NE heard of a stamp going in that it couldn't be sure of; your own visits there keep them too)
       saCountsFetch().then(() => saPaint()).catch((e) => { sa.note = e.message; saPaint(); });
     }
     if (kind === 'hub' || kind === 'theirs') saBoard().then(() => saPaint(true)).catch(() => {});
@@ -22924,7 +23033,7 @@
       saTopKeep(sc);
       sa.board = saBoardOf(sc);
       try { localStorage.setItem('bnp-sa-board', JSON.stringify(sa.board)); } catch (_) { /* */ }
-      if (saMine && saMine.acct && (!saMine.countsT || Date.now() - saMine.countsT > 6 * 3600e3)) saCountsFetch().then(() => saPaint(true)).catch(() => {});
+      if (saMine && saMine.acct && (!saMine.countsT || Date.now() - saMine.countsT > 6 * 3600e3 || (saMine.heard || 0) > saMine.countsT)) saCountsFetch().then(() => saPaint(true)).catch(() => {});
     }
     if (sa.flash) setTimeout(() => { const t = root.querySelector(`[data-sa-i="${sa.sel}"]`); if (t) { t.scrollIntoView({ block: 'center', behavior: 'smooth' }); t.classList.add('is-flash'); setTimeout(() => t.classList.remove('is-flash'), 2200); } }, 120);
   }
@@ -22936,6 +23045,7 @@
     sa.root.innerHTML = sa.kind === 'page' ? saPageHtml() : sa.kind === 'theirs' ? saTheirsHtml() : sa.kind === 'scores' ? saScoresHtml() : saHubHtml();
     crispIn(sa.root);   // (Neopets' pictures in it, sharp at the size they're drawn)
     if (sa.kind === 'page') saPickRow(); else saRows();
+    if (sa.kind === 'hub') saNewFit();
     if (fk) { const g = sa.root.querySelector(fk); if (g) { g.focus({ preventScroll: true }); if (at != null) try { g.setSelectionRange(at, at); } catch (_) { /* */ } } }
   }
   function saStep(p, dir) {   // (the next page that has stamps, either way round: a page Neopets hasn't made any for yet is passed)
@@ -22966,8 +23076,13 @@
     const ic = saIcon();
     return `<div class="bnp-sa-title">${ic ? `<img class="bnp-sa-ic" src="${esc(ic)}" alt="" width="52" height="52">` : ''}<span><small>${kicker}</small><h1>${esc(title)}</h1></span></div>`;
   }
+  function saPageN() {   // (this page's count: Neopets' as it opened, or more since, for yours, as NE has heard)
+    const d = sa.d, c = sa.mine && saMine && saMine.counts[sa.pid] != null ? Number(saMine.counts[sa.pid]) : NaN;
+    return Number.isFinite(c) ? Math.max(d.n, c) : d.n;
+  }
   function saSlotInfo(i) {   // (one place on this page: what's in it here, what goes there, and for someone else's page whether you have it)
-    const d = sa.d, k = saKnown().pages[sa.pid] || [], shown = d.slots[i], goes = shown || k[i] || null;
+    const d = sa.d, k = saKnown().pages[sa.pid] || [], pg = sa.mine && saMine ? saMine.pages[sa.pid] : null;
+    const shown = d.slots[i] || (pg && Array.isArray(pg.have) && pg.have.includes(i) ? k[i] : null), goes = shown || k[i] || null;   // (yours: one put in since this page opened shows too)
     const state = shown ? 'have' : goes ? 'miss' : 'none';
     let you = null;
     if (!sa.mine && goes) { const st = saState(sa.pid); you = st.have ? st.have.has(i) : null; }
@@ -23026,7 +23141,7 @@
             ${exists ? `<div class="bnp-sa-count"><b>${have}</b><span>of ${exists} ${sa.mine ? 'on your page' : 'on their page'}</span><em>${pct}%</em></div>
             <div class="bnp-sa-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${exists}" aria-valuenow="${have}"><i style="width:${pct}%"></i></div>
             ${done ? `<p class="bnp-sa-done">${SA_IC.star} Every stamp there is for this page${sa.mine ? '. Well done!' : ''}</p>` : `<p class="bnp-sa-cost">${saCostLine(c, 'to get')}</p>${saVisitLine(c)}`}` : '<p class="bnp-sa-cost">No stamps for this page yet. When Neopets makes some they show here, in their places.</p>'}
-            ${d.n !== have ? `<p class="bnp-sa-fine">Neopets counts ${d.n} on this page.</p>` : ''}
+            ${saPageN() !== have ? `<p class="bnp-sa-fine">Neopets counts ${saPageN()} on this page.</p>` : ''}
             ${!sa.mine && slots.some((s) => s.you != null) ? `<p class="bnp-sa-key"><i class="bnp-sa-you is-y">${SA_IC.check}</i>in your album too <i class="bnp-sa-you is-n">${SA_IC.star}</i>not in yours</p>` : ''}
           </section>
           ${avHtml}
@@ -23095,7 +23210,15 @@
     if (s.state === 'none') return;
     sa.sel = sa.sel === i && !focus ? -1 : i;
     saPaint();
-    if (focus) { const t = sa.root.querySelector(`[data-sa-i="${i}"]`); if (t) t.focus({ preventScroll: true }); }
+    if (sa.sel >= 0) { const t = sa.root.querySelector(`[data-sa-i="${sa.sel}"]`); if (t) t.focus({ preventScroll: true }); }   // (the chosen one keeps the keys, clicked or not: the arrows move from it, and don't turn the page (the user, 2026-11-08))
+  }
+  function saMove(from, mv) {   // (an arrow: the next stamp that way on this page chosen, past places with none; at the edge it stays. ↑ and ↓ only while the chosen one's on screen: false, and the page scrolls as usual. ← and → bring the new one into sight)
+    const slot = (k) => sa.root.querySelector(`[data-sa-i="${k}"]`), seen = (k) => { const t = slot(k), r = t && t.getBoundingClientRect(); return !!r && r.bottom > 0 && r.top < innerHeight; };
+    if (Math.abs(mv) > 1 && !seen(from)) return false;
+    let j = from + mv;
+    while (j >= 0 && j < 25 && saSlotInfo(j).state === 'none') j += mv;
+    if (j >= 0 && j < 25) { saSelect(j, true); if (!seen(j)) { const t = slot(j); if (t) t.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } }
+    return true;
   }
   // your whole album: its front page and its Overview
   function saHubHtml() {
@@ -23109,9 +23232,9 @@
     for (const st of pages) if (st.have) st.slots.forEach((x, i) => { if (x && !st.have.has(i)) todo.push({ p: st.pid, i, x }); });
     const c = saCost(todo.map((t) => t.x));
     const avs = pages.map((st) => ({ st, av: saAvatar(st.pid) })).filter((x) => x.av), avKnown = avs.some((x) => x.av.have != null), avHave = avs.filter((x) => x.av.have).length;
-    const r = sa.reading;
-    const read = !sa.mine || !M.acct ? '' : r ? `<span class="bnp-sa-reading" role="status">${r.restUntil ? `A short break: carrying on at about ${esc(bmAt(r.restUntil))}` : r.paused ? 'Paused while this tab’s in the back' : `Reading page ${Math.min(r.done + 1, r.of || 1)} of ${r.of || '…'}`}<span class="bnp-sa-bar is-thin"><i style="width:${r.of ? Math.round((r.done / r.of) * 100) : 0}%"></i></span></span><button type="button" class="bnp-sa-btn is-small" data-sa-stop>Stop</button>`
-      : unread.length ? `<button type="button" class="bnp-sa-btn is-go" data-sa-readall title="Your album’s pages, read one at a time as you’d turn them (only while this tab’s in front): every stamp you still need, priced">${SA_IC.grid}Read ${unread.length === 1 ? 'the page' : `the ${unread.length} pages`} not read yet</button>` : `<span class="bnp-sa-fine">All your pages are read${M.countsT ? ` · last checked with Neopets ${colAgo(M.countsT)}` : ''}</span>`;
+    const r = sa.reading, changedOnly = unread.length > 0 && unread.every((st) => st.have);   // (changedOnly: all of them read before, and changed since)
+    const read = !sa.mine || !M.acct ? '' : r ? `<span class="bnp-sa-reading" role="status">${r.restUntil ? `A short break: carrying on at about ${esc(bmAt(r.restUntil))}` : r.paused ? 'Paused while this tab’s in the back' : r.check && !r.counted ? 'Asking Neopets how many each page has…' : `${r.check ? 'Checking' : 'Reading'} page ${Math.min(r.done + 1, r.of || 1)} of ${r.of || '…'}`}<span class="bnp-sa-bar is-thin"><i style="width:${r.of ? Math.round((r.done / r.of) * 100) : 0}%"></i></span></span><button type="button" class="bnp-sa-btn is-small" data-sa-stop>Stop</button>`
+      : unread.length ? `<button type="button" class="bnp-sa-btn is-go" data-sa-readall title="Your album’s pages, read one at a time as you’d turn them (only while this tab’s in front): every stamp you still need, priced">${SA_IC.grid}Read ${unread.length === 1 ? 'the page' : `the ${unread.length} pages`} ${changedOnly ? (unread.length === 1 ? 'that’s changed' : 'that have changed') : 'not read yet'}</button>` : `<span class="bnp-sa-checkgrp"><span class="bnp-sa-fine">All your pages are read${M.countsT ? ` · last checked with Neopets ${colAgo(M.countsT)}` : ''}</span><button type="button" class="bnp-sa-btn is-small" data-sa-check title="Neopets’ Overview says how many stamps each page has: any page that doesn’t match what NE has, and any NE counted a stamp on without seeing it, is read again, one at a time as you’d turn them">${SA_IC.check}Check every page</button></span>`;
     const tabs = [['pages', 'Pages', live.length], ['todo', 'Still to get', todo.length], ['avatars', 'Avatars', avs.length]];
     let body = '';
     if (sa.tab === 'todo') body = saTodoHtml(todo, unread);
@@ -23128,7 +23251,7 @@
             ${chip(done ? 'is-gold' : '', SA_IC.star, `${done} of ${live.length} pages complete`)}
             ${avKnown ? chip(avHave ? 'is-gold' : '', '', `${avHave} of ${avs.length} album avatars yours`) : ''}
             ${todo.length ? chip('', '', `${todo.length.toLocaleString()} still to get${c.priced ? ` · about <b>${saNp(c.cost)} NP</b>` : ''}`, `${c.priced.toLocaleString()} of them have a price on itemdb${c.none ? `, ${c.none.toLocaleString()} don’t` : ''}`) : ''}
-            ${unread.length && sa.mine && M.acct ? chip('is-quiet', '', `${unread.length} page${unread.length === 1 ? '' : 's'} not read yet`) : ''}
+            ${unread.length && sa.mine && M.acct ? chip('is-quiet', '', `${unread.length} page${unread.length === 1 ? '' : 's'} ${changedOnly ? 'changed since read' : 'not read yet'}`) : ''}
           </div>
         </div>
         <div class="bnp-sa-heroacts">${read}${sa.mine && M.acct && todo.length ? `<button type="button" class="bnp-sa-btn is-go" data-sa-buy title="Buy the stamps your album still needs from users’ shops: the ones you tick, one of each, never over your limits">${BM_CART}<span>Buy Mode</span></button>` : ''}
@@ -23144,21 +23267,35 @@
       <p class="bnp-sa-foot">Which stamp goes where: SunnyNeo’s list and the high score leaders’ albums, as of ${SA_AT}, and every album page you look at since. Prices are itemdb’s, approximate.
         <button type="button" class="bnp-sa-btn is-small" data-sa-neo aria-expanded="${document.documentElement.classList.contains('bnp-sa-showneo')}">${document.documentElement.classList.contains('bnp-sa-showneo') ? 'Hide Neopets’ own page' : 'Neopets’ own page'}</button></p>`;
   }
-  function saNewHtml() {   // (the newest things for the album, from itemdb (cat:Stamp), each with the page it goes on when that's known, and whether it's in yours)
-    const v = nwKept('stamp'), list = v ? v.list.slice(0, 8) : [], K = saKnown().pages, busy = !!nwBusy.stamp;
-    const where = (n) => { for (const [pid, slots] of Object.entries(K)) { const i = (slots || []).findIndex((x) => x && x[1] === n); if (i >= 0) return { pid: Number(pid), i }; } return null; };
+  function saNewOrder(list) {   // (newest out first: by the day itemdb first saw each; one it hasn't dated yet just before the dated one after it, as itemdb lists them)
+    const at = list.map((x) => Number(x.at) || 0);
+    for (let i = at.length - 1, next = Date.now(); i >= 0; i--) { if (at[i]) next = at[i]; else at[i] = next; }
+    return list.map((x, i) => ({ x, i, t: at[i] })).sort((a, b) => b.t - a.t || a.i - b.i).map((o) => o.x);
+  }
+  function saNewHtml() {   // (the newest things for the album, from itemdb (cat:Stamp), newest out first: two full rows of them at any width (saNewFit), each with the page it goes on when that's known, and whether it's in yours (the user, 2026-11-08))
+    const v = nwKept('stamp'), list = v ? saNewOrder(v.list) : [], busy = !!nwBusy.stamp;
     const tile = (x) => {
-      const w = where(x.n), st = w ? saState(w.pid) : null, have = !!(st && st.have && st.have.has(w.i));
-      return `<div class="bnp-sa-newit${have ? ' is-have' : ''}"><img src="${esc(x.img)}" alt="" width="80" height="80" loading="lazy"><b title="${esc(x.n)}">${esc(x.n)}</b><small>${x.at ? `Out ${esc(saWhen(x.at).replace(/ at .*/, ''))}` : 'Just out'}${x.p ? ` · ${saNp(x.p)} NP` : ''}</small>${w ? `<a class="bnp-sa-btn is-small" href="/stamps.phtml?type=album&amp;page_id=${w.pid}">${have ? `${SA_IC.check} ` : ''}Page ${w.pid}</a>` : '<small class="bnp-sa-newq">Its page isn’t known yet</small>'}</div>`;
+      const at = saPlace(x.n, x.img), st = at ? saState(at[0]) : null, have = !!(st && st.have && st.have.has(at[1]));
+      return `<div class="bnp-sa-newit${have ? ' is-have' : ''}"><img src="${esc(x.img)}" alt="" width="80" height="80" loading="lazy"><b title="${esc(x.n)}">${esc(x.n)}</b><small>${x.at ? `Out ${esc(saWhen(x.at).replace(/ at .*/, ''))}` : 'Just out'}${x.p ? ` · ${saNp(x.p)} NP` : ''}</small>${at ? `<a class="bnp-sa-btn is-small" href="/stamps.phtml?type=album&amp;page_id=${at[0]}"${have ? ' title="In your album"' : ''}>${have ? `<i class="bnp-sa-havedot" aria-hidden="true">${SA_IC.check}</i>` : ''}Page ${at[0]}</a>` : '<small class="bnp-sa-newq">Its page isn’t known yet</small>'}</div>`;
     };
     const when = busy ? 'Asking itemdb…' : v && v.at ? `Checked ${esc(colAgo(v.at))}` : 'Not checked yet';
     const err = v && v.err === 'visit' ? 'itemdb wants a visit first: open itemdb.com.br once in this browser, then Check now.' : v && v.err === 'busy' ? 'itemdb asked for a pause: try again in a few minutes.' : '';
-    const mine = (x) => { const w = where(x.n), st = w ? saState(w.pid) : null; return !!(st && st.have && st.have.has(w.i)); }, need = list.filter((x) => !mine(x)).length;
     let fold = true;   // (folded unless you've opened it: the albums come first on this page)
     try { fold = localStorage.getItem('bnp-sa-newfold') !== '0'; } catch (_) { fold = true; }
-    const count = list.length ? (need ? `<b class="bnp-sa-newn" title="${need} of these ${list.length} not in your album yet">${need}</b>` : '<small class="bnp-sa-newall">All in your album</small>') : '';
     const saIc = tabIconOf('side:/stamps.phtml?type=album') || `${NPI}themes/h5/basic/images/v3/stamps-icon.svg`;   // (your theme's own stamp, as the side menu's Stamps has it, kept from a beta page when the album's is an old one (the user, 2026-11-02))
-    return `<section class="bnp-sa-new${fold ? ' is-folded' : ''}"><div class="bnp-sa-newhead"><h3><button type="button" class="bnp-sa-newfold" data-sa-newfold aria-expanded="${!fold}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>${saIc ? `<span class="bnp-sa-newic" style="background-image:url('${esc(cssUrl(saIc))}')" aria-hidden="true"></span>` : ''}New for your album${count}</button></h3><small>${when} · NE asks itemdb as your album opens, every 6 hours at most</small><button type="button" class="bnp-sa-btn is-small" data-sa-newcheck${busy ? ' disabled' : ''}>Check now</button></div>${list.length ? `<div class="bnp-sa-newrow">${list.map(tile).join('')}</div>` : `<p class="bnp-sa-fine">${esc(err || (busy || !v ? 'Asking itemdb…' : 'Nothing yet.'))}</p>`}</section>`;
+    return `<section class="bnp-sa-new${fold ? ' is-folded' : ''}"><div class="bnp-sa-newhead"><h3><button type="button" class="bnp-sa-newfold" data-sa-newfold aria-expanded="${!fold}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>${saIc ? `<span class="bnp-sa-newic" style="background-image:url('${esc(cssUrl(saIc))}')" aria-hidden="true"></span>` : ''}New for your album${list.length ? '<span class="bnp-sa-newcount" data-sa-newcount></span>' : ''}</button></h3><small>${when} · NE asks itemdb as your album opens, every 6 hours at most</small><button type="button" class="bnp-sa-btn is-small" data-sa-newcheck${busy ? ' disabled' : ''}>Check now</button></div>${list.length ? `<div class="bnp-sa-newrow">${list.map(tile).join('')}</div>` : `<p class="bnp-sa-fine">${esc(err || (busy || !v ? 'Asking itemdb…' : 'Nothing yet.'))}</p>`}</section>`;
+  }
+  function saNewFit() {   // (New for your album: two full rows of the newest, as many as fit across at this width; its count is of the ones shown)
+    const sec = sa && sa.root.querySelector('.bnp-sa-new'), row = sec && sec.querySelector('.bnp-sa-newrow');
+    if (!row) return;
+    const cs = getComputedStyle(sec), w = sec.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+    const tiles = [...row.children], n = Math.min(tiles.length, 2 * Math.max(1, Math.floor((w + 10) / (124 + 10))));   // (the row's own columns: 124 px at the least, 10 px apart)
+    tiles.forEach((t, i) => { if (t.hidden !== i >= n) t.hidden = i >= n; });
+    const out = sec.querySelector('[data-sa-newcount]');
+    if (!out) return;
+    const need = tiles.slice(0, n).filter((t) => !t.classList.contains('is-have')).length;
+    const html = need ? `<b class="bnp-sa-newn" title="${need} of these ${n} not in your album yet">${need}</b>` : '<small class="bnp-sa-newall">All in your album</small>';
+    if (out.innerHTML !== html) out.innerHTML = html;
   }
   function saPagesHtml(pages) {
     const live = pages.filter((st) => st.exists);
@@ -23372,15 +23509,16 @@
     const goal = (img, label, n) => { const want = need(n), got = have >= want; return `<span class="bnp-sa-goal${got ? ' is-got' : ''}" title="${esc(`${label}: ${want.toLocaleString()} stamps`)}">${img ? `<img src="${NPI}trophies/346_${img}.gif" alt="" width="30" height="30">` : `<i class="bnp-sa-goalno">${SA_IC.star}</i>`}<span><b>${label}</b><small>${got ? 'You’re there' : `${(want - have).toLocaleString()} to go`}</small></span></span>`; };
     return `<div class="bnp-sa-goals"><span class="bnp-sa-goalhead">The high score table<small>Its top ${b.places} today · 1st has ${b.first.toLocaleString()}</small></span>${goal('', 'On the table', b.min ? b.min - 1 : b.last)}${goal(3, 'Bronze', b.bronze)}${goal(2, 'Silver', b.silver)}${goal(1, 'Gold', b.gold)}</div>`;
   }
-  async function saReadAll() {   // (your pages not read yet, or changed since: one at a time as you'd turn them, only while this tab's in front)
+  async function saReadAll(check) {   // (your pages not read yet, or changed since: one at a time as you'd turn them, only while this tab's in front. check (Check every page): Neopets' Overview asked now, then every page whose count isn't what NE has, and any NE counted a stamp on without seeing it, read again (the user, 2026-11-08: "not an easy way to recheck all your albums at once"))
     if (!sa || sa.reading || !saMine || !saMine.acct) return;
-    const me = (sa.reading = { done: 0, of: 0, stop: false, paused: false, err: '' });
+    const me = (sa.reading = { done: 0, of: 0, stop: false, paused: false, err: '', check: !!check, counted: false });
     sa.note = '';
     saPaint();
     try {
-      if (!saMine.countsT || Date.now() - saMine.countsT > 10 * 60e3) await saCountsFetch();
+      if (check ? Date.now() - (saMine.countsT || 0) > 60e3 : !saMine.countsT || Date.now() - saMine.countsT > 10 * 60e3) await saCountsFetch();
+      me.counted = true;
       const todo = [];
-      for (let p = 1; p <= saPagesN(); p++) { const st = saState(p); if (!st.exists && !st.n) continue; if (st.have && !st.stale && !st.over) continue; todo.push(p); }
+      for (let p = 1; p <= saPagesN(); p++) { const st = saState(p); if (!st.exists && !st.n) continue; if (st.have && !st.stale && !st.over && !(check && st.loc)) continue; todo.push(p); }
       me.of = todo.length;
       saPaint(true);
       for (const p of todo) {
@@ -23391,20 +23529,22 @@
         if (!d) throw new Error('Neopets didn’t show an album page just now (are you logged in?): try again in a moment.');
         saKeepNames(d.names);
         saLearn(p, d.slots);
-        saKeepPage(p, d);
+        await saKeepPage(p, d);
         me.done++;
         saPaint(true);
         if (me.done < me.of && me.done >= (me.restAt || (me.restAt = runRestEvery()))) { if (!(await runRest(me, () => saPaint(true)))) break; me.restAt = me.done + runRestEvery(); }   // (a longer break now and then, as a person takes one)
         else if (me.done < me.of) for (const end = Date.now() + 4000 + Math.random() * 3000; Date.now() < end && !me.stop;) await saSleep(250);   // (a person's pause between pages; Stop ends it)
       }
     } catch (e) { me.err = (e && e.message) || 'Something went wrong: try again in a moment.'; }
-    sa.note = me.err || (me.stop ? `Stopped: ${me.done} of ${me.of} read.` : me.of ? `Read ${me.done === 1 ? 'one page' : `${me.done} pages`}: every stamp you still need is below.` : 'Every page is known already.');
+    const pages = (n) => (n === 1 ? 'one page' : `${n} pages`);
+    sa.note = me.err || (me.stop ? `Stopped: ${me.done} of ${me.of} read.` : check ? (me.of ? `Checked with Neopets: ${pages(me.done)} read again, and the rest match what NE has. Every stamp you still need is below.` : 'Checked with Neopets just now: every page matches what NE has.') : me.of ? `Read ${pages(me.done)}: every stamp you still need is below.` : 'Every page is known already.');
     sa.reading = null;
     saPaint();
     clearTimeout(sa.noteT);
     sa.noteT = setTimeout(() => { if (sa && sa.note) { sa.note = ''; saPaint(true); } }, 9000);
   }
   function saWire(root) {
+    if ('ResizeObserver' in window) { let w = 0; new ResizeObserver(() => { if (root.clientWidth === w) return; w = root.clientWidth; if (sa && sa.kind === 'hub') saNewFit(); }).observe(root); }   // (New for your album: two full rows at any width)
     root.addEventListener('click', (e) => {
       const t = e.target instanceof Element ? e.target : null;
       if (!t || !sa) return;
@@ -23419,7 +23559,7 @@
         sa.pick = !sa.pick;
         saPaint();
         if (sa.pick) { const h = sa.root.querySelector('.bnp-sa-pickpg.is-here'); if (h) h.scrollIntoView({ block: 'nearest' }); }
-        if (sa.pick && sa.mine && saMine && saMine.acct && (!saMine.countsT || Date.now() - saMine.countsT > 30 * 60e3) && !sa.counting) { sa.counting = true; saCountsFetch().then(() => { if (sa.pick) saPaint(); }).catch(() => {}).finally(() => { sa.counting = false; }); }   // (each page's count, for the list: the Overview read once in a while)
+        if (sa.pick && sa.mine && saMine && saMine.acct && (!saMine.countsT || Date.now() - saMine.countsT > 30 * 60e3 || (saMine.heard || 0) > saMine.countsT) && !sa.counting) { sa.counting = true; saCountsFetch().then(() => { if (sa.pick) saPaint(); }).catch(() => {}).finally(() => { sa.counting = false; }); }   // (each page's count, for the list: the Overview read once in a while)
         return;
       }
       if ('saNeo' in d) { const on = document.documentElement.classList.toggle('bnp-sa-showneo'); b.textContent = on ? 'Hide Neopets’ own page' : 'Neopets’ own page'; b.setAttribute('aria-expanded', String(on)); return; }
@@ -23429,6 +23569,7 @@
       if (d.saTf) { sa.tf = d.saTf; saPSet('tf', sa.tf); saPaint(); return; }
       if ('saBuy' in d) { bmOpen('stamps'); return; }
       if ('saReadall' in d) { saReadAll(); return; }
+      if ('saCheck' in d) { saReadAll(true); return; }
       if ('saStop' in d) { if (sa.reading) sa.reading.stop = true; b.disabled = true; return; }
       if ('saPriced' in d) { sa.priced = !sa.priced; saPSet('priced', sa.priced); saPaint(); }
     });
@@ -23453,20 +23594,22 @@
     });
     root.addEventListener('keydown', (e) => {   // (the arrows move between stamps; Esc lets go of one)
       const slot = e.target instanceof Element ? e.target.closest('[data-sa-i]') : null;
-      if (!slot || !sa || sa.kind !== 'page') return;
-      const i = Number(slot.dataset.saI), mv = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -5, ArrowDown: 5 }[e.key];
-      if (mv) {
-        e.preventDefault();
-        let j = i + mv;
-        while (j >= 0 && j < 25 && saSlotInfo(j).state === 'none') j += mv;
-        if (j >= 0 && j < 25) { sa.sel = j; saPaint(); const n = sa.root.querySelector(`[data-sa-i="${j}"]`); if (n) n.focus({ preventScroll: true }); }
-      } else if (e.key === 'Escape' && sa.sel >= 0) { e.preventDefault(); sa.sel = -1; saPaint(); }
+      if (!slot || !sa || sa.kind !== 'page' || e.altKey || e.ctrlKey || e.metaKey) return;
+      const mv = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -5, ArrowDown: 5 }[e.key];
+      if (mv && saMove(Number(slot.dataset.saI), mv)) e.preventDefault();
+      else if (e.key === 'Escape' && sa.sel >= 0) { e.preventDefault(); sa.sel = -1; saPaint(); }
     });
-    document.addEventListener('keydown', (e) => {   // (← and → turn the page, when nothing else wants them)
+    document.addEventListener('keydown', (e) => {   // (← and → turn the page, when nothing else wants them; with a stamp chosen, the arrows move between stamps instead, wherever the keys are)
       if (!sa || sa.kind !== 'page' || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
       const t = e.target;
       if (e.key === 'Escape' && sa.pick) { sa.pick = false; saPaint(); return; }
-      if (t instanceof Element && t.closest('input, textarea, select, [contenteditable="true"], [data-sa-i], .bnp-hub')) return;
+      if (t instanceof Element && t.closest('input, textarea, select, [contenteditable="true"], [data-sa-i], .bnp-hub, [role="menu"], [role="dialog"], [role="listbox"]')) return;
+      if (sa.sel >= 0) {
+        const mv = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -5, ArrowDown: 5 }[e.key];
+        if (e.key === 'Escape') { e.preventDefault(); sa.sel = -1; saPaint(); }
+        else if (mv && saMove(sa.sel, mv)) e.preventDefault();   // (↑ and ↓ only while it's on screen: otherwise they scroll the page as usual)
+        return;
+      }
       const go = e.key === 'ArrowLeft' ? 'prev' : e.key === 'ArrowRight' ? 'next' : '';
       const a = go && sa.root.querySelector(`[data-sa-go="${go}"]`);
       if (a) { e.preventDefault(); location.href = a.href; }
@@ -23476,7 +23619,7 @@
   function saSetHtml() {   // (Settings: a way to the album, and what's kept)
     let any = false;
     try { any = !!localStorage.getItem(`bnp-sa-any:${saAcct()}`); } catch (_) { /* */ }
-    return `<div class="bnp-tools"><a class="bnp-pillbtn" href="/stamps.phtml?type=album">Open your Stamp Album</a><span class="bnp-note">${any ? 'Each page of yours is read as you open it; your album’s front page reads the rest when you ask.' : 'Open your album (its front page reads it for you), and the marks know what it still needs.'}</span></div>`;
+    return `<div class="bnp-tools"><a class="bnp-pillbtn" href="/stamps.phtml?type=album">Open your Stamp Album</a><span class="bnp-note">${any ? 'Each page of yours is read as you open it, and stamps you put in from your SDB or Inventory (by hand or with NE) count at once. Your album’s front page reads the rest, or checks every page with Neopets, when you ask.' : 'Open your album (its front page reads it for you), and the marks know what it still needs.'}</span></div>`;
   }
   const SA_CSS = `
     @font-face { font-family: "Cafeteria"; src: url("https://images.neopets.com/js/fonts/cafeteria-black.otf") format("opentype"); font-display: swap; }
@@ -23543,7 +23686,6 @@
     html.bnp-sa-page .bnp-sa-slot.is-none { border-style: dotted; border-color: #cfcfcf; background: rgba(255, 255, 255, .45); box-shadow: none; cursor: default; }
     html.bnp-sa-page .bnp-sa-slot.is-none > img { opacity: .55; filter: none; }
     html.bnp-sa-page .bnp-sa-slot:not(.is-none):hover, html.bnp-sa-page .bnp-sa-slot:not(.is-none):focus-visible { z-index: 4; transform: translateY(-3px); box-shadow: 0 8px 16px rgba(0, 0, 0, .16); }
-    html.bnp-sa-page .bnp-sa-slot.is-miss:hover > img, html.bnp-sa-page .bnp-sa-slot.is-miss:focus-visible > img, html.bnp-sa-page .bnp-sa-slot.is-miss.is-sel > img { filter: grayscale(.15); opacity: .82; }
     html.bnp-sa-page .bnp-sa-slot:focus { outline: none; }
     html.bnp-sa-page .bnp-sa-slot:focus-visible { outline: 3px solid color-mix(in srgb, var(--nb-bar) 55%, #fff); outline-offset: 2px; }
     html.bnp-sa-page .bnp-sa-slot.is-sel { z-index: 3; border: 2.5px solid var(--nb-bar); box-shadow: 0 0 0 3px color-mix(in srgb, var(--nb-bar) 25%, #fff), 0 6px 14px rgba(0, 0, 0, .14); }
@@ -23597,6 +23739,13 @@
     html.bnp-sa-page .bnp-sa-newit { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; padding: 8px 6px; border: 1px solid var(--nb-line); border-radius: 12px; background: var(--nb-by, #fff); text-align: center; }
     html.bnp-sa-page .bnp-sa-newit.is-have { border-color: #9cd38f; background: #f3fbef; }
     html.bnp-sa-page .bnp-sa-newit img { width: 80px; height: 80px; }
+    html.bnp-sa-page .bnp-sa-newit[hidden] { display: none; }   /* (past the second row) */
+    html.bnp-sa-page .bnp-sa-newcount { display: inline-flex; align-items: center; }
+    html.bnp-sa-page .bnp-sa-newcount:empty { display: none; }
+    html.bnp-sa-page .bnp-sa-havedot { display: inline-grid; place-items: center; flex: none; width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; background: #3f9b4a; color: #fff; box-shadow: 0 1px 1.5px rgba(0, 0, 0, .22); }   /* (in your album: a green circle with a white tick (the user, 2026-11-08)) */
+    html.bnp-sa-page .bnp-sa-btn .bnp-sa-havedot svg { width: 11px; height: 11px; }
+    html.bnp-sa-page .bnp-sa-checkgrp { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    html.bnp-sa-page .bnp-sa-checkgrp > .bnp-sa-fine { margin: 0; padding: 5px 10px; border-radius: 10px; background: rgba(255, 255, 255, .9); }
     html.bnp-sa-page .bnp-sa-newit b { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font: 12.5px/1.25 var(--nb-ui); word-break: break-word; }
     html.bnp-sa-page .bnp-sa-newit small { color: var(--nb-muted); font: 11.5px/1.3 var(--nb-txt); }
     html.bnp-sa-page .bnp-sa-newq { font-style: italic; }
@@ -23615,7 +23764,7 @@
     html.bnp-sa-page .bnp-sa-selhead { display: flex; align-items: flex-start; gap: 12px; }
     html.bnp-sa-page .bnp-sa-selpic { flex: none; display: grid; place-items: center; width: 92px; height: 92px; border: 1.5px solid var(--nb-line); border-radius: 12px; background: #fff; }
     html.bnp-sa-page .bnp-sa-selpic img { width: 80px; height: 80px; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .28)); }
-    html.bnp-sa-page .bnp-sa-selpic.is-miss img { filter: grayscale(.15); opacity: .85; }
+    html.bnp-sa-page .bnp-sa-selpic.is-miss { border-style: dashed; border-color: color-mix(in srgb, var(--nb-frame) 60%, #fff); }   /* (a missing one, chosen: in its own colours here, its box dashed as its place is; in the album it stays faded (the user, 2026-11-08)) */
     html.bnp-sa-page .bnp-sa-selhead > span:last-child { display: grid; gap: 4px; min-width: 0; }
     html.bnp-sa-page .bnp-sa-selhead b { font: 15px/1.25 var(--nb-ui); }
     html.bnp-sa-page .bnp-sa-selhead small { color: var(--nb-muted); font: 12px var(--nb-txt); }
@@ -34712,7 +34861,7 @@
       if (!d) throw new Error('album');
       saKeepNames(d.names);
       saLearn(p, d.slots);
-      saKeepPage(p, d);
+      await saKeepPage(p, d);
       me.album.done++;
       salPaint();
       if (me.album.done >= me.album.of) break;
@@ -34855,7 +35004,7 @@
     for (const b of sal.rows) if (b.st === 'now') b.st = 'wait';
     if (!run.stop && !run.pinStop && !run.halt && !run.moved) for (const b of waiting()) { b.st = 'no'; b.why = 'Not in your SDB’s list any more'; }   // (gone from it meanwhile: from another tab, say)
     if (!sal.win.classList.contains('open')) { sal.unseen = true; sal.pin = ''; const pf = sal.win.querySelector('[data-salpin]'); if (pf) pf.value = ''; }   // (done while its window was closed: said on the page; the PIN let go)
-    if (run.put) { try { for (const b of sal.rows) if (b.st === 'put') saStampIn(b.name); saMineSave(); } catch (e) { report(e); } }   // (your album: the ones put in, counted in at once)
+    if (run.put) await saAlbumed(sal.rows.filter((b) => b.st === 'put').map((b) => ({ n: b.name, img: sdrPic(b.it) })), { again: true });   // (your album: the ones put in, counted in at once (what NE hears of the SDB may have counted them already)), before the window's drawn again
     salPaint();
     if (run.moved) sal.view0 = null;   // (you've put its list where you want it)
     else if (sal.view0) { await sdrWait({ stop: false }, 1800, 2400); if (sal.state === 'done' && !salRunning()) await sdbViewBack(sal); }   // (a moment after, its list as you had it; not if you've started another look meanwhile)
@@ -34896,6 +35045,12 @@
     const where = b.page ? `${saPageName(b.page)}, No. ${b.place + 1}` : 'NE doesn’t know its place yet';
     const why = b.why ? `<small class="bnp-sdr-why">${esc(b.why)}</small>` : b.done && !st ? '<small>In your album already</small>' : !st || st === 'wait' ? `<small>${esc(where)} · ${b.p ? `itemdb ≈ ${b.p.toLocaleString()} NP` : 'No itemdb price'}${Number(b.it.amount) > 1 ? ` · ${Number(b.it.amount).toLocaleString()} in your SDB, one goes in` : ''}</small>` : '';
     return `<label class="bnp-sdr-row${b.on ? '' : ' is-off'}${st ? ` is-${st === 'put' ? 'read' : st}` : ''}"${first ? ' data-salnow' : ''}>${can ? `<input type="checkbox" data-salitem="${esc(b.id)}"${b.on ? ' checked' : ''}>` : ''}<span class="bnp-sdr-bk">${pic ? `<img src="${esc(pic)}" alt="" width="40" height="40" loading="lazy">` : ''}</span><span class="bnp-sdr-nm"><b>${esc(b.name)}</b>${why}</span>${SAL_KINDS[b.kind] ? `<i class="bnp-sdr-bt">${SAL_KINDS[b.kind]}</i>` : ''}${mark}</label>`;
+  }
+  function salCountPaint() {   // (the window's "Your album has N" line, as what's kept says now: that line only)
+    const b = sal && sal.win ? sal.win.querySelector('.bnp-sdr-count b') : null, M = saMine;
+    if (!b || !M || !M.acct || M.acct !== saAcct()) return;
+    const n = Object.values(M.counts).reduce((t, x) => t + (Number(x) || 0), 0);
+    if (n && b.textContent !== n.toLocaleString()) b.textContent = n.toLocaleString();
   }
   function salPaint() {
     if (!sal) return;
@@ -34985,7 +35140,7 @@
       for (let p = 1; p <= saPagesN(); p++) {
         const st = saState(p);
         if (!st.exists) continue;
-        if (!st.have) { unread++; continue; }
+        if (!st.have || st.stale || st.over) { unread++; continue; }   // (a page that's changed since NE read it isn't listed: one of its stamps may be in your album now)
         st.slots.forEach((x, i) => {
           if (!x || st.have.has(i) || seen.has(x[1].toLowerCase())) return;
           seen.add(x[1].toLowerCase());
@@ -35110,7 +35265,7 @@
         <label class="bnp-bm-chk"><input type="checkbox" data-bmwait${P.wait ? ' checked' : ''}><span>If the ${esc(wiz)} asks for a break, carry on after the top of the hour<small>A moment in its first five minutes, when it lets you search again. Off: Buy Mode pauses till you press Resume.</small></span></label>
       </div>`;
     const banP = ban ? `<p class="bnp-bm-ban" role="status"><b>The ${esc(wiz)} has asked for a break this hour.</b> It lets you search again at ${esc(bmAt(ban))}. ${busy && run.waitUntil ? `Buy Mode carries on at about ${esc(bmAt(run.waitUntil))}.` : busy && run.pause ? 'Press Resume once it’s past.' : P.wait ? 'Start any time: Buy Mode waits till then, then carries on.' : 'Buy Mode doesn’t search till then.'}</p>` : '';
-    const notes = `${bm.unread ? `<p class="bnp-sdr-note">${bm.unread.toLocaleString()} album ${bm.unread === 1 ? 'page hasn’t' : 'pages haven’t'} been read yet: their stamps aren’t listed. Read them on your album’s front page.</p>` : ''}${bm.partial ? '<p class="bnp-sdr-note">Only part of itemdb’s list is in so far: the rest comes on this page by itself.</p>' : ''}`;
+    const notes = `${bm.unread ? `<p class="bnp-sdr-note">${bm.unread.toLocaleString()} album ${bm.unread === 1 ? 'page hasn’t' : 'pages haven’t'} been read yet, or changed since: their stamps aren’t listed. Read them on your album’s front page.</p>` : ''}${bm.partial ? '<p class="bnp-sdr-note">Only part of itemdb’s list is in so far: the rest comes on this page by itself.</p>' : ''}`;
     let main = '';
     if (bm.missing) main = '<p class="bnp-sdr-note is-err">NE doesn’t have the list for this page yet. Once it’s in, open Buy Mode again.</p>';
     else if (!bm.rows.length) main = `<div class="bnp-sdr-sum is-done"><b>${esc(what.none)}</b></div>`;
@@ -35413,11 +35568,9 @@
       if (bm.kind === 'books' || bm.kind === 'bt') document.dispatchEvent(new CustomEvent('bnp-col-read', { detail: JSON.stringify({ pet }) }));   // (its kept lists and the marks: read again)
       if (bm.kind !== 'stamps' && col && col.pet === pet && col.kind === bm.kind) { for (const r of bm.rows) if (r.read && r.file && !col.had.has(colImgKey(r.file))) col.had.set(colImgKey(r.file), [col.had.size + 1, r.name, r.file, '']); colPaint(); }   // (this page shows them read, or eaten)
       if (bm.kind === 'stamps') {   // (your album: the stamps put in, counted in at once)
-        try {
-          for (const r of bm.rows) if (r.read && !r.counted && saStampIn(r.name)) r.counted = true;
-          saMineSave();
-          if (sa && sa.root) saPaint(true);
-        } catch (e) { report(e); }
+        const put = bm.rows.filter((r) => r.read && !r.counted);
+        for (const r of put) r.counted = true;
+        await saAlbumed(put.map((r) => ({ n: r.name, img: r.img })), { how: 'likely' });   // (counted in, and this page drawn again; Neopets' words were read for it, so your album's front page checks with its Overview next time)
       }
     }
     return read;
@@ -53577,6 +53730,12 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.4.1', '2026-11-08', [
+      'Stamp Album: stamps you put in count at once, by hand (Inventory, or the SDB one or several at a time) or with NE: the total and each page, in every tab',
+      'Stamp Album: Check every page reads Neopets’ Overview and reads again only the pages that changed',
+      'Stamp Album: a missing stamp stays faded in the album when you choose it (in colour in the card beside); the arrow keys move between stamps',
+      'Stamp Album: New for your album always shows two full rows, newest first, with a green tick on the ones you have',
+    ]],
     ['5.4', '2026-11-07', [
       'Neoboards: a softer, finished look: buttons and cards with a little depth, bands with a touch of light, everything in your theme',
       'Neoboards: a topic’s title on a lighter pill; the index’s title bigger and outlined; board titles bigger',
@@ -54148,7 +54307,7 @@
       for (const k of ['fquest', 'fqfold']) GM_addValueChangeListener(KEY + k, (n, o, v, remote) => { if (remote) paintFq(); });   // (your faerie quest, changed in another tab)
     } catch (_) { /* */ }
   }
-  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { pageRead, kadCheckRun, tabFlash, kadSwap, kadNextLook, kadPlan, lottoDrawn: () => lottoDrawnFn && lottoDrawnFn(), wwwAsk: (u, o) => fetch(u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }), (e) => ({ err: String(e && e.message) })), fromAsk: (p, u, o) => (p === 'html' ? fromPageHtml(u).then((t) => ({ text: t.slice(0, 300) })) : fromPage(p, u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }))).catch((e) => ({ err: String(e && e.message) })), wwwShut, nmSendNow, ncValue, remSoundOnce, sa: () => sa, saKnown, saState, saMarksLoad, saMark, saMineLoad, itSsw, sswPanel, mark: (id, how) => dailyMark(id, how || { full: true }), dstate: (id) => { const d = dailyById(id); return d ? dailyState(d) : null; }, dlogNow: () => dlog(), dproof: DAILY_PROOF, remEvents: (a, b, c) => remEvents(a, b, c).map((e) => ({ key: e.key, at: e.at, kind: e.kind, title: e.title, text: e.textNow ? e.textNow() : e.text })), remSchedule, remPerOn: (id) => remPerOn(dailyById(id)), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbLivePill, pageSay, nbSay, toast, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, themeChanged, nclUnhold: () => new Promise((r) => { if (nclHoldEnd) { nclHoldEnd(); setTimeout(r, 80); } else r(); }), nclOpen, nclMin, nclTell, nclFold, nclSentList, nmSentGo, myMainColour, myColouriseShift, myColoursNow, myAll: () => S.myThemes, myTurnNow: () => myTurn, soundDraw, nclGlance, captureChrome, acctCheck, dlog, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
+  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { pageRead, kadCheckRun, tabFlash, kadSwap, kadNextLook, kadPlan, lottoDrawn: () => lottoDrawnFn && lottoDrawnFn(), wwwAsk: (u, o) => fetch(u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }), (e) => ({ err: String(e && e.message) })), fromAsk: (p, u, o) => (p === 'html' ? fromPageHtml(u).then((t) => ({ text: t.slice(0, 300) })) : fromPage(p, u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }))).catch((e) => ({ err: String(e && e.message) })), wwwShut, nmSendNow, ncValue, remSoundOnce, sa: () => sa, saKnown, saState, saMarksLoad, saMark, saMineLoad, saAlbumed, saMineNow: () => saMine, saPlace, itSsw, sswPanel, mark: (id, how) => dailyMark(id, how || { full: true }), dstate: (id) => { const d = dailyById(id); return d ? dailyState(d) : null; }, dlogNow: () => dlog(), dproof: DAILY_PROOF, remEvents: (a, b, c) => remEvents(a, b, c).map((e) => ({ key: e.key, at: e.at, kind: e.kind, title: e.title, text: e.textNow ? e.textNow() : e.text })), remSchedule, remPerOn: (id) => remPerOn(dailyById(id)), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbLivePill, pageSay, nbSay, toast, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, themeChanged, nclUnhold: () => new Promise((r) => { if (nclHoldEnd) { nclHoldEnd(); setTimeout(r, 80); } else r(); }), nclOpen, nclMin, nclTell, nclFold, nclSentList, nmSentGo, myMainColour, myColouriseShift, myColoursNow, myAll: () => S.myThemes, myTurnNow: () => myTurn, soundDraw, nclGlance, captureChrome, acctCheck, dlog, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
   if (FRAME) { lookFrame(); return; }   // (the "Your look" window's page: Neoboard Settings alone, in the boards' look)
   // A page this makes over is never seen first as it was: the top bar is made over as soon as it's all there (Neopets puts it, the side
   // menu and their drop-downs before the page's own box, so that's before anything is drawn), and a page whose own layout changes much
