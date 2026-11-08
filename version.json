@@ -1,10 +1,11 @@
 {
- "version": "5.4.1",
+ "version": "5.4.2",
  "date": "2026-11-08",
  "notes": [
-  "Stamp Album: stamps you put in count at once, by hand or with NE",
-  "Stamp Album: Check every page",
-  "Stamp Album: missing stamps stay faded when chosen; arrow keys move between stamps",
-  "New for your album: two full rows, newest first, green ticks"
+  "Trading Post: NP left under the NP Limit box, and when each sale frees up",
+  "Trading Post: a reminder when there’s room again",
+  "Trading Post: lots too dear for their Instant Buy, said as you price one",
+  "Stamp Album: what your stamps are worth",
+  "Sales: each sale’s time"
  ]
 }

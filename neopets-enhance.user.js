@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.4.1
+// @version      5.4.2
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -1974,6 +1974,7 @@
     on: true, popup: true, sound: true, tone: '', vol: 100, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,   // (tone: '' each its own, or one of the sounds for all; vol: how loud, 5 to 100)
     ready: true, newday: true, dayend: true, dayendLead: 60, snow: true, dice: false, kad: false, kadLead: 30, deadline: true, per: {},
     fc: true, fcLead: 60, obelisk: true, turmac: true, lodge: true, lodgeLead: 360, train: true, freebies: true, advent: true, backup: true, custom: [],
+    tpFree: false, tpFreeNp: 10000000,   // (the Trading Post: a note when your NP Limit has room for this much again)
   };
   function kindGroups(ids) {   // (your dailies in sections that make sense: one per kind, in this order; yours can change them)
     const kinds = [...DAILY_KINDS, ['mine', 'Your own']];
@@ -3788,6 +3789,12 @@
         add({ key: `fish:${names.join(',')}:${first.at}`, at, kind: 'fish', title: names.length === 1 ? `${names[0]} can fish again` : `${names.length} pets can fish again`, text: `Underwater Fishing: ${names.length === 1 ? '' : `${fishNames(names)}, `}${f.delay} hours since ${names.length === 1 ? 'its' : 'their'} last catch.`, icon: fishIcon(names[0]), href: `/water/fishing.phtml#fish=${encodeURIComponent(names[0])}`, sound: 'chime' });
       }
     }
+    if (R.tpFree && S.features.tpLimit !== false) {   // (the Trading Post: your NP Limit with room again for what you chose, as the sales NE knows of free up)
+      try {
+        const x = Number(R.tpFreeNp) || 0, w = x > 0 ? tpLimWhen(x, now) : 0;
+        if (w) add({ key: `tpfree:${nclMe() || '-'}:${x}:${w}`, at: w, kind: 'tpfree', title: 'Your NP Limit has room again', text: `You can take in ${tpFmt(x)} NP on the Trading Post again.`, textNow: () => tpLimNoteText(x), icon: TP_BAG, href: '/island/tradingpost.phtml', sound: 'chime', check: () => tpLimRoom(x) });
+      } catch (e) { report(e); }   // (never the other reminders with it)
+    }
     for (const s of get('remsnooze', []) || []) if (s && s.key) add({ ...s, kind: s.kind === 'ready' ? 'later' : s.kind || 'later', ...(Array.isArray(s.dids) && s.dids.length ? { check: () => s.dids.some((id) => { const d = dailyById(id); return !!d && dailyReady(d); }) } : {}), ...(s.kind === 'snow' && s.until ? { check: snowCheck(s.start || 0, s.until) } : {}) });   // ("In 10 minutes": the Snowager's only while it's still asleep and you haven't been)
     for (const c of R.custom || []) {   // (your own)
       let at = 0;
@@ -3874,6 +3881,7 @@
     if (n.kind === 'fc') { const d = dailyById('foodclub'); return !d || dailyReady(d); }
     if (n.kind === 'dayend') return remDayLeft().length > 0;
     if (n.kind === 'backup') return !(Number(get('bkat', 0)) > (n.at || 0));
+    if (n.kind === 'tpfree') { try { const x = Number(String((n.keys || [])[0] || '').split(':')[2]) || 0, l = tpLimNow(); return !x || !l || l.left >= Math.min(x, l.cap); } catch (_) { return true; } }   // (till that room is taken again)
     if (n.kind === 'fish') { const f = fishKeep(), W = fishWait(f); return (String((n.keys || [])[0] || '').split(':')[1] || '').split(',').some((name) => { const r = f.pets[name]; return !(r && r.at && r.at + W > Date.now()); }); }   // (one of those pets hasn't fished again since)
     return true;
   }
@@ -3913,7 +3921,7 @@
       const back = remEvents(now, now - 20 * 60000, now - 12 * 3600000).filter((e) => !fired[e.key]);
       const asleep = back.filter((e) => e.kind === 'snow' && e.check && e.check());   // (the Snowager still asleep: said as ever, while there's time to go. Once its hour is over it's never said at all (user, 2026-11-04: "you dont need to let someone know they missed the time previously"))
       if (asleep.length) remClaim(asleep.map((e) => e.key)).then((keys) => remFire(asleep.filter((e) => keys.includes(e.key))));
-      const old = back.filter((e) => ['ready', 'deadline', 'fc', 'dice', 'turmac'].includes(e.kind) && (e.kind !== 'ready' || !e.check || e.check()));
+      const old = back.filter((e) => ['ready', 'deadline', 'fc', 'dice', 'turmac', 'tpfree'].includes(e.kind) && (!['ready', 'tpfree'].includes(e.kind) || !e.check || e.check()));
       if (old.length) remClaim(old.map((e) => e.key)).then((keys) => { const got = old.filter((e) => keys.includes(e.key)); if (got.length) remFire([{ key: `away:${now}`, kind: 'away', title: 'While you were away', text: `${got.slice(0, 5).map(remAwayLine).join(' · ')}${got.length > 5 ? ` and ${got.length - 5} more` : ''}`, icon: got[0].icon || iconOf(FOLDERS.dailies.icon), board: true, sound: 'chime', exp: now + 6 * 3600000 }]); });
     } catch (e) { report(e); }
     const next = evs.find((e) => e.at > now);
@@ -3925,6 +3933,7 @@
     if (e.kind === 'fc') return `Food Club bets closed at ${fmtNst(e.when)}`;
     if (e.kind === 'dice') return 'Deadly Dice was open midnight to 1 am';
     if (e.kind === 'turmac') return `the Turmaculus was due ${fmtNst(e.start)}–${fmtNst(e.until)}`;
+    if (e.kind === 'tpfree') return `your NP Limit had room for ${tpFmt(Number(String(e.key).split(':')[2]) || 0)} NP again at ${fmtNst(e.at)}`;
     return e.title;
   }
   function remQuiet() {
@@ -22844,6 +22853,10 @@
     for (const x of list) { const r = saPrice(x[1]); if (!r) wait++; else if (r.p > 0) { cost += r.p; priced++; } else { none++; if (r.visit) visit++; } }
     return { cost, priced, wait, none, visit, n: list.length };
   }
+  const saMineOf = (st) => (st && st.have ? st.slots.filter((x, i) => x && st.have.has(i)) : []);   // (the stamps of yours on a page NE knows)
+  const saWorthHtml = (v) => (v.priced ? `about <b>${saNp(v.cost)} NP</b>${v.none > v.visit ? ` · ${(v.none - v.visit).toLocaleString()} without a price` : ''}${v.wait ? ` · <span class="bnp-sa-wait">${v.wait.toLocaleString()} price${v.wait === 1 ? '' : 's'} coming…</span>` : ''}` : v.wait ? '<span class="bnp-sa-wait">prices coming…</span>' : v.visit ? 'open itemdb for its prices' : 'no itemdb prices');   // (what stamps of yours are worth, by itemdb: a saCost)
+  const SA_NPIC = `${NPI}premium/portal/images/nptotal-icon.png`;   // (Neopets' own NP coins)
+  const saNpIc = () => `<i class="bnp-sa-npic" data-crisp="${SA_NPIC}" data-crisp-px="18" style="background-image:url('${SA_NPIC}')" aria-hidden="true"></i>`;
   const saVisitLine = (c) => (c && c.visit ? '<p class="bnp-sa-fine bnp-sa-visit">itemdb gives prices to scripts like this one once you’ve opened it today: <a href="https://itemdb.com.br/" target="_blank" rel="noopener">open itemdb</a>, and they come in here by themselves.</p>' : '');
   const saCostLine = (c, what) => `${c.n.toLocaleString()} ${what}${c.priced ? ` · about <b>${saNp(c.cost)} NP</b> for the ${c.priced === c.n ? (c.n === 1 ? 'one' : `${c.n.toLocaleString()}`) : c.priced.toLocaleString()}${c.priced === c.n ? '' : ' with a price'}` : ''}${c.none > c.visit ? ` · ${(c.none - c.visit).toLocaleString()} without one` : ''}${c.wait ? ` · <span class="bnp-sa-wait">${c.wait.toLocaleString()} price${c.wait === 1 ? '' : 's'} coming…</span>` : ''}`;
   function saAvatar(pid) {   // (this page's avatar: from your avatar list when it's read (and whether it's yours), else as SunnyNeo lists it)
@@ -23108,6 +23121,7 @@
     const missing = slots.filter((s) => s.state === 'miss'), done = exists > 0 && !missing.length;
     const pct = exists ? Math.round((have / exists) * 100) : 0, av = saAvatar(pid);
     const c = saCost(missing.map((s) => s.x));
+    const mineX = sa.mine ? slots.filter((s) => s.state === 'have').map((s) => s.x) : [], vw = mineX.length ? saCost(mineX) : null;   // (yours on this page, and their worth by itemdb)
     const kicker = `Stamp Album · page ${pid}${sa.mine ? '' : ` · ${esc(sa.owner)}’s album`}`;
     const sel = sa.sel >= 0 ? slots[sa.sel] : null;
     const theyNot = !sa.mine ? slots.filter((s) => s.state === 'have' && s.you === false) : [];
@@ -23140,6 +23154,7 @@
           <section class="bnp-sa-card bnp-sa-prog">
             ${exists ? `<div class="bnp-sa-count"><b>${have}</b><span>of ${exists} ${sa.mine ? 'on your page' : 'on their page'}</span><em>${pct}%</em></div>
             <div class="bnp-sa-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${exists}" aria-valuenow="${have}"><i style="width:${pct}%"></i></div>
+            ${vw ? `<p class="bnp-sa-cost bnp-sa-worth">${saNpIc()}<span>Yours: ${saWorthHtml(vw)}</span></p>` : ''}
             ${done ? `<p class="bnp-sa-done">${SA_IC.star} Every stamp there is for this page${sa.mine ? '. Well done!' : ''}</p>` : `<p class="bnp-sa-cost">${saCostLine(c, 'to get')}</p>${saVisitLine(c)}`}` : '<p class="bnp-sa-cost">No stamps for this page yet. When Neopets makes some they show here, in their places.</p>'}
             ${saPageN() !== have ? `<p class="bnp-sa-fine">Neopets counts ${saPageN()} on this page.</p>` : ''}
             ${!sa.mine && slots.some((s) => s.you != null) ? `<p class="bnp-sa-key"><i class="bnp-sa-you is-y">${SA_IC.check}</i>in your album too <i class="bnp-sa-you is-n">${SA_IC.star}</i>not in yours</p>` : ''}
@@ -23231,6 +23246,7 @@
     const todo = [];
     for (const st of pages) if (st.have) st.slots.forEach((x, i) => { if (x && !st.have.has(i)) todo.push({ p: st.pid, i, x }); });
     const c = saCost(todo.map((t) => t.x));
+    const mineX = pages.flatMap((st) => saMineOf(st)), worth = saCost(mineX), partial = pages.some((st) => st.exists && !st.have && st.n !== 0);   // (your stamps on the pages NE knows, and their worth by itemdb; partial: a page with stamps of yours NE hasn't read)
     const avs = pages.map((st) => ({ st, av: saAvatar(st.pid) })).filter((x) => x.av), avKnown = avs.some((x) => x.av.have != null), avHave = avs.filter((x) => x.av.have).length;
     const r = sa.reading, changedOnly = unread.length > 0 && unread.every((st) => st.have);   // (changedOnly: all of them read before, and changed since)
     const read = !sa.mine || !M.acct ? '' : r ? `<span class="bnp-sa-reading" role="status">${r.restUntil ? `A short break: carrying on at about ${esc(bmAt(r.restUntil))}` : r.paused ? 'Paused while this tab’s in the back' : r.check && !r.counted ? 'Asking Neopets how many each page has…' : `${r.check ? 'Checking' : 'Reading'} page ${Math.min(r.done + 1, r.of || 1)} of ${r.of || '…'}`}<span class="bnp-sa-bar is-thin"><i style="width:${r.of ? Math.round((r.done / r.of) * 100) : 0}%"></i></span></span><button type="button" class="bnp-sa-btn is-small" data-sa-stop>Stop</button>`
@@ -23249,6 +23265,7 @@
           ${counted ? `<div class="bnp-sa-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${exists}" aria-valuenow="${have}"><i style="width:${pct}%"></i></div>` : `<p class="bnp-sa-fine">${M.acct ? 'Reading your album’s Overview…' : 'Log in to see your album.'}</p>`}
           <div class="bnp-sa-chips">
             ${chip(done ? 'is-gold' : '', SA_IC.star, `${done} of ${live.length} pages complete`)}
+            ${mineX.length ? chip('is-np', saNpIc(), `Your stamps: ${worth.priced ? `about <b>${saNp(worth.cost)} NP</b>${partial ? ' so far' : ''}${worth.wait ? ' <span class="bnp-sa-wait">· adding up…</span>' : ''}` : worth.wait ? '<span class="bnp-sa-wait">prices coming…</span>' : worth.visit ? 'open itemdb for prices' : 'no itemdb prices'}`, `${mineX.length.toLocaleString()} stamps${partial ? ' on the pages NE has read' : ''} · ${worth.priced.toLocaleString()} with an itemdb price${worth.none > worth.visit ? `, ${(worth.none - worth.visit).toLocaleString()} without one` : ''}${worth.wait ? ` · ${worth.wait.toLocaleString()} prices coming` : ''}. itemdb’s prices, approximate.`) : ''}
             ${avKnown ? chip(avHave ? 'is-gold' : '', '', `${avHave} of ${avs.length} album avatars yours`) : ''}
             ${todo.length ? chip('', '', `${todo.length.toLocaleString()} still to get${c.priced ? ` · about <b>${saNp(c.cost)} NP</b>` : ''}`, `${c.priced.toLocaleString()} of them have a price on itemdb${c.none ? `, ${c.none.toLocaleString()} don’t` : ''}`) : ''}
             ${unread.length && sa.mine && M.acct ? chip('is-quiet', '', `${unread.length} page${unread.length === 1 ? '' : 's'} ${changedOnly ? 'changed since read' : 'not read yet'}`) : ''}
@@ -23261,7 +23278,7 @@
       ${saGoalsHtml(have, exists)}
       ${sa.mine ? saNewHtml() : ''}
       ${sa.note ? `<p class="bnp-sa-note" role="status">${esc(sa.note)}</p>` : ''}
-      ${c.visit ? `<p class="bnp-sa-note">${saVisitLine(c).replace(/^<p[^>]*>|<\/p>$/g, '')}</p>` : ''}
+      ${c.visit || worth.visit ? `<p class="bnp-sa-note">${saVisitLine(c.visit ? c : worth).replace(/^<p[^>]*>|<\/p>$/g, '')}</p>` : ''}
       <div class="bnp-sa-tabs" role="tablist">${tabs.map(([k, l, n]) => `<button type="button" role="tab" data-sa-tab="${k}" aria-selected="${sa.tab === k}">${l}<b>${n.toLocaleString()}</b></button>`).join('')}</div>
       ${body}
       <p class="bnp-sa-foot">Which stamp goes where: SunnyNeo’s list and the high score leaders’ albums, as of ${SA_AT}, and every album page you look at since. Prices are itemdb’s, approximate.
@@ -23322,10 +23339,11 @@
     const missing = st.have ? st.slots.filter((x, i) => x && !st.have.has(i)) : null, c = missing && missing.length ? saCost(missing) : null;
     const line = done ? 'Complete' : !st.have ? 'Not read yet' : st.stale ? `${missing.length} to get · read again` : c && c.priced ? `${missing.length} to get · about ${saNp(c.cost)} NP` : `${missing.length} to get`;
     const pct = st.n != null ? Math.min(100, Math.round((st.n / st.exists) * 100)) : 0, art = saArt(st.pid), name = saPageName(st.pid);
+    const mine = saMineOf(st), mv = mine.length ? saCost(mine) : null, worthLine = mv && mv.priced ? `Yours: about ${saNp(mv.cost)} NP` : '';   // (what yours on it are worth, by itemdb)
     return `<div class="bnp-sa-pg${done ? ' is-done' : ''}${!st.have ? ' is-unread' : ''}${art ? ' has-art' : ''}">
         <a class="bnp-sa-pglink" href="/stamps.phtml?type=album&amp;page_id=${st.pid}">
           <span class="bnp-sa-pgmap" aria-hidden="true">${cells}</span>
-          <span class="bnp-sa-pgtxt"><small>Page ${st.pid}</small><b>${esc(name)}</b><span class="bnp-sa-pgn">${st.n != null ? st.n : '?'}<small> / ${st.exists}</small></span><small class="bnp-sa-pgline">${esc(line)}</small></span>
+          <span class="bnp-sa-pgtxt"><small>Page ${st.pid}</small><b>${esc(name)}</b><span class="bnp-sa-pgn">${st.n != null ? st.n : '?'}<small> / ${st.exists}</small></span><small class="bnp-sa-pgline">${esc(line)}</small>${worthLine ? `<small class="bnp-sa-pgworth">${esc(worthLine)}</small>` : ''}</span>
         </a>
         ${art ? `<span class="bnp-sa-artbox"><span class="bnp-sa-art" style="${esc(saArtStyle(art))}" aria-hidden="true"></span><button type="button" class="bnp-sa-artedit" data-sa-art="${st.pid}" title="${esc(`Choose ${name}’s picture`)}" aria-label="${esc(`Choose ${name}’s picture`)}">${SA_IC.pen}</button></span>` : ''}
         ${av ? `<img class="bnp-sa-pgav${av.have ? ' is-have' : av.have === false ? ' is-not' : ''}" src="${esc(avPic(av.f))}" alt="" width="25" height="25" loading="lazy" title="${esc(`${av.n}${av.have ? ': yours' : av.have === false ? ': not yours yet' : ''}`)}">` : ''}
@@ -23812,6 +23830,13 @@
     html.bnp-sa-page .bnp-sa-chips > span > span { white-space: nowrap; }
     html.bnp-sa-page .bnp-sa-chips > span.is-gold { border-color: color-mix(in srgb, var(--sa-gold) 60%, #fff); background: #fff6d6; color: #6b4a00; }
     html.bnp-sa-page .bnp-sa-chips > span.is-quiet { border-style: dashed; background: none; color: var(--nb-muted); }
+    html.bnp-sa-page .bnp-sa-chips > span.is-np { border-color: #a9d6a2; background: #eef8ec; color: #285c25; }   /* (your stamps' worth) */
+    html.bnp-sa-page .bnp-sa-chips > span.is-np b { color: #1f4d1b; }
+    html.bnp-sa-page .bnp-sa-npic { flex: none; display: inline-block; width: 18px; height: 18px; margin: -2px 0 -2px -3px; background: center / contain no-repeat; vertical-align: middle; }
+    html.bnp-sa-page .bnp-sa-pgworth { overflow: hidden; color: #2f6b2a; font: 12px/1.3 var(--nb-txt); text-overflow: ellipsis; white-space: nowrap; }
+    html.bnp-sa-page .bnp-sa-worth { display: flex; align-items: flex-start; gap: 6px; margin-top: 8px; }
+    html.bnp-sa-page .bnp-sa-worth .bnp-sa-npic { margin: 0; }
+    html.bnp-sa-page .bnp-sa-worth b { color: #285c25; }
     html.bnp-sa-page .bnp-sa-chips svg { flex: none; color: var(--sa-gold); }
     html.bnp-sa-page .bnp-sa-heroacts { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
     html.bnp-sa-page .bnp-sa-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin-left: auto; }
@@ -31138,6 +31163,21 @@
     .bnp-tpask-lots { max-height: 120px; overflow-y: auto; color: #6f6a58; font-size: 13px; }
     .bnp-tpask-acts { position: relative; z-index: 2; display: flex; justify-content: center; gap: 16px; margin-top: -18px; }
     .bnp-tpask-acts .bnp-tpbtn { min-width: 150px; height: 36px; font-size: 17px; }
+    #tp_app__2025 .bnp-tplim-host { overflow: visible !important; }
+    #tp_app__2025 .bnp-tplim-btn { position: absolute; z-index: 3; left: 50%; top: calc(100% + var(--bnp-tplim-bw, 21px) + 10px); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px; height: 30px; margin: 0; padding: 0 13px 0 4px; border: 2px solid #000; border-radius: 999px; background: #fff; color: #432005; font: 13px/1 "MuseoSansRounded700", "Museo Sans Rounded Bold", Arial, sans-serif; white-space: nowrap; box-shadow: 0 2px 0 rgba(0, 0, 0, .35); cursor: pointer; }   /* (under Neopets' NP Limit box, hanging from it: what's left) */
+    #tp_app__2025 .bnp-tplim-btn:hover, #tp_app__2025 .bnp-tplim-btn:focus-visible { background: #fff6df; outline: none; }
+    #tp_app__2025 .bnp-tplim-btn img { flex: none; width: 24px; height: 24px; }
+    #tp_app__2025 .bnp-tplim-btn b { color: #2a2a2a; font-weight: normal; font-variant-numeric: tabular-nums; }
+    #tp_app__2025 .bnp-tplim-btn.is-full b { color: #a20202; }
+    #tp_app__2025 .bnp-tplim-btn small { color: #6f5a3a; font: 12px "MuseoSansRounded500", "Museo Sans Rounded", Arial, sans-serif; }
+    #tp_app__2025 .bnp-tplim-row { padding-bottom: 30px; }   /* (room for it under the row, above the lots) */
+    @media (max-width: 1279.98px) { #tp_app__2025 .bnp-tplim-row { padding-bottom: 0; } #tp_app__2025 .bnp-tplim-host { margin-bottom: 34px; } }   /* (one above another: room under the box itself) */
+    .bnp-tplimib { display: flex; align-items: center; gap: 12px; max-width: 680px; margin: 10px auto 0; padding: 9px 14px; border: 1px solid #e6c69a; border-radius: 12px; background: #fff6e6; color: #6a2a0a; font: 13px/1.4 "MuseoSansRounded500", Arial, sans-serif; text-align: left; }   /* (an Instant Buy more than your NP Limit has left) */
+    .bnp-tplimib b { font-family: "MuseoSansRounded700", Arial, sans-serif; font-weight: normal; }
+    .bnp-tplimib img { flex: none; width: 34px; height: 34px; }
+    .bnp-tplimib span { flex: 1; min-width: 0; }
+    .bnp-tplimib .bnp-tpbtn { flex: none; }
+    @media (max-width: 640px) { .bnp-tplimib { flex-wrap: wrap; justify-content: center; text-align: center; } }
   `;
   function tpEarly() {   // (the very start of the page: its look, and Neopets' app caught as it's made, so its cards can show every item)
     if (!tpOn()) return;
@@ -31229,7 +31269,8 @@
     tpItRows(cards);
     tpPack(app, cards);
     tpBar(app, type, cards);
-    if (type === 'create') { tpIbHint(app); tpMultiPanel(app); }
+    tpLimBtn(app, type);
+    if (type === 'create') { tpIbHint(app); tpLimIbBox(app); tpMultiPanel(app); }
   }
 
   let tpPackRO = null, tpPackT = 0;
@@ -31679,7 +31720,7 @@
         <div class="bnp-tpm-its">${its || '<span class="bnp-tpm-none">Click items above to put them in this lot</span>'}</div>
         <div class="bnp-tpm-n"><b>Lot ${i + 1}${n > 1 ? ` · ${n} items` : ''}</b><small>${esc(r.items.map((x) => x.n).join(', ')) || 'No items yet'}</small>${n ? `<div class="bnp-tpm-low${low.all ? '' : ' is-none'}">${lowHtml}</div>` : ''}
           ${here ? '<span class="bnp-tpm-heretag">Items you click go in this lot</span>' : mode === 'one' && !r.done ? `<button type="button" class="bnp-tpbtn is-small bnp-tpm-heretbtn" data-tpm-here="${esc(r.k)}">Add items to this one</button>` : ''}</div>
-        ${r.done ? '<span class="bnp-tpm-ok" style="grid-column: 3 / 6">✓ Listed</span>' : `<label class="bnp-tpm-f">Instant Buy (NP, or empty for offers only)<input type="text" inputmode="numeric" data-tpm-ib="${i}" value="${esc(!r.ib ? '' : Number.isNaN(tpPriceIn(r.ib)) ? r.ib : tpFmt(tpPriceIn(r.ib)))}" placeholder="${prem ? 'up to 20,000,000' : 'up to 10,000,000'}" aria-label="Instant Buy for lot ${i + 1}" aria-describedby="bnp-tpmsay${i}"><small class="bnp-tpm-say" id="bnp-tpmsay${i}" data-tpm-ibsay="${i}">${esc(tpPriceSay(r.ib))}${r.ibAuto && r.ib ? ' · filled in: just under the lowest' : ''}</small></label>
+        ${r.done ? '<span class="bnp-tpm-ok" style="grid-column: 3 / 6">✓ Listed</span>' : `<label class="bnp-tpm-f">Instant Buy (NP, or empty for offers only)<input type="text" inputmode="numeric" data-tpm-ib="${i}" value="${esc(!r.ib ? '' : Number.isNaN(tpPriceIn(r.ib)) ? r.ib : tpFmt(tpPriceIn(r.ib)))}" placeholder="${prem ? 'up to 20,000,000' : 'up to 10,000,000'}" aria-label="Instant Buy for lot ${i + 1}" aria-describedby="bnp-tpmsay${i}"><small class="bnp-tpm-say" id="bnp-tpmsay${i}" data-tpm-ibsay="${i}">${esc(tpPriceSay(r.ib))}${r.ibAuto && r.ib ? ' · filled in: just under the lowest' : ''}${esc(tpLimSay(r.ib))}</small></label>
         <label class="bnp-tpm-f">Wishlist<input type="text" data-tpm-wl="${i}" value="${esc(r.wl || '')}" maxlength="${prem ? 750 : 500}" placeholder="what you’d like for it (or nothing)" aria-label="Wishlist for lot ${i + 1}"></label>
         <span class="bnp-tpm-goc">${tpIbTick(i, r.ib, prem)}<button type="button" class="bnp-tpbtn is-go" data-tpm-go="${i}"${busy || !n ? ' disabled' : ''}>${busy ? 'Listing…' : 'List it'}</button></span>`}
         <button type="button" class="bnp-tpm-x" data-tpm-x="${i}" title="${r.done ? 'Clear it from here' : 'Take this lot out (nothing is listed)'}" aria-label="Take lot ${i + 1} out"${busy ? ' disabled' : ''}>×</button>
@@ -31773,6 +31814,7 @@
   function tpInput(e) {   // (typed into a lot: kept as you type, nothing drawn again)
     const t = e.target;
     if (!(t instanceof HTMLInputElement)) return;
+    if (!t.closest('[data-bnp]') && t.closest('#tp-create-form')) { const app = document.getElementById('tp_app__2025'); if (app) tpLimIbBox(app); return; }   // (Neopets' own boxes: its Instant Buy said against your NP Limit as you type)
     if ('tpmWlall' in t.dataset) { tpWlAll = t.value; return; }   // (One wishlist for all of them: kept till you use it)
     const i = t.dataset.tpmIb != null ? Number(t.dataset.tpmIb) : t.dataset.tpmWl != null ? Number(t.dataset.tpmWl) : -1;
     if (i < 0) return;
@@ -31780,7 +31822,7 @@
     if (!r) return;
     if (t.dataset.tpmIb != null) {
       r.ib = t.value; r.ibTouched = true; r.ibAuto = false;
-      const say = t.parentElement && t.parentElement.querySelector('[data-tpm-ibsay]'); if (say) say.textContent = tpPriceSay(t.value);
+      const say = t.parentElement && t.parentElement.querySelector('[data-tpm-ibsay]'); if (say) say.textContent = tpPriceSay(t.value) + tpLimSay(t.value);
       const tick = t.closest('.bnp-tpm-row') && t.closest('.bnp-tpm-row').querySelector('[data-tpm-ibok]'); if (tick) tick.outerHTML = tpIbTick(i, t.value, tpPrem());   // (its tick, as it is now)
     } else r.wl = t.value;
     if (r.err) { r.err = ''; const p = t.closest('.bnp-tpm-row'), m = p && p.querySelector('.bnp-tpm-err'); if (m) m.remove(); }
@@ -31806,6 +31848,7 @@
     if (k === 'pickoff') { tpPickOn = false; tpPicked.clear(); tpPaint(); return; }
     if (k === 'pickall') { const app = document.getElementById('tp_app__2025'), mine = tpCards(app).filter((c) => c.mine && c.id); if (tpPicked.size === mine.length) tpPicked.clear(); else for (const c of mine) tpPicked.add(c.id); tpPaint(); return; }
     if (k === 'cancel') tpCancelAsk();
+    if (k === 'lim') tpLimOpen(t);
   }
   // Settings › Trading Post: its lots, selling, and the prices it remembers (each to look up again or forget)
   function tpHubPage() {
@@ -31838,6 +31881,8 @@
       </div>
       <div class="bnp-card"><h4>Your Trades</h4>
         ${sw('tpCancel', 'Cancel several lots at once', 'Tick lots and cancel them together, with the whole fee (15,000 NP a lot) shown before anything happens.')}
+        ${sw('tpLimit', 'NP Limit: what’s left, and when it frees up', 'Neopets lets you take in so much NP on the Trading Post in any 24 hours, each sale’s NP freeing up 24 hours after it. Under its NP Limit box on Your Trades: how much you can still take in. Click it for when each sale frees up, to the minute, your lots too dear for their Instant Buy till then, and a reminder when there’s room again. Create a Trade says so when an Instant Buy is more than you have left.')}
+        ${tpF('tpLimit') ? tpLimHubLine(true) : ''}
         <p class="bnp-note">What you sell (offers you accept, lots bought with their Instant Buy) is counted in <button type="button" class="bnp-linkbtn" data-hubgo="shops">Shops and money</button>, with your auctions and shop till.</p>
       </div>
       <div class="bnp-card"><h4>Prices it remembers <span class="bnp-note">${kept.length ? `${kept.length} ${kept.length === 1 ? 'item' : 'items'}` : ''}</span></h4>
@@ -31978,7 +32023,7 @@
   const tpSalesPut = (v) => { try { localStorage.setItem(acctKey('bnp-tpsales'), JSON.stringify(v.slice(-500))); } catch (_) { /* */ } };
   const tpSaleIt = (x) => ({ n: reClean(x && x.name), c: Math.max(1, Number(x && x.count) || 1) });
   function tpSalesEar() {   // (the very start of the Trading Post: the page's own listener in, NE's ear on it)
-    if (FRAME || S.features.tpSales === false || location.pathname !== '/island/tradingpost.phtml' || document.getElementById('bnp-tp-ear')) return;
+    if (FRAME || (S.features.tpSales === false && S.features.tpLimit === false) || location.pathname !== '/island/tradingpost.phtml' || document.getElementById('bnp-tp-ear')) return;
     const sc = document.createElement('script');
     sc.id = 'bnp-tp-ear';
     sc.textContent = `(${TP_EAR.toString()})();`;
@@ -31987,11 +32032,11 @@
   }
   function tpSaleHeard({ u, body, np, d }) {
     if (!d || !d.success) return;
-    if (/get-lots\.php/.test(u)) { tpLotsKeep(d.lots); return; }
+    if (/get-lots\.php/.test(u)) { tpLotsKeep(d.lots); if (S.features.tpLimit !== false) tpLimHeard(d); return; }
     if (/get-lot-offers/.test(u)) { if (d.lot_id) tpSaleLots.set(String(d.lot_id), { items: (d.lot_items || []).map(tpSaleIt), offers: Array.isArray(d.offers) ? d.offers : [] }); return; }
     let b = {};
     try { b = JSON.parse(body || '{}'); } catch (_) { return; }
-    if (b.type !== 'accept' || !b.offer_id) return;   // (a trade completed: Neopets said so)
+    if (b.type !== 'accept' || !b.offer_id || S.features.tpSales === false) return;   // (a trade completed: Neopets said so)
     let lot = '', o = null, items = [];
     for (const [k, v] of tpSaleLots) { const f = v.offers.find((x) => String(x.offer_id) === String(b.offer_id)); if (f) { lot = k; o = f; items = v.items; break; } }
     const data = d.data || {}, before = smNum(np), after = Number(data.remaining_np);
@@ -32005,7 +32050,7 @@
   function tpLotsKeep(lots) {   // (your lots as Your Trades lists them: what's in each, for a sale told of later by its number alone)
     if (!Array.isArray(lots)) return;
     const k = tpLotsKept(), now = Date.now();
-    for (const l of lots) if (l && l.lot_id && l.is_your_lot !== false) k[String(l.lot_id)] = { at: now, items: (l.items || []).map((x) => ({ n: reClean(x && x.name), c: Math.max(1, Number(x && x.amount) || 1) })).filter((x) => x.n) };
+    for (const l of lots) if (l && l.lot_id && l.is_your_lot !== false) k[String(l.lot_id)] = { at: now, items: (l.items || []).map((x) => ({ n: reClean(x && x.name), c: Math.max(1, Number(x && x.amount) || 1) })).filter((x) => x.n), ib: Math.max(0, Number(l.instant_buy_amount) || 0) };
     for (const x of Object.keys(k).sort((a, b) => k[b].at - k[a].at).slice(60)) delete k[x];
     try { localStorage.setItem(acctKey('bnp-tplots'), JSON.stringify(k)); } catch (_) { /* */ }
   }
@@ -32031,7 +32076,7 @@
       const t = reClean(tpWords(el)), m = TP_IB_RE.exec(t);
       if (!m) continue;
       const w = TP_AT_RE.exec(t), kept = tpLotsKept()[m[2]];
-      tpSaleAdd({ at: w ? nstWhen(+w[1], +w[2], +w[3], +w[4], w[5]) : Date.now(), kind: 'ib', lot: m[2], who: m[1], gave: kept ? kept.items : [], np: smNum(m[3]), got: [] });
+      tpSaleAdd({ at: w ? nstWhen(+w[1], +w[2], +w[3], +w[4], w[5]) : Date.now(), kind: 'ib', lot: m[2], who: m[1], gave: kept ? kept.items : [], np: smNum(m[3]), got: [], ...(w ? {} : { seen: 1 }) });   // (seen: the alert had no time, so it's when NE saw it)
     }
   }
   function tpSaleAlertsWatch() {   // (the alerts list, as Neopets fills it in: looked at again)
@@ -32049,7 +32094,7 @@
     const t = reClean(text), m = TP_AUC_RE.exec(t);
     if (!m) return false;
     const np = smNum(m[3]), bids = [...t.matchAll(/Bid\s*:\s*([\d,]+)\s*NeoPoints?,?\s*placed by\s*([A-Za-z0-9_]+)/gi)], top = bids.find((b) => smNum(b[1]) === np) || bids[0];
-    return tpSaleAdd({ at: at || Date.now(), kind: 'auction', lot: m[1], who: top ? top[2] : '', gave: [{ n: reClean(m[2]), c: 1 }], np, got: [] });
+    return tpSaleAdd({ at: at || Date.now(), kind: 'auction', lot: m[1], who: top ? top[2] : '', gave: [{ n: reClean(m[2]), c: 1 }], np, got: [], ...(at ? {} : { seen: 1 }) });
   }
   function tpAucScan() {   // (what NeoChat has kept from The Neopets Team: auctions that sold before this was here)
     if (S.features.auSales === false || !S.features.ncl) return;
@@ -32092,7 +32137,7 @@
     const row = (r) => {
       const gave = names(r.gave || []), came = [r.np ? `${r.np.toLocaleString()} NP` : '', names(r.got || [])].filter(Boolean).join(' and ');
       const how = r.kind === 'ib' ? `Lot ${esc(r.lot)} · its Instant Buy, ${esc(came)}${r.who ? ` · bought by ${esc(r.who)}` : ''}` : r.kind === 'auction' ? `Auction, lot ${esc(r.lot)} · ${esc(came)}${r.who ? ` · won by ${esc(r.who)}` : ''}` : `${r.lot && gave ? `Lot ${esc(r.lot)} · ` : ''}for ${esc(came || 'nothing')}${r.who ? ` · from ${esc(r.who)}` : ''}`;
-      return `<li class="bnp-tps-row"><span class="bnp-tps-when" title="${esc(new Date(r.at).toLocaleString())}">${esc(new Date(r.at).toLocaleDateString([], { month: 'short', day: 'numeric' }))}</span><span class="bnp-tps-what"><b>${esc(gave || (r.lot ? `Lot ${r.lot}` : 'A lot'))}</b><small>${how}</small></span><span class="bnp-tps-np">${r.np ? `+${npShort(r.np)} NP` : ''}</span></li>`;
+      return `<li class="bnp-tps-row"><span class="bnp-tps-when" title="${esc(tpWhenTip(r))}"><b>${esc(tpDayNst(r.at))}</b><small>${r.seen ? '~' : ''}${esc(tpClock(r.at))}</small></span><span class="bnp-tps-what"><b>${esc(gave || (r.lot ? `Lot ${r.lot}` : 'A lot'))}</b><small>${how}</small></span><span class="bnp-tps-np">${r.np ? `+${npShort(r.np)} NP` : ''}</span></li>`;
     };
     return `<div class="bnp-tps"><div class="bnp-till-sums">${cell('This month', sum.month)}${cell('This year', sum.year)}${cell(`All of it (${v.length.toLocaleString()} ${kind === 'au' ? 'auction' : 'sale'}${v.length === 1 ? '' : 's'})`, sum.all)}</div>
       ${v.length ? `<ol class="bnp-tps-list">${v.slice(-Math.min(v.length, tpSalesShown[kind] || 25)).reverse().map(row).join('')}</ol>${(() => { const left = v.length - (tpSalesShown[kind] || 25); return left > 0 ? `<p class="bnp-tps-more"><button type="button" class="bnp-pillbtn" data-tpsmore="${kind}">Show ${Math.min(25, left).toLocaleString()} more</button><span>${left.toLocaleString()} older ${left === 1 ? (kind === 'au' ? 'auction' : 'sale') : (kind === 'au' ? 'auctions' : 'sales')} below these</span></p>` : ''; })()}<div class="bnp-tools"><button type="button" class="bnp-pillbtn is-danger" data-tpsforget="${kind}">Forget them</button></div>` : `<p class="bnp-note">${kind === 'au' ? 'None yet: the next auction of yours that sells is the first.' : 'None yet: the next offer you accept, or lot bought with its Instant Buy, is the first.'}</p>`}</div>`;
@@ -32107,6 +32152,299 @@
     paintHub();
     toast(b.dataset.tpsforget === 'au' ? 'Your auction sales are forgotten' : 'Your Trading Post sales are forgotten');
   });
+  // ── The Trading Post's NP Limit: Neopets lets you take in so much NP there in any 24 hours, each sale's NP freeing up 24 hours after
+  // it. Your Trades' own box says how much you've taken in; under it NE says how much is left, and its window says when each sale frees
+  // up, to the minute: Neopets' own count (heard as Your Trades loads it) with the sales NE keeps. NP Neopets counted that NE has no sale
+  // for (another browser, or before NE kept them) shows as that, freeing up within the times the counts allow. And a reminder when
+  // there's room again for what you choose ──
+  const TP_IMG = 'https://images.neopets.com/tradingpost/assets/images/';
+  const TP_BAG = `${TP_IMG}neopoint-bag-icon.png`;
+  const tpClock = (ms) => { const n = nstOf(ms); return `${n.h % 12 || 12}:${String(n.mi).padStart(2, '0')} ${n.h < 12 ? 'am' : 'pm'}`; };   // (a time in NST, to the minute)
+  const tpDayNst = (ms) => { const n = nstOf(ms); return new Date(Date.UTC(2000, n.mo - 1, n.d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }); };   // ("Nov 8", NST)
+  const tpDayN = (ms) => { const [y, m, d] = nstOf(ms).day.split('-').map(Number); return Date.UTC(y, m - 1, d) / DAY_MS; };
+  const tpDayWord = (ms, now = Date.now()) => { const k = tpDayN(ms) - tpDayN(now); return k === 0 ? 'today' : k === 1 ? 'tomorrow' : k === -1 ? 'yesterday' : tpDayNst(ms); };
+  const tpYourTime = (ms) => new Date(ms).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  const tpWhenTip = (r) => `${tpDayNst(r.at)}, ${tpClock(r.at)} NST (${tpYourTime(r.at)} your time)${r.seen ? ' · when NE saw it: it sold a little before' : ''}`;
+  const tpLimCd = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return s >= 3600 ? `${Math.floor(s / 3600)}h ${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}m` : s >= 60 ? `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s` : `${s}s`; };   // (3h 05m · 12m 09s · 45s)
+  const tpLimGet = () => { try { const v = JSON.parse(localStorage.getItem(acctKey('bnp-tplim')) || 'null'); return v && Array.isArray(v.snaps) ? v : { snaps: [] }; } catch (_) { return { snaps: [] }; } };
+  const tpLimPut = (v) => { try { localStorage.setItem(acctKey('bnp-tplim'), JSON.stringify(v)); } catch (_) { /* */ } };
+  function tpLimHeard(d) {   // (Your Trades' own answer: NP taken in over the last 24 hours, and the most Neopets allows. Kept two days; a count the same as the two before it moves the last one on)
+    if (!d || d.daily_np_cap == null || d.daily_np_received == null) return;
+    const cap = Math.max(0, Number(d.daily_np_cap) || 0), rec = Math.max(0, Number(d.daily_np_received) || 0), now = Date.now();
+    const v = tpLimGet().snaps.filter((x) => Array.isArray(x) && x[0] <= now && now - x[0] < 2 * DAY_MS), a = v[v.length - 1], b = v[v.length - 2];
+    if (a && b && a[1] === rec && b[1] === rec && a[2] === cap && b[2] === cap) a[0] = now; else v.push([now, rec, cap]);
+    tpLimPut({ snaps: v.slice(-60) });
+    if (S.rem && S.rem.tpFree) { try { remSchedule(); } catch (e) { report(e); } }
+    tpLimRepaint();
+  }
+  function tpLimState(now = Date.now()) {   // (your NP Limit: null till Your Trades has been seen here; { off } while Neopets has none. rows: each sale, or lump of NP, as it frees up)
+    const snaps = tpLimGet().snaps.filter((x) => Array.isArray(x) && x[0] > 0 && x[0] <= now + 60000).sort((a, b) => a[0] - b[0]), last = snaps[snaps.length - 1];
+    if (!last) return null;
+    const [T0, rec0, cap] = last;
+    if (!(cap > 0)) return { off: true, T0 };
+    const sales = tpSalesGet().filter((r) => r && !tpSaleAu(r) && Number(r.np) > 0 && Number(r.at) > 0).map((r) => ({ ...r, np: Number(r.np), at: Math.min(Number(r.at), now) }));
+    const K = (t) => sales.reduce((n, r) => n + (r.at <= t && r.at > t - DAY_MS ? r.np : 0), 0);
+    let lumps = [], prev = 0;
+    for (const [T, rec] of snaps) {   // (NP Neopets counted that NE has no sale for: taken in after the count before, by this one; what comes off as time passes, off the oldest first)
+      lumps = lumps.filter((l) => l.hi + DAY_MS > T);
+      const U = Math.max(0, rec - K(T)), had = lumps.reduce((n, l) => n + l.np, 0);
+      if (U < had) { let cut = had - U; for (const l of lumps) { const c = Math.min(l.np, cut); l.np -= c; cut -= c; } lumps = lumps.filter((l) => l.np > 0); }
+      else if (U > had) lumps.push({ np: U - had, lo: Math.max(prev, T - DAY_MS), hi: T });
+      prev = T;
+    }
+    const rows = [...sales.filter((r) => r.at > T0 - DAY_MS).map((r) => ({ at: r.at + DAY_MS, np: r.np, r, since: r.at > T0 })), ...lumps.map((l) => ({ at: l.hi + DAY_MS, from: l.lo + DAY_MS, np: l.np, lump: true }))].sort((a, b) => a.at - b.at);
+    const recAt = (t) => Math.max(0, rows.reduce((n, x) => (x.since ? n + (x.r.at <= t && t < x.at ? x.np : 0) : n - (x.at <= t ? x.np : 0)), rec0));   // (Neopets' count, less what's freed up since, with what's come in since)
+    const left = (t) => Math.max(0, cap - recAt(t));
+    return { T0, cap, rec0, rows, recAt, left, now: left(now), over: Math.max(0, K(T0) - rec0) };
+  }
+  const tpLimNow = () => { const st = tpLimState(); return st && !st.off ? { left: st.now, cap: st.cap } : null; };
+  const tpLimRoom = (x) => { const l = tpLimNow(); return !!l && l.left >= Math.min(x, l.cap); };
+  const tpLimCapNow = () => { const v = tpLimGet().snaps, l = v[v.length - 1]; return l && l[2] > 0 ? l[2] : 100000000; };
+  function tpLimWhen(x, now = Date.now(), st = tpLimState(now)) {   // (when you can take in x NP again: the next moment it comes free; if it's free now, when it last came free (0 if it never ran short since Neopets' count))
+    if (!st || st.off || !(x > 0)) return 0;
+    const want = Math.min(x, st.cap), pts = [...new Set([st.T0, ...st.rows.map((r) => r.at), ...st.rows.filter((r) => r.since).map((r) => r.r.at)])].sort((a, b) => a - b);
+    let short = false, last = 0;
+    for (const t of pts) {
+      if (st.left(t) < want) short = true;
+      else if (short) { short = false; if (t > now) return t; last = t; }
+    }
+    return short ? 0 : last;
+  }
+  function tpLimNoteText(x) { const l = tpLimNow(); return l ? `You can take in ${tpFmt(l.left)} NP on the Trading Post now: room for ${tpFmt(Math.min(x, l.cap))} again.` : `You can take in ${tpFmt(x)} NP on the Trading Post again.`; }
+  const tpLimNames = (r) => { const l = (r.gave || []).filter((x) => x && x.n); return l.length ? `${l.slice(0, 2).map((x) => `${x.n}${x.c > 1 ? ` ×${x.c}` : ''}`).join(', ')}${l.length > 2 ? ` and ${l.length - 2} more` : ''}` : ''; };
+  const tpLimHow = (r) => (r.kind === 'ib' ? `Lot ${r.lot} · its Instant Buy${r.who ? `, bought by ${r.who}` : ''}` : `${r.lot ? `Lot ${r.lot} · ` : ''}an offer${r.who ? ` from ${r.who}` : ''}`);
+  function tpLimLots(st, now) {   // (your lots as Your Trades last listed them, with an Instant Buy more than you have left: and from when it isn't)
+    const k = tpLotsKept(), at = Math.max(0, ...Object.values(k).map((x) => x.at || 0)), sold = new Set(tpSalesGet().filter((r) => !tpSaleAu(r)).map((r) => String(r.lot)));
+    return Object.entries(k).filter(([id, x]) => x.at === at && x.ib > st.now && !sold.has(id)).map(([id, x]) => ({ id, ...x, when: tpLimWhen(x.ib, now, st) })).sort((a, b) => a.ib - b.ib || a.id.localeCompare(b.id));
+  }
+  const tpLimSec = (t, d, body, extra = '') => `<section class="bnp-tpl-sec"><div class="bnp-tpl-title${extra ? ' is-row' : ''}"><div><p class="bnp-tpl-t">${t}</p>${d ? `<p class="bnp-tpl-d">${d}</p>` : ''}</div>${extra}</div><div class="bnp-tpl-body">${body}</div></section>`;
+  function tpLimBodyHtml(now = Date.now()) {   // (the window: what's left, when each sale frees up, the lots that can't be bought yet)
+    const st = tpLimState(now), bag = `<img src="${TP_BAG}" alt="" width="80" height="80">`;
+    if (!st) return `<div class="bnp-tpl-panel bnp-tpl-empty">${bag}<p>Open <a href="/island/tradingpost.phtml">Your Trades</a> once, and NE reads Neopets’ count of what you’ve taken in.</p></div>`;
+    if (st.off) return `<div class="bnp-tpl-panel bnp-tpl-empty">${bag}<p>Neopets has no NP Limit on the Trading Post just now.</p></div>`;
+    const taken = st.recAt(now), pct = Math.round((st.now / st.cap) * 1000) / 10, up = st.rows.filter((x) => x.at > now);
+    const hero = `<div class="bnp-tpl-panel bnp-tpl-hero${st.now <= 0 ? ' is-full' : ''}">${bag}<div class="bnp-tpl-hero-t"><p class="bnp-tpl-big"><b>${tpFmt(st.now)}</b> NP left</p><p class="bnp-tpl-sub">to take in on the Trading Post, of your ${tpFmt(st.cap)} NP Limit</p><div class="bnp-tpl-gauge" role="meter" aria-valuemin="0" aria-valuemax="${st.cap}" aria-valuenow="${st.now}" aria-label="NP left to take in"><i style="width:${pct}%"></i></div><p class="bnp-tpl-meta">${tpFmt(taken)} NP taken in over the last 24 hours${now - st.T0 > 3 * 60000 ? ` · Neopets’ count at ${tpClock(st.T0)} NST ${tpDayWord(st.T0, now)}, with the sales NE has seen since` : ''}</p></div></div>`;
+    const row = (x, i) => {
+      const r = x.r || {}, wide = x.lump && x.from && x.at - x.from > 120000, by = wide || !!r.seen;   // (by then at the latest: a lump, or a sale whose time is when NE saw it)
+      const what = x.lump ? `<b>Sales NE didn’t see</b><small>${wide ? `Taken in between ${tpClock(x.from - DAY_MS)}${tpDayWord(x.from - DAY_MS, now) === tpDayWord(x.at - DAY_MS, now) ? '' : ` ${tpDayWord(x.from - DAY_MS, now)}`} and ${tpClock(x.at - DAY_MS)} ${tpDayWord(x.at - DAY_MS, now)}` : `Taken in at about ${tpClock(x.at - DAY_MS)} ${tpDayWord(x.at - DAY_MS, now)}`}, in another browser or before NE kept your sales</small>`
+        : `<b>${esc(tpLimNames(r) || (r.lot ? `Lot ${r.lot}` : 'A trade'))}</b><small>${esc(tpLimHow(r))} · ${r.seen ? 'seen' : 'sold'} ${tpClock(r.at)} ${tpDayWord(r.at, now)}</small>`;
+      return `<li class="bnp-tpl-row${i === 0 ? ' is-next' : ''}"><span class="bnp-tpl-when" title="${esc(tpYourTime(x.at))} your time${by ? ', at the latest' : ''}"><b>${by ? 'by ' : ''}${tpClock(x.at)}</b><small>${tpDayWord(x.at, now)}</small></span><span class="bnp-tpl-cd" data-tpl-cd="${x.at}" title="Till it frees up">${tpLimCd(x.at - now)}</span><span class="bnp-tpl-what">${what}</span><span class="bnp-tpl-np"><b>+${tpFmt(x.np)}</b><small>${tpFmt(st.left(x.at))} left then</small></span></li>`;
+    };
+    const notes = `${st.over > 0 ? `<p class="bnp-tpl-warn">The sales NE has seen add up to ${tpFmt(st.over)} NP more than Neopets counted at ${tpClock(st.T0)}: some may not count, so it may free up sooner than this says.</p>` : ''}${S.features.tpSales === false ? '<p class="bnp-tpl-warn">NE isn’t keeping your sales (Settings › Shops and money), so it can’t say when new ones free up.</p>' : ''}`;
+    const list = tpLimSec('When it frees up', 'Each sale’s NP frees up 24 hours after it. Times are NST.', `${up.length ? `<ol class="bnp-tpl-list">${up.map(row).join('')}</ol>` : `<p class="bnp-tpl-none">${taken > 0 ? 'Nothing NE knows of frees up from here.' : 'Nothing taken in over the last 24 hours: all of it is free.'}</p>`}${notes}`);
+    const lots = tpLimLots(st, now);
+    const lotsHtml = lots.length ? tpLimSec('Lots that can’t be bought yet', 'No one can buy a lot with its Instant Buy while it’s more than you have left.', `<ul class="bnp-tpl-lots">${lots.map((l) => `<li><span class="bnp-tpl-what"><b>${esc(tpLimNames({ gave: l.items }) || `Lot ${l.id}`)}</b><small>Lot ${esc(l.id)} · Instant Buy ${tpFmt(l.ib)} NP</small></span><span class="bnp-tpl-np">${l.when > now ? `<b>${tpClock(l.when)}</b><small>${tpDayWord(l.when, now)}, in <span data-tpl-cd="${l.when}">${tpLimCd(l.when - now)}</span></small>` : '<small>when more frees up</small>'}</span></li>`).join('')}</ul>`) : '';
+    return `${hero}${list}${lotsHtml}`;
+  }
+  function tpLimSayHtml(now = Date.now()) {   // (the reminder, as it stands)
+    const R = S.rem, x = Number(R.tpFreeNp) || 10000000;
+    if (!R.tpFree) return 'Off: turn it on for a reminder.';
+    if (!R.on) return 'Your reminders are all off, so it can’t tell you. <button type="button" class="bnp-tpl-pill" data-tpl="remon">Turn them on</button>';
+    const st = tpLimState(now);
+    if (!st || st.off) return 'On: it tells you once NE has Neopets’ count.';
+    if (st.now >= Math.min(x, st.cap)) return 'There’s room for that now. It tells you when it comes free again, once you’ve taken more in.';
+    const t = tpLimWhen(x, now, st);
+    return t > now ? `It tells you at <b>${tpClock(t)} NST</b> ${tpDayWord(t, now)}, in <span data-tpl-cd="${t}">${tpLimCd(t - now)}</span>.` : 'Not in sight from the sales NE knows of.';
+  }
+  function tpLimAlertHtml() {   // (the reminder: on or off, and how much; as Neopets' own Instant Buy switch and box look)
+    const R = S.rem, on = !!R.tpFree, x = Number(R.tpFreeNp) || 10000000;
+    return tpLimSec('Tell me when there’s room', 'A reminder the minute you can take in this much again, as your Reminders come.',
+      `<label class="bnp-tpl-amt"><span>When I can take in at least</span><input type="text" inputmode="numeric" data-tpl-amt value="${esc(tpFmt(x))}" aria-label="How much NP"><span>NP</span></label><p class="bnp-tpl-say" data-tpl-say>${tpLimSayHtml()}</p>`,
+      `<label class="bnp-tpl-sw" title="Tell me when there’s room"><input type="checkbox" data-tpl-alert${on ? ' checked' : ''} aria-label="Tell me when there’s room"><span class="bnp-tpl-slider"></span><b class="is-on" aria-hidden="true">On</b><b class="is-off" aria-hidden="true">Off</b></label>`);
+  }
+  let tpLimPop = null;   // (the window while it's open: { el, from: what opened it, t: its clock, next: when to draw it again })
+  function tpLimOpen(from) {
+    if (tpLimPop && tpLimPop.el.isConnected) { tpLimPop.el.querySelector('.bnp-tpl-x').focus(); return; }
+    tpLimStyle();
+    const ov = document.createElement('div');
+    ov.className = 'bnp-tpl';
+    ov.setAttribute('role', 'dialog');
+    ov.setAttribute('aria-modal', 'true');
+    ov.setAttribute('aria-labelledby', 'bnp-tpl-h');
+    ov.innerHTML = `<div class="bnp-tpl-box"><div class="bnp-tpl-plate"><h3 id="bnp-tpl-h">NP Limit</h3></div><button type="button" class="bnp-tpl-x" data-tpl="close" title="Close" aria-label="Close"><img src="${TP_IMG}close-icon.png" alt="" width="57" height="36"></button><div class="bnp-tpl-in"><div class="bnp-tpl-grid" data-tpl-body>${tpLimBodyHtml()}</div>${tpLimAlertHtml()}</div></div>`;
+    document.body.append(ov);
+    const P = { el: ov, from: from instanceof Element ? from : null, t: 0, next: 0 };
+    tpLimPop = P;
+    const close = () => { if (tpLimPop !== P) return; clearInterval(P.t); document.removeEventListener('keydown', key, true); ov.remove(); tpLimPop = null; if (P.from && P.from.isConnected) P.from.focus(); };
+    const key = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); } };
+    document.addEventListener('keydown', key, true);
+    ov.addEventListener('click', (e) => {
+      const b = e.target instanceof Element ? e.target.closest('[data-tpl]') : null;
+      if (e.target === ov || (b && b.dataset.tpl === 'close')) { close(); return; }
+      if (b && b.dataset.tpl === 'remon') { S.rem.on = true; saveNow(); remSchedule(); soundReady(); tpLimTick(true); }
+    });
+    ov.addEventListener('change', (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLInputElement)) return;
+      if (t.matches('[data-tpl-alert]')) { S.rem.tpFree = t.checked; saveNow(); remSchedule(); tpLimTick(true); return; }
+      if (t.matches('[data-tpl-amt]')) {
+        const n = tpPriceIn(t.value);
+        if (!(n > 0)) { t.value = tpFmt(Number(S.rem.tpFreeNp) || 10000000); toast('Write it as 10,000,000, 10m or 500k'); return; }
+        S.rem.tpFreeNp = Math.min(n, tpLimCapNow()); t.value = tpFmt(S.rem.tpFreeNp); saveNow(); remSchedule(); tpLimTick(true);
+      }
+    });
+    ov.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.matches('[data-tpl-amt]')) { e.preventDefault(); e.target.blur(); } });   // (Enter: taken, as leaving the box does)
+    P.next = tpLimNext(Date.now());
+    P.t = setInterval(() => { try { tpLimTick(); } catch (e) { report(e); } }, 1000);
+    ov.querySelector('.bnp-tpl-x').focus();
+  }
+  function tpLimNext(now) { const st = tpLimState(now), r = st && !st.off ? st.rows.find((x) => x.at > now) : null; return Math.min(r ? r.at : Infinity, now + 30000); }   // (drawn again as the next one frees up, and every half minute for sales seen meanwhile)
+  function tpLimTick(force) {   // (the window, each second: its countdowns; drawn again as something frees up)
+    const P = tpLimPop;
+    if (!P) return;
+    if (!P.el.isConnected) { clearInterval(P.t); tpLimPop = null; return; }
+    const now = Date.now();
+    if (force || now >= P.next) {
+      const body = P.el.querySelector('[data-tpl-body]'), keep = P.el.querySelector('.bnp-tpl-in').scrollTop;
+      body.innerHTML = tpLimBodyHtml(now);
+      const say = P.el.querySelector('[data-tpl-say]');
+      if (say) say.innerHTML = tpLimSayHtml(now);
+      P.el.querySelector('.bnp-tpl-in').scrollTop = keep;
+      P.next = tpLimNext(now);
+      tpLimRepaint();
+    }
+    for (const c of P.el.querySelectorAll('[data-tpl-cd]')) { const v = tpLimCd(Number(c.dataset.tplCd) - now); if (c.textContent !== v) c.textContent = v; }
+  }
+  document.addEventListener('click', (e) => { const b = e.target instanceof Element ? e.target.closest('[data-tplopen]') : null; if (b) { e.preventDefault(); tpLimOpen(b); } });   // (Settings' and Reminders' way in)
+  let tpLimT = 0;
+  function tpLimBtn(app, type) {   // (Your Trades: under Neopets' own NP Limit box, what's left, its window a click away)
+    let b = app.querySelector('[data-bnp="tplim"]');
+    const p = type === 'view' && tpF('tpLimit') ? [...app.querySelectorAll('.tp-purple-bg-frame > p')].find((x) => /^\s*NP Limit:/i.test(x.textContent)) : null, frame = p && p.parentElement;
+    if (!frame) { if (b) b.remove(); for (const x of app.querySelectorAll('.bnp-tplim-host, .bnp-tplim-row')) x.classList.remove('bnp-tplim-host', 'bnp-tplim-row'); clearTimeout(tpLimT); return; }
+    if (!b) { b = document.createElement('button'); b.type = 'button'; b.className = 'bnp-tplim-btn'; b.setAttribute('data-bnp', 'tplim'); b.setAttribute('data-tp', 'lim'); b.title = 'How much you can still take in, when each sale frees up again, and a reminder when there’s room'; }
+    if (b.parentElement !== frame) frame.append(b);
+    frame.classList.add('bnp-tplim-host');
+    if (frame.parentElement) frame.parentElement.classList.add('bnp-tplim-row');
+    const bw = parseFloat(getComputedStyle(frame).borderBottomWidth) || 21;
+    if (frame.bnpBw !== bw) { frame.bnpBw = bw; frame.style.setProperty('--bnp-tplim-bw', `${bw}px`); }
+    const now = Date.now(), st = tpLimState(now), m = /NP Limit:\s*([\d,]+)\s*\/\s*([\d,]+)/i.exec(p.textContent), next = st && !st.off ? st.rows.find((r) => r.at > now) : null;
+    const left = st && !st.off ? st.now : m ? Math.max(0, tpNum(m[2]) - tpNum(m[1])) : null;   // (Neopets' own line, till its count's been heard)
+    const html = `<img src="${TP_BAG}" alt="" width="24" height="24"><span>${left == null ? 'When it frees up' : `<b>${tpFmt(left)} NP</b> left`}</span>${left === 0 && next ? `<small>· more at ${tpClock(next.at)}</small>` : ''}`;
+    if (b.bnpHtml !== html) { b.bnpHtml = html; b.innerHTML = html; }
+    b.classList.toggle('is-full', left === 0);
+    clearTimeout(tpLimT);
+    tpLimT = setTimeout(tpLimRepaint, Math.max(1000, Math.min(next ? next.at - now + 300 : 60000, 60000)));   // (drawn again as the next one frees up, on time; never later than a minute)
+  }
+  function tpLimRepaint() { if (!tpOn()) return; const app = document.getElementById('tp_app__2025'); if (app) { try { tpLimBtn(app, tpType()); } catch (e) { report(e); } } }
+  function tpLimHubLine(rem) {   // (Settings: where it stands, and the way in)
+    const now = Date.now(), st = tpLimState(now), next = st && !st.off ? st.rows.find((r) => r.at > now) : null;
+    const say = !st ? 'Open Your Trades once, and NE reads Neopets’ count of what you’ve taken in.' : st.off ? 'Neopets has no NP Limit on just now.' : `${tpFmt(st.now)} NP left to take in now${next ? `; ${tpFmt(next.np)} more frees up at ${tpClock(next.at)} NST ${tpDayWord(next.at, now)}` : ''}.`;
+    return `<p class="bnp-lookback-row"><span class="bnp-note">${esc(say)}</span> <button type="button" class="bnp-pillbtn" data-tplopen>When it frees up</button>${rem ? ' <button type="button" class="bnp-pillbtn" data-hubgo="reminders">Its reminder</button>' : ''}</p>`;
+  }
+  function tpLimIbLine(v) {   // (Create a Trade: an Instant Buy more than your NP Limit has left)
+    if (!tpF('tpLimit') || !(v > 0)) return '';
+    const now = Date.now(), st = tpLimState(now);
+    if (!st || st.off || v <= st.now) return '';
+    const t = tpLimWhen(v, now, st);
+    return `<img src="${TP_BAG}" alt="" width="34" height="34"><span>Your NP Limit has <b>${tpFmt(st.now)} NP</b> left, so no one can buy this lot with its Instant Buy of ${tpFmt(v)} NP ${t > now ? `till <b>${tpClock(t)} NST</b> ${tpDayWord(t, now)}` : 'till more of it frees up'}.</span><button type="button" class="bnp-tpbtn is-small" data-tp="lim">When it frees up</button>`;
+  }
+  function tpLimIbBox(app) {   // (said in a note of its own under Neopets' Instant Buy box, after NE's lowest seen if that's there; nothing while Instant Buy is off)
+    const inp = tpIbBox(tpIbSec(app)), row = inp && inp.closest('.flex.justify-center');
+    let w = app.querySelector('[data-bnp="tplimib"]');
+    const html = row && !inp.disabled ? tpLimIbLine(tpNum(inp.value)) : '';
+    if (!html) { if (w) w.remove(); return; }
+    if (!w) { w = document.createElement('div'); w.className = 'bnp-tplimib'; w.setAttribute('data-bnp', 'tplimib'); w.setAttribute('aria-live', 'polite'); }
+    const hint = app.querySelector('[data-bnp="tpib"]'), after = hint && !hint.hidden && hint.previousElementSibling === row ? hint : row;
+    if (w.previousElementSibling !== after) after.after(w);
+    if (w.bnpHtml !== html) { w.bnpHtml = html; w.innerHTML = html; }
+  }
+  function tpLimSay(s) {   // (Several lots at once: the same, after a lot's price)
+    const v = tpPriceIn(s);
+    if (!tpF('tpLimit') || !(v > 0)) return '';
+    const now = Date.now(), st = tpLimState(now);
+    if (!st || st.off || v <= st.now) return '';
+    const t = tpLimWhen(v, now, st);
+    return ` · more than your NP Limit has left (${tpFmt(st.now)}): no one can buy it with Instant Buy ${t > now ? `till ${tpClock(t)} NST` : 'till more frees up'}`;
+  }
+  function tpLimStyle() {   // (the window's look: Neopets' Trading Post windows, its bamboo frame, purple plate and red ×, wherever it opens)
+    if (document.getElementById('bnp-tpl-style')) return;
+    const st = document.createElement('style');
+    st.id = 'bnp-tpl-style';
+    const M5 = '"MuseoSansRounded500", "Museo Sans Rounded", Arial, sans-serif', M7 = '"MuseoSansRounded700", "Museo Sans Rounded Bold", Arial, sans-serif', CF = '"Cafeteria", "TP Cafeteria", "Arial Bold", sans-serif';
+    st.textContent = `
+    .bnp-tpl { position: fixed; inset: 0; z-index: 2147483002; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, .6); }
+    .bnp-tpl-box { position: relative; box-sizing: border-box; display: flex; flex-direction: column; width: min(680px, 100%); max-height: calc(100vh - 40px); padding: 2px 4px 6px; border: 30px solid transparent; border-image-source: url("${TP_IMG}border-frame.png"); border-image-slice: 78; border-image-repeat: repeat; border-image-outset: .3; image-rendering: pixelated; background: #d5a14c; }
+    .bnp-tpl-box > *, .bnp-tpl-in * { image-rendering: auto; }
+    .bnp-tpl-plate { position: relative; flex: none; box-sizing: border-box; width: 290px; max-width: calc(100% - 70px); height: 56px; margin: 0 auto 14px; border: 21px solid transparent; border-image-source: url("${TP_IMG}anchor-bg.png"); border-image-slice: 80; border-image-repeat: round; border-image-outset: .3; image-rendering: pixelated; background: #8f91d6; }
+    .bnp-tpl-plate h3 { position: absolute; left: 50%; top: 50%; width: 240px; margin: 0; transform: translate(-50%, -50%); color: #432005; font: 24px/1 ${CF}; text-align: center; text-shadow: none; }
+    .bnp-tpl-x { position: absolute; top: -4px; right: -2px; z-index: 2; width: 57px; height: 36px; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; }
+    .bnp-tpl-x img { display: block; width: 57px; height: 36px; }
+    .bnp-tpl-x:hover, .bnp-tpl-x:focus-visible { filter: brightness(1.08); outline: none; }
+    .bnp-tpl-in { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; color: #2a2a2a; font: 13px/1.4 ${M5}; text-align: left; }
+    .bnp-tpl-in > * { flex: none; }   /* (each part its own height, the window scrolling them: never one squeezed to fit) */
+    .bnp-tpl-grid { display: grid; gap: 12px; }
+    .bnp-tpl-in p { margin: 0; }
+    .bnp-tpl-panel { display: flex; align-items: center; gap: 16px; padding: 12px 18px; border-radius: 10px; background: #fff; }
+    .bnp-tpl-panel > img { flex: none; width: 80px; height: 80px; }
+    .bnp-tpl-empty p { color: #432005; font: 14px ${M7}; }
+    .bnp-tpl-empty a { color: #1d5fa8; }
+    .bnp-tpl-hero-t { flex: 1; min-width: 0; }
+    .bnp-tpl-big { color: #432005; font: 30px/1.05 ${CF}; }
+    .bnp-tpl-big b { color: #2b7a2a; font-weight: normal; font-variant-numeric: tabular-nums; }
+    .bnp-tpl-hero.is-full .bnp-tpl-big b { color: #a20202; }
+    .bnp-tpl-in .bnp-tpl-sub { margin: 3px 0 9px; color: #54290d; font: 13px ${M7}; }
+    .bnp-tpl-gauge { height: 14px; box-sizing: border-box; overflow: hidden; border: 2px solid #432005; border-radius: 999px; background: #e9e1cf; }
+    .bnp-tpl-gauge i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(#9fdc7c, #57a63a); transition: width .4s; }
+    .bnp-tpl-in .bnp-tpl-meta { margin-top: 6px; color: #6f5a3a; font-size: 12px; }
+    .bnp-tpl-sec { overflow: hidden; border-radius: 10px; background: #fff; }
+    .bnp-tpl-title { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 18px; background: #aed29c; color: #432005; text-align: center; }
+    .bnp-tpl-title.is-row { flex-direction: row; justify-content: space-between; gap: 14px; text-align: left; }
+    .bnp-tpl-t { font: 14px ${M7}; }
+    .bnp-tpl-in .bnp-tpl-d { margin-top: 1px; font-size: 12.5px; }
+    .bnp-tpl-body { padding: 10px 14px 14px; }
+    .bnp-tpl-list, .bnp-tpl-lots { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .bnp-tpl-row { display: grid; grid-template-columns: 70px 76px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 8px 12px; border: 1px solid #ece3cc; border-radius: 10px; background: #fffdf7; }
+    .bnp-tpl-row.is-next { border-color: #87cb62; background: #f1f9ec; box-shadow: 0 0 0 1px #87cb62; }
+    .bnp-tpl-when { display: grid; color: #8a7a5a; font-size: 11.5px; white-space: nowrap; }
+    .bnp-tpl-when b { color: #432005; font: 14.5px ${M7}; font-weight: normal; font-variant-numeric: tabular-nums; }
+    .bnp-tpl-cd { justify-self: start; min-width: 44px; padding: 4px 9px 3px; border-radius: 999px; background: #6466b8; color: #fff; font: 13px/1 ${CF}; letter-spacing: .3px; text-align: center; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .bnp-tpl-row.is-next .bnp-tpl-cd { background: #2b8a27; }
+    .bnp-tpl-what { min-width: 0; }
+    .bnp-tpl-what b { display: block; overflow: hidden; color: #2a2a2a; font: 13.5px ${M7}; font-weight: normal; text-overflow: ellipsis; white-space: nowrap; }
+    .bnp-tpl-what small { display: block; color: #7a6a4a; font-size: 12px; }
+    .bnp-tpl-np { display: grid; justify-items: end; white-space: nowrap; }
+    .bnp-tpl-np b { color: #2b7a2a; font: 14px ${M7}; font-weight: normal; font-variant-numeric: tabular-nums; }
+    .bnp-tpl-np small { color: #7a6a4a; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+    .bnp-tpl-lots li { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid #ece3cc; border-radius: 10px; background: #fffdf7; }
+    .bnp-tpl-lots .bnp-tpl-what { flex: 1; }
+    .bnp-tpl-lots .bnp-tpl-np b { color: #432005; }
+    .bnp-tpl-in .bnp-tpl-none { margin: 2px 0; color: #7a6a4a; text-align: center; }
+    .bnp-tpl-in .bnp-tpl-warn { margin-top: 8px; color: #8a3a0a; font-size: 12px; }
+    .bnp-tpl-sw { position: relative; flex: none; display: inline-block; width: 100px; height: 32px; margin: 0; cursor: pointer; }
+    .bnp-tpl-sw input { position: absolute; width: 0; height: 0; margin: 0; opacity: 0; }
+    .bnp-tpl-slider { position: absolute; inset: 0; box-sizing: border-box; border: 2px solid #83573a; border-radius: 26.67px; background: #9d9d9d; transition: background-color .4s; }
+    .bnp-tpl-slider::before { content: ""; position: absolute; z-index: 2; top: -2px; left: -2px; box-sizing: border-box; width: 50px; height: 32px; border: 2px solid #473c2d; border-radius: 26.67px; background: #fffaeb; transition: transform .4s; }
+    .bnp-tpl-sw input:checked + .bnp-tpl-slider { background: #87cb62; }
+    .bnp-tpl-sw input:checked + .bnp-tpl-slider::before { transform: translateX(50px); }
+    .bnp-tpl-sw input:focus-visible + .bnp-tpl-slider { outline: 2px solid #432005; outline-offset: 2px; }
+    .bnp-tpl-sw b { position: absolute; z-index: 1; top: 50%; transform: translateY(-50%); color: #fff; font: 16px/1 ${CF}; font-weight: normal; pointer-events: none; }
+    .bnp-tpl-sw .is-on { left: 17px; }
+    .bnp-tpl-sw .is-off { right: 15px; }
+    .bnp-tpl-amt { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; margin: 0; color: #432005; font: 13.5px ${M7}; }
+    .bnp-tpl-amt input { box-sizing: border-box; width: 170px; height: 40px; margin: 0; padding: 0 14px; border: 1px solid #d1d5db; border-radius: 1rem; background: #fff; color: #2a2a2a; font: 15px ${M7}; font-variant-numeric: tabular-nums; text-align: right; }
+    .bnp-tpl-amt input:focus { outline: none; border-color: #60a5fa; box-shadow: 0 0 0 2px rgba(96, 165, 250, .4); }
+    .bnp-tpl-in .bnp-tpl-say { margin-top: 9px; color: #54290d; text-align: center; }
+    .bnp-tpl-say b { font-family: ${M7}; font-weight: normal; }
+    .bnp-tpl-say [data-tpl-cd] { font-variant-numeric: tabular-nums; }
+    .bnp-tpl-pill { display: inline-flex; align-items: center; height: 26px; margin: 0 0 0 6px; padding: 0 12px; border: 0; border-radius: 9px; background: linear-gradient(#f6e250, #ebb233); box-shadow: inset 0 0 0 1px #f6e250, inset 0 -3px 2px 2px #c47c19, inset 0 2px 0 1px #fdf9dc, 0 0 0 1.5px #000; color: #000; font: 13.5px/1 ${CF}; cursor: pointer; }
+    .bnp-tpl-pill:hover, .bnp-tpl-pill:focus-visible { filter: brightness(1.06); outline: none; }
+    @media (max-width: 639px) {
+      .bnp-tpl { padding: 10px; }
+      .bnp-tpl-box { border-width: 15px; border-image-slice: 50; padding: 0 0 4px; }
+      .bnp-tpl-plate { width: 200px; height: 45px; margin-bottom: 10px; }
+      .bnp-tpl-plate h3 { width: 170px; font-size: 18px; }
+      .bnp-tpl-x { top: -8px; right: -6px; }
+      .bnp-tpl-panel { gap: 10px; padding: 10px 12px; }
+      .bnp-tpl-panel > img { width: 50px; height: 50px; }
+      .bnp-tpl-big { font-size: 24px; }
+      .bnp-tpl-row { grid-template-columns: auto auto minmax(0, 1fr); }
+      .bnp-tpl-row .bnp-tpl-what { grid-column: 1 / -1; grid-row: 2; }
+      .bnp-tpl-row .bnp-tpl-np { grid-column: 3; grid-row: 1; }
+      .bnp-tpl-title.is-row { flex-direction: column; align-items: center; text-align: center; }
+    }
+    @media (prefers-reduced-motion: reduce) { .bnp-tpl-slider, .bnp-tpl-slider::before, .bnp-tpl-gauge i { transition: none; } }`;
+    document.documentElement.append(st);
+  }
   // The Quest Log: each daily quest's task with a Go to where it's done (a wheel, your inventory to feed, read to or groom a pet, the
   // Battledome, the customiser, the NC Mall, the game it names or the Games Room, a shop). Neopets doesn't link them
   const QL_GO = [
@@ -44991,7 +45329,7 @@
         <a class="button-default__2020 button-yellow__2020 bnp-small" href="/quickref.phtml">Open Quick Ref</a>
       </div>`;
   }
-  const REM_KIND_SW = { newday: 'newday', dayend: 'dayend', deadline: 'deadline', snow: 'snow', dice: 'dice', kad: 'kad', turmac: 'turmac', fc: 'fc', obelisk: 'obelisk', lodge: 'lodge', train: 'train', freebies: 'freebies', advent: 'advent', backup: 'backup', custom: '' };   // (which switch each kind of note answers to; ready: each daily's own)
+  const REM_KIND_SW = { newday: 'newday', dayend: 'dayend', deadline: 'deadline', snow: 'snow', dice: 'dice', kad: 'kad', turmac: 'turmac', fc: 'fc', obelisk: 'obelisk', lodge: 'lodge', train: 'train', freebies: 'freebies', advent: 'advent', backup: 'backup', tpfree: 'tpFree', custom: '' };   // (which switch each kind of note answers to; ready: each daily's own)
   function remPage() {
     const R = S.rem, now = Date.now();
     const sw = (k, title, small, more = '') => `<label class="bnp-switch"><input type="checkbox" data-rem="${k}"${R[k] ? ' checked' : ''}><span>${title}<small>${small}</small>${more}</span></label>`;
@@ -45052,6 +45390,11 @@
         ${sw('lodge', 'Leaving the Neolodge', `${lodge ? `${lodge} pet${lodge === 1 ? '' : 's'} staying there (from Quick Ref).` : 'Quick Ref tells it when your pets leave.'}`, ` <span class="bnp-inl">${sel('lodgeLead', [[60, 'an hour before'], [360, '6 hours before'], [720, '12 hours before'], [1440, 'a day before']])}</span>`)}
         ${sw('train', 'Training done', `${train ? `${train} course${train === 1 ? '' : 's'} going (from the schools’ Status pages).` : 'Each school’s Status page tells it when a course ends.'}`)}
       </div>
+      <h5>Trading Post</h5>
+      <div class="bnp-card">
+        ${sw('tpFree', 'Your NP Limit has room again', 'Neopets lets you take in so much NP on the Trading Post in any 24 hours, each sale’s NP freeing up 24 hours after it. A note when you can take in at least:', ` <span class="bnp-inl"><input type="text" inputmode="numeric" class="bnp-remnp" data-rem="tpFreeNp" value="${esc(tpFmt(Number(R.tpFreeNp) || 10000000))}" aria-label="How much NP"> NP</span>`)}
+        ${S.features.tpLimit === false ? '<p class="bnp-note">It needs the NP Limit on, in Settings › Trading Post.</p>' : tpLimHubLine(false)}
+      </div>
       <h5>Now and then</h5>
       <div class="bnp-card">
         ${sw('freebies', 'Monthly Freebies', 'On the 1st of each month.')}
@@ -45083,6 +45426,11 @@
     }
     const k = t.dataset.rem;
     if (!k) return;
+    if (k === 'tpFreeNp') {   // (an amount of NP, as you'd write it: 10,000,000, 10m or 500k)
+      const n = tpPriceIn(t.value);
+      if (!(n > 0)) { toast('Write it as 10,000,000, 10m or 500k'); t.value = tpFmt(Number(S.rem.tpFreeNp) || 10000000); return; }
+      S.rem.tpFreeNp = Math.min(n, tpLimCapNow()); t.value = tpFmt(S.rem.tpFreeNp); saveNow(); remSchedule(); return;
+    }
     S.rem[k] = t.type === 'checkbox' ? t.checked : /^-?\d+$/.test(t.value) ? Number(t.value) : t.value;
     saveNow();
     remSchedule();
@@ -50571,8 +50919,13 @@
     .bnp-hub .bnp-tps { display: grid; gap: 10px; margin-top: 6px; }   /* (Trading Post sales: totals, then each trade a card) */
     .bnp-hub .bnp-tps-list { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
     .bnp-hub .bnp-tps-more { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 12px; margin: 2px 0 0; color: #6b6653; font-size: 12.5px; }   /* (Show more under the list, with what's left, as Buy Mode's) */
-    .bnp-hub .bnp-tps-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 8px 12px; border: 1px solid #ece5cf; border-radius: 10px; background: #fff; box-shadow: 0 2px 0 #f1ebd9; }
-    .bnp-hub .bnp-tps-when { color: #8a8571; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }
+    .bnp-hub .bnp-tps-row { display: grid; grid-template-columns: 62px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 8px 12px; border: 1px solid #ece5cf; border-radius: 10px; background: #fff; box-shadow: 0 2px 0 #f1ebd9; }
+    .bnp-hub .bnp-tps-when { display: grid; gap: 1px; color: #8a8571; font: 11.5px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }   /* (its day, and its time under it: NST) */
+    .bnp-hub .bnp-tps-when b { color: #4a4636; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-hub .bnp-tps-when small { font: 11.5px "MuseoSansRounded500", Arial, sans-serif; font-variant-numeric: tabular-nums; }
+    .bnp-hub .bnp-switch input.bnp-remnp { order: 0; position: static; box-sizing: border-box; width: 128px; height: 28px; margin: 0; padding: 2px 8px; border: 1px solid #cfcbbd; border-radius: 7px; background: #fff; box-shadow: none; color: #363636; font: 13.78px "MuseoSansRounded500", Arial, sans-serif; font-variant-numeric: tabular-nums; text-align: right; cursor: text; appearance: auto; -webkit-appearance: auto; transition: none; }   /* (an amount of NP, in a reminder's line: a box, not dressed as the row's switch) */
+    .bnp-hub .bnp-switch input.bnp-remnp::before { content: none; }
+    .bnp-hub .bnp-switch input.bnp-remnp:focus { outline: none; border-color: #8a8571; box-shadow: 0 0 0 2px rgba(138, 133, 113, .25); }
     .bnp-hub .bnp-tps-what { min-width: 0; color: #363636; font-size: 13px; line-height: 1.4; }
     .bnp-hub .bnp-tps-what b { display: block; overflow: hidden; font: 13.25px "MuseoSansRounded700", Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
     .bnp-hub .bnp-tps-what small { display: block; color: #6b6653; font-size: 12px; }
@@ -53730,6 +54083,13 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.4.2', '2026-11-08', [
+      'Trading Post: under the NP Limit box on Your Trades, how much NP you can still take in; click it for when each sale frees up, to the minute',
+      'Trading Post: a reminder when you can take in a set amount again (in that window, or Settings › Reminders)',
+      'Trading Post: your lots whose Instant Buy is more than you have left, and when they can be bought; Create a Trade says so as you price one',
+      'Stamp Album: what your stamps are worth (itemdb’s prices), for the whole album on its front page and on each page',
+      'Sales: each Trading Post and auction sale shows its time, not only its day',
+    ]],
     ['5.4.1', '2026-11-08', [
       'Stamp Album: stamps you put in count at once, by hand (Inventory, or the SDB one or several at a time) or with NE: the total and each page, in every tab',
       'Stamp Album: Check every page reads Neopets’ Overview and reads again only the pages that changed',
@@ -54307,7 +54667,7 @@
       for (const k of ['fquest', 'fqfold']) GM_addValueChangeListener(KEY + k, (n, o, v, remote) => { if (remote) paintFq(); });   // (your faerie quest, changed in another tab)
     } catch (_) { /* */ }
   }
-  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { pageRead, kadCheckRun, tabFlash, kadSwap, kadNextLook, kadPlan, lottoDrawn: () => lottoDrawnFn && lottoDrawnFn(), wwwAsk: (u, o) => fetch(u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }), (e) => ({ err: String(e && e.message) })), fromAsk: (p, u, o) => (p === 'html' ? fromPageHtml(u).then((t) => ({ text: t.slice(0, 300) })) : fromPage(p, u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }))).catch((e) => ({ err: String(e && e.message) })), wwwShut, nmSendNow, ncValue, remSoundOnce, sa: () => sa, saKnown, saState, saMarksLoad, saMark, saMineLoad, saAlbumed, saMineNow: () => saMine, saPlace, itSsw, sswPanel, mark: (id, how) => dailyMark(id, how || { full: true }), dstate: (id) => { const d = dailyById(id); return d ? dailyState(d) : null; }, dlogNow: () => dlog(), dproof: DAILY_PROOF, remEvents: (a, b, c) => remEvents(a, b, c).map((e) => ({ key: e.key, at: e.at, kind: e.kind, title: e.title, text: e.textNow ? e.textNow() : e.text })), remSchedule, remPerOn: (id) => remPerOn(dailyById(id)), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbLivePill, pageSay, nbSay, toast, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, themeChanged, nclUnhold: () => new Promise((r) => { if (nclHoldEnd) { nclHoldEnd(); setTimeout(r, 80); } else r(); }), nclOpen, nclMin, nclTell, nclFold, nclSentList, nmSentGo, myMainColour, myColouriseShift, myColoursNow, myAll: () => S.myThemes, myTurnNow: () => myTurn, soundDraw, nclGlance, captureChrome, acctCheck, dlog, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
+  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { pageRead, kadCheckRun, tabFlash, kadSwap, kadNextLook, kadPlan, lottoDrawn: () => lottoDrawnFn && lottoDrawnFn(), wwwAsk: (u, o) => fetch(u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }), (e) => ({ err: String(e && e.message) })), fromAsk: (p, u, o) => (p === 'html' ? fromPageHtml(u).then((t) => ({ text: t.slice(0, 300) })) : fromPage(p, u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }))).catch((e) => ({ err: String(e && e.message) })), wwwShut, nmSendNow, ncValue, remSoundOnce, sa: () => sa, saKnown, saState, saMarksLoad, saMark, saMineLoad, saAlbumed, saMineNow: () => saMine, saPlace, itSsw, sswPanel, mark: (id, how) => dailyMark(id, how || { full: true }), dstate: (id) => { const d = dailyById(id); return d ? dailyState(d) : null; }, dlogNow: () => dlog(), dproof: DAILY_PROOF, remEvents: (a, b, c) => remEvents(a, b, c).map((e) => ({ key: e.key, at: e.at, kind: e.kind, title: e.title, text: e.textNow ? e.textNow() : e.text })), remSchedule, tpLimState: (t) => { const x = tpLimState(t); return x && !x.off ? { T0: x.T0, cap: x.cap, rec0: x.rec0, now: x.now, over: x.over, rows: x.rows.map((r) => ({ at: r.at, np: r.np, lump: !!r.lump, since: !!r.since, from: r.from || 0, left: x.left(r.at) })) } : x; }, tpLimWhen, tpLimOpen, remFiredNow: () => remFired(), remPerOn: (id) => remPerOn(dailyById(id)), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbLivePill, pageSay, nbSay, toast, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, themeChanged, nclUnhold: () => new Promise((r) => { if (nclHoldEnd) { nclHoldEnd(); setTimeout(r, 80); } else r(); }), nclOpen, nclMin, nclTell, nclFold, nclSentList, nmSentGo, myMainColour, myColouriseShift, myColoursNow, myAll: () => S.myThemes, myTurnNow: () => myTurn, soundDraw, nclGlance, captureChrome, acctCheck, dlog, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
   if (FRAME) { lookFrame(); return; }   // (the "Your look" window's page: Neoboard Settings alone, in the boards' look)
   // A page this makes over is never seen first as it was: the top bar is made over as soon as it's all there (Neopets puts it, the side
   // menu and their drop-downs before the page's own box, so that's before anything is drawn), and a page whose own layout changes much
