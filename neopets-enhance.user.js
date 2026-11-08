@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.4.2
+// @version      5.4.3
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -31164,14 +31164,20 @@
     .bnp-tpask-acts { position: relative; z-index: 2; display: flex; justify-content: center; gap: 16px; margin-top: -18px; }
     .bnp-tpask-acts .bnp-tpbtn { min-width: 150px; height: 36px; font-size: 17px; }
     #tp_app__2025 .bnp-tplim-host { overflow: visible !important; }
-    #tp_app__2025 .bnp-tplim-btn { position: absolute; z-index: 3; left: 50%; top: calc(100% + var(--bnp-tplim-bw, 21px) + 10px); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px; height: 30px; margin: 0; padding: 0 13px 0 4px; border: 2px solid #000; border-radius: 999px; background: #fff; color: #432005; font: 13px/1 "MuseoSansRounded700", "Museo Sans Rounded Bold", Arial, sans-serif; white-space: nowrap; box-shadow: 0 2px 0 rgba(0, 0, 0, .35); cursor: pointer; }   /* (under Neopets' NP Limit box, hanging from it: what's left) */
-    #tp_app__2025 .bnp-tplim-btn:hover, #tp_app__2025 .bnp-tplim-btn:focus-visible { background: #fff6df; outline: none; }
-    #tp_app__2025 .bnp-tplim-btn img { flex: none; width: 24px; height: 24px; }
-    #tp_app__2025 .bnp-tplim-btn b { color: #2a2a2a; font-weight: normal; font-variant-numeric: tabular-nums; }
-    #tp_app__2025 .bnp-tplim-btn.is-full b { color: #a20202; }
-    #tp_app__2025 .bnp-tplim-btn small { color: #6f5a3a; font: 12px "MuseoSansRounded500", "Museo Sans Rounded", Arial, sans-serif; }
-    #tp_app__2025 .bnp-tplim-row { padding-bottom: 30px; }   /* (room for it under the row, above the lots) */
-    @media (max-width: 1279.98px) { #tp_app__2025 .bnp-tplim-row { padding-bottom: 0; } #tp_app__2025 .bnp-tplim-host { margin-bottom: 34px; } }   /* (one above another: room under the box itself) */
+    #tp_app__2025 .bnp-tplim-btn { position: absolute; z-index: 3; left: 50%; top: calc(100% + var(--bnp-tplim-bw, 21px) + 12px); transform: translateX(-50%); display: flex; align-items: center; box-sizing: border-box; width: max-content; max-width: none; height: 44px; margin: 0; padding: 0; border: 0; background: none; color: #432005; font: 13.5px/1.1 "MuseoSansRounded700", "Museo Sans Rounded Bold", Arial, sans-serif; text-align: left; white-space: nowrap; cursor: pointer; }   /* (Neopets' NP Limit box's own: a coin with the bag, what's left coming out of it on a ribbon; as wide as its words, whatever it hangs from) */
+    #tp_app__2025 .bnp-tplim-btn.is-side { left: calc(100% + var(--bnp-tplim-bw, 21px) + 12px); top: 50%; transform: translateY(-50%); }   /* (on the box's right, in the row's room) */
+    #tp_app__2025 .bnp-tplim-coin { position: relative; z-index: 1; flex: none; box-sizing: border-box; width: 44px; height: 44px; border: 2px solid #3b2a12; border-radius: 50%; background: url("https://images.neopets.com/tradingpost/assets/images/neopoint-bag-icon.png") 50% 55% / 32px 32px no-repeat, radial-gradient(circle at 50% 36%, #fffdf2 0 42%, #fbe6a8 74%, #eac46a); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .8), 0 2px 0 rgba(0, 0, 0, .35); }   /* (the bag at its own shape: a background of a set size, never squeezed) */
+    #tp_app__2025 .bnp-tplim-tab { display: flex; flex-direction: column; justify-content: center; gap: 1px; box-sizing: border-box; height: 36px; margin-left: -14px; padding: 0 14px 0 21px; border: 2px solid #3b2a12; border-left: 0; border-radius: 0 999px 999px 0; background: linear-gradient(#fffefa, #f4e8cb); box-shadow: inset 0 1px 0 #fff, 0 2px 0 rgba(0, 0, 0, .35); }
+    #tp_app__2025 .bnp-tplim-tab b { color: #2a2a2a; font: 13.5px/1 "MuseoSansRounded700", "Museo Sans Rounded Bold", Arial, sans-serif; font-variant-numeric: tabular-nums; }
+    #tp_app__2025 .bnp-tplim-tab small { color: #7a6340; font: 10.5px/1 "MuseoSansRounded500", "Museo Sans Rounded", Arial, sans-serif; }
+    #tp_app__2025 .bnp-tplim-btn.is-full .bnp-tplim-tab b { color: #a20202; }
+    #tp_app__2025 .bnp-tplim-btn:hover .bnp-tplim-tab, #tp_app__2025 .bnp-tplim-btn:focus-visible .bnp-tplim-tab { background: linear-gradient(#fff, #fbefcc); box-shadow: inset 0 1px 0 #fff, 0 3px 0 rgba(0, 0, 0, .35); }
+    #tp_app__2025 .bnp-tplim-btn:hover .bnp-tplim-coin, #tp_app__2025 .bnp-tplim-btn:focus-visible .bnp-tplim-coin { filter: brightness(1.05); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .8), 0 3px 0 rgba(0, 0, 0, .35); }
+    #tp_app__2025 .bnp-tplim-btn:focus-visible { outline: none; }
+    #tp_app__2025 .bnp-tplim-btn:focus-visible .bnp-tplim-tab { outline: 2px solid #432005; outline-offset: 2px; }
+    #tp_app__2025 .bnp-tplim-under { padding-bottom: 52px; }   /* (its row on one line, but no room beside the box: under it, and room under the row) */
+    #tp_app__2025 .bnp-tplim-undercol { margin-bottom: 56px; }   /* (the row one above another: room under the box itself) */
+    #tp_app__2025 .bnp-tpcx { position: absolute; z-index: 3; right: calc(100% + var(--bnp-tplim-bw, 21px) + 12px); top: 50%; transform: translateY(-50%); width: max-content; }   /* (Cancel several lots, on the box's left while it isn't in use) */
     .bnp-tplimib { display: flex; align-items: center; gap: 12px; max-width: 680px; margin: 10px auto 0; padding: 9px 14px; border: 1px solid #e6c69a; border-radius: 12px; background: #fff6e6; color: #6a2a0a; font: 13px/1.4 "MuseoSansRounded500", Arial, sans-serif; text-align: left; }   /* (an Instant Buy more than your NP Limit has left) */
     .bnp-tplimib b { font-family: "MuseoSansRounded700", Arial, sans-serif; font-weight: normal; }
     .bnp-tplimib img { flex: none; width: 34px; height: 34px; }
@@ -31464,11 +31470,11 @@
     // (browsing: the cheapest lot of each item is marked on its own card. Each is kept for Create a Trade, quietly)
     if (type === 'view' && tpF('tpCancel') && mine.length > 1) {
       for (const id of [...tpPicked]) if (!mine.some((c) => c.id === id)) tpPicked.delete(id);
-      const n = tpPicked.size;
-      if (parts.length) parts.push('<span class="bnp-tpbar-sp"></span>');
-      parts.push(tpPickOn ? `<span><b>${n}</b> chosen</span><button type="button" class="bnp-tpbtn is-small" data-tp="pickall">${n === mine.length ? 'Choose none' : 'Choose all'}</button><button type="button" class="bnp-tpbtn is-small is-stop" data-tp="cancel"${n ? '' : ' disabled'}>Cancel ${n || ''} ${n === 1 ? 'lot' : 'lots'}${n ? ` · ${tpFmt(n * TP_FEE)} NP` : ''}</button><button type="button" class="bnp-tpbtn is-small" data-tp="pickoff">Done</button>`
+      const n = tpPicked.size, side = tpCancelSide(app, !tpPickOn);   // (not in use: on the box's left, if there's room; in use: its controls here, as ever)
+      if (parts.length && !side) parts.push('<span class="bnp-tpbar-sp"></span>');
+      if (!side) parts.push(tpPickOn ? `<span><b>${n}</b> chosen</span><button type="button" class="bnp-tpbtn is-small" data-tp="pickall">${n === mine.length ? 'Choose none' : 'Choose all'}</button><button type="button" class="bnp-tpbtn is-small is-stop" data-tp="cancel"${n ? '' : ' disabled'}>Cancel ${n || ''} ${n === 1 ? 'lot' : 'lots'}${n ? ` · ${tpFmt(n * TP_FEE)} NP` : ''}</button><button type="button" class="bnp-tpbtn is-small" data-tp="pickoff">Done</button>`
         : '<button type="button" class="bnp-tpbtn is-small" data-tp="pick" title="Tick the lots to cancel, then cancel them together">Cancel several lots</button>');
-    }
+    } else tpCancelSide(app, false);
     if (!grid || !parts.length) { if (bar) bar.remove(); return; }
     if (!bar) { bar = document.createElement('div'); bar.className = 'bnp-tpbar'; bar.setAttribute('data-bnp', 'tpbar'); }
     if (bar.nextElementSibling !== grid) grid.before(bar);
@@ -32306,22 +32312,50 @@
     for (const c of P.el.querySelectorAll('[data-tpl-cd]')) { const v = tpLimCd(Number(c.dataset.tplCd) - now); if (c.textContent !== v) c.textContent = v; }
   }
   document.addEventListener('click', (e) => { const b = e.target instanceof Element ? e.target.closest('[data-tplopen]') : null; if (b) { e.preventDefault(); tpLimOpen(b); } });   // (Settings' and Reminders' way in)
+  function tpLimFrame(app) { return [...app.querySelectorAll('.tp-purple-bg-frame')].find((f) => [...f.children].some((x) => x.tagName === 'P' && /^\s*(?:NP Limit:|Your Active Lots)/i.test(x.textContent))) || null; }   // (Your Trades' box: its lots and its NP Limit)
+  function tpLimBw(frame) { const bw = parseFloat(getComputedStyle(frame).borderBottomWidth) || 21; if (frame.bnpBw !== bw) { frame.bnpBw = bw; frame.style.setProperty('--bnp-tplim-bw', `${bw}px`); } frame.classList.add('bnp-tplim-host'); }
+  function tpSideRoom(frame) {   // (the room beside Neopets' box, from its bamboo to its neighbours: only while its row is on one line)
+    const row = frame.parentElement, out = { left: 0, right: 0, row: false };
+    if (!row || getComputedStyle(row).flexDirection !== 'row') return out;
+    const shown = (el) => !!el && el.getBoundingClientRect().width > 0;
+    let p = frame.previousElementSibling, n = frame.nextElementSibling;
+    while (p && !shown(p)) p = p.previousElementSibling;
+    while (n && !shown(n)) n = n.nextElementSibling;
+    const f = frame.getBoundingClientRect(), r = row.getBoundingClientRect(), edge = 0.3 * (frame.bnpBw || 21);   // (the bamboo reaches out past the box by .3 of its border)
+    out.row = true;
+    out.left = f.left - edge - (p ? p.getBoundingClientRect().right : r.left);
+    out.right = (n ? n.getBoundingClientRect().left : r.right) - f.right - edge;
+    return out;
+  }
+  const tpSideFits = (frame, room, w) => room >= w + 12 - 0.3 * (frame.bnpBw || 21) + 10;   // (its own width, its gap from the bamboo, and 10 px clear of the neighbour)
+  function tpCancelSide(app, want) {   // (Cancel several lots on the box's left while it isn't in use, when the row has room: true if it's there, so the bar leaves it out)
+    const frame = want ? tpLimFrame(app) : null;
+    let b = app.querySelector('[data-bnp="tpcx"]');
+    if (!frame) { if (b) b.remove(); return false; }
+    if (!b) { b = document.createElement('button'); b.type = 'button'; b.className = 'bnp-tpbtn is-small bnp-tpcx'; b.setAttribute('data-bnp', 'tpcx'); b.setAttribute('data-tp', 'pick'); b.title = 'Tick the lots to cancel, then cancel them together'; b.textContent = 'Cancel several lots'; }
+    if (b.parentElement !== frame) frame.append(b);
+    tpLimBw(frame);
+    if (tpSideFits(frame, tpSideRoom(frame).left, b.offsetWidth)) return true;
+    b.remove();
+    return false;
+  }
   let tpLimT = 0;
-  function tpLimBtn(app, type) {   // (Your Trades: under Neopets' own NP Limit box, what's left, its window a click away)
+  function tpLimBtn(app, type) {   // (Your Trades: by Neopets' own NP Limit box (on its right when the row has room, else under it), what's left: its window a click away)
     let b = app.querySelector('[data-bnp="tplim"]');
-    const p = type === 'view' && tpF('tpLimit') ? [...app.querySelectorAll('.tp-purple-bg-frame > p')].find((x) => /^\s*NP Limit:/i.test(x.textContent)) : null, frame = p && p.parentElement;
-    if (!frame) { if (b) b.remove(); for (const x of app.querySelectorAll('.bnp-tplim-host, .bnp-tplim-row')) x.classList.remove('bnp-tplim-host', 'bnp-tplim-row'); clearTimeout(tpLimT); return; }
+    const frame = type === 'view' && tpF('tpLimit') ? tpLimFrame(app) : null, p = frame ? [...frame.children].find((x) => x.tagName === 'P' && /^\s*NP Limit:/i.test(x.textContent)) : null;
+    if (!p) { if (b) b.remove(); for (const x of app.querySelectorAll('.bnp-tplim-under, .bnp-tplim-undercol')) x.classList.remove('bnp-tplim-under', 'bnp-tplim-undercol'); clearTimeout(tpLimT); return; }
     if (!b) { b = document.createElement('button'); b.type = 'button'; b.className = 'bnp-tplim-btn'; b.setAttribute('data-bnp', 'tplim'); b.setAttribute('data-tp', 'lim'); b.title = 'How much you can still take in, when each sale frees up again, and a reminder when there’s room'; }
     if (b.parentElement !== frame) frame.append(b);
-    frame.classList.add('bnp-tplim-host');
-    if (frame.parentElement) frame.parentElement.classList.add('bnp-tplim-row');
-    const bw = parseFloat(getComputedStyle(frame).borderBottomWidth) || 21;
-    if (frame.bnpBw !== bw) { frame.bnpBw = bw; frame.style.setProperty('--bnp-tplim-bw', `${bw}px`); }
+    tpLimBw(frame);
     const now = Date.now(), st = tpLimState(now), m = /NP Limit:\s*([\d,]+)\s*\/\s*([\d,]+)/i.exec(p.textContent), next = st && !st.off ? st.rows.find((r) => r.at > now) : null;
     const left = st && !st.off ? st.now : m ? Math.max(0, tpNum(m[2]) - tpNum(m[1])) : null;   // (Neopets' own line, till its count's been heard)
-    const html = `<img src="${TP_BAG}" alt="" width="24" height="24"><span>${left == null ? 'When it frees up' : `<b>${tpFmt(left)} NP</b> left`}</span>${left === 0 && next ? `<small>· more at ${tpClock(next.at)}</small>` : ''}`;
-    if (b.bnpHtml !== html) { b.bnpHtml = html; b.innerHTML = html; }
+    const html = `<span class="bnp-tplim-coin" aria-hidden="true"></span><span class="bnp-tplim-tab">${left == null ? '<b>NP Limit</b><small>when it frees up</small>' : `<b>${tpFmt(left)} NP</b><small>${left === 0 && next ? `more at ${tpClock(next.at)}` : 'left to take in'}</small>`}</span>`;
+    if (b.bnpHtml !== html) { b.bnpHtml = html; b.innerHTML = html; b.setAttribute('aria-label', left == null ? 'NP Limit: when it frees up' : `${tpFmt(left)} NP left to take in. When it frees up`); }
     b.classList.toggle('is-full', left === 0);
+    const room = tpSideRoom(frame), side = room.row && tpSideFits(frame, room.right, b.offsetWidth);
+    b.classList.toggle('is-side', side);
+    frame.parentElement.classList.toggle('bnp-tplim-under', room.row && !side);
+    frame.classList.toggle('bnp-tplim-undercol', !room.row);
     clearTimeout(tpLimT);
     tpLimT = setTimeout(tpLimRepaint, Math.max(1000, Math.min(next ? next.at - now + 300 : 60000, 60000)));   // (drawn again as the next one frees up, on time; never later than a minute)
   }
@@ -32393,11 +32427,11 @@
     .bnp-tpl-in .bnp-tpl-d { margin-top: 1px; font-size: 12.5px; }
     .bnp-tpl-body { padding: 10px 14px 14px; }
     .bnp-tpl-list, .bnp-tpl-lots { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
-    .bnp-tpl-row { display: grid; grid-template-columns: 70px 76px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 8px 12px; border: 1px solid #ece3cc; border-radius: 10px; background: #fffdf7; }
+    .bnp-tpl-row { display: grid; grid-template-columns: 72px 92px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 8px 12px; border: 1px solid #ece3cc; border-radius: 10px; background: #fffdf7; }
     .bnp-tpl-row.is-next { border-color: #87cb62; background: #f1f9ec; box-shadow: 0 0 0 1px #87cb62; }
     .bnp-tpl-when { display: grid; color: #8a7a5a; font-size: 11.5px; white-space: nowrap; }
     .bnp-tpl-when b { color: #432005; font: 14.5px ${M7}; font-weight: normal; font-variant-numeric: tabular-nums; }
-    .bnp-tpl-cd { justify-self: start; min-width: 44px; padding: 4px 9px 3px; border-radius: 999px; background: #6466b8; color: #fff; font: 13px/1 ${CF}; letter-spacing: .3px; text-align: center; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .bnp-tpl-cd { justify-self: start; min-width: 62px; padding: 6px 12px 5px; border-radius: 999px; background: #6466b8; color: #fff; font: 17px/1 ${CF}; letter-spacing: .3px; text-align: center; white-space: nowrap; font-variant-numeric: tabular-nums; }
     .bnp-tpl-row.is-next .bnp-tpl-cd { background: #2b8a27; }
     .bnp-tpl-what { min-width: 0; }
     .bnp-tpl-what b { display: block; overflow: hidden; color: #2a2a2a; font: 13.5px ${M7}; font-weight: normal; text-overflow: ellipsis; white-space: nowrap; }
@@ -53366,6 +53400,7 @@
     .bnp-ncl-row2 [data-ncl-ta]:focus { box-shadow: 0 2px 0 var(--nct-taEdge, var(--nb-frame)), 0 0 0 4px var(--nct-taFocus, var(--nb-tint2)); }
     .bnp-ncl-row2 [data-ncl-ta]:empty::before { content: attr(data-placeholder); color: var(--nct-taHint, #9a9584); pointer-events: none; }
     .bnp-ncl-row2 [data-ncl-ta] img.bnp-ncl-sm { vertical-align: -3px; }
+    img.bnp-ncl-sm { display: inline !important; max-width: none !important; }   /* (a smilie in its line of words on every page, even one whose own styles make each picture a block (the Trading Post's Tailwind): never a line of its own) */
     .bnp-ncl .bnp-ncl-row2 > .bnp-ncl-sendcol { align-self: stretch; }   /* (as tall as the writing box, Send at its foot) */
     .bnp-ncl .bnp-ncl-tools { display: flex; flex: 1 1 auto; align-self: stretch; align-items: center; justify-content: space-between; gap: 8px; padding-top: 7px; }   /* (the smilie and ⚡ over Send, at its two edges, in the middle of the room above it) */
     .bnp-ncl .bnp-ncl-tools .bnp-ncl-snipbtn { align-self: auto; }
@@ -54083,6 +54118,12 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.4.3', '2026-11-08', [
+      'Trading Post: the NP Limit button is a coin with the NP bag and what’s left beside it, on the right of the box, never running past its words',
+      'Trading Post: Cancel several lots sits on the box’s left (its choices still show in the bar while you pick lots); both go back under on a narrow window',
+      'Trading Post: bigger countdowns in the NP Limit window',
+      'NeoChat: a smilie no longer pushes your words onto the next line (on the Trading Post and other pages in Neopets’ newer look)',
+    ]],
     ['5.4.2', '2026-11-08', [
       'Trading Post: under the NP Limit box on Your Trades, how much NP you can still take in; click it for when each sale frees up, to the minute',
       'Trading Post: a reminder when you can take in a set amount again (in that window, or Settings › Reminders)',

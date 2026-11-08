@@ -1,11 +1,10 @@
 {
- "version": "5.4.2",
+ "version": "5.4.3",
  "date": "2026-11-08",
  "notes": [
-  "Trading Post: NP left under the NP Limit box, and when each sale frees up",
-  "Trading Post: a reminder when there’s room again",
-  "Trading Post: lots too dear for their Instant Buy, said as you price one",
-  "Stamp Album: what your stamps are worth",
-  "Sales: each sale’s time"
+  "Trading Post: the NP Limit button redone, on the box’s right",
+  "Trading Post: Cancel several lots on the box’s left",
+  "NP Limit window: bigger countdowns",
+  "NeoChat: smilies stay in your line"
  ]
 }
