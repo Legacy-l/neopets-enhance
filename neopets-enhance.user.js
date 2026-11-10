@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.4.3
+// @version      5.4.4
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -1965,10 +1965,10 @@
   // Settings (and 2.1's, carried over the first time)
   // ═══════════════════════════════════════════════════════════════════════════
   const FEAT = {
-    profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, tillLog: true, tpSales: true, auSales: true,
+    profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, sideAv: true, sideAvSw: true, tillLog: true, tpSales: true, auSales: true,
     scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: true, oldBtns: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldGalleries: false, oldShops: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
-    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, kpopPlay: true, kadHelp: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trBg: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, bargains: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, dailyFill: true, soupLog: true, fcHelp: true, fcHist: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
+    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, kpopPlay: true, kadHelp: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trBg: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, bargains: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, bankBig: true, dailyFill: true, soupLog: true, fcHelp: true, fcHist: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, tone: '', vol: 100, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,   // (tone: '' each its own, or one of the sounds for all; vol: how loud, 5 to 100)
@@ -16842,7 +16842,7 @@
     const d = nbJson(nbPenKey('0'), null);
     if (!nclMe() || nclMyAvFresh.busy || (d && Date.now() - (d.at || 0) < 6 * 3600e3 && (d.at || 0) > Number(nbJson(nbPenTouchKey(), 0) || 0))) return;   // (six hours, or till you've been to Neoboard Settings since)
     nclMyAvFresh.busy = true;
-    const go = () => nbPenLoad('0', true).then(() => { if (ncl) nclChatPaint(); });
+    const go = () => nbPenLoad('0', true).then(() => { if (ncl) nclChatPaint(); try { sideAvPaint(); } catch (e) { report(e); } });   // (NeoChat's, and the side menu's)
     (navigator.locks && navigator.locks.request ? navigator.locks.request('bnp-ncl-av', { ifAvailable: true }, (lock) => (lock ? go() : null)) : go()).catch(() => { /* (another time) */ }).finally(() => { nclMyAvFresh.busy = false; });   // (one tab reads it; the others leave it to that one)
   }
   function nclNst(text) {   // ("22/10/2026 01:38pm", Neopian time → its moment)
@@ -22564,6 +22564,68 @@
     try { localStorage.setItem(SA_LEARN, JSON.stringify(all)); } catch (_) { /* */ }
     saKnownMemo = null;
   }
+  // A new stamp NE has no place for (user, 2026-11-10: "these arent being properly updated to show the album they are from, itemdb
+  // definitely shows it now"): asked of itemdb as its own item page knows it. The item's official lists (/items/<its number>/lists?
+  // official=true); among them its album page's (tagged Stamps, linking stamps.phtml?type=album&page_id=N); its place there, that list's
+  // order, 1 to 25 (checked 2026-11-10: every place NE knew on pages 40 and 49 was itemdb's order less one). Learnt as an album page
+  // teaches it, but only into a place no stamp is known in, and never a stamp NE already places. One stamp at a time, a moment apart, at
+  // most 12 a go; one itemdb doesn't place yet is asked again after 6 hours (a minute, by Check now)
+  const SA_IDB = 'saidb';
+  let saIdbBusy = false;
+  const saIdbAt = (n) => { const k = (get(SA_IDB, null) || {})[String(n || '').toLowerCase()]; return k && k.p > 0 ? [k.p, k.i] : null; };   // (where itemdb put it, when its place couldn't be learnt: another stamp is known there)
+  const saIdbGet = (u) => new Promise((ok) => {   // (its answer; null: itemdb wants a visit or a pause (nothing more asked); undefined: no answer this time)
+    try {
+      GM_xmlhttpRequest({ method: 'GET', url: `https://itemdb.com.br${u}`, headers: { Accept: 'application/json' }, timeout: 15000,
+        onload: (r) => {
+          if (r.status === 401 || r.status === 429) { try { localStorage.setItem(IT_401, `${Date.now()}|${r.status}`); } catch (_) { /* */ } ok(null); return; }
+          if (r.status !== 200) { ok(undefined); return; }
+          try { ok(JSON.parse(r.responseText)); } catch (_) { ok(undefined); }
+        }, onerror: () => ok(undefined), ontimeout: () => ok(undefined) });
+    } catch (_) { ok(undefined); }
+  });
+  function saLearnOne(pid, i, x) {
+    const K = saKnown(), f = saFile(x.img);
+    if (!f || !(pid > 0) || !(i >= 0 && i < 25) || (K.pages[pid] && K.pages[pid][i]) || saPlace(x.n, x.img)) return false;
+    const all = saJson(SA_LEARN, {});
+    all[pid] = { ...(all[pid] || {}), [i]: [f, x.n] };
+    try { localStorage.setItem(SA_LEARN, JSON.stringify(all)); } catch (_) { return false; }
+    saKnownMemo = null;
+    return true;
+  }
+  async function saIdbPlaces(force) {
+    const v = nwKept('stamp');
+    if (saIdbBusy || !v || itBlocked()) return;
+    const kept = get(SA_IDB, null) || {}, now = Date.now();
+    const todo = v.list.filter((x) => { if (!x || !x.n || saPlace(x.n, x.img)) return false; const k = kept[x.n.toLowerCase()]; return !k || (!(k.p > 0) && now - (k.at || 0) > (force ? 60e3 : k.fail ? 30 * 60e3 : 6 * 3600e3)); }).slice(0, 12);   // (one with no answer last time (fail): half an hour)
+    if (!todo.length) return;
+    saIdbBusy = true;
+    let learnt = 0;
+    const mark = (x, o) => { const k = get(SA_IDB, null) || {}; k[x.n.toLowerCase()] = { at: Date.now(), ...o }; set(SA_IDB, k); };
+    try {
+      for (const [n, x] of todo.entries()) {
+        if (n) await saSleep(700 + Math.random() * 900);
+        if (itBlocked()) break;
+        let iid = Number(x.iid) || 0;
+        if (!iid && x.slug) { const it = await saIdbGet(`/api/v1/items/${encodeURIComponent(x.slug)}`); if (it === null) break; iid = Number(it && it.internal_id) || 0; await saSleep(400 + Math.random() * 400); }   // (one kept before NE asked for its number)
+        if (!iid) { mark(x, { fail: 1 }); continue; }
+        const lists = await saIdbGet(`/api/v1/items/${iid}/lists?official=true`);
+        if (lists === null) break;
+        if (!Array.isArray(lists)) { mark(x, { fail: 1 }); continue; }
+        const alb = lists.map((l) => ({ l, p: Number((/stamps\.phtml\?type=album&(?:amp;)?page_id=(\d+)/.exec(String((l && l.description) || '')) || [])[1]) || 0 }))
+          .find((o) => o.p > 0 && o.p <= 200 && (!o.l.officialTag || [].concat(o.l.officialTag).includes('Stamps')));
+        if (!alb) { mark(x, { none: 1 }); continue; }
+        await saSleep(400 + Math.random() * 500);
+        const items = await saIdbGet(`/api/v1/lists/official/${Number(alb.l.internal_id)}/items`);
+        if (items === null) break;
+        if (!Array.isArray(items)) { mark(x, { fail: 1 }); continue; }
+        const me = items.find((it) => Number(it && it.item_iid) === iid), ord = Number(me && me.order);
+        if (!(ord >= 1 && ord <= 25)) { mark(x, { none: 1 }); continue; }
+        if (saLearnOne(alb.p, ord - 1, x)) learnt++;
+        mark(x, { p: alb.p, i: ord - 1 });
+      }
+    } catch (e) { report(e); } finally { saIdbBusy = false; }
+    if (learnt || todo.some((x) => saIdbAt(x.n))) saPaint(true);
+  }
   const saPagesN = () => Math.max(SA_NAMES.length - 1, saKnown().pages.length - 1, ...Object.keys(saJson(SA_NAMES_KEY, {})).map(Number).filter((n) => n > 0 && n <= 200));
   const saPageName = (p) => saJson(SA_NAMES_KEY, {})[p] || SA_NAMES[p] || `Page ${p}`;
   function saKeepNames(names) {   // (the album's pages as its own links name them: a page Neopets adds or renames shows at once)
@@ -23041,7 +23103,7 @@
       saCountsFetch().then(() => saPaint()).catch((e) => { sa.note = e.message; saPaint(); });
     }
     if (kind === 'hub' || kind === 'theirs') saBoard().then(() => saPaint(true)).catch(() => {});
-    if (kind === 'hub' && mine) nwFetch('stamp', false, (ok) => { if (ok) saPaint(true); });   // (what's newest for the album, every 6 hours at most)
+    if (kind === 'hub' && mine) nwFetch('stamp', false, (ok) => { if (ok) saPaint(true); saIdbPlaces(false); });   // (what's newest for the album, every 6 hours at most; then where itemdb puts the ones NE can't place)
     if (kind === 'scores') {   // (the table as it is now: kept for the front pages, and what each trophy takes; your count, if it's old, read again)
       saTopKeep(sc);
       sa.board = saBoardOf(sc);
@@ -23281,7 +23343,7 @@
       ${c.visit || worth.visit ? `<p class="bnp-sa-note">${saVisitLine(c.visit ? c : worth).replace(/^<p[^>]*>|<\/p>$/g, '')}</p>` : ''}
       <div class="bnp-sa-tabs" role="tablist">${tabs.map(([k, l, n]) => `<button type="button" role="tab" data-sa-tab="${k}" aria-selected="${sa.tab === k}">${l}<b>${n.toLocaleString()}</b></button>`).join('')}</div>
       ${body}
-      <p class="bnp-sa-foot">Which stamp goes where: SunnyNeo’s list and the high score leaders’ albums, as of ${SA_AT}, and every album page you look at since. Prices are itemdb’s, approximate.
+      <p class="bnp-sa-foot">Which stamp goes where: SunnyNeo’s list and the high score leaders’ albums, as of ${SA_AT}, every album page you look at since, and itemdb’s album lists for new stamps. Prices are itemdb’s, approximate.
         <button type="button" class="bnp-sa-btn is-small" data-sa-neo aria-expanded="${document.documentElement.classList.contains('bnp-sa-showneo')}">${document.documentElement.classList.contains('bnp-sa-showneo') ? 'Hide Neopets’ own page' : 'Neopets’ own page'}</button></p>`;
   }
   function saNewOrder(list) {   // (newest out first: by the day itemdb first saw each; one it hasn't dated yet just before the dated one after it, as itemdb lists them)
@@ -23292,7 +23354,7 @@
   function saNewHtml() {   // (the newest things for the album, from itemdb (cat:Stamp), newest out first: two full rows of them at any width (saNewFit), each with the page it goes on when that's known, and whether it's in yours (the user, 2026-11-08))
     const v = nwKept('stamp'), list = v ? saNewOrder(v.list) : [], busy = !!nwBusy.stamp;
     const tile = (x) => {
-      const at = saPlace(x.n, x.img), st = at ? saState(at[0]) : null, have = !!(st && st.have && st.have.has(at[1]));
+      const at = saPlace(x.n, x.img) || saIdbAt(x.n), st = at ? saState(at[0]) : null, have = !!(st && st.have && st.have.has(at[1]));
       return `<div class="bnp-sa-newit${have ? ' is-have' : ''}"><img src="${esc(x.img)}" alt="" width="80" height="80" loading="lazy"><b title="${esc(x.n)}">${esc(x.n)}</b><small>${x.at ? `Out ${esc(saWhen(x.at).replace(/ at .*/, ''))}` : 'Just out'}${x.p ? ` · ${saNp(x.p)} NP` : ''}</small>${at ? `<a class="bnp-sa-btn is-small" href="/stamps.phtml?type=album&amp;page_id=${at[0]}"${have ? ' title="In your album"' : ''}>${have ? `<i class="bnp-sa-havedot" aria-hidden="true">${SA_IC.check}</i>` : ''}Page ${at[0]}</a>` : '<small class="bnp-sa-newq">Its page isn’t known yet</small>'}</div>`;
     };
     const when = busy ? 'Asking itemdb…' : v && v.at ? `Checked ${esc(colAgo(v.at))}` : 'Not checked yet';
@@ -23571,7 +23633,7 @@
       const b = t.closest('button');
       if (!b || !root.contains(b)) return;
       const d = b.dataset;
-      if ('saNewcheck' in d) { nwFetch('stamp', true, () => saPaint(true)); saPaint(true); return; }
+      if ('saNewcheck' in d) { nwFetch('stamp', true, () => { saPaint(true); saIdbPlaces(true); }); saPaint(true); return; }
       if ('saNewfold' in d) { const sec = b.closest('.bnp-sa-new'), fold = !sec.classList.contains('is-folded'); sec.classList.toggle('is-folded', fold); b.setAttribute('aria-expanded', String(!fold)); try { localStorage.setItem('bnp-sa-newfold', fold ? '1' : '0'); } catch (_) { /* */ } return; }   // (New for your album: folded or open, as you left it)
       if ('saPick' in d) {
         sa.pick = !sa.pick;
@@ -39864,6 +39926,7 @@
         link.after(sw);
       }
     } else if (sw) sw.remove();
+    try { sideAvPut(side); } catch (e) { report(e); }   // (your avatar above "Welcome, …", Switch Avatar beside it)
     // Nav Settings: in the side menu's own Settings section
     const sec = side.querySelector('#profileSettings');
     if (sec && !sec.querySelector('[data-bnp="hubside"]')) {
@@ -39993,6 +40056,8 @@
     const bit = (k, title, small) => `<label class="bnp-switch"><input type="checkbox" data-smbit="${k}"${bits[k] !== false ? ' checked' : ''}><span>${title}<small>${small}</small></span></label>`;
     const topCard = `<div class="bnp-card"><h4>At its top</h4>
       ${bit('petbox', 'Your active pet’s picture', 'The big picture at the top (its own arrow makes it smaller).')}
+      <label class="bnp-switch"><input type="checkbox" data-feat="sideAv"${f.sideAv !== false ? ' checked' : ''}><span>Your avatar, above your name<small>The avatar on your Neoboard posts (your Default pen’s, if you have pens), at its own size.</small></span></label>
+      <label class="bnp-switch"><input type="checkbox" data-feat="sideAvSw"${f.sideAvSw !== false ? ' checked' : ''}><span>Switch Avatar beside it<small>⇆ by your avatar (or the avatar itself): all of yours as tiles, your favourites and the ones worn lately first, one click to wear one.</small></span></label>
       ${bit('welcome', 'Welcome, with your name', 'Your name links to your lookup.')}
       ${bit('active', 'Active Pet', 'Your active pet’s name, linked to its lookup.')}
       <label class="bnp-switch"><input type="checkbox" data-feat="pets"${f.pets ? ' checked' : ''}><span>Switch Pet beside it<small>⇆ by your active pet: every pet as a tile, one click to make it active.</small></span></label>
@@ -40147,6 +40212,7 @@
   const cap = (s) => String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1);
   let petsPanel = null, petsAnchor = null, petsLoading = false;
   function togglePets(anchor) {
+    try { closeAvs(); } catch (_) { /* */ }   // (one switcher at a time)
     if (petsPanel && petsPanel.classList.contains('open') && petsAnchor === anchor) { closePets(); return; }
     petsAnchor = anchor;
     if (!petsPanel) {
@@ -40254,6 +40320,317 @@
       if (tile) tile.classList.remove('is-busy');
       paintPets('Couldn’t switch just now: try again in a moment.');
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Your avatar in the side menu, above "Welcome, …" (Settings › Left Sidebar), and Switch Avatar beside it: every avatar of yours as a
+  // tile, one click to wear it. Worn as Neoboard Settings itself wears it: its page's own form, read as the page reads it when it opens,
+  // sent from that page with only the avatar changed, as when you pick one there and press Save (your Default pen's avatar)
+  // ═══════════════════════════════════════════════════════════════════════════
+  const AV_SWAP_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 3 2 6.5 5.5 10V7.5H13V5.5H5.5V3zm9 7v2.5H7v2h7.5V17L18 13.5 14.5 10z" fill="currentColor"/></svg>';
+  const AV_ON_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.2 10.6l3.9 3.9 7.7-8.6" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  let avNameMap = null;   // (an avatar's name by its picture, as Neoboard Settings names it: made once a page, and again when your avatars are read again)
+  const avTitle = (f) => cap(avKey(f).replace(/[_-]+/g, ' '));   // (a name from its picture, when no list has one)
+  function avNameOf(f) {
+    if (!f) return '';
+    if (!avNameMap) {
+      avNameMap = new Map();
+      const o = avOwn();
+      if (o) for (const x of [...(o.dlx || []), ...o.list]) if (x && x[0] && x[2]) avNameMap.set(avKey(x[0]), x[2]);
+    }
+    return avNameMap.get(avKey(f)) || '';
+  }
+  function sideAvNow() {   // (the avatar you wear: the newer of your Default pen's, as Neoboard Settings last said, and the one last seen on a post of yours; this account's only)
+    const me = nbMe();
+    if (!me) return '';
+    const d = nbJson(nbPenKey('0'), null), c = get('avcur', null);
+    const pen = d && d.av ? { f: avFile(d.av), at: d.at || 0 } : null;
+    const seen = c && c.f && (!c.u || c.u === me) ? { f: c.f, at: c.at || 0 } : null;
+    const best = [pen, seen].filter((x) => x && x.f).sort((a, b) => b.at - a.at)[0];
+    return best ? best.f : '';
+  }
+  function sideAvPut(side) {   // (in its place above "Welcome, …", or gone, as Settings › Left Sidebar has it)
+    const welcome = side.querySelector(':scope > .nav-profile-dropdown-text');
+    let box = side.querySelector('[data-bnp="sideav"]');
+    if (S.features.sideAv === false || !welcome || !nbMe()) { if (box) { box.remove(); closeAvs(); } side.classList.remove('bnp-sav-beside'); return; }
+    if (!box) {
+      box = document.createElement('div');
+      box.setAttribute('data-bnp', 'sideav');
+      box.className = 'bnp-sideav';
+      box.innerHTML = `<span class="bnp-sideav-pic" data-g="sideavpic"><img alt="" width="50" height="50" decoding="async"></span><span class="bnp-swap bnp-sideav-sw" data-bnp="avswap" role="button" tabindex="0" title="Switch your avatar" aria-label="Switch your avatar">${AV_SWAP_SVG}</span>`;
+      const open = (e) => { e.preventDefault(); e.stopPropagation(); toggleAvs(box.querySelector('[data-bnp="avswap"]')); };   // (from the avatar or its ⇆: the window beside the menu either way)
+      box.addEventListener('click', (e) => { if (e.target instanceof Element && e.target.closest('[data-bnp="avswap"], .bnp-sideav-pic.is-btn')) open(e); });
+      box.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target instanceof Element && e.target.closest('[data-bnp="avswap"], .bnp-sideav-pic.is-btn')) open(e); });
+      box.querySelector('img').addEventListener('error', (e) => { e.target.removeAttribute('src'); e.target.parentElement.classList.add('is-none'); });   // (a picture that won't come: its frame stays, empty)
+    }
+    if (box.nextElementSibling !== welcome) welcome.before(box);
+    sideAvPaint();
+    sideAvWatch(side);
+  }
+  function sideAvPaint() {   // (the one you wear, in the colour of your theme's words beside it; a way to switch it, if you have that on)
+    const box = $('#navprofiledropdown__2020 [data-bnp="sideav"]');
+    if (!box) return;
+    const f = sideAvNow(), src = f ? avPic(f) : '', img = box.querySelector('img'), pic = box.querySelector('[data-g="sideavpic"]'), sw = box.querySelector('[data-bnp="avswap"]'), can = S.features.sideAvSw !== false;
+    if (src) { if (img.getAttribute('src') !== src) img.setAttribute('src', src); } else img.removeAttribute('src');
+    pic.classList.toggle('is-none', !src);
+    const name = f ? avNameOf(f) || avTitle(f) : '';
+    pic.title = src ? `Your avatar: ${name}${can ? '\n(click to switch it)' : ''}` : 'Your avatar (being read from Neoboard Settings)';
+    pic.classList.toggle('is-btn', can);
+    if (can) { pic.setAttribute('role', 'button'); pic.tabIndex = 0; pic.setAttribute('aria-label', `Your avatar${name ? `, ${name}` : ''}: switch it`); } else { pic.removeAttribute('role'); pic.removeAttribute('tabindex'); pic.removeAttribute('aria-label'); }
+    sw.hidden = !can;
+    box.classList.toggle('is-busy', !!avsBusy);
+    const w = box.nextElementSibling, col = w ? getComputedStyle(w).color : '';   // ("Welcome, …": its colour, for the frame's tint and the ⇆)
+    if (col && box.style.color !== col) box.style.color = col;
+    const pb = document.getElementById('navProfilePetBox__2020'), side = box.parentElement;   // (the pet picture's frame, as your theme draws it: the avatar's the same)
+    if (pb) {
+      const cs = getComputedStyle(pb), bw0 = parseFloat(cs.borderTopWidth) || 0, bw = bw0 > 0 && cs.borderTopStyle !== 'none' ? Math.min(bw0, 4) : 0, bg = cs.backgroundColor;
+      // its corners (user, 2026-11-10: "slightly rounded corners maybe … not enough to cut off the avatar at all"): your theme's own
+      // rounding, at least 5 px, and never so much that the frame's inside curve reaches the picture's corner (the picture sits 3 px in,
+      // plus the border): a clear pixel stays between them
+      const safe = Math.floor((Math.SQRT2 * (3 + bw) - bw - 1) / (Math.SQRT2 - 1));
+      const want = { '--bnp-sav-b': bw ? `${bw}px ${cs.borderTopStyle} ${cs.borderTopColor}` : '', '--bnp-sav-r': `${Math.max(5, Math.min(parseFloat(cs.borderTopLeftRadius) || 0, 12, safe))}px`, '--bnp-sav-bg': bg && !/^rgba\(.*,\s*0\)$|^transparent$/.test(bg) ? bg : '' };
+      for (const [k, v] of Object.entries(want)) { if (v) { if (box.style.getPropertyValue(k) !== v) box.style.setProperty(k, v); } else box.style.removeProperty(k); }
+      // a small pet picture at the left: the avatar and both lines under it beside it, whatever their height (the words beside it had
+      // only wrapped round it; with the avatar above them, "Active Pet" would have come out under the picture)
+      const beside = cs.float !== 'none' && cs.display !== 'none' && !!pb.parentElement && getComputedStyle(pb.parentElement).display !== 'none';
+      side.classList.toggle('bnp-sav-beside', beside);
+      const sr = side.getBoundingClientRect(), pr = pb.getBoundingClientRect();
+      if (beside && sr.width && pr.width) { const x = `${Math.round(pr.right - sr.left + (parseFloat(cs.marginRight) || 0))}px`; if (side.style.getPropertyValue('--bnp-sav-in') !== x) side.style.setProperty('--bnp-sav-in', x); }   // (where the words began beside it: the edge of its margin)
+    }
+  }
+  function sideAvWatch(side) {   // (the side menu in sight, opened or pinned open: measured again, and the avatar you wear read again when it's been a while)
+    const look = () => { if (S.features.sideAv === false || !side.getClientRects().length) return; sideAvPaint(); nclMyAvFresh(); };   // (sideAvPaint writes the menu's class and style only when they'd change: no loop with this)
+    if (!side.__bnpAvSeen) { side.__bnpAvSeen = new MutationObserver(look); side.__bnpAvSeen.observe(side, { attributes: true, attributeFilter: ['class', 'style'] }); }
+    const pb = document.getElementById('navProfilePetBox__2020');   // (its pet picture made big or small, by its own arrow)
+    if (pb && !pb.__bnpAvSeen) { pb.__bnpAvSeen = new MutationObserver(() => { if (S.features.sideAv !== false) sideAvPaint(); }); pb.__bnpAvSeen.observe(pb, { attributes: true, attributeFilter: ['class', 'style'] }); }
+    look();
+  }
+  let avsPanel = null, avsAnchor = null, avsBusy = '', avsQ = '';
+  const AVS_SORTS = [['np', 'Neopets’ order'], ['new', 'Newest first'], ['az', 'A to Z'], ['za', 'Z to A']];
+  const avsPrefs = () => ({ sort: 'np', all: false, ...(get('avsw', null) || {}) });   // (Switch Avatar: the order of your avatars, and Everyone's open or folded)
+  function toggleAvs(anchor) {
+    if (avsPanel && avsPanel.classList.contains('open') && avsAnchor === anchor) { closeAvs(); return; }
+    try { closePets(); } catch (_) { /* */ }   // (one switcher at a time)
+    avsAnchor = anchor;
+    if (!avsPanel) {
+      avsPanel = document.createElement('div');
+      avsPanel.id = 'bnp-avs';
+      avsPanel.setAttribute('data-bnp', 'avs-panel');
+      avsPanel.className = 'nav-dropdown__2020 bnp-pets bnp-avs';
+      avsPanel.setAttribute('role', 'dialog');
+      avsPanel.setAttribute('aria-label', 'Switch your avatar');
+      document.body.append(avsPanel);
+      avsPanel.addEventListener('click', (e) => {
+        e.stopPropagation();   // (a click in here is never one outside the side menu, which would close it)
+        const t = e.target instanceof Element ? e.target : null;
+        if (!t) return;
+        if (t.closest('[data-avs-close]')) { closeAvs(); return; }
+        if (t.closest('[data-avs-reload]')) { avsRead(true); return; }
+        const fv = t.closest('[data-avs-fav]');
+        if (fv) { avsFav(fv.dataset.avsFav); return; }
+        if (t.closest('[data-avs-all]')) { set('avsw', { ...avsPrefs(), all: !avsPrefs().all }); avsPaintList(); return; }
+        const tile = t.closest('[data-avs-wear]');
+        if (tile && !tile.classList.contains('is-on')) avsWear(tile.dataset.avsWear);
+      });
+      avsPanel.addEventListener('input', (e) => { if (e.target instanceof Element && e.target.matches('[data-avs-q]')) { avsQ = e.target.value; avsPaintList(); } });
+      avsPanel.addEventListener('change', (e) => { if (e.target instanceof Element && e.target.matches('[data-avs-sort]')) { set('avsw', { ...avsPrefs(), sort: e.target.value }); avsPaintList(); } });
+      avsPanel.addEventListener('error', (e) => { const t = e.target; if (t instanceof HTMLImageElement) t.style.visibility = 'hidden'; }, true);   // (a picture that won't come: its place kept)
+      document.addEventListener('click', (e) => { if (avsPanel.classList.contains('open') && !(e.target instanceof Element && e.target.closest('#bnp-avs, [data-bnp="sideav"]'))) closeAvs(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && avsPanel.classList.contains('open')) closeAvs(); });
+      addEventListener('resize', () => { if (avsPanel.classList.contains('open')) placeAvs(); });
+    }
+    avsQ = '';
+    paintAvs();
+    avsPanel.classList.add('open');
+    placeAvs();
+    const o = avOwn();
+    if (!o || (o.u && o.u !== nbMe()) || Date.now() - (o.at || 0) > 30 * 60000) avsRead(false);   // (none yet, another account's, or half an hour old: read again)
+    nclMyAvFresh();   // (the one you wear, read again if it's been a while)
+  }
+  function closeAvs() { if (avsPanel) avsPanel.classList.remove('open'); }
+  function placeAvs() {   // (beside the side menu, level with your avatar; with no room there, under it)
+    if (!avsAnchor || !avsAnchor.isConnected) return;
+    const r = avsAnchor.getBoundingClientRect(), s = avsAnchor.closest('#navprofiledropdown__2020'), sr = s ? s.getBoundingClientRect() : r, w = avsPanel.offsetWidth, hgt = avsPanel.offsetHeight;
+    let left = Math.max(r.right, sr.right) + 10, top = r.top - 30;
+    if (left + w > innerWidth - 8) left = r.left - w - 10;
+    if (left < 8) { left = Math.min(Math.max(8, r.left), innerWidth - w - 8); top = r.bottom + 6; }
+    top = Math.max(8, Math.min(top, innerHeight - hgt - 8));
+    avsPanel.style.left = `${Math.round(left)}px`;
+    avsPanel.style.top = `${Math.round(top)}px`;
+  }
+  function paintAvs(note, bad) {
+    if (!avsPanel) return;
+    const head = themeHead(), pr = avsPrefs(), busy = avOwnBusy;
+    avsPanel.innerHTML = `<div class="popup-header__2020 bnp-pets-head"${head ? ` style="--bnp-pets-ink:${esc(head.ink)}"` : ''}><h3>Switch Avatar</h3><span class="bnp-pets-btns"><button type="button" class="button-default__2020 button-yellow__2020 bnp-pets-b bnp-pets-rf${busy ? ' is-busy' : ''}" data-avs-reload title="${busy ? 'Looking at your avatars…' : 'Read your avatars again from Neoboard Settings'}" aria-label="Read your avatars again">${SVG_REFRESH}</button><button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-pets-xb" data-avs-close title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button></span><div class="popup-header-pattern__2020"></div></div>`
+      + `<div class="bnp-avs-tools"><input type="search" data-avs-q placeholder="Find an avatar…" aria-label="Find an avatar" spellcheck="false" autocomplete="off" value="${esc(avsQ)}"><label><span>Order</span><select data-avs-sort aria-label="The order of your avatars">${AVS_SORTS.map(([v, l]) => `<option value="${v}"${pr.sort === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label></div>`
+      + `<p class="bnp-pets-note bnp-avs-say${bad ? ' is-bad' : ''}" data-g="avssay"${note ? '' : ' hidden'}>${esc(note || '')}</p><div class="bnp-avs-list" data-g="avslist"></div>`;
+    avsPaintList();
+  }
+  function avsSay(note, bad, there) {   // (a word at the top of its list: what's happening, or what happened. there: Neoboard Settings' own page beside it)
+    const p = avsPanel && avsPanel.querySelector('[data-g="avssay"]');
+    if (!p) return;
+    p.textContent = note || '';
+    if (there) { const a = document.createElement('a'); a.className = 'bnp-avs-all bnp-avs-go'; a.href = '/settings/neoboards/'; a.textContent = 'Neoboard Settings'; p.append(' ', a); }
+    p.hidden = !note;
+    p.classList.toggle('is-bad', !!bad);
+  }
+  function avsPaintList() {   // (your avatars: your favourites, the ones worn lately, your secret ones and everyone's; or the ones you're finding)
+    const box = avsPanel && avsPanel.querySelector('[data-g="avslist"]');
+    if (!box) return;
+    const me = nbMe(), o0 = avOwn(), o = o0 && (!o0.u || o0.u === me) ? o0 : null, pr = avsPrefs(), wornK = avKey(sideAvNow());
+    if (!o) { box.innerHTML = `<p class="bnp-pets-note">${avOwnBusy ? 'Looking at your avatars…' : avOwnErr === 'login' ? 'You’re signed out: sign in, then try again.' : 'Your avatars show here once Neoboard Settings has been looked at: the refresh button does it now.'}</p>`; return; }
+    const L = avList(), sunny = new Map(L ? L.list.map((a) => [avKey(a.f), a]) : []);
+    const one = (x) => { const k = avKey(x[0]), sn = sunny.get(k); return { f: x[0], k, code: x[1] || k, n: x[2] || (sn && sn.n ? reClean(sn.n) : '') || avTitle(x[0]), i: sn && Number.isFinite(sn.i) ? sn.i : 1e9 }; };   // (a name as Neoboard Settings has it; else SunnyNeo's; else from its picture. Newest: by SunnyNeo's number, one it doesn't know yet newest of all)
+    const secret = o.list.filter((x) => x && x[0]).map(one), everyone = (o.dlx || (o.dl || []).map((f) => [f, '', ''])).filter((x) => x && x[0]).map(one);
+    const byCode = new Map([...everyone, ...secret].map((a) => [a.code, a])), byK = new Map([...everyone, ...secret].map((a) => [a.k, a]));
+    const favCodes = get('avfav', []), favSet = new Set(favCodes);
+    const favs = favCodes.map((c) => byCode.get(c)).filter(Boolean);
+    const wornA = byK.get(wornK), lately = [...new Set([...(wornA ? [wornA.code] : []), ...get('avworn', [])])].map((c) => byCode.get(c)).filter((a) => a && !favSet.has(a.code)).slice(0, 8);   // (the one you wear first, so it's always in sight: a favourite shows it among your favourites instead)
+    const order = (list) => { const l = list.slice(); if (pr.sort === 'az' || pr.sort === 'za') { l.sort((a, b) => a.n.localeCompare(b.n, undefined, { sensitivity: 'base' })); if (pr.sort === 'za') l.reverse(); } else if (pr.sort === 'new') l.sort((a, b) => b.i - a.i); return l; };
+    const tile = (a) => {
+      const on = a.k === wornK, fav = favSet.has(a.code);
+      return `<div class="bnp-avs-c"><button type="button" class="bnp-avs-t${on ? ' is-on' : ''}${avsBusy === a.code ? ' is-busy' : ''}" data-avs-wear="${esc(a.code)}" title="${esc(on ? `You’re wearing ${a.n}` : `Wear ${a.n}`)}"${on ? ' aria-current="true"' : ''}><img src="${esc(avPic(a.f))}" alt="" width="50" height="50" loading="lazy" decoding="async"><span class="bnp-avs-n">${esc(a.n)}</span>${on ? `<span class="bnp-avs-on">${AV_ON_SVG}<span>Wearing</span></span>` : ''}</button>`
+        + `<button type="button" class="bnp-avfav${fav ? ' is-on' : ''}" data-avs-fav="${esc(a.code)}" aria-pressed="${fav}" title="${fav ? 'A favourite: click to take it away' : 'Make it a favourite'}" aria-label="${esc(`${a.n}: ${fav ? 'a favourite' : 'make it a favourite'}`)}">★</button></div>`;
+    };
+    const sec = (title, n, list, extra = '') => `<div class="bnp-avs-h"><b>${title}</b>${n != null ? `<small>${n}</small>` : ''}${extra}</div>${list.length ? `<div class="bnp-avs-grid">${list.map(tile).join('')}</div>` : ''}`;
+    const q = goNorm(avsQ);
+    let html = '';
+    if (q) {
+      const had = new Set(), hits = [...secret, ...everyone].filter((a) => !had.has(a.k) && had.add(a.k) && goNorm(`${a.n} ${a.code}`).includes(q));
+      html = hits.length ? sec('Found', hits.length, order(hits)) : '<p class="bnp-pets-note">None of yours goes by that name.</p>';
+    } else {
+      if (favs.length) html += sec('★ Favourites', favs.length, favs);
+      if (lately.length) html += sec('Worn lately', null, lately);
+      html += secret.length ? sec('Your secret avatars', secret.length, order(secret)) : '<div class="bnp-avs-h"><b>Your secret avatars</b><small>0</small></div><p class="bnp-pets-note">None yet: Settings › Avatars has how to get each one.</p>';
+      html += sec('Everyone’s', everyone.length, pr.all ? order(everyone) : [], `<button type="button" class="bnp-avs-all" data-avs-all aria-expanded="${!!pr.all}">${pr.all ? 'Hide them' : 'Show them'}</button>`);
+    }
+    box.innerHTML = html;
+  }
+  function avsRead(loud) {   // (your avatars read again from Neoboard Settings: a visit of its page, nothing changed there)
+    if (avOwnBusy) return;
+    const p = avOwnFetch();
+    paintAvs();   // (its refresh button turning)
+    Promise.resolve(p).then(() => {
+      avNameMap = null;
+      if (!avsPanel || !avsPanel.classList.contains('open')) return;
+      paintAvs(avOwnErr ? (avOwnErr === 'login' ? 'You’re signed out: sign in, then try again.' : 'Couldn’t read Neoboard Settings just now: try again in a moment.') : loud ? 'Your avatars, as Neoboard Settings has them now.' : '', !!avOwnErr);
+      placeAvs();
+      sideAvPaint();
+    });
+  }
+  function avsFav(code) {   // (a favourite, or not: the same ★ as on Neoboard Settings' own chooser)
+    const fav = get('avfav', []), at = fav.indexOf(code);
+    if (at >= 0) fav.splice(at, 1); else fav.unshift(code);
+    set('avfav', fav.slice(0, 200));
+    const y = avsPanel.scrollTop;
+    avsPaintList();
+    avsPanel.scrollTop = y;
+  }
+  async function avsWear(code) {   // (one click: worn, from Neoboard Settings, as if picked there and saved)
+    if (avsBusy || !code || !avsPanel) return;
+    avsBusy = code;
+    const nameEl = avsPanel.querySelector(`[data-avs-wear="${CSS.escape(code)}"] .bnp-avs-n`), name = (nameEl && nameEl.textContent) || avTitle(`${code}.gif`);
+    avsPanel.classList.add('is-saving');
+    for (const t of avsPanel.querySelectorAll(`[data-avs-wear="${CSS.escape(code)}"]`)) t.classList.add('is-busy');
+    avsSay(`Putting on ${name}…`);
+    sideAvPaint();
+    let note = '', bad = false, there = false;
+    try {
+      const r = await avWearSave(code);
+      avWornNow(code, r);
+      note = `You’re wearing ${name} now.`;
+    } catch (e) {
+      const m = String((e && e.message) || '');
+      bad = true;
+      if (m === 'login') note = 'You’re signed out: sign in, then try again.';
+      else if (/new kind|no avatar box/.test(m)) { note = 'Neoboard Settings has changed since NE learnt it: pick your avatar there for now.'; there = true; }
+      else if (!m || /fetch|^Neopets (answered|wouldn)|didn’t come|^not saved$/i.test(m)) note = 'Neopets didn’t change your avatar just now: try again in a moment.';
+      else note = `Neopets didn’t change your avatar: ${m}`;   // (in Neopets' own words)
+      if (e && /^(TypeError|ReferenceError|SyntaxError|RangeError)$/.test(e.name) && !/fetch/i.test(m)) report(e);   // (a slip of NE's own; Neopets saying no isn't one)
+    }
+    avsBusy = '';
+    if (avsPanel) { avsPanel.classList.remove('is-saving'); avsPaintList(); avsSay(note, bad, there); }
+    sideAvPaint();
+  }
+  function avWornNow(code, r) {   // (worn now: everywhere NE shows it, at once)
+    const me = nbMe(), m = /src=["']([^"']+)["']/.exec(String((r && r.avatar) || '')), f = (m && avFile(fullUrl(m[1]))) || `${code}.gif`, now = Date.now();
+    set('avcur', { f, at: now, u: me });
+    const key = nbPenKey('0'), d = nbJson(key, null);
+    if (d) nbJsonSet(key, { ...d, av: avPic(f), at: now });   // (your Default pen as kept: its avatar the new one, the rest as it was)
+    set('avworn', [code, ...get('avworn', []).filter((x) => x !== code)].slice(0, 40));
+    const o = avOwn();
+    if (o && (!o.u || o.u === me)) { o.cur = f; set('avown', o); }
+    const ua = document.getElementById('userAv');   // (on Neoboard Settings itself, your Default pen's: its own form says so too, so its next save keeps it)
+    if (ua && ua.form && ua.form.id === 'Neoboards_form' && !new URLSearchParams(location.search).get('setpen')) {
+      ua.value = code;
+      const pv = document.querySelector('#avatar_preview img');
+      if (pv) pv.setAttribute('src', avPic(f));
+      for (const x of document.querySelectorAll('#SelectAvatarPopup .selected-av')) x.classList.remove('selected-av');
+      const el = document.getElementById(`${code}Avvie`);
+      if (el) el.classList.add('selected-av');
+    }
+    sideAvPaint();
+    try { if (ncl) nclChatPaint(); } catch (_) { /* */ }
+    try { if (nbForm) nbMePaint(); } catch (_) { /* */ }
+    clearTimeout(avWornNow.t);
+    avWornNow.t = setTimeout(() => { try { applyAll(); } catch (e) { report(e); } }, 300);   // (the menus' Avatar Collection, when it shows the one you wear)
+  }
+  // Neoboard Settings' form as its own page would send it: Neopets' Settings app draws each part of its load answer (a section's parts,
+  // in order) and sends the whole form when one changes. A text or hidden box: its value, even empty; a ticked box: "1"; a list: its
+  // choice, unless that's the greyed "Select Option" (an empty value) or one it doesn't have; buttons and read-only parts: nothing.
+  // `over`: the values changed. A part of a kind it has never had: left to the page itself
+  function stFormEntries(load, over = {}, formId = '') {
+    const flags = (load && load.flags) || {}, out = [], has = (k) => Object.prototype.hasOwnProperty.call(over, k);
+    const field = (it) => {
+      if (!it || typeof it !== 'object' || !it.input) return;
+      if (it.form && it.form !== formId) return;   // (one of another form's)
+      const kind = String(it.input), v = has(it.name) ? over[it.name] : flags[it.name], str = v == null ? '' : String(v);
+      if (kind === 'read-only' || kind === 'button' || kind === 'consent') return;
+      if (!/^(text|email|hidden|password|checkbox|radio|select|textarea)$/.test(kind)) throw new Error(`a part of a new kind (${kind})`);
+      if (!it.name) return;
+      if ((kind === 'text' || kind === 'email') && it.type && !/^(text|search|tel)$/i.test(String(it.type))) throw new Error(`a part of a new kind (${kind}, ${it.type})`);
+      if (kind === 'text') out.push([it.name, str.replace(/[\r\n]/g, '')]);   // (a one-line box drops line breaks from what it's given)
+      else if (kind === 'email') out.push([it.name, str.replace(/[\r\n]/g, '').replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, '')]);
+      else if (kind === 'hidden') out.push([it.name, str]);
+      else if (kind === 'password') out.push([it.name, '']);
+      else if (kind === 'checkbox') { if (v === '' || !!v) out.push([it.name, '1']); }
+      else if (kind === 'radio') { const o = (it.options || []).find((x) => x && v === x.value); if (o) out.push([it.name, String(o.value)]); }
+      else if (kind === 'select') { if (str !== '' && (it.options || []).some((x) => x && String(x.value) === str)) out.push([it.name, str]); }
+      else { const ta = document.createElement('textarea'); ta.innerHTML = str; out.push([it.name, ta.value.replace(/\r\n?/g, '\n').replace(/\n/g, '\r\n')]); }
+    };
+    for (const a of Array.isArray(load && load.Settings) ? load.Settings : []) {
+      if (!a || typeof a !== 'object') continue;
+      if (a.subheader) { if (Array.isArray(a.items)) a.items.forEach(field); continue; }
+      if (a.accordion) throw new Error('a part of a new kind (accordion)');
+      if (a.panel || a.response || a.popup) continue;
+      field(a);
+    }
+    return out;
+  }
+  const stUrlenc = (list) => list.map(([k, v]) => `${encodeURIComponent(k).replace(/%20/g, '+')}=${encodeURIComponent(v).replace(/%20/g, '+')}`).join('&');   // (as the Settings app writes its form out)
+  const ST_ACCEPT = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8';
+  function stAsk(u, body, form) {   // (asked from Neoboard Settings itself, as its own page asks: Neopets takes its saves only from there)
+    return fromPage('/settings/neoboards/', u, { method: 'POST', credentials: 'include', headers: form ? { 'x-requested-with': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded', Accept: ST_ACCEPT } : { 'x-requested-with': 'XMLHttpRequest' }, body })
+      .then(async (r) => {
+        const t = await r.text();
+        if (!r.ok) throw new Error(`Neopets answered ${r.status}`);
+        try { return JSON.parse(t); } catch (_) { throw new Error(/wrong place/i.test(t) ? 'Neopets wouldn’t take it from here' : /\/login/i.test(r.url || '') ? 'login' : 'Neopets answered with a page'); }
+      });
+  }
+  async function avWearSave(code) {   // (Neoboard Settings read as its page reads it when it opens; then saved as its page saves when you pick an avatar and press Save)
+    if (!/^[\w.-]+$/.test(String(code || ''))) throw new Error('not an avatar');
+    const lf = new FormData();
+    lf.append('route', 'Neoboards');
+    lf.append('mode', 'load');
+    const load = await stAsk('/np-templates/ajax/settings/neoboards/neoboards_load.php', lf);
+    if (load && load.error && load.ErrType === 'login') throw new Error('login');
+    if (!load || !Array.isArray(load.Settings) || !load.flags) throw new Error('Neoboard Settings didn’t come');
+    const list = stFormEntries(load, { avatar: code }, 'Neoboards_form');
+    if (!list.some(([k, v]) => k === 'avatar' && v === code)) throw new Error('Neoboard Settings has no avatar box now');
+    const r = await stAsk('/np-templates/ajax/settings/neoboards/neoboards_save.php', stUrlenc([...list, ['route', 'Neoboards'], ['flag', 'Neoboards'], ['mode', 'save'], ['target', 'avatar']]), true);
+    if (r && r.error && r.ErrType === 'login') throw new Error('login');
+    if (!r || !r.success) throw new Error(reClean(String((r && r.message) || '')).slice(0, 140) || 'not saved');
+    return r;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -41909,6 +42286,32 @@
     st = document.createElement('style');
     st.id = 'bnp-minshop-style';
     st.textContent = 'html.bnp-minshop .page-title__2020, html.bnp-minshop p.shop-info { display: none !important; }';   // (just as the Restock Highlighter's: the shop's title and its welcome words; its shopkeeper and the rest stay)
+    root.append(st);
+  }
+  // The bank's Current Balance on the counter, bigger (user, 2026-11-10: "a decent amount bigger, dont overlap the bank manager character,
+  // so keep it where it is but … extend to the left", then "increase the size even more, but also reduce the blank space area on the right
+  // … the most someone can have in their bank is a bit over 2billion"). Its words 36 px and its coin 48 px (Neopets' 20 and 30); the tile
+  // just wide enough for the widest balance there can be, 516 px: "2,000,000,000" (0 is Cafeteria's widest digit; the bank holds at most
+  // 2,147,483,647) with about 8 px to spare, so a 9-digit balance has some 70 px after it, not 160. It sits 5 px above the counter, and its
+  // right end stays where Neopets has it, 10 px short of the manager, so it grows to the left. In a narrower window the tile is narrower
+  // (90% of its column, as Neopets has it) and its words, coin and gap shrink with it in step (container units), so the widest balance
+  // still fits; the words never go below Neopets' 20 px. Only the tile at the top: the Upgrade box's balance stays as it is. Set at the
+  // very start, so the small one never shows first
+  function bankBig() {
+    const root = document.documentElement;
+    if (!root || location.pathname !== '/bank.phtml') return;
+    let st = document.getElementById('bnp-bankbig-style');
+    if (!S.features.bankBig) { root.classList.remove('bnp-bankbig'); if (st) st.remove(); return; }
+    root.classList.add('bnp-bankbig');
+    if (st) return;
+    st = document.createElement('style');
+    st.id = 'bnp-bankbig-style';
+    st.textContent = [   // (478 px = the widest tile's inside: 516 less its sides; 36 px of 478 = 7.53cqw, 48 px = 10.04cqw, 14 px = 2.93cqw, each a hair over so the widest is exact. The coin's and gap's least are the words' 20 px in the same step, so the widest balance fits there too. A browser without container units keeps the first, fixed sizes)
+      'html.bnp-bankbig .bank-lobby-grid .bank-balance { container-type: inline-size; max-width: 516px; min-height: 50px; padding: 10px 18px 10px 20px; }',   // (never shorter than Neopets' own, when a narrow window shrinks its coin)
+      '@media screen and (min-width: 660px) { html.bnp-bankbig .bank-lobby-grid .bank-balance { margin: auto 0 5px auto; } }',
+      'html.bnp-bankbig .bank-lobby-grid .bank-balance-icon { flex: none; width: 48px; height: 48px; margin-right: 14px; width: clamp(26px, 10.05cqw, 48px); height: clamp(26px, 10.05cqw, 48px); margin-right: clamp(7px, 2.93cqw, 14px); }',
+      'html.bnp-bankbig .bank-lobby-grid .bank-balance > span { font-size: 36px; font-size: clamp(20px, 7.54cqw, 36px); }',
+    ].join('\n');
     root.append(st);
   }
 
@@ -45906,7 +46309,7 @@
   const NW_Q = { all: '', stamp: 'cat:Stamp' };
   const nwKept = (k) => { const v = get(`nw_${k}`, null); return v && Array.isArray(v.list) ? v : null; };
   const nwBusy = {};
-  const nwRow = (x) => { const n = reClean(String((x && x.name) || '')); if (!n) return null; return { n: n.slice(0, 90), img: String(x.image || ''), nc: !!x.isNC, c: reClean(String(x.category || '')).slice(0, 30), r: Number(x.rarity) || 0, p: (x.price && Number(x.price.value)) || 0, at: Date.parse(x.firstSeen || '') || 0, slug: String(x.slug || '').slice(0, 90) }; };
+  const nwRow = (x) => { const n = reClean(String((x && x.name) || '')); if (!n) return null; return { n: n.slice(0, 90), img: String(x.image || ''), nc: !!x.isNC, c: reClean(String(x.category || '')).slice(0, 30), r: Number(x.rarity) || 0, p: (x.price && Number(x.price.value)) || 0, at: Date.parse(x.firstSeen || '') || 0, slug: String(x.slug || '').slice(0, 90), iid: Number(x.internal_id) || 0 }; };
   function nwFetch(k, force, done) {
     const v = nwKept(k), wait = k === 'stamp' ? 6 * 3600e3 : 30 * 60e3, fin = (ok) => { nwBusy[k] = false; if (done) done(ok); };
     if (nwBusy[k] || itBlocked() || (v && v.at && Date.now() - v.at < (force ? 60e3 : wait))) { if (done) done(false); return; }
@@ -45972,7 +46375,7 @@
     const mine = [], everyone = [];
     for (const g of groups) (head && head.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING ? mine : everyone).push(...read(g));
     const cur = doc.querySelector('#avatar_preview img'), was = avOwn();
-    return { at: Date.now(), list: mine, dl: everyone.map((x) => x[0]), cur: cur ? avFile(cur.getAttribute('src')) : (was && was.cur) || '' };
+    return { at: Date.now(), list: mine, dl: everyone.map((x) => x[0]), dlx: everyone, cur: cur ? avFile(cur.getAttribute('src')) : (was && was.cur) || '' };   // (dlx: everyone's with their codes and names, for Switch Avatar)
   }
   let avOwnBusy = false, avOwnErr = '';
   async function avOwnFetch() {   // (your avatars, read from Neoboard Settings without leaving this page)
@@ -46016,7 +46419,9 @@
       const had = new Set(was.list.map((x) => avKey(x[0]))), fresh = o.list.filter((x) => !had.has(avKey(x[0])));
       if (fresh.length) set('avnew', { f: avTop(fresh.map((x) => x[0])), at: Date.now() });
     }
+    o.u = nbMe() || o.u || '';   // (whose they are: another account's are read again before they're shown)
     set('avown', o);
+    avNameMap = null;
   }
   function avNewest() {   // (the last one you got; before one comes, the newest of yours)
     const o = avOwn(), n = get('avnew', null);
@@ -48177,6 +48582,7 @@
       </div>`],
       ['shops', () => `<div class="bnp-card"><h4>Bank and shop till</h4>
         ${sw('fillAll', '“All of it” in one click', 'Under the bank’s Deposit and Withdraw boxes and beside your shop till’s: a link with how much you have (on hand, in the bank, in the till) that fills it in. Neopets’ own button does the rest.')}
+        ${sw('bankBig', 'A bigger Current Balance', 'At the bank, the tile on the counter with your balance: bigger words and coin in a bigger tile, grown to the left so it stays clear of the bank manager.')}
         ${sw('tillLog', 'Count what you take from your till', 'Each withdrawal Neopets says it made, added up by when: today, the past 7 days, this month, this year and all of it, and the last twelve months side by side, on your Shop Till page and here. Only the totals: no list of each one. Kept in this browser, for each of your accounts.')}
         ${S.features.tillLog !== false ? `${tillHtml()}${tillGet().log.length ? '<div class="bnp-tools"><button type="button" class="bnp-pillbtn is-danger" data-tillforget>Forget them</button></div>' : ''}` : ''}
       </div>`],
@@ -48326,6 +48732,7 @@
       if (k === 'dailyRun') { if (S.features.dailyRun && !runHere) dailyRunBar(); else paintRunBar(); } if (k === 'questDot') document.documentElement.classList.toggle('bnp-noqdot', !!S.features.questDot);
       if (k === 'shopDock') { if (S.features.shopDock) dockMark(); else if (document.documentElement) document.documentElement.removeAttribute('data-bnp-dock'); paintDock(); }
       if (k === 'shopMin') { shopMin(); paintDock(); }
+      if (k === 'bankBig') bankBig();
       if (k === 'shopPm') shopPmFeature();   // (Shop Stock open here: Price mode's switch, strip and lines come or go at once)
       if (k === 'fquest') paintFq();
       if (k === 'scView') { if (S.features.scView) scPage(); else scOff(); }
@@ -48772,7 +49179,8 @@
   // Old pages in the beta look: the bar, side menu and footer from the last beta page you were on, your theme's background,
   // and the page's own content in the middle. The page holds back a moment for its new look, so the old one never flashes
   // ═══════════════════════════════════════════════════════════════════════════
-  const CHROME_V = 5;   // (3: whose bar it is; 4: its box as your theme draws it, never a page's own colour; 5: Neopets' links moved into a folder or the Profile menu kept in their own menus)
+  const CHROME_V = 6;   // (3: whose bar it is; 4: its box as your theme draws it, never a page's own colour; 5: Neopets' links moved into a folder or the Profile menu kept in their own menus; 6: the box and background read with your theme's sheets alone, never a page's own (the bank's wood came through its class))
+  const CHROME_CSS_RE = /\/themes\/h5\/(common\/(navigation|template)\.css|[^/]+\/theme-[^/?]+\.css)/;   // (the sheets an old page is given: Neopets' bar and page template, and your theme)
   const isLookup = () => /^\/(userlookup|petlookup)\.phtml$/i.test(location.pathname);
   const isGuildPage = () => /^\/guilds\/guild(_[a-z_]+)?\.phtml$/i.test(location.pathname);   // (a guild's own pages, which its makers lay out)
   const isGalleryPage = () => {   // (a gallery as everyone sees it: its owner's description, often coded for the old layout, its own CSS and all. Your own, in its working modes, isn't that: it has the beta look like the gallery's other pages)
@@ -48799,7 +49207,7 @@
   function captureChrome() {   // (a beta page: its bar, side menu and footer, kept for the old pages; never its scripts, so never a page token)
     if (document.documentElement.classList.contains('bnp-old')) return;
     if (!document.getElementById('navtop__2020') || !document.getElementById('container__2020') || !document.getElementById('navprofiledropdown__2020')) return;
-    const css = $$('link[rel="stylesheet"]').map((l) => l.href).filter((h) => /\/themes\/h5\/(common\/(navigation|template)\.css|[^/]+\/theme-[^/?]+\.css)/.test(h));
+    const css = $$('link[rel="stylesheet"]').map((l) => l.href).filter((h) => CHROME_CSS_RE.test(h));
     const js = $$('script[src]').map((s) => s.src).filter((s) => /\/themes\/h5\/common\/js\/header\.js/.test(s));
     const prev = get('chrome', null), wornId = (myWorn() || {}).id || '', who = nbMe();
     if (!who) return;   // (whose bar it is, or none kept: an old page shows it only to the same account)
@@ -48829,21 +49237,53 @@
       if (!keepStyle) c.removeAttribute('style');
       return c.outerHTML.replace(/([?&]|&amp;)_ref_ck=[^"'&\s<]*/gi, '$1').replace(/(_ref_ck['"]?\s*[:=]\s*['"]?)[0-9a-f]{16,}/gi, '$1');   // (and any left in the writing)
     };
-    const probe = document.createElement('div');   // (the box as your theme draws it: a stand-in with its classes, as some pages paint their own box (the Trading Post's is green))
-    probe.className = document.getElementById('container__2020').className;
-    probe.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 10px; height: 10px; visibility: hidden; pointer-events: none;';
-    document.body.append(probe);
-    const bs = getComputedStyle(document.body), box = getComputedStyle(probe);
-    try {
     const snap = {
       v: CHROME_V, at: Date.now(), css, js,
       top: grab('#navtop__2020', true, 'top'), bottom: grab('#navbottom__2020', true, 'bottom'), side: grab('#navprofiledropdown__2020', true),
       news: grab('#navnewsdropdown__2020', true), money: grab('.navsub-right__2020'), footer: grab('#footer__2020', true),
-      who, bg: ['backgroundColor', 'backgroundImage', 'backgroundSize', 'backgroundRepeat', 'backgroundPosition', 'backgroundAttachment'].map((p) => (p === 'backgroundImage' && /\bblob:/.test(bs[p]) ? 'none' : bs[p])), bgOf: wornId,   // (the page's background as it is, and which theme of yours it was under ('' none): an old page uses it only while that's so)
-      box: { bg: box.backgroundColor, img: /\bblob:/.test(box.backgroundImage) ? 'none' : box.backgroundImage, size: box.backgroundSize, rep: box.backgroundRepeat, pos: box.backgroundPosition, radius: box.borderTopLeftRadius, side: `${box.borderLeftWidth} ${box.borderLeftStyle} ${box.borderLeftColor}`, shadow: box.boxShadow },
+      who, bg: null, bgOf: wornId, box: null,   // (the page's background and its box: below)
     };
-    if (snap.top && snap.side) set('chrome', snap);
-    } finally { probe.remove(); }
+    if (!snap.top || !snap.side) return;
+    if (captureChrome.busy) return;
+    captureChrome.busy = true;
+    chromeLook(css, document.getElementById('container__2020').className).then((look) => {
+      if (!look) return;   // (not read this time: the one kept stays, and the next page tries again)
+      snap.bg = look.bg;
+      snap.box = look.box;
+      set('chrome', snap);
+    }).catch(report).finally(() => { captureChrome.busy = false; });
+  }
+  // The page's background and its box as your theme draws them, for the old pages: read in a hidden frame of their own, with no scripts and
+  // only the sheets an old page is given (Neopets' bar, its page template, your theme), on a stand-in with the box's classes. Never on the
+  // page itself: a page's own sheet may paint them too, by those same classes (the bank's sheet paints its wood on any ".container": user,
+  // 2026-11-10, the Stamp Album's old pages "picked up the banks background"). The frame is the window's size, so your theme's sheet
+  // chooses as it does here. Nothing is drawn; it's gone once read, or after 8 seconds
+  function chromeLook(css, boxCls) {
+    return new Promise((done) => {
+      const f = document.createElement('iframe');
+      let over = false;
+      const end = (v) => { if (over) return; over = true; clearTimeout(t); f.remove(); done(v); };
+      const t = setTimeout(() => end(null), 8000);
+      const w = Math.max(innerWidth || 0, 1024), h = Math.max(innerHeight || 0, 700);
+      f.setAttribute('sandbox', 'allow-same-origin');
+      f.setAttribute('aria-hidden', 'true');
+      f.tabIndex = -1;
+      f.style.cssText = `position: absolute; left: ${-w - 200}px; top: 0; width: ${w}px; height: ${h}px; border: 0; visibility: hidden; pointer-events: none;`;
+      const root = document.documentElement.className.replace(/\bbnp-[\w-]+/g, '').replace(/\s+/g, ' ').trim(), body = (document.body.className || '').replace(/\bbnp-[\w-]+/g, '').replace(/\s+/g, ' ').trim();
+      f.srcdoc = `<!doctype html><html class="${esc(root)}"><head><meta charset="utf-8">${css.map((u) => `<link rel="stylesheet" href="${esc(u)}">`).join('')}</head><body class="${esc(body)}"><div class="${esc(boxCls)}" style="width: 10px; height: 10px;"></div></body></html>`;
+      f.addEventListener('load', () => {
+        try {
+          const d = f.contentDocument, win = f.contentWindow, probe = d && d.querySelector('body > div');
+          if (!probe || !d.styleSheets.length) { end(null); return; }
+          const bs = win.getComputedStyle(d.body), box = win.getComputedStyle(probe);
+          end({
+            bg: ['backgroundColor', 'backgroundImage', 'backgroundSize', 'backgroundRepeat', 'backgroundPosition', 'backgroundAttachment'].map((p) => (p === 'backgroundImage' && /\bblob:/.test(bs[p]) ? 'none' : bs[p])),
+            box: { bg: box.backgroundColor, img: /\bblob:/.test(box.backgroundImage) ? 'none' : box.backgroundImage, size: box.backgroundSize, rep: box.backgroundRepeat, pos: box.backgroundPosition, radius: box.borderTopLeftRadius, side: `${box.borderLeftWidth} ${box.borderLeftStyle} ${box.borderLeftColor}`, shadow: box.boxShadow },
+          });
+        } catch (e) { report(e); end(null); }
+      }, { once: true });
+      (document.body || document.documentElement).append(f);
+    });
   }
   function oldCssLite() {   // (an owner's page under the beta bar: Neopets' old top bar and its ads step aside and the page moves down under the bar; nothing of theirs is restyled)
     return `
@@ -49390,6 +49830,17 @@
     @media (min-width: 1860px) { #navprofiledropdown__2020 .bnp-lock.bnp-has-native { display: none; } }
     .bnp-swap { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-left: 4px; vertical-align: -6px; border-radius: 50%; cursor: pointer; opacity: .65; transition: opacity .15s, transform .3s, background-color .15s; }
     .bnp-swap svg { width: 15px; height: 15px; }
+    #navprofiledropdown__2020 .bnp-sideav { display: flex; align-items: center; gap: 2px; margin: 15px 0 0 20px; }   /* (your avatar, in the place "Welcome, …" had: beside a small pet picture, as the words are, or under a big one) */
+    #navprofiledropdown__2020 .bnp-sideav + .nav-profile-dropdown-text { margin-top: 5px !important; }
+    #navprofiledropdown__2020.bnp-sav-beside > .bnp-sideav, #navprofiledropdown__2020.bnp-sav-beside > .bnp-sideav ~ .nav-profile-dropdown-text { margin-left: var(--bnp-sav-in, 100px) !important; }   /* (beside a small pet picture: the avatar and both lines under it, where the words began) */
+    #navprofiledropdown__2020 .bnp-sideav-pic { display: block; flex: none; box-sizing: content-box; width: 50px; height: 50px; padding: 3px; border: var(--bnp-sav-b, 0 none transparent); border-radius: var(--bnp-sav-r, 5px); background: var(--bnp-sav-bg, color-mix(in srgb, currentColor 10%, transparent)); transition: box-shadow .15s; }   /* (whole, at its own size, framed as your theme frames the pet picture beside it; no frame there: on a tint of the words' colour) */
+    #navprofiledropdown__2020 .bnp-sideav-pic.is-btn { cursor: pointer; }
+    #navprofiledropdown__2020 .bnp-sideav-pic.is-btn:hover, #navprofiledropdown__2020 .bnp-sideav-pic.is-btn:focus-visible { box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 35%, transparent); outline: none; }   /* (pointed at: a ring round it, the picture itself untouched) */
+    #navprofiledropdown__2020 .bnp-sideav-pic img { display: block; width: 50px; height: 50px; max-width: none; margin: 0; border: 0; }
+    #navprofiledropdown__2020 .bnp-sideav-pic.is-none img { visibility: hidden; }
+    #navprofiledropdown__2020 .bnp-sideav.is-busy .bnp-sideav-pic img { opacity: .45; }
+    #navprofiledropdown__2020 .bnp-sideav .bnp-swap { margin-left: 3px; }
+    #navprofiledropdown__2020 .bnp-sideav .bnp-swap[hidden] { display: none; }
     #navprofiledropdown__2020 [data-bnp="sideqr"] .profile-dropdown-link-icon { scale: -1 1; }   /* (My Pets' picture, facing the other way: scale, so a theme's own hover transform keeps it turned) */
     .bnp-swap:hover, .bnp-swap:focus-visible { opacity: 1; transform: rotate(180deg); background: color-mix(in srgb, currentColor 14%, transparent); outline: none; }
     /* Switch Pet: the theme's own dropdown colours */
@@ -49428,6 +49879,37 @@
     .bnp-pet .bnp-pet-star > span { max-width: 0; overflow: hidden; opacity: 0; transition: max-width .2s, margin .2s, opacity .2s; }
     .bnp-pet:hover .bnp-pet-star > span, .bnp-pet:focus-visible .bnp-pet-star > span { max-width: 60px; margin: 0 3px 0 4px; opacity: 1; }
     @media (prefers-reduced-motion: reduce) { .bnp-pet .bnp-pet-star > span { transition: none; } }
+    /* Switch Avatar: Switch Pet's window, your avatars as tiles at their own size */
+    .nav-dropdown__2020.bnp-avs { width: min(568px, calc(100vw - 16px)); }
+    .bnp-avs-tools { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; }
+    .bnp-avs-tools input[type="search"] { flex: 1; min-width: 0; height: 30px; box-sizing: border-box; margin: 0; padding: 0 12px; border: 2px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: 999px; background: #fff; color: #2b2b2b; font: 13px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-avs-tools label { display: flex; align-items: center; gap: 6px; margin: 0; font: 12px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }
+    .bnp-avs-tools select { height: 30px; margin: 0; padding: 0 6px; border: 2px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: 8px; background: #fff; color: #2b2b2b; font: 12.5px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-avs .bnp-avs-say { margin: 8px 2px 2px; font-family: "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-avs .bnp-avs-say.is-bad { color: #b3261e; opacity: 1; }
+    .bnp-avs-h { display: flex; align-items: center; gap: 7px; min-height: 24px; margin: 12px 2px 6px; padding: 0 0 4px; border-bottom: 1px solid color-mix(in srgb, currentColor 22%, transparent); font: 13.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-avs-h small { font: 12px "MuseoSansRounded500", Arial, sans-serif; opacity: .7; }
+    .bnp-avs .bnp-avs-all { display: inline-flex; align-items: center; height: 24px; margin: 0 0 0 auto; padding: 0 11px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); border-radius: 999px; background: rgba(255, 255, 255, .85); box-shadow: 0 2px 0 color-mix(in srgb, currentColor 15%, transparent); color: #3a3a2c; font: 12px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; cursor: pointer; }
+    .bnp-avs .bnp-avs-all:hover, .bnp-avs .bnp-avs-all:focus-visible { background: #fff; outline: none; }
+    .bnp-avs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 4px; }
+    .bnp-avs-c { position: relative; min-width: 0; }
+    .bnp-avs-t { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; box-sizing: border-box; width: 100%; height: 100%; margin: 0; padding: 7px 3px 6px; border: 2px solid transparent; border-radius: 10px; background: none; color: inherit; cursor: pointer; font: inherit; text-align: center; transition: background-color .12s, border-color .12s; }
+    .bnp-avs-t:hover, .bnp-avs-t:focus-visible { background: color-mix(in srgb, currentColor 11%, transparent); outline: none; }
+    .bnp-avs-t.is-on { border-color: color-mix(in srgb, currentColor 35%, transparent); cursor: default; }
+    .bnp-avs-t img { display: block; flex: none; width: 50px; height: 50px; max-width: none; margin: 0; }
+    .bnp-avs-n { display: -webkit-box; max-width: 100%; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font: 11px/1.25 "MuseoSansRounded500", Arial, sans-serif; overflow-wrap: anywhere; }
+    .bnp-avs-c:hover .bnp-avfav { display: block; }
+    .bnp-avs .bnp-avfav { top: 1px; right: 1px; }
+    .bnp-avs .bnp-avs-go { display: inline-flex; margin: 4px 0 0; vertical-align: middle; text-decoration: none; }
+    .bnp-avs-on { position: absolute; top: 1px; left: 1px; display: inline-flex; align-items: center; box-sizing: border-box; height: 22px; padding: 0 3px; border: 2px solid #4a9d4f; border-radius: 999px; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); color: #2f7a34; font: 11px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }   /* (the one you wear: a tick, "Wearing" sliding out beside it as you reach for it) */
+    .bnp-avs-on svg { flex: none; width: 13px; height: 13px; }
+    .bnp-avs-on > span { max-width: 0; overflow: hidden; opacity: 0; transition: max-width .2s, margin .2s, opacity .2s; }
+    .bnp-avs-t:hover .bnp-avs-on > span, .bnp-avs-t:focus-visible .bnp-avs-on > span { max-width: 60px; margin: 0 3px 0 2px; opacity: 1; }
+    .bnp-avs.is-saving .bnp-avs-t { pointer-events: none; opacity: .5; }
+    .bnp-avs.is-saving .bnp-avs-t.is-busy { opacity: 1; }
+    .bnp-avs-t.is-busy img { animation: bnp-avs-wait .9s ease-in-out infinite alternate; }
+    @keyframes bnp-avs-wait { to { opacity: .35; } }
+    @media (prefers-reduced-motion: reduce) { .bnp-avs-on > span { transition: none; } .bnp-avs-t.is-busy img { animation: none; opacity: .6; } }
     /* QuickRef: Neopets' new Quick Ref as the base (its cards, stat strip, star tab, picture corners, petpet row, icon buttons, Quick Links), NE's parts in it, in the theme's colours */
     .bqr-orig { display: none !important; }
     .bq { --bqr-head: #fed123; --bqr-headink: #363636; --bqr-line: color-mix(in srgb, var(--bqr-head) 78%, #000); --bq-h: var(--bqr-head); --bq-hi: var(--bqr-headink); padding: 4px 16px 26px; color: #363636; font: 14px/1.45 "MuseoSansRounded500", Arial, sans-serif; text-align: left; }
@@ -54118,6 +54600,12 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.4.4', '2026-11-10', [
+      'Left Sidebar: your Neoboard avatar above “Welcome”, framed like your pet picture, with ⇆ to switch it: all yours, favourites and worn lately first, one click',
+      'Bank: the Current Balance on the counter much bigger, its tile just wide enough for any balance and grown to the left, clear of the bank manager',
+      'Stamp Album: new stamps show their page (and place) as soon as itemdb’s album lists have them',
+      'Older pages (the Stamp Album and others): their box no longer takes on another page’s background, like the bank’s wood or the Inventory’s fade',
+    ]],
     ['5.4.3', '2026-11-08', [
       'Trading Post: the NP Limit button is a coin with the NP bag and what’s left beside it, on the right of the box, never running past its words',
       'Trading Post: Cancel several lots sits on the box’s left (its choices still show in the bar while you pick lots); both go back under on a narrow window',
@@ -54708,7 +55196,7 @@
       for (const k of ['fquest', 'fqfold']) GM_addValueChangeListener(KEY + k, (n, o, v, remote) => { if (remote) paintFq(); });   // (your faerie quest, changed in another tab)
     } catch (_) { /* */ }
   }
-  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { pageRead, kadCheckRun, tabFlash, kadSwap, kadNextLook, kadPlan, lottoDrawn: () => lottoDrawnFn && lottoDrawnFn(), wwwAsk: (u, o) => fetch(u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }), (e) => ({ err: String(e && e.message) })), fromAsk: (p, u, o) => (p === 'html' ? fromPageHtml(u).then((t) => ({ text: t.slice(0, 300) })) : fromPage(p, u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }))).catch((e) => ({ err: String(e && e.message) })), wwwShut, nmSendNow, ncValue, remSoundOnce, sa: () => sa, saKnown, saState, saMarksLoad, saMark, saMineLoad, saAlbumed, saMineNow: () => saMine, saPlace, itSsw, sswPanel, mark: (id, how) => dailyMark(id, how || { full: true }), dstate: (id) => { const d = dailyById(id); return d ? dailyState(d) : null; }, dlogNow: () => dlog(), dproof: DAILY_PROOF, remEvents: (a, b, c) => remEvents(a, b, c).map((e) => ({ key: e.key, at: e.at, kind: e.kind, title: e.title, text: e.textNow ? e.textNow() : e.text })), remSchedule, tpLimState: (t) => { const x = tpLimState(t); return x && !x.off ? { T0: x.T0, cap: x.cap, rec0: x.rec0, now: x.now, over: x.over, rows: x.rows.map((r) => ({ at: r.at, np: r.np, lump: !!r.lump, since: !!r.since, from: r.from || 0, left: x.left(r.at) })) } : x; }, tpLimWhen, tpLimOpen, remFiredNow: () => remFired(), remPerOn: (id) => remPerOn(dailyById(id)), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbLivePill, pageSay, nbSay, toast, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, themeChanged, nclUnhold: () => new Promise((r) => { if (nclHoldEnd) { nclHoldEnd(); setTimeout(r, 80); } else r(); }), nclOpen, nclMin, nclTell, nclFold, nclSentList, nmSentGo, myMainColour, myColouriseShift, myColoursNow, myAll: () => S.myThemes, myTurnNow: () => myTurn, soundDraw, nclGlance, captureChrome, acctCheck, dlog, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
+  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { pageRead, kadCheckRun, tabFlash, kadSwap, kadNextLook, kadPlan, lottoDrawn: () => lottoDrawnFn && lottoDrawnFn(), wwwAsk: (u, o) => fetch(u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }), (e) => ({ err: String(e && e.message) })), fromAsk: (p, u, o) => (p === 'html' ? fromPageHtml(u).then((t) => ({ text: t.slice(0, 300) })) : fromPage(p, u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }))).catch((e) => ({ err: String(e && e.message) })), wwwShut, nmSendNow, ncValue, remSoundOnce, sa: () => sa, saKnown, saState, saMarksLoad, saMark, saMineLoad, saAlbumed, saMineNow: () => saMine, saPlace, itSsw, sswPanel, mark: (id, how) => dailyMark(id, how || { full: true }), dstate: (id) => { const d = dailyById(id); return d ? dailyState(d) : null; }, dlogNow: () => dlog(), dproof: DAILY_PROOF, remEvents: (a, b, c) => remEvents(a, b, c).map((e) => ({ key: e.key, at: e.at, kind: e.kind, title: e.title, text: e.textNow ? e.textNow() : e.text })), remSchedule, tpLimState: (t) => { const x = tpLimState(t); return x && !x.off ? { T0: x.T0, cap: x.cap, rec0: x.rec0, now: x.now, over: x.over, rows: x.rows.map((r) => ({ at: r.at, np: r.np, lump: !!r.lump, since: !!r.since, from: r.from || 0, left: x.left(r.at) })) } : x; }, tpLimWhen, tpLimOpen, avWearSave, stFormEntries, stUrlenc, toggleAvs, sideAvNow, remFiredNow: () => remFired(), remPerOn: (id) => remPerOn(dailyById(id)), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbLivePill, pageSay, nbSay, toast, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, themeChanged, nclUnhold: () => new Promise((r) => { if (nclHoldEnd) { nclHoldEnd(); setTimeout(r, 80); } else r(); }), nclOpen, nclMin, nclTell, nclFold, nclSentList, nmSentGo, myMainColour, myColouriseShift, myColoursNow, myAll: () => S.myThemes, myTurnNow: () => myTurn, soundDraw, nclGlance, captureChrome, acctCheck, dlog, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
   if (FRAME) { lookFrame(); return; }   // (the "Your look" window's page: Neoboard Settings alone, in the boards' look)
   // A page this makes over is never seen first as it was: the top bar is made over as soon as it's all there (Neopets puts it, the side
   // menu and their drop-downs before the page's own box, so that's before anything is drawn), and a page whose own layout changes much
@@ -54747,7 +55235,7 @@
     if (document.documentElement) { fn(); return; }
     const o = new MutationObserver(() => { if (document.documentElement) { o.disconnect(); fn(); } });
     o.observe(document, { childList: true });
-  })(() => { for (const f of [barLook, boxEarly, nclPinEarly, pinRowsEarly, tpEarly, tpSalesEar, invEar, sdbEar, qsAllEar, pageEar, dailyFormEar, quietEar, kpopEar, cocoEarly, fishEarly, myEarly, tabsMark, dockMark, shopMin, srEarly, nbEarly, stEarly, nmEarly, nmSentEarly, smEarly, cuEarly, colEarly, saEarly, cloEarly, galEarly, shopEarly, mallEarly, pinAdEarly, pageWait, waitStyle, navEarly]) { try { f(); } catch (e) { report(e); } } });
+  })(() => { for (const f of [barLook, boxEarly, nclPinEarly, pinRowsEarly, tpEarly, tpSalesEar, invEar, sdbEar, qsAllEar, pageEar, dailyFormEar, quietEar, kpopEar, cocoEarly, fishEarly, myEarly, tabsMark, dockMark, shopMin, bankBig, srEarly, nbEarly, stEarly, nmEarly, nmSentEarly, smEarly, cuEarly, colEarly, saEarly, cloEarly, galEarly, shopEarly, mallEarly, pinAdEarly, pageWait, waitStyle, navEarly]) { try { f(); } catch (e) { report(e); } } });
   // ═══════════════════════════════════════════════════════════════════════════
   // The page at its very start
   // ═══════════════════════════════════════════════════════════════════════════

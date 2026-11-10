@@ -1,10 +1,10 @@
 {
- "version": "5.4.3",
- "date": "2026-11-08",
+ "version": "5.4.4",
+ "date": "2026-11-10",
  "notes": [
-  "Trading Post: the NP Limit button redone, on the box’s right",
-  "Trading Post: Cancel several lots on the box’s left",
-  "NP Limit window: bigger countdowns",
-  "NeoChat: smilies stay in your line"
+  "Left Sidebar: your avatar, with a switch button",
+  "Bank: a bigger Current Balance",
+  "Stamp Album: new stamps get their page from itemdb",
+  "Older pages: no more borrowed backgrounds"
  ]
 }
