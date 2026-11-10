@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.4.4
+// @version      5.5
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -1965,10 +1965,10 @@
   // Settings (and 2.1's, carried over the first time)
   // ═══════════════════════════════════════════════════════════════════════════
   const FEAT = {
-    profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, sideAv: true, sideAvSw: true, tillLog: true, tpSales: true, auSales: true,
+    profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, sideAv: true, sideAvSw: true, sideNoBar: true, tillLog: true, tpSales: true, auSales: true,
     scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: true, oldBtns: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldGalleries: false, oldShops: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
-    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, kpopPlay: true, kadHelp: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trBg: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, bargains: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, bankBig: true, dailyFill: true, soupLog: true, fcHelp: true, fcHist: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
+    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, kpopPlay: true, kadHelp: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trBg: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, bdHelp: true, bdAgain: true, bdSet: true, bdAuto: false, bdBg: true, bdLook: 'neo', bdLookMatch: false, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, bargains: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, bankBig: true, dailyFill: true, soupLog: true, fcHelp: true, fcHist: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, tone: '', vol: 100, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,   // (tone: '' each its own, or one of the sounds for all; vol: how loud, 5 to 100)
@@ -39573,6 +39573,7 @@
     const root = document.documentElement;
     root.classList.toggle('bnp-no-friends', !S.features.friends);
     root.classList.toggle('bnp-no-social', !S.features.social);
+    root.classList.toggle('bnp-side-nobar', S.features.sideNoBar !== false);   // (the side menu scrolls with no scrollbar)
     for (const fn of [themeVars, profileMenu, () => applyNav('top'), () => applyNav('bottom'), natRemember, sideExtras, searchExtras, gearBar, dailyBar, dailyTicker, dock, tpApply, () => { if (sdbObs) sdbNavPaint(); }, () => { if (document.documentElement.classList.contains('bnp-nb')) nbcApply(); }, mallSlimPaint]) {
       try { fn(); } catch (e) { report(e); }
     }
@@ -40063,6 +40064,8 @@
       <label class="bnp-switch"><input type="checkbox" data-feat="pets"${f.pets ? ' checked' : ''}><span>Switch Pet beside it<small>⇆ by your active pet: every pet as a tile, one click to make it active.</small></span></label>
       ${bit('clock', 'The clock', 'Neopian time, with its calendar.')}
       <label class="bnp-switch"><input type="checkbox" data-feat="pinBtn"${f.pinBtn ? ' checked' : ''}><span>A pin to keep it open<small>The lock at its top: pinned, it stays open beside the page on every page.</small></span></label></div>`;
+    const scrollCard = `<div class="bnp-card"><h4>Scrolling</h4>
+      <label class="bnp-switch"><input type="checkbox" data-feat="sideNoBar"${f.sideNoBar !== false ? ' checked' : ''}><span>No scrollbar<small>When it holds more than the window has room for, it still scrolls with the mouse wheel or touchpad, just without a scrollbar at its edge.</small></span></label></div>`;
     const icon = (u) => { const b = u.ic ? getComputedStyle(u.ic).backgroundImage : 'none'; return `<span class="bnp-sm-ico" style="${esc(`background-image:${b}`)}"></span>`; };
     const row = (u, list, isSec) => {
       const own = u.key.startsWith('add:'), x = own ? (C.add || []).find((a) => `add:${a.id}` === u.key) : null;
@@ -40087,7 +40090,7 @@
     const rowsCard = `<div class="bnp-card"><h4>Its rows</h4><p class="bnp-note">Drag a row by <span class="bnp-sm-gripnote">${SM_IC.grip}</span> to put it where you like (or pick it and press Alt with ↑ ↓); ✎ renames it, the eye hides it. A row with a list has its links under it, and opens Folded or Open.</p>
       <ul class="bnp-sm-list" data-smlist="top">${U.top.map((u) => row(u, 'top', !!u.sec)).join('')}${addRow('top')}</ul>
       <div class="bnp-tools"><button type="button" class="bnp-pillbtn${smEdit.sure ? ' is-sure' : ''}" data-smreset${moved ? '' : ' disabled'}>${smEdit.sure ? 'Sure? Your order, names, hidden rows and links all go' : 'Back to Neopets’ own'}</button></div></div>`;
-    return head + topCard + rowsCard;
+    return head + topCard + scrollCard + rowsCard;
   }
   function smFoundHtml(list) {
     return smEdit.found.map((it, i) => `<button type="button" class="bnp-find-row" data-smpick="${list}:${i}"><span class="bnp-ico" style="${esc(icoCss(it.icon))}"></span><span class="bnp-dname">${esc(it.label)}<small>${esc(it.kind)} · ${esc(it.href)}</small></span></button>`).join('');
@@ -48565,6 +48568,7 @@
       ['general', `<div class="bnp-card"><h4>Side menu</h4>
         ${sw('pinBtn', 'A pin on the side menu', 'A padlock like Neopets’ own, beside “Welcome”: locked, the side menu stays open on every page. (On very wide windows Neopets’ own lock, where you have one, does the same.)')}
         ${sw('pinned', 'Pinned open now', 'The same as clicking the padlock.')}
+        ${sw('sideNoBar', 'No scrollbar on the side menu', 'When it holds more than the window has room for, it still scrolls with the mouse wheel or touchpad, just without a scrollbar at its edge.')}
         ${sw('sideQr', 'Quick Ref above My Pets', 'A Quick Ref row of its own in the side menu, just above My Pets, with My Pets’ picture turned to face the other way: every pet at a glance, one click away.')}
       </div>`],
       ['general', `<div class="bnp-card"><h4>Pets</h4>
@@ -48681,6 +48685,17 @@
       ['otherpages', `<div class="bnp-card"><h4>Home page</h4>
         ${sw('hpLevel', 'Your pets on one line', 'Every pet on the home page stands on the same line, its name under it level with the others’. Neopets puts a pet that’s taller than it is wide lower than the rest; NE draws it a little smaller instead, never lower.')}
       </div>`],
+      ['otherpages', `<div class="bnp-card"><h4>The Battledome</h4>
+        ${sw('bdHelp', 'The Battledome helper', 'A panel on the Battledome’s pages: fight the raid boss or any challenger you’ve unlocked, your pet’s loadout picked each round (weapons and abilities in your order, a one-use item kept for its turn), healing with only your own items (bought on the Shop Wizard when you run out, never over your price or your daily limit), the day’s prizes as Neopets counts them, and which challengers you still have to unlock and how. The pet, loadouts and healing items are in the panel.')}
+        <div class="bnp-trsub" data-needs="bdHelp"${f.bdHelp !== false ? '' : ' hidden'}>
+          ${sw('bdSet', 'Pick my loadout each round', 'In the arena your loadout’s weapons and ability are picked for you, round by round; you press Fight.')}
+          ${sw('bdAgain', 'After a loss, heal and go again', 'A few seconds after a loss it heals your pet and takes it back to the same fight. A Stop button shows while it counts down.')}
+          ${sw('bdAuto', 'Fight for me', 'BATTLE! starts a run: it presses Fight for you too, fight after fight, until the run is done or you press Stop. How long a run lasts (a number of fights, today’s prizes, or until you stop it) and its breaks are in the panel’s Fight tab.')}
+          ${sw('bdBg', 'In a background tab too', 'It keeps going while the Battledome is in a tab you’re not looking at, on time (it skips the arena’s replays there so a round doesn’t wait on slowed animations). Off: it waits till you’re back on that tab.')}
+          <div class="bnp-trrisk" role="note"><i aria-hidden="true">${WARN_SVG}</i><p><b>Use at your own risk.</b> With Fight for me on, NE plays the Battledome for you: it presses Fight, uses your healing items and spends your Neopoints on more, by itself, till the run ends. Neopets’ rules don’t allow programs that play for you.</p></div>
+          <p class="bnp-note">Its look is in the panel’s Look tab: Neopets (your theme’s colours), the raid boss, or any Battledome arena’s own, and it can wear the arena you’re fighting in.</p>
+        </div>
+      </div>`],
       ['otherpages', `<div class="bnp-card"><h4>Training schools</h4>
         ${sw('trainer', 'Trainer mode', 'On a page of the Mystery Island or Ninja school, it trains the pets you give goals to by itself, one step at a time with a person’s pause between: a finished course completed, the next course started toward each pet’s goals, the codestones it asks for bought from the cheapest shop when your inventory hasn’t got them (under your limits below), then paid. Its band on the school’s pages says what it’s doing, with Stop; its Trainer button there gives your pets their goals. It never cancels a course, and keeps going in a school’s page left open in another tab too, unless you turn that off below.')}
         <div class="bnp-trrisk" role="note"><i aria-hidden="true">${WARN_SVG}</i><p><b>Use at your own risk.</b> Once you choose stats for a pet, Trainer mode acts on your account by itself: it starts and pays for courses, takes codestones out of your SDB and spends your Neopoints in other players’ shops. It goes slowly, like a person, and only while one of the schools’ pages is open, but Neopets’ rules don’t allow automating the site. With no pet chosen it does nothing; switch it off here to have no Trainer at all.</p></div>
@@ -48739,6 +48754,7 @@
       if (k === 'ssAvail') { if (S.features.ssAvail) ssPage(); else ssOff(); }
       if (k === 'hpLevel') hpLevel();
       if (k === 'trainer' || /^tr[A-Z]/.test(k)) trainerFeature();
+      if (/^bd[A-Z]/.test(k)) { const bp = document.querySelector('.bnp-bd'); if (k === 'bdHelp' && !S.features.bdHelp) { if (bp) bp.remove(); } else if (bp && bp.__bdRender) bp.__bdRender(); else if (k === 'bdHelp') { try { bdHelper(); } catch (e) { report(e); } } }   // (the Battledome's panel, as you've set it, at once)
       if (k === 'hubPal') hubPal();
       if (k === 'lookup9999') lookup9999();
       if (k === 'boardPal') boardPal();
@@ -49821,6 +49837,8 @@
     html.bnp-alertpeek .bnp-rems:not([data-bnp="alertsample"]), html.bnp-alertpeek .bnp-pagesay:not([data-bnp="alertsample"]), html.bnp-alertpeek .bnp-notice:not([data-bnp="alertsample"]) { visibility: hidden; }   /* (Show me's alerts out: the real ones of the moment step aside) */
     /* the side menu: the pin (Neopets' own padlock, drawn the same way) and Switch Pet */
     #navprofiledropdown__2020.bnp-pinned { display: block !important; }
+    html.bnp-side-nobar #navprofiledropdown__2020 { scrollbar-width: none; }   /* (taller than the window: it scrolls as it always has, with no scrollbar at its edge, as Neopets' own menus in the top bar have none) */
+    html.bnp-side-nobar #navprofiledropdown__2020::-webkit-scrollbar { display: none; }
     #navprofiledropdown__2020 .bnp-lock { position: absolute; right: .5em; z-index: 3; height: 26px; width: 26px; margin-top: 15px; background-color: rgba(0, 0, 0, .5); border-radius: 5px; opacity: .5; cursor: pointer; transition: all .5s ease-out; }
     #navprofiledropdown__2020 .bnp-lock:hover, #navprofiledropdown__2020 .bnp-lock:focus-visible { opacity: .85; outline: none; }
     #navprofiledropdown__2020 .bnp-lock.locked { opacity: 1; }
@@ -54600,6 +54618,13 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.5', '2026-11-10', [
+      'The Battledome: a helper panel for the raid boss or any challenger: your pet, its loadout picked each round, healed between fights',
+      'Battledome healing: only your own items, bought on the Shop Wizard when you run out (never over your price; a daily limit if you want one)',
+      'Battledome: Fight for me (off unless you turn it on, at your own risk) for a number of fights, today’s prizes, or until you stop it',
+      'Battledome: loadouts saved from each pet’s Equipment page, the challengers you still have to unlock and how, and a look for every arena',
+      'Left Sidebar: when it’s taller than the window it still scrolls, with no scrollbar (Settings › Left Sidebar › Scrolling)',
+    ]],
     ['5.4.4', '2026-11-10', [
       'Left Sidebar: your Neoboard avatar above “Welcome”, framed like your pet picture, with ⇆ to switch it: all yours, favourites and worn lately first, one click',
       'Bank: the Current Balance on the counter much bigger, its tile just wide enough for any balance and grown to the left, clear of the bank manager',
@@ -55352,12 +55377,1717 @@
     void c.offsetWidth;
     c.classList.add('bnp-lit');
   }
+  // ───────────────────────── The Battledome (bd*): the raid boss or a challenger, loadouts, healing, runs of fights, challengers ─────────────────────────
+  // (built 2026-11-10 from the user's own recording of a heal, a buy and a boss fight; the source and its bench are in the session's scratchpad bdheal/)
+  function bdHelper() {   // (Settings › Other pages › The Battledome; a panel of its own on the Battledome's pages)
+    if (FRAME || S.features.bdHelp === false || location.hostname !== 'www.neopets.com' || !/^\/dome\//.test(location.pathname) || document.querySelector('.bnp-bd')) return;
+    const W = PAGE;   // (the page's own functions: invView2, useInvItem, raidModOpenClaim, BDFight, jQuery)
+    const kvGet = (k, d) => get(k, d);
+    const kvSet = (k, v) => set(k, v);
+    const whoAmI = () => nclMe();
+    const FEAT0 = { bdAgain: true, bdSet: true, bdAuto: false, bdBg: true, bdLook: 'neo', bdLookMatch: false };
+    const themeNow = () => { try { const b = themeBar(); return b && b.bar ? { bar: b.bar, ink: inkReads(b.ink, b.bar) } : null; } catch (_) { return null; } };   // (your site theme's bar colour: the Neopets look wears it)
+    const bgSleep = (ms) => bmSleep(ms);   // (Buy Mode's worker timer: keeps time in a background tab)
+    const featGet = (k) => (S.features[k] == null ? FEAT0[k] : S.features[k]);
+    const featSet = (k, v) => { S.features[k] = v; save(); };
+    const reportErr = (e) => report(e);
+
+    const SPEED = Number(W.__bnpBdSpeed) > 0 ? Number(W.__bnpBdSpeed) : 1;   // (the test bench only)
+    const PATH = location.pathname;
+    const ACCT = whoAmI();
+    if (!ACCT) return;   // (signed out: nothing to do)
+
+    // ───────────────────────── constants ─────────────────────────
+    const IMG = 'https://images.neopets.com';
+    const ART = {
+      battle: `${IMG}/dome/pages/buttons/battle.png`,   // the Battledome's own BATTLE! button: 274×76, normal / hover / grey
+      timer: (slug) => `${IMG}/dome/raid/${slug}/timer.png`,
+      bg: (slug) => `${IMG}/dome/raid/${slug}/module-bg.png?v=20261031`,
+    };
+    const BOSS0 = { id: 713, name: 'Monoceraptor', slug: 'monoceraptor', dir: '00713_c8de14d6ac_monoceraptor', art: `${IMG}/dome/raid/monoceraptor/713.png` };
+    const ITEM0 = 'Bubbling Healing Goo';
+    const ITEM0_IMG = `${IMG}/items/mag_healing_green.gif`;
+    const DAY_PRIZES = 20;   // (Premium's; every fight's end says the real number)
+    const TOUGH = [[1, 'Easy'], [2, 'Medium'], [3, 'Hard']];
+    const BD_CHAL = [
+      [86, 'Advisor Broo', 'other', 'Random while playing Dice-A-Roo.', '/games/dicearoo.phtml', '00086_278ccb57ea_advisorbroo'],
+      [7, 'Balthazar', 'event', 'Unlocked via a Random Event, which can occur anywhere on the site.', '', '00007_9f6d5cc6f1_balthazar'],
+      [90, 'Boochi', 'event', 'Unlocked via a Random Event, which can occur anywhere on the site.', '', '00090_672dafdaa3_boochi'],
+      [37, 'Cave Chia', 'refresh', 'Refresh at the second "Cave Paintings" page.', '/prehistoric/painting2.phtml', '00037_445cfc1b7e_cavechia'],
+      [31, 'Chia Clown', 'auto', 'This challenger is automatically available.', '', '00031_f5208f232a_chiaclown'],
+      [24, 'Chiazilla', 'refresh', 'Refresh at the Maraqua Ruins or New Maraqua map.', '/water/index_ruins.phtml/', '00024_ba6107cdea_chiazilla'],
+      [63, 'Commander Garoo', 'refresh', 'Refresh at Virtupets Space Station Supply Deck.', '/space/index.phtml/', '00063_6e4c93ce04_commandergaroo'],
+      [2, 'Count von Roo', 'event', 'Unlocked via a Random Event, which can occur anywhere on the site.', '', '00002_71c5326658_countvonroo'],
+      [185, 'Cybunny Scout', 'visit', 'Visit the display link for the Cybunny Scout TCG.', '/tcg/displayCard.phtml?edid=3&id=45', '00185_e2ee24c05b_cybunnyscout'],
+      [208, 'Donny', 'auto', 'This challenger is automatically available.', '', '00208_8dfb00e6a0_donny'],
+      [5, 'Edna', 'other', "Complete one of Edna's Quests.", '/halloween/witchtower.phtml', '00005_41179b0c31_edna'],
+      [14, 'Evil Sloth Clone', 'refresh', 'Refresh at Kreludor.', '/moon/index.phtml/', '00014_fb20e96642_evilslothclone'],
+      [159, 'Eyrieki', 'other', 'Random while exploring the Temple of 1,001 Tombs.', '/desert/ldp/temple.phtml?enter=1', '00159_3273305658_eyrieki'],
+      [1, 'Flaming Meerca', 'auto', 'This challenger is automatically available.', '', '00001_8cbfb9cf16_flamingmeerca'],
+      [66, 'Ghost Lupe', 'visit', 'Visit the Classic Neohome at 131 Soup Alley, Neopia Central.', '/neohome.phtml?type=neighbourhood&location=0&street_name=4&street_number=131', '00066_5ee23bbaae_ghostlupe'],
+      [89, 'Giant Ghostkerchief', 'visit', 'Visit the 2003 Halloween New Features page.', '/nf.phtml/?nf_date=2003-10-27', '00089_587057fc03_giantghostkerchief'],
+      [92, 'Giant Hungry Malevolent Chomby', 'refresh', 'Refresh at the Giant Omelette.', '/prehistoric/omelette.phtml', '00092_e0e92ae4a6_gianthungrymalevolentchomby'],
+      [211, 'Giant Space Fungus', 'premium', 'This challenger is automatically available with an active Premium subscription.', '', '00211_ea41c92694_giantspacefungus'],
+      [210, 'Giant Spectral Mutant Walein', 'auto', 'This challenger is automatically available.', '', '00210_e6de64fe99_giantspectralmutantwalein'],
+      [38, 'Grarrg', 'refresh', 'Refresh at Tyrannian Town Hall.', '/prehistoric/townhall.phtml', '00038_d186d5f2a8_grarrg'],
+      [3, 'Harry the Mutant Moehog', 'auto', 'This challenger is automatically available.', '', '00003_b6e179eccb_harrythemutantmoehog'],
+      [27, 'Highland Chia', 'auto', 'This challenger is automatically available.', '', '00027_73352cdf1a_highlandchia'],
+      [28, 'Jelly Chia', 'visit', "Visit the Jelly Chia's Gallery of Evil page.", '/evil/showcreature.phtml?villain=7', '00028_65ffab466f_jellychia'],
+      [212, 'Jetsam Ace', 'premium', 'This challenger is automatically available with an active Premium subscription.', '', '00212_719eadcc38_jetsamace'],
+      [105, 'Kastraliss', 'refresh', 'Search "kastraliss" in the search bar and refresh the results.', '/search.phtml?s=kastraliss', '00105_4e47027b05_kastraliss'],
+      [62, 'Kasuki Lu', 'other', 'Have the item "Kasuki Lu" in your inventory, and click to view it.', '/inventory.phtml', '00062_5e773cf087_kasukilu'],
+      [34, 'Kauvara', 'visit', 'Visit the Kauvara, Magic Shopkeeper Neopedia entry.', '/neopedia.phtml?neopedia_id=9', '00034_9ec0b5b951_kauvara'],
+      [26, 'Koi Warrior', 'refresh', 'Refresh at Maraqua.', '/water/index.phtml', '00026_aa83536006_koiwarrior'],
+      [104, 'Lab Ray Scientist', 'refresh', 'Unlock the Secret Lab Ray (via redeeming a Secret Lab Map), then refresh on the "Select a Pet" page.', '/lab2.phtml', '00104_53b6165d4b_labrayscientist'],
+      [178, 'Lady Frostbite', 'visit', 'Visit the Storytelling Contest - Week 98.', '/art/storytell.phtml?issue=98', '00178_ef200ba252_ladyfrostbite'],
+      [17, 'Magnus the Torch', 'visit', 'Visit The Volcano in Tyrannia.', '/prehistoric/volcano.phtml', '00017_b30b2b12ea_magnusthetorch'],
+      [88, 'Meerca Henchmen', 'refresh', 'Refresh at the Trap Door in the Lost Desert.', '/desert/tr4pd00r.phtml', '00088_1339065c3a_meercahenchmen'],
+      [60, 'Meuka', 'event', 'There are two possible ways to unlock Meuka. The first is to have a pet get Sneezles or Neoflu, and then visit the Quick Ref page. The second is via a Random Event where he eats an item from your inventory, which can occur anywhere on the site.', '/quickref.phtml', '00060_1a05a43772_meuka'],
+      [102, 'Mootix Warrior', 'auto', 'This challenger is automatically available.', '', '00102_da5f99a3b1_mootixwarrior'],
+      [158, 'Mr. Chuckles', 'refresh', 'Refresh at the Coconut Shy.', '/halloween/coconutshy.phtml', '00158_f748fbc0d9_mrchuckles'],
+      [4, 'Mummy', 'visit', "Visit the Mummy's page in the Haunted Woods.", '/halloween/mummy.phtml', '00004_858f060505_mummy'],
+      [207, 'Neopets V2', 'auto', 'This challenger is automatically available.', '', '00207_a307e09e12_neopetsv2'],
+      [11, 'Pant Devil', 'event', 'Unlocked via a Random Event, which can occur anywhere on the site.', '', '00011_a95e91dd53_pantdevil'],
+      [87, 'Plumbeard', 'visit', 'Visit Room 110 of the Swashbuckling Academy.', '/pirates/academy.phtml?room=110', '00087_964fa5ead4_plumbeard'],
+      [57, 'Punchbag Bob', 'auto', 'This challenger is automatically available.', '', '00057_e33b4579fc_punchbagbob'],
+      [153, 'Qasalan Mummy', 'refresh', 'Refresh at Chapter 6 of the Lost Desert Plot.', '/desert/ldp/index.phtml?chapter=6', '00153_2dce8597ef_qasalanmummy'],
+      [19, 'Robo Grarrl', 'auto', 'This challenger is automatically available.', '', '00019_929ada0249_robograrrl'],
+      [35, 'Ryshu the Nimmo', 'visit', 'Visit the "Ryshu Goes on a Grand Quest" Neopedia entry.', '/neopedia.phtml?neopedia_id=13', '00035_2c7969e6ea_ryshuthenimmo'],
+      [206, 'S750 Kreludan Defender Robot', 'auto', 'This challenger is automatically available.', '', '00206_77cb4f274c_s750kreludandefenderrobot'],
+      [39, 'Sabre-X', 'event', 'Unlocked via a Random Event in Tyrannia that awards a random omelette.', '/prehistoric/plateau.phtml', '00039_503cfd5784_sabrex'],
+      [85, 'Sidney', 'other', 'Win a Level 3 prize from a Deserted Fairgrounds Scratch Card.', '/halloween/scratch.phtml', '00085_7500c1136b_sidney'],
+      [125, 'Slug Monster', 'refresh', 'Have the item "Slug Flakes" in your inventory and refresh at the Sea Slug page.', '/water/seaslug.phtml', '00125_800484d1b9_slugmonster'],
+      [91, 'Snow Beast', 'event', 'Unlocked via a Random Event in Terror Mountain that awards a random snowball. This can occur on any page considered part of the mountain (Advent Calendar, Igloo Garage Sale and so on).', '/winter/index.phtml', '00091_6037b9aa2a_snowbeast'],
+      [33, 'Snow Faerie', 'other', "Complete one of the Snow Faerie's quests.", '/winter/snowfaerie.phtml', '00033_647acc8dd2_snowfaerie'],
+      [12, 'Space Faerie', 'premium', "Redeem a Rare Item Code at Grundo's Warehouse (free promotion codes work). Since May 4, 2025 it is also unlocked while you have Premium.", '/space/warehouse/prizecodes.phtml', '00012_a706773e08_spacefaerie'],
+      [25, 'Spider Grundo', 'visit', "Visit the Spider Grundo's Gallery of Evil entry.", '/evil/showcreature.phtml?villain=6', '00025_deb1adb67a_spidergrundo'],
+      [61, 'Tekkitu the Witch Doctor', 'other', 'Take your Neopet on a Tiki Tour.', '/island/tikitours.phtml', '00061_e0a34e5abc_tekkituthewitchdoctor'],
+      [30, 'The Black Pteri', 'event', 'Unlocked via a Random Event, which can occur anywhere on the site.', '', '00030_f3c347bef6_theblackpteri'],
+      [9, 'The Brain Tree', 'other', 'Complete a Brain Tree Quest.', '/halloween/braintree.phtml', '00009_90790aba15_thebraintree'],
+      [152, 'The Drenched', 'refresh', "Refresh on the Maraqua weather page when it's raining. It only rains between February and October; April 14th (Grey Day) always rains.", '/weather.phtml?world=10', '00152_47171f993c_thedrenched'],
+      [8, 'The Esophagor', 'other', "Complete one of the Esophagor's Quests.", '/halloween/esophagor.phtml', '00008_cffc8ce3a7_theesophagor'],
+      [36, 'The Snowager', 'other', "Get blasted when trying to sneak past him while he's asleep.", '/winter/snowager.phtml', '00036_0da5978482_thesnowager'],
+      [23, 'Tiki Tack Man', 'visit', 'Visit the Tiki Tack store.', '/objects.phtml?type=shop&obj_type=21', '00023_a4e168bd95_tikitackman'],
+      [93, 'Turmaculus', 'other', 'Have the Turmaculus eat your petpet when you try to wake him up.', '/medieval/turmaculus.phtml', '00093_577241235f_turmaculus'],
+      [209, 'Valin', 'auto', 'This challenger is automatically available.', '', '00209_40058d46f7_valin'],
+      [65, 'Vira', 'event', 'Unlocked via a Random Event, which can occur anywhere on the site.', '', '00065_718dcab7f5_vira'],
+      [22, 'Zafara Rogue', 'refresh', 'Refresh at the Deep Catacombs.', '/art/', '00022_11ae0185a3_zafararogue'],
+    ];   // (every challenger you unlock by doing something, from Jellyneo's Challenger Checklist, 2026-11-10: [Neopets id, name, kind, how, link, picture folder under dome/npcs/])
+    const CHAL_KIND = [['event', 'Random events'], ['refresh', 'Refresh on a page'], ['visit', 'Visit a page'], ['other', 'Do something'], ['premium', 'With Premium']];
+
+    // ───────────────────────── small helpers ─────────────────────────
+    const $ = (s, r = document) => r.querySelector(s);
+    const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const num = (n) => Number(n || 0).toLocaleString('en-US');
+    const low = (s) => String(s || '').trim().toLowerCase();
+    const val = (sel) => { const e = $(sel); return e ? String(e.value) : ''; };
+    const sleep = (ms) => bgSleep(ms * SPEED);
+    const pause = (a, b) => sleep(a + Math.random() * (b - a) + (Math.random() < 0.12 ? 400 + Math.random() * 1400 : 0));   // (a person: uneven, now and then a longer look)
+    const until = async (fn, ms = 15000, step = 150) => {
+      const end = Date.now() + ms;
+      for (;;) {
+        let v;
+        try { v = fn(); } catch (e) { if (e && e.bdOwn) throw e; v = null; }
+        if (v) return v;
+        if (Date.now() > end) return null;
+        await bgSleep(step);
+      }
+    };
+    const visible = (el) => !!el && el.isConnected && getComputedStyle(el).display !== 'none' && getComputedStyle(el).visibility !== 'hidden';
+    const fail = (msg, kind = 'err', soft = false) => { const e = new Error(msg); e.bdOwn = true; e.kind = kind; e.soft = soft; return e; };   // (soft: Neopets was slow or hiccuped; the cycle tries again after a pause)
+    const keyOf = (src) => String(src || '').split('?')[0].split('/').pop().toLowerCase();   // (an item's picture file: the same on every Battledome page)
+    const nstDay = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    const nstReset = () => {   // (the next NST midnight, as a time on this computer's clock)
+      const now = new Date();
+      const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(now).map((x) => [x.type, x.value]));
+      const into = ((+p.hour % 24) * 3600 + +p.minute * 60 + +p.second) * 1000;
+      return new Date(now.getTime() + (86400000 - into));
+    };
+    const petPic = (p, size = 2) => (p && p.sci ? `https://pets.neopets.com/cp/${p.sci}/1/${size}.png` : `https://pets.neopets.com/cpn/${encodeURIComponent((p && p.name) || '')}/1/${size}.png`);
+    const portrait = (dir, id) => (dir ? `${IMG}/dome/npcs/${dir}/portrait_${id}.png` : '');
+    const npcDir = (src) => (/\/dome\/npcs\/([^/]+)\//.exec(src || '') || [])[1] || '';
+    const ago = (t) => { const s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
+    const left = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60); return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : m ? `${m}m` : `${s}s`; };
+    const clock = (t) => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const click = (el) => { if (!el) return; if (typeof el.click === 'function') el.click(); else el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })); };   // (the element's own click: in Tampermonkey `window` is its sandbox's wrapper, which a MouseEvent's view won't take)
+    const int = (v, d, lo, hi) => { const n = parseInt(String(v).replace(/[^\d]/g, ''), 10); return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : d; };
+
+    // ───────────────────────── this account's data ─────────────────────────
+    const KEY = `bdhelp@${ACCT}`;
+    const DEF = () => ({
+      v: 2, pet: '', target: { kind: 'boss' },
+      mode: { kind: 'count', count: 25, items: true, np: true, rest: true, restEvery: 25, restMin: 5 },
+      heal: { items: [{ name: ITEM0, img: ITEM0_IMG, max: 3500, batch: 5 }], below: 0, spend: 100000 },
+      lo: {}, pool: {}, pets: {}, boss: null, raid: null, chal: null, day: null, inv: {}, swUntil: 0, tot: 0, hist: [], log: [],
+    });
+    const load = () => { const s = kvGet(KEY, null); const d = Object.assign(DEF(), s && typeof s === 'object' ? s : {}); for (const k of ['mode', 'heal']) d[k] = Object.assign(DEF()[k], d[k] || {}); if (!Array.isArray(d.heal.items)) d.heal.items = DEF().heal.items; return d; };
+    let D = load();
+    const edit = (fn) => { D = load(); fn(D); kvSet(KEY, D); return D; };
+    const day = (d) => { const t = nstDay(); if (!d.day || d.day.d !== t) d.day = { d: t, fights: 0, wins: 0, losses: 0, prizes: null, cap: null, npWon: 0, npDone: false, items: [], used: 0, bought: 0, np: 0 }; return d.day; };
+    const petOf = (d, name) => (name ? d.pets[low(name)] || { name } : null);
+    const boss = () => D.boss || BOSS0;
+    const raidLive = () => !!(D.raid && (!D.raid.endsAt || D.raid.endsAt > Date.now()));
+    const raidOver = () => (PATH === '/dome/' || PATH === '/dome/index.phtml' ? !$('#RaidModule') : !!(D.raid && D.raid.endsAt && D.raid.endsAt < Date.now()));   // (known to be over; unknown isn't over)
+    const tgtOf = (d) => (d.target && d.target.kind === 'npc' && d.target.id ? d.target : { kind: 'boss' });
+    const tgtName = (t) => (t.kind === 'npc' ? t.name : boss().name);
+    const tgtPic = (t) => (t.kind === 'npc' ? portrait(t.dir, t.id) : portrait(boss().dir || BOSS0.dir, boss().id));
+    const healItems = (d) => d.heal.items.filter((i) => i && i.name);
+
+    // Loadouts: presets per pet, each an ordered list of weapons and abilities; a "turn" keeps one for that turn only.
+    const loList = (d, pet) => { const L = d.lo[low(pet)]; return L && Array.isArray(L.list) && L.list.length ? L : null; };
+    const loCur = (d, pet) => { const L = loList(d, pet); return L ? L.list.find((x) => x.id === L.cur) || L.list[0] : null; };
+    const loEnsure = (d, pet) => { const k = low(pet); if (!loList(d, pet)) d.lo[k] = { cur: 'p1', list: [{ id: 'p1', name: 'Main', w: [], a: [] }] }; return d.lo[k]; };
+    const poolOf = (d, pet) => d.pool[low(pet)] || { items: [], abil: [] };
+    const slim = (x) => ({ key: x.key, name: x.name, img: x.img });
+
+    // This tab's cycle in progress (it carries over page loads): { step: 'dome' | 'barracks' | 'fight' | 'arena', pet, tries, healed, need }
+    const run = {
+      get() { try { const r = JSON.parse(sessionStorage.getItem('bnp-bd-run') || 'null'); return r && Date.now() - r.at < 4 * 60000 ? r : null; } catch (_) { return null; } },
+      set(r) { sessionStorage.setItem('bnp-bd-run', JSON.stringify(Object.assign({}, r, { at: Date.now() }))); },
+      end() { sessionStorage.removeItem('bnp-bd-run'); },
+    };
+    // "Fight for me" (opt-in): this tab's run of fights: { on, fights, wins, max, kind, items, np, rest, restEvery, restMin, restUntil, startedAt }
+    const autoRun = {
+      get() { try { const a = JSON.parse(sessionStorage.getItem('bnp-bd-auto') || 'null'); return a && a.on ? a : null; } catch (_) { return null; } },
+      set(a) { sessionStorage.setItem('bnp-bd-auto', JSON.stringify(a)); },
+      end(why, kind = 'info') { const a = autoRun.get(); sessionStorage.removeItem('bnp-bd-auto'); if (a && why) note(why, kind); },
+    };
+    // One tab at a time heals or buys (two tabs must never buy twice).
+    const TAB = sessionStorage.getItem('bnp-bd-tab') || (() => { const t = Math.random().toString(36).slice(2, 10); sessionStorage.setItem('bnp-bd-tab', t); return t; })();
+    const LOCK = `bdbusy@${ACCT}`;
+    const lock = {
+      take() { const cur = kvGet(LOCK, null); if (cur && cur.tab !== TAB && Date.now() - cur.t < 90000) return false; kvSet(LOCK, { tab: TAB, t: Date.now() }); return true; },
+      keep() { kvSet(LOCK, { tab: TAB, t: Date.now() }); },
+      drop() { const cur = kvGet(LOCK, null); if (cur && cur.tab === TAB) kvSet(LOCK, null); },
+    };
+
+    let ui = null;   // the panel on this page
+    const note = (msg, kind = 'info') => {
+      edit((d) => { d.log.unshift({ t: Date.now(), m: msg, k: kind }); d.log.length = Math.min(d.log.length, 60); });
+      if (ui) ui.say(msg, kind);
+    };
+
+    // ───────────────────────── unseen frames: Neopets' own pages, used the way a person would ─────────────────────────
+    const frameEl = (name) => {
+      let f = document.querySelector(`iframe[name="${name}"]`);
+      if (!f) {
+        f = document.createElement('iframe');
+        f.name = name;
+        f.setAttribute('aria-hidden', 'true');
+        f.tabIndex = -1;
+        f.style.cssText = 'position:fixed;left:-12000px;top:0;width:1100px;height:900px;border:0;opacity:0;pointer-events:none;';
+        document.body.appendChild(f);
+      }
+      return f;
+    };
+    const pageWin = (f) => { const pf = W.document.querySelector(`iframe[name="${f.name}"]`); return pf ? pf.contentWindow : f.contentWindow; };
+    const frameWait = async (f, pathRe, ready, ms = 30000) => {   // (a NEW document in the frame (the old one is marked first) at that path, with what we need)
+      const doc = await until(() => {
+        const d = f.contentDocument, l = f.contentWindow && f.contentWindow.location;
+        if (!d || !l || l.href === 'about:blank' || d.__bnpBdOld) return null;
+        if (/^\/login/.test(l.pathname)) throw fail('Neopets signed this browser out: sign in again, then press the button.');
+        if (!pathRe.test(l.pathname)) return null;
+        try { const w = pageWin(f); if (w && !w.__bnpBdQuiet) { w.alert = () => {}; w.confirm = () => true; w.__bnpBdQuiet = true; } } catch (_) { /* */ }   // (a page's own pop-up never shows from an unseen frame)
+        return d.readyState !== 'loading' && (!ready || ready(d)) ? d : null;
+      }, ms, 120);
+      if (!doc) throw fail('Neopets took too long to answer. Try again in a moment.');
+      return doc;
+    };
+    const frameGo = async (name, url, pathRe, ready) => {
+      const f = frameEl(name);
+      try { if (f.contentDocument) f.contentDocument.__bnpBdOld = true; } catch (_) { /* */ }
+      f.src = url;
+      return { f, d: await frameWait(f, pathRe, ready) };
+    };
+    const frameDrop = (name) => { const f = document.querySelector(`iframe[name="${name}"]`); if (f) f.remove(); };
+
+    // ───────────────────────── healing: the Inventory's own "Use on <pet>" ─────────────────────────
+    // An unseen /inventory.phtml (it loads its own list); the first of your healing items it holds is used through the page's own
+    // invView2 → "Use on <pet>" → useInvItem, as a click would. Only the items you listed are ever used.
+    // What Neopets wrote in a popup, as you'd read it: its scripts and styles left out (every Use answer starts with a tracking script).
+    const saidIn = (el) => { if (!el) return ''; const c = el.cloneNode(true); for (const x of c.querySelectorAll('script, style, noscript, input, select, button')) x.remove(); return c.textContent.replace(/\s+/g, ' ').trim(); };
+    // The answer's sense: a heal, already well, or a refusal. Neopets' words are kept for the log either way.
+    const HEAL_GAIN = /gains?\s+(\d[\d,]*)\s+hit\s*points?/i;
+    const HEAL_FULL = /(?:fully|completely)\s+(?:recovered|healed|restored)|back to full|full health|feels much better|all (?:of )?(?:its|his|her|their) hit points/i;
+    const HEAL_NOT_FULL = /not (?:yet )?fully recovered/i;
+    const HEAL_NO_NEED = /already (?:at )?(?:full|fully|completely)|doesn'?t need|does not need|is not hurt|isn'?t hurt|not injured|no need to/i;
+    const HEAL_REFUSED = /error|can(?:no|')t (?:be )?use|cannot|not allowed|do(?:es)? not have|don'?t have|not (?:in|found)|unable|too (?:fast|quickly)|slow down|try again/i;
+    async function useItem(pet, before) {   // (before = { key, n }: an earlier try whose answer never came; if one is gone now, that heal went through)
+      const ready = (d) => d.querySelector('#tableRowsId .item-img, .inv-total-count');
+      const { f, d } = await frameGo('bnp-bd-inv', '/inventory.phtml', /^\/inventory\.phtml$/, ready);
+      await pause(500, 1200);
+      const want = healItems(D);
+      const all = $$('.item-img[data-itemname]', d).filter((e) => e.dataset.itemset !== 'nc');
+      const counts = {};
+      for (const it of want) counts[low(it.name)] = all.filter((e) => low(e.dataset.itemname) === low(it.name)).reduce((n, e) => n + (parseInt(e.dataset.itemquantity, 10) || 1), 0);
+      edit((x) => { for (const it of want) x.inv[low(it.name)] = { n: counts[low(it.name)], at: Date.now() }; for (const it of x.heal.items) { const e = all.find((y) => low(y.dataset.itemname) === low(it.name)); if (e && e.dataset.image) it.img = e.dataset.image; } });
+      if (before && counts[before.key] != null && counts[before.key] < before.n) {   // (the slow heal did go through)
+        setTimeout(() => frameDrop('bnp-bd-inv'), 1500);
+        const item = want.find((it) => low(it.name) === before.key);
+        return { item, gained: 0, full: false, unsure: true, text: '', leftAfter: counts[before.key] };
+      }
+      const item = want.find((it) => counts[low(it.name)] > 0);
+      if (!item) return { none: true };
+      const key = low(item.name);
+      const el = all.find((e) => low(e.dataset.itemname) === key);
+      const w = pageWin(f);
+      if (typeof w.invView2 !== 'function') throw fail('The Inventory page has changed: heal by hand this time.');
+      w.invView2(el.id);
+      const sel = await until(() => d.querySelector('#iteminfo_select_action select'), 15000);
+      if (!sel) {
+        frameDrop('bnp-bd-inv');
+        if (!before) { await pause(2500, 5000); return useItem(pet, { key, n: -1 }); }   // (once more, from a fresh Inventory: n -1, as nothing was used)
+        throw fail(`Neopets didn't open the ${item.name}. Try again in a moment.`, 'warn', true);
+      }
+      const opt = [...sel.options].find((o) => low(o.value) === `use on ${low(pet)}`);
+      if (!opt) {
+        const uses = [...sel.options].some((o) => /^use on /i.test(o.value));
+        throw fail(uses ? `The ${item.name} has no "Use on ${pet}". Is ${pet} on this account?` : `The ${item.name} can't be used on a pet. Change it in the Healing tab.`);
+      }
+      await pause(600, 1500);
+      sel.value = opt.value;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+      await pause(400, 1100);
+      if (typeof w.useInvItem !== 'function') throw fail('The Inventory page has changed: heal by hand this time.');
+      w.useInvItem();
+      // The Inventory's own popup: "Loading..." while Neopets works, then its title turns "Success!" with the answer below,
+      // or "Uh oh!" when the request failed (its body then still says Loading...).
+      const ans = await until(() => {
+        const pop = d.querySelector('#invResult');
+        if (!pop) return null;
+        const head = saidIn(pop.querySelector('h3'));
+        if (/uh oh/i.test(head)) return { failed: true };
+        const text = saidIn(pop.querySelector('.popup-body__2020'));
+        if (!text || /^loading\b/i.test(text) || /^loading/i.test(head)) return null;
+        return { text, head };
+      }, 45000);
+      if (!ans || ans.failed) {
+        // No answer, or the request failed: look again before trying again, so a heal that did go through isn't used twice.
+        frameDrop('bnp-bd-inv');
+        if (!before) {
+          if (ui) ui.say(ans ? 'Neopets had a hiccup: checking your inventory…' : 'Neopets is slow: checking your inventory…', 'busy');
+          await pause(3000, 6000);
+          return useItem(pet, { key, n: counts[key] });
+        }
+        throw fail(ans ? "Neopets couldn't use the healing item twice in a row." : "Neopets didn't answer the heal twice in a row.", 'warn', true);
+      }
+      const text = ans.text;
+      const g = HEAL_GAIN.exec(text);
+      const noNeed = !g && HEAL_NO_NEED.test(text);   // (first: "already at full health" isn't a heal, and nothing was used)
+      const full = !noNeed && !HEAL_NOT_FULL.test(text) && HEAL_FULL.test(text);
+      setTimeout(() => frameDrop('bnp-bd-inv'), 1500);
+      if (noNeed) return { item, gained: 0, full: true, noNeed: true, text, leftAfter: counts[key] };
+      if (!g && !full) {
+        // Neither a heal nor a clear no: an unknown wording. A Success answer naming the item, without error words, is still
+        // a use (the item is gone); anything else stops, with Neopets' own words.
+        const used = /success/i.test(ans.head) && !HEAL_REFUSED.test(text) && text.toLowerCase().includes(key);
+        if (!used) throw fail(`Neopets said: "${text.slice(0, 200)}"`);
+        edit((x) => { x.inv[key] = { n: Math.max(0, counts[key] - 1), at: Date.now() }; });
+        return { item, gained: 0, full: false, unsure: true, text, leftAfter: counts[key] - 1 };
+      }
+      edit((x) => { x.inv[key] = { n: Math.max(0, counts[key] - 1), at: Date.now() }; });
+      return { item, gained: g ? +g[1].replace(/,/g, '') : 0, full, text, leftAfter: counts[key] - 1 };
+    }
+
+    // ───────────────────────── buying: the Shop Wizard, then each shop from its results ─────────────────────────
+    async function buyItems(item, want) {
+      if (D.swUntil && Date.now() < D.swUntil) { const e = fail(`The Shop Wizard asked for a break till ${clock(D.swUntil)}.`, 'warn', true); e.until = D.swUntil + 20000 + Math.random() * 60000; throw e; }
+      const dd = day(load());
+      const room = Math.max(0, (D.heal.spend || 0) - dd.np);
+      if (D.heal.spend && room < (item.max || 0) && room <= 0) throw fail(`You've spent ${num(dd.np)} NP on healing today, your daily limit. Raise it in the Healing tab, or heal by hand.`, 'warn');
+      const sw = await frameGo('bnp-bd-sw', '/shops/wizard.phtml', /^\/shops\/wizard\.phtml$/, (d) => d.querySelector('#shopwizard') && d.querySelector('#submit_wizard'));
+      const d = sw.d;
+      await pause(700, 1600);
+      const box = d.querySelector('#shopwizard');
+      box.focus();
+      box.value = item.name;
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+      const crit = d.querySelector('#criteria');
+      if (crit) { crit.value = 'exact'; crit.dispatchEvent(new Event('change', { bubbles: true })); }
+      const area = d.querySelector('#wizard-area');
+      if (area) area.value = 'shop';
+      await pause(500, 1200);
+      d.querySelector('#submit_wizard').click();
+      const res = await until(() => {
+        const r = d.querySelector('#shopWizardFormResults');
+        if (!r) return null;
+        if (r.querySelector('.wizard-results-grid li a[href*="browseshop.phtml"]')) return 'rows';
+        if (r.querySelector('#shopwizard')) return null;
+        const t = r.textContent.replace(/\s+/g, ' ');
+        if (/too busy|come back|break/i.test(t)) return 'busy';
+        if (/did not find|no results|not find anything|nothing/i.test(t)) return 'none';
+        return null;
+      }, 20000);
+      if (res === 'busy') { const t = Date.now() + 31 * 60000; edit((x) => { x.swUntil = t; }); const e = fail(`The Shop Wizard asked for a break (about 30 minutes, till ${clock(t)}).`, 'warn', true); e.until = t + 20000 + Math.random() * 60000; throw e; }
+      if (res === 'none') throw fail(`The Shop Wizard found no ${item.name} just now (it searches a different part of the market each time).`, 'warn', true);
+      if (!res) throw fail("The Shop Wizard didn't answer.", 'warn', true);
+      const rows = $$('#shopWizardFormResults .wizard-results-grid li', d).map((li) => {
+        const a = li.querySelector('a[href*="browseshop.phtml"]');
+        if (!a) return null;
+        return { href: a.getAttribute('href'), price: parseInt(((li.querySelector('.wizard-results-price') || {}).textContent || '').replace(/[^\d]/g, ''), 10), stock: parseInt((li.querySelector('p') || {}).textContent, 10) || 1 };
+      }).filter((r) => r && r.price > 0).sort((a, b) => a.price - b.price);
+      const cheap = rows.filter((r) => r.price <= item.max);
+      if (!cheap.length) throw fail(`The cheapest ${item.name} the Wizard showed is ${num(rows[0] && rows[0].price)} NP, over your ${num(item.max)} NP (you can raise it in the Healing tab).`, 'warn', true);
+      let bought = 0, spent = 0, lastErr = '';
+      const shop = frameEl('bnp-bd-shop');
+      for (const r of cheap) {
+        if (bought >= want) break;
+        if (D.heal.spend && dd.np + spent + r.price > D.heal.spend) { lastErr = 'your daily limit'; break; }
+        lock.keep();
+        if (ui) ui.say(`Buying ${item.name} ${bought + 1} of ${want} (${num(r.price)} NP)…`, 'busy');
+        try { if (shop.contentDocument) shop.contentDocument.__bnpBdOld = true; } catch (_) { /* */ }
+        const a = d.createElement('a');   // (from the Wizard's own page, so the shop opens with the Wizard as its referrer, as a click there does)
+        a.href = r.href;
+        a.target = 'bnp-bd-shop';
+        a.style.display = 'none';
+        d.body.appendChild(a);
+        a.click();
+        a.remove();
+        const sd = await frameWait(shop, /^\/browseshop\.phtml$/, (x) => x.querySelector('.bsp-featured-wrap, .bsp-grid'));
+        const btn = await until(() => { const b = sd.querySelector('.bsp-item--featured .bsp-item__buy'); return b && low(b.dataset.name) === low(item.name) ? b : null; }, 6000);
+        if (!btn) { lastErr = 'already sold'; await pause(900, 2000); continue; }
+        const price = parseInt(btn.dataset.price, 10);
+        if (!(price > 0) || price > item.max) { lastErr = `now ${num(price)} NP`; await pause(900, 2000); continue; }
+        await pause(900, 2200);
+        btn.click();
+        const pop = await until(() => visible(sd.getElementById('bsp-buy-popup')) && sd.getElementById('bsp-buy-confirm'), 6000);
+        if (!pop) { lastErr = 'no confirm'; continue; }
+        await pause(600, 1500);
+        pop.click();
+        const out = await until(() => (visible(sd.getElementById('bsp-buy-success-popup')) ? 'ok' : visible(sd.getElementById('bsp-buy-error-popup')) ? 'err' : null), 20000);
+        if (out === 'ok') {
+          bought++; spent += price;
+          edit((x) => { const y = day(x); y.bought++; y.np += price; const k = low(item.name); x.inv[k] = { n: ((x.inv[k] && x.inv[k].n) || 0) + 1, at: Date.now() }; });
+        } else {
+          const msg = ((sd.getElementById('bsp-buy-error-msg') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+          lastErr = msg || 'refused';
+          if (/inventory|enough|neopoints|full|too many/i.test(msg)) throw fail(`The shop said: "${msg}"${bought ? ` (${bought} bought before that)` : ''}.`);
+        }
+        if (bought < want) await pause(1800, 4200);
+      }
+      setTimeout(() => { frameDrop('bnp-bd-shop'); frameDrop('bnp-bd-sw'); }, 1500);
+      if (!bought) { if (lastErr === 'your daily limit') throw fail(`Buying another ${item.name} would go over your daily limit for healing (${num(D.heal.spend)} NP). Raise it in the Healing tab, or heal by hand.`, 'warn'); throw fail(`Couldn't buy a ${item.name} from the shops the Wizard listed (${lastErr || 'sold out'}).`, 'warn', true); }
+      return { bought, spent };
+    }
+
+    // Heal the pet: the first of your healing items you have; when you have none, a batch of the first one is bought.
+    async function heal(pet) {
+      const items = healItems(D);
+      if (!items.length) throw fail('Add a healing item in the Healing tab first.', 'warn');
+      if (ui) ui.say(`Looking for your ${items.length > 1 ? 'healing items' : items[0].name}…`, 'busy');
+      let r = await useItem(pet);
+      if (r.none) {
+        const it = items[0];
+        if (ui) ui.say(`No ${it.name} left: asking the Shop Wizard…`, 'busy');
+        const b = await buyItems(it, Math.max(1, Math.min(10, it.batch | 0 || 1)));
+        note(`Bought ${b.bought} ${it.name} for ${num(b.spent)} NP.`, 'ok');
+        await pause(1200, 2600);
+        if (ui) ui.say(`Using a ${it.name} on ${pet}…`, 'busy');
+        r = await useItem(pet);
+        if (r.none) throw fail(`The ${it.name} you bought isn't in your inventory yet. Try again in a moment.`);
+      }
+      edit((x) => {
+        const p = x.pets[low(pet)] || (x.pets[low(pet)] = { name: pet });
+        const max = p.max || 0;
+        if (r.full && max) p.hp = max;
+        else if (r.unsure) p.hp = Math.max(1, p.hp || 0);   // (used, but how much it gave isn't known: the next page's own HP says)
+        else p.hp = Math.min(max || Infinity, Math.max(0, p.hp || 0) + (r.gained || 0));
+        p.at = Date.now(); p.src = 'heal';
+        if (!r.noNeed) day(x).used++;
+      });
+      const nm = r.item ? r.item.name : 'healing item';
+      if (r.noNeed) note(`${pet} didn't need healing: ${r.text ? `Neopets said "${r.text.slice(0, 140)}"` : 'Neopets said so'}.`, 'ok');
+      else if (r.unsure) note(r.text ? `Used a ${nm} on ${pet} (${r.leftAfter} left). Neopets said: "${r.text.slice(0, 140)}"` : `Neopets was slow, but the ${nm} was used on ${pet} (${r.leftAfter} left).`, 'ok');
+      else note(r.full ? `${pet} is fully healed (${r.leftAfter} ${nm} left).` : `${pet} gained ${r.gained} HP (${r.leftAfter} ${nm} left).`, 'ok');
+      return r;
+    }
+    const needsHeal = (p) => {
+      if (!p || typeof p.hp !== 'number') return false;
+      if (p.hp <= 0) return true;
+      const t = tgtOf(D);
+      return t.kind === 'npc' && D.heal.below > 0 && p.max > 0 && p.hp < (p.max * D.heal.below) / 100;
+    };
+
+    // ───────────────────────── the cycle: heal, then back to the fight ─────────────────────────
+    let busy = false, stopAsked = false, chalBusy = false;
+    async function startCycle(opts = {}) {
+      if (busy) return;
+      D = load();
+      const pet = D.pet, t = tgtOf(D);
+      if (!pet) { if (ui) { ui.open('pets'); ui.say('Choose the pet to fight with first.', 'warn'); } return; }
+      if (t.kind === 'boss' && !raidLive() && PATH !== '/dome/' && PATH !== '/dome/index.phtml') { /* (the Battledome page says) */ }
+      if (!lock.take()) { if (ui) ui.say("Another Neopets tab is healing or buying right now. Try again when it's done.", 'warn'); return; }
+      stopAsked = false;
+      if (opts.autoStart && featGet('bdAuto')) { const m = D.mode; autoRun.set({ on: true, fights: 0, wins: 0, max: m.kind === 'count' ? Math.max(1, m.count | 0) : 0, kind: m.kind, items: !!m.items, np: !!m.np, rest: !!m.rest, restEvery: Math.max(1, m.restEvery | 0), restMin: Math.max(1, m.restMin | 0), restUntil: 0, startedAt: Date.now() }); }
+      run.set({ step: 'dome', pet, tries: 0, healed: false, need: !!opts.needHeal });
+      if (PATH === '/dome/' || PATH === '/dome/index.phtml') return domeStep();
+      location.href = '/dome/';   // (as the arena's own Exit does: back to the Battledome)
+    }
+    function stopCycle(why) {
+      stopAsked = true;
+      autoRun.end();
+      run.end();
+      lock.drop();
+      busy = false;
+      cancelTick();
+      arena.countdown = 0;
+      if (ui) { ui.render(); if (why) ui.say(why, 'warn'); }
+    }
+    const guard = () => { if (stopAsked) throw fail('Stopped.', 'warn'); };
+    const bgOk = () => featGet('bdBg') !== false;   // (keep going in a background tab)
+    const waitShown = async () => { while (document.hidden && !bgOk() && !stopAsked) { if (ui && !waitShown.said) { waitShown.said = true; ui.say("Paused while you're on another tab: it carries on when you're back.", 'warn'); } await bgSleep(700); } waitShown.said = false; };
+    function cycleFailed(e) {
+      busy = false;
+      const was = run.get();
+      if (e && e.soft && was && !stopAsked && ((was.soft || 0) < 3 || e.until)) {   // (Neopets was slow or hiccuped: a minute's wait, then the cycle again from the Battledome page)
+        lock.drop();
+        const at = e.until || Date.now() + 50000 + Math.random() * 40000;
+        run.set({ step: 'dome', pet: was.pet, tries: 0, healed: false, need: !was.healed || !!was.need, soft: (was.soft || 0) + 1, waitUntil: at });
+        note(`${e.message} Trying again at ${clock(at)}${e.until ? '' : ` (${(was.soft || 0) + 1} of 3)`}.`, 'warn');
+        if (ui) ui.render();
+        if (PATH === '/dome/' || PATH === '/dome/index.phtml') domeStep(); else location.href = '/dome/';
+        return;
+      }
+      run.end();
+      lock.drop();
+      autoRun.end();
+      note(e && e.bdOwn ? e.message : `Something went wrong: ${(e && e.message) || e}`, (e && e.kind) || 'err');
+      if (e && !e.bdOwn) reportErr(e);
+      if (ui) ui.render();
+    }
+
+    async function domeStep() {
+      const r = run.get();
+      if (!r || r.step !== 'dome' || busy) return;
+      busy = true;
+      if (ui) ui.render();
+      try {
+        lock.keep();
+        D = load();
+        const a = autoRun.get();
+        if (a && a.restUntil && a.restUntil > Date.now()) {   // (a break in a run of fights: wait it out here, with its time showing)
+          lock.drop();
+          if (ui) { ui.say(`Taking a break: back at ${clock(a.restUntil)}.`, 'busy'); ui.render(); }
+          for (;;) { const cur = autoRun.get(); if (stopAsked || !cur || !cur.restUntil || cur.restUntil <= Date.now()) break; if (ui) ui.say(`Taking a break: back at ${clock(cur.restUntil)} (${left(cur.restUntil - Date.now())}).`, 'busy'); await bgSleep(1000); }
+          guard();
+          const a2 = autoRun.get(); if (a2) { a2.restUntil = 0; autoRun.set(a2); }
+          if (!lock.take()) throw fail('Another Neopets tab is healing or buying right now.');
+        }
+        if (r.waitUntil && r.waitUntil > Date.now()) {   // (Neopets was slow a moment ago: its wait, with the time showing)
+          lock.drop();
+          for (;;) { const cur = run.get(); if (stopAsked || !cur || !cur.waitUntil || cur.waitUntil <= Date.now()) break; if (ui) ui.say(`Waiting: trying again at ${clock(cur.waitUntil)} (${left(cur.waitUntil - Date.now())}).`, 'busy'); await bgSleep(1000); }
+          if (ui) ui.render();
+          guard();
+          if (!lock.take()) throw fail('Another Neopets tab is healing or buying right now.');
+        }
+        await waitShown();
+        guard();
+        const p = petOf(D, r.pet);
+        if ((r.need || needsHeal(p)) && !r.healed) {
+          await pause(700, 1600);
+          guard();
+          await heal(r.pet);
+          run.set(Object.assign(r, { healed: true, heals: (r.heals || 0) + 1, need: false }));
+          guard();
+        }
+        const t = tgtOf(D);
+        let link;
+        if (t.kind === 'boss') {
+          link = $('#RaidModule a.raid-mod__fight') || $('a[href*="barracks.phtml?raid=1"]');
+          if (!link) throw fail("There's no raid boss to fight right now. Pick a challenger in the Fight tab.");
+        } else link = $('a[href$="/dome/fight.phtml"]') || $('a[href*="/dome/fight.phtml"]') || $('#bdNavBattle') || null;
+        if (ui) ui.say(t.kind === 'boss' ? 'Off to the Barracks…' : 'Off to the Fight page…', 'busy');
+        await pause(900, 2000);
+        guard();
+        await waitShown();
+        run.set(Object.assign(r, { step: t.kind === 'boss' ? 'barracks' : 'fight' }));
+        lock.drop();
+        if (link && link.tagName === 'A') link.click(); else location.href = '/dome/fight.phtml';
+      } catch (e) { cycleFailed(e); }
+    }
+
+    // ───────────────────────── /dome/: the raid's module ─────────────────────────
+    function readRaid() {
+      const m = $('#RaidModule');
+      if (!m) return null;
+      const bossImg = $('.raid-mod__boss', m);
+      const slug = bossImg ? (/\/dome\/raid\/([^/]+)\//.exec(bossImg.src) || [])[1] : '';
+      const id = parseInt(m.dataset.npc, 10) || BOSS0.id;
+      const name = (bossImg && bossImg.alt) || BOSS0.name;
+      const tiles = $$('.raid-mod__section:not(.raid-mod__section--community) .raid-mod__tile', m).map((t) => ({
+        at: parseInt(((t.querySelector('.raid-mod__tile-label') || {}).textContent || '').replace(/[^\d]/g, ''), 10) || 0,
+        name: (t.querySelector('.raid-mod__tile-box') || {}).title || '',
+      }));
+      const dmg = parseInt((($('.raid-mod__section-sub', m) || {}).textContent || '').replace(/[^\d]/g, ''), 10) || 0;
+      const next = tiles.find((t) => t.at > dmg) || null;
+      const prev = [...tiles].reverse().find((t) => t.at <= dmg) || null;
+      const cd = $('.raid-mod__countdown', m);
+      return {
+        boss: { id, name, slug: slug || BOSS0.slug, dir: id === BOSS0.id ? BOSS0.dir : '', art: slug ? `${IMG}/dome/raid/${slug}/${id}.png` : BOSS0.art },
+        raid: { dmg, next: next && next.at, nextName: next && next.name, prevAt: prev ? prev.at : 0, claim: $$('.raid-mod__claim', m).length, endsAt: cd && cd.dataset.left ? Date.now() + parseInt(cd.dataset.left, 10) * 1000 : null, community: parseInt((($('.raid-mod__total', m) || {}).textContent || '').replace(/[^\d]/g, ''), 10) || 0, at: Date.now() },
+      };
+    }
+    function keepRaid(x) {   // (and the damage a fight does, from how far your total moved since the last look)
+      edit((d) => {
+        const old = d.raid;
+        if (old && old.dmg != null && x.raid.dmg > old.dmg && d.tot > (old.tot || 0)) {
+          const per = (x.raid.dmg - old.dmg) / (d.tot - (old.tot || 0));
+          x.raid.avg = old.avg ? Math.round(old.avg * 0.6 + per * 0.4) : Math.round(per);
+        } else if (old && old.avg) x.raid.avg = old.avg;
+        x.raid.tot = d.tot;
+        d.boss = x.boss;
+        d.raid = x.raid;
+      });
+    }
+
+    // ───────────────────────── the Barracks (raid boss): Choose a Neopet ─────────────────────────
+    function jsonAfter(src, marker) {   // (`const petsData = {…}` isn't on window: read from the script's own text)
+      const i = src.indexOf(marker);
+      if (i < 0) return null;
+      const a = src.indexOf('{', i);
+      if (a < 0) return null;
+      let depth = 0, q = '', bs = false;
+      for (let k = a; k < src.length; k++) {
+        const c = src[k];
+        if (q) { if (bs) bs = false; else if (c === '\\') bs = true; else if (c === q) q = ''; continue; }
+        if (c === '"' || c === "'") q = c;
+        else if (c === '{') depth++;
+        else if (c === '}' && --depth === 0) { try { return JSON.parse(src.slice(a, k + 1)); } catch (_) { return null; } }
+      }
+      return null;
+    }
+    const WHY = [[/no hit points/i, 'hp'], [/too hungry/i, 'hungry'], [/too sick/i, 'sick'], [/volunteer/i, 'volunteer']];
+    const whyOf = (t) => (WHY.find(([re]) => re.test(t || '')) || [])[1] || (t ? 'other' : '');
+    function readBarracks() {
+      let data = null;
+      for (const s of $$('script:not([src])')) { if (s.textContent.includes('const petsData')) { data = jsonAfter(s.textContent, 'const petsData'); break; } }
+      const pets = {};
+      for (const th of $$('.petThumbContainer[data-name]')) {
+        const name = th.dataset.name, x = data && data[name];
+        const why = (($(`.rb-fight_petEligibility .elig[data-name="${CSS.escape(name)}"]`) || {}).textContent || '').trim();
+        const ok = !th.classList.contains('rb-ineligible') && !/no hit points|too hungry|too sick|volunteer|not ready/i.test(why);
+        pets[low(name)] = { name, sci: x ? x.shared_config_id : ((/\/cp\/([a-z0-9]+)\//.exec(($('img', th) || {}).src || '') || [])[1] || ''), lvl: x ? x.level1 : parseInt(th.dataset.level, 10) || 0, hp: x ? x.current_hp : null, max: x ? x.max_hp : null, species: x ? x.type : '', color: x ? x.colour : '', ok, why: ok ? '' : why, at: Date.now(), src: 'barracks' };
+      }
+      return pets;
+    }
+    function readEquipFrames(root) {
+      const items = [];
+      for (const f of $$('.equipFrame', root)) {
+        const minus = f.querySelector('.equipIcon.minus');
+        const img = f.querySelector('img.equipItem');
+        if (!minus || !img || /noitem/i.test(img.src)) continue;
+        let name = ((f.querySelector('.equipItemName') || {}).textContent || '').trim();
+        if (!name) name = [...f.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(' ').trim();
+        if (!name) name = img.title || img.alt || keyOf(img.src).replace(/\.\w+$/, '').replace(/_/g, ' ');
+        items.push({ name: name.replace(/\s+/g, ' '), img: img.src, key: keyOf(img.src) });
+      }
+      return items;
+    }
+    function readAbilities(root) {
+      return $$('img[src*="/bd2/abilities/"]', root).map((im) => {
+        const m = /\/bd2\/abilities\/0*(\d+)_[^/_]+_([a-z0-9]+)\//i.exec(im.src);
+        if (!m) return null;
+        const td = im.closest('td,[title]');
+        return { id: +m[1], name: (td && td.getAttribute('title')) || im.title || im.alt || m[2], img: im.src.replace(/\/large_(\d+)\.png/, '/thumb_$1.png') };
+      }).filter(Boolean);
+    }
+    // A pet's equipment as the helper knows it; Save also lays it into the current loadout (keeping your order and turns).
+    function savePool(pet, items, abil, from, intoLoadout, sig, quiet) {
+      if (!items.length) { if (!quiet) note(`${pet} has nothing equipped: equip weapons first, then save.`, 'warn'); return false; }
+      edit((d) => {
+        const k = low(pet);
+        const old = d.pool[k] || {};
+        d.pool[k] = { items: items.map(slim), abil: abil && abil.length ? abil : old.abil || [], at: Date.now(), from, sig2: sig || '' };
+        if (intoLoadout) {
+          const L = loEnsure(d, pet), lo = L.list.find((x) => x.id === L.cur) || L.list[0];
+          const keep = [];
+          const left2 = items.map(slim);
+          for (const w of lo.w) { const i = left2.findIndex((x) => x.key === w.key); if (i >= 0) { keep.push(Object.assign({}, w, left2[i])); left2.splice(i, 1); } }
+          lo.w = keep.concat(left2.map((x) => Object.assign({ turn: 0 }, x)));
+          if (!lo.a.length && d.pool[k].abil.length) lo.a = d.pool[k].abil.map((x) => ({ id: x.id, name: x.name, img: x.img, turn: 0 }));
+        }
+      });
+      note(`Saved ${pet}'s equipment: ${items.map((i) => i.name).join(', ')}.`, 'ok');
+      return true;
+    }
+
+    async function barracksStep() {
+      const r = run.get();
+      if (!r || r.step !== 'barracks' || busy) return;
+      busy = true;
+      if (ui) ui.render();
+      try {
+        r.tries = (r.tries || 0) + 1;
+        if (r.tries > 3) throw fail("The fight didn't start after a few tries: start it by hand this time.");
+        run.set(r);
+        const pets = readBarracks();
+        edit((d) => { Object.assign(d.pets, pets); });
+        const p = pets[low(r.pet)];
+        if (!p) throw fail(`${r.pet} isn't in your Barracks list. Choose another pet.`);
+        if (!p.ok) {
+          if (whyOf(p.why) === 'hp' && (!r.healed || (r.heals || 0) < 2)) {
+            if (!lock.take()) throw fail('Another Neopets tab is healing or buying right now.');
+            await pause(800, 1800);
+            guard();
+            await heal(p.name);
+            run.set(Object.assign(r, { healed: true, heals: (r.heals || 0) + 1 }));
+            lock.drop();
+            await pause(900, 2000);
+            guard();
+            location.reload();   // (the Barracks decides who may fight as it loads)
+            return;
+          }
+          throw fail(cantFight(p.name, p.why));
+        }
+        await waitShown();
+        if (ui) ui.say(`Choosing ${p.name}…`, 'busy');
+        await pause(700, 1700);
+        guard();
+        const thumb = $(`.petThumbContainer[data-name="${CSS.escape(p.name)}"]`);
+        if (!thumb.classList.contains('selectedPet')) thumb.click();
+        await pause(700, 1800);
+        guard();
+        const go = $('#BattleContinueButton');
+        if (!go || go.classList.contains('disabledButton')) throw fail("The Barracks won't let this pet continue. Check the page, then try again.");
+        run.set(Object.assign(r, { step: 'arena' }));
+        if (ui) ui.say('Into the arena…', 'busy');
+        go.click();   // (the page's own fightBoss() starts the battle and opens the arena; if Neopets refuses, it says so in its own pop-up)
+        setTimeout(() => { if (visible($('#InBattleConfirmationPopup'))) { stopCycle(); note('Neopets thinks a battle is still going: use its "Go to Battledome" button.', 'warn'); } }, 2500);
+        setTimeout(() => { if (location.pathname === '/dome/barracks.phtml') { busy = false; run.end(); autoRun.end(); if (ui) { ui.render(); ui.say("The fight didn't start. Neopets may have said why in a pop-up.", 'warn'); } } }, 20000);
+      } catch (e) { cycleFailed(e); }
+    }
+    const cantFight = (name, why) => { const w = whyOf(why); return w === 'hungry' ? `${name} is too hungry to fight: feed them, then press the button again.` : w === 'sick' ? `${name} is too sick to fight: cure them first.` : w === 'volunteer' ? `${name} is volunteering at the Neohospital and can't fight.` : `${name} can't fight right now${why ? `: "${why}"` : ''}.`; };
+
+    // ───────────────────────── the Fight page (/dome/fight.phtml): a challenger ─────────────────────────
+    function readFight(doc) {   // (every challenger this account can fight, from Step 3's list)
+      return $$('tr.npcRow[data-oppid]', doc).map((tr) => {
+        const im = tr.querySelector('.oppImage');
+        const m = im && /url\(["']?([^"')]+)/.exec(im.getAttribute('style') || '');
+        return { id: +tr.dataset.oppid, name: ((tr.querySelector('td.name') || {}).textContent || '').replace(/\s+/g, ' ').trim(), img: m ? m[1] : '', dome: +tr.dataset.domeid || 0, diff: ((tr.querySelector('td.diff') || {}).textContent || '').trim() };
+      }).filter((r) => r.id && r.name);
+    }
+    function keepFight(list) {
+      if (!list.length) return;
+      edit((d) => {
+        const old = d.chal && Array.isArray(d.chal.ids) ? d.chal.ids : null;
+        const ids = list.map((r) => r.id);
+        const fresh = old ? ids.filter((i) => !old.includes(i)) : [];
+        d.chal = { at: Date.now(), list: list.map((r) => ({ id: r.id, name: r.name, dir: npcDir(r.img), dome: r.dome, diff: r.diff })), ids, fresh: fresh.length ? fresh : (d.chal && d.chal.fresh) || [], freshAt: fresh.length ? Date.now() : (d.chal && d.chal.freshAt) || 0 };
+      });
+    }
+    function readFightPets() {   // (each pet's Hit Points from Step 1's boxes; can it fight, from the page's own BDFight.elig)
+      const out = {};
+      let elig = null;
+      try { elig = W.BDFight && W.BDFight.elig; } catch (_) { /* */ }
+      for (const box of $$('.petInfoBox[data-name]')) {
+        const name = box.dataset.name;
+        const hp = /(\d+)\s*\/\s*(\d+)/.exec(((box.querySelector('.statValue.row1.leftValue') || {}).textContent || ''));
+        const e = elig && elig[name];
+        out[low(name)] = Object.assign({ name }, hp ? { hp: +hp[1], max: +hp[2] } : {}, e ? { ok: !!e.eligible } : {}, { at: Date.now(), src: 'fight' });
+      }
+      return out;
+    }
+    async function checkFight() {
+      const { d } = await frameGo('bnp-bd-fight', '/dome/fight.phtml', /^\/dome\/fight\.phtml$/, (x) => x.querySelector('tr.npcRow'));
+      const list = readFight(d);
+      setTimeout(() => frameDrop('bnp-bd-fight'), 1200);
+      if (!list.length) throw fail('The Fight page had no challengers on it just now. Try again in a moment.');
+      keepFight(list);
+      return list;
+    }
+    async function fightStep() {
+      const r = run.get();
+      if (!r || r.step !== 'fight' || busy) return;
+      busy = true;
+      if (ui) ui.render();
+      try {
+        r.tries = (r.tries || 0) + 1;
+        if (r.tries > 3) throw fail("The fight didn't start after a few tries: start it by hand this time.");
+        run.set(r);
+        D = load();
+        const t = tgtOf(D);
+        if (t.kind !== 'npc') throw fail('Choose a challenger in the Fight tab first.');
+        const pets = readFightPets();
+        edit((d) => { for (const [k, v] of Object.entries(pets)) d.pets[k] = Object.assign({}, d.pets[k] || {}, v); });
+        const thumb = $$(`.petThumbContainer[data-name="${CSS.escape(r.pet)}"]`).find((x) => !x.closest('.bx-clone')) || $(`.petThumbContainer[data-name="${CSS.escape(r.pet)}"]`);
+        if (!thumb) throw fail(`${r.pet} isn't on your Fight page. Choose another pet.`);
+        const p = pets[low(r.pet)] || {};
+        if (p.ok === false) {
+          if ((p.hp === 0 || needsHeal(p)) && (!r.healed || ((r.heals || 0) < 2 && p.hp === 0))) {
+            if (!lock.take()) throw fail('Another Neopets tab is healing or buying right now.');
+            await pause(800, 1800);
+            guard();
+            await heal(r.pet);
+            run.set(Object.assign(r, { healed: true, heals: (r.heals || 0) + 1 }));
+            lock.drop();
+            await pause(900, 2000);
+            guard();
+            location.reload();
+            return;
+          }
+          throw fail(cantFight(r.pet, p.hp === 0 ? 'no hit points' : ''));
+        }
+        const row = $(`#npcTable .npcRow[data-oppid="${t.id}"]`);
+        if (!row) throw fail(`${t.name} isn't on your Fight page any more. Pick another challenger.`);
+        await waitShown();
+        if (ui) ui.say(`Choosing ${r.pet}…`, 'busy');
+        await pause(700, 1600); guard();
+        click(thumb);
+        await pause(600, 1400); guard();
+        const n1 = $('#bdFightStep1 div.nextStep');
+        if (n1 && n1.classList.contains('disabled')) throw fail(cantFight(r.pet, ''));
+        click(n1);
+        await pause(700, 1500); guard();
+        click($('#bdFightStep2 div.typeContainer.pve'));
+        await pause(500, 1200); guard();
+        click($('#bdFightStep2 div.nextStep'));
+        await pause(800, 1700); guard();
+        if (ui) ui.say(`Choosing ${t.name}, ${(TOUGH.find((x) => x[0] === t.tough) || TOUGH[0])[1]}…`, 'busy');
+        if (!visible(row)) { const all = $('#bdFightStep3 div.filters div.domeIconImg[data-domeid="0"]'); if (all) { click(all); await pause(400, 900); } }
+        const cell = row.querySelector(`div.tough[data-tough="${t.tough || 1}"]`) || row.querySelector('div.tough');
+        click(cell);
+        await pause(700, 1600); guard();
+        const go = $('#bdFightStep3FightButton');
+        if (!go || go.classList.contains('disabled')) throw fail("The Fight page didn't take that challenger. Check the page, then try again.");
+        run.set(Object.assign(r, { step: 'arena' }));
+        if (ui) ui.say('Into the arena…', 'busy');
+        click(go);   // (the page's own BDFight.step3.fight(): startFight.php, then the arena)
+        setTimeout(() => { if (location.pathname === '/dome/fight.phtml') { busy = false; run.end(); autoRun.end(); if (ui) { ui.render(); ui.say("The fight didn't start. Neopets may have said why in a pop-up.", 'warn'); } } }, 20000);
+      } catch (e) { cycleFailed(e); }
+    }
+
+    // ───────────────────────── the arena ─────────────────────────
+    const arena = { pet: '', p2: '', boss: false, ended: false, applying: false, pressing: false, round: null, pressed: null, started: false, paused: false, timer: 0, countdown: 0, result: null, mine: false, warned: false };
+    function arenaInfo() {
+      let pet = (($('#p1name') || {}).textContent || '').trim(), p2 = (($('#p2name') || {}).textContent || '').trim(), isBoss = false, npc = 0;
+      for (const s of $$('script:not([src])')) {
+        const t = s.textContent;
+        if (!pet || !p2) { const m = /players:\s*\{\s*'([^']+)'\s*:\s*'p1'\s*,\s*'([^']+)'\s*:\s*'p2'/.exec(t); if (m) { pet = pet || m[1]; p2 = p2 || m[2]; } }
+        if (t.includes('startFightBoss.php')) isBoss = true;
+        const n = /npcId:\s*'?(\d+)/.exec(t); if (n && !npc) npc = +n[1];
+      }
+      if (!isBoss && p2 && low(p2) === low(boss().name)) isBoss = true;
+      return { pet, p2, isBoss, npc };
+    }
+    function arenaKit() {
+      const items = $$('#p1equipment img.item').map((i) => ({ id: i.id, name: (i.title || i.alt || '').replace(/:\s*$/, '').trim(), img: i.src, key: keyOf(i.src) }));
+      const abil = $$('#p1ability .ability[data-ability]').map((a) => ({ id: +a.dataset.ability, name: ((a.closest('td') || {}).title || '').trim() || `Ability ${a.dataset.ability}`, img: (a.querySelector('img') || {}).src || '', cd: !!a.querySelector('.cooldown.act') }));
+      return { items, abil };
+    }
+    const arenaReady = () => val('#battlestatus') === '1' && val('#showintro') === '0' && !(W.Battledome && W.Battledome.showingActions) && !arena.ended;
+    // This round's picks from the loadout: weapons kept for this turn first, then the rest in your order (two copies of one item can both go); the first ability that's ready.
+    function planRound(lo, round, kit) {
+      const w = [], used = new Set();
+      const take = (x) => { const it = kit.items.find((i) => i.key === x.key && !used.has(i.id)); if (it) { used.add(it.id); w.push(it); } };
+      for (const x of lo.w.filter((y) => +y.turn === round)) if (w.length < 2) take(x);
+      for (const x of lo.w.filter((y) => !+y.turn)) if (w.length < 2) take(x);
+      let ab = null;
+      const ready = (x) => { const a = kit.abil.find((y) => y.id === x.id); return a && !a.cd ? a : null; };
+      for (const x of lo.a.filter((y) => +y.turn === round)) { ab = ready(x); if (ab) break; }
+      if (!ab) for (const x of lo.a.filter((y) => !+y.turn)) { ab = ready(x); if (ab) break; }
+      const missing = lo.w.filter((x) => !kit.items.some((i) => i.key === x.key)).map((x) => x.name);
+      return { w, ab, missing };
+    }
+    async function applyLoadout() {
+      if (arena.applying || !featGet('bdSet') || !arenaReady()) return;
+      const step = val('#step');
+      if (arena.round === step) return;
+      D = load();
+      const lo = loCur(D, arena.pet);
+      if (!lo || (!lo.w.length && !lo.a.length)) { arena.round = step; return; }
+      arena.applying = true;
+      try {
+        const round = (+step || 0) + 1;
+        const kit = arenaKit();
+        const plan = planRound(lo, round, kit);
+        if (plan.missing.length && !arena.warned) { arena.warned = true; note(`${arena.pet} doesn't have ${[...new Set(plan.missing)].join(', ')} equipped any more: the loadout uses what's there.`, 'warn'); }
+        const want = plan.w.map((x) => x.id);
+        let changed = false;
+        for (const slot of [1, 2]) {   // (a slot holding something not in this round's picks is cleared first)
+          const cur = val(`#p1e${slot}`);
+          const menu = $(`#p1e${slot}m`);
+          if (cur && cur !== '0' && !want.includes(cur) && menu && menu.classList.contains('selected')) { click(menu); changed = true; await sleep(200 + Math.random() * 250); }
+        }
+        for (const id of want) {
+          const have = [val('#p1e1'), val('#p1e2')];
+          if (have.includes(id)) continue;
+          const slot = !have[0] || have[0] === '0' ? 1 : !have[1] || have[1] === '0' ? 2 : 0;
+          if (!slot || !arenaReady()) break;
+          click($(`#p1e${slot}m`));
+          await sleep(250 + Math.random() * 350);
+          const el = document.getElementById(id);
+          if (el) { click(el); changed = true; }
+          await sleep(300 + Math.random() * 400);
+        }
+        const curA = +val('#p1a') || 0;
+        if (plan.ab && curA !== plan.ab.id && arenaReady()) {
+          click($('#p1am'));
+          await sleep(250 + Math.random() * 350);
+          click($(`#p1ability .ability[data-ability="${plan.ab.id}"]`));
+          changed = true;
+        }
+        arena.round = step;
+        if (changed && ui) ui.say(autoRun.get() ? `Round ${round}: your loadout is picked.` : `Round ${round}: your loadout is picked. Press Fight!`, 'ok');
+      } finally { arena.applying = false; }
+    }
+    function learnPicks() {   // (your own picks start an empty loadout; a saved one is never changed)
+      const kit = arenaKit();
+      const byId = (id) => kit.items.find((i) => i.id === id);
+      const e1 = byId(val('#p1e1')), e2 = byId(val('#p1e2'));
+      const ab = kit.abil.find((x) => x.id === (+val('#p1a') || 0));
+      if (!e1 && !e2 && !ab) return;
+      edit((d) => {
+        const L = loEnsure(d, arena.pet), lo = L.list.find((x) => x.id === L.cur) || L.list[0];
+        if (!lo.w.length) lo.w = [e1, e2].filter(Boolean).map((x) => Object.assign({ turn: 0 }, slim(x)));
+        if (!lo.a.length && ab) lo.a = [{ id: ab.id, name: ab.name, img: ab.img, turn: 0 }];
+      });
+    }
+    async function autoPress() {   // ("Fight for me": the intro's Start and each round's Fight, pressed as a person would)
+      const a = autoRun.get();
+      if (!a || !arena.mine || arena.ended || arena.pressing) return;
+      if (document.hidden && !bgOk()) { if (ui && !arena.paused) { arena.paused = true; ui.say("Paused while you're on another tab: it carries on when you're back.", 'warn'); } return; }
+      if (arena.paused) { arena.paused = false; if (ui) ui.say("You're back: carrying on.", 'busy'); }
+      if (val('#showintro') === '1') {
+        const start = $('#start');
+        if (visible(start) && (!arena.started || Date.now() - arena.started > 5000)) { arena.pressing = true; await pause(900, 2200); if (autoRun.get() && visible(start) && (bgOk() || !document.hidden) && val('#showintro') === '1') { arena.started = Date.now(); click(start); } arena.pressing = false; }   // (again after 5 s if that press did nothing: the arena may still have been loading)
+        return;
+      }
+      if (!arenaReady()) return;
+      const step = val('#step');
+      if (arena.pressed === step) return;
+      if (featGet('bdSet') && loCur(D, arena.pet) && arena.round !== step) return;   // (the loadout is picked first)
+      const fb = $('#fight');
+      if (!fb || fb.classList.contains('inactive')) return;
+      arena.pressing = true;
+      try {
+        await pause(800, 2400);
+        if (autoRun.get() && arenaReady() && !fb.classList.contains('inactive') && (bgOk() || !document.hidden)) { arena.pressed = step; click(fb); }
+      } finally { arena.pressing = false; }
+    }
+    function arenaAnswer(data) {
+      if (!data || !data.battle) return;
+      const b = data.battle;
+      if (data.p1 && typeof data.p1.hp === 'number' && arena.pet) edit((d) => { const p = d.pets[low(arena.pet)] || (d.pets[low(arena.pet)] = { name: arena.pet }); p.hp = data.p1.hp; p.at = Date.now(); p.src = 'arena'; });
+      if (b.status !== 2 || arena.ended) { setTimeout(() => { applyLoadout(); }, 900 * SPEED + 500); return; }
+      arena.ended = true;
+      const p1hp = data.p1 ? data.p1.hp : 0, p2hp = data.p2 ? data.p2.hp : 1;
+      const won = p1hp > 0 && p2hp <= 0, lost = p1hp <= 0;
+      const prizes = (b.prizes || []).map((x) => ({ type: x.type, name: x.name, img: x.img, value: x.value || 0 }));
+      const np = prizes.filter((x) => x.type === 'np').reduce((n, x) => n + (+x.value || 0), 0);
+      const items = prizes.filter((x) => x.type !== 'np' && x.type !== 'pp' && x.name);
+      const pp = (b.prizes || []).filter((x) => x.type === 'pp').map((x) => x.text || '').filter(Boolean);
+      edit((d) => {
+        const y = day(d);
+        y.fights++;
+        if (won) y.wins++; else if (lost) y.losses++;
+        if (data.prizeLimit) { y.prizes = data.prizeLimit.PrizesEarnedToday; y.cap = data.prizeLimit.TotalPrizesPerday; }
+        y.npWon += np;
+        if ((won || arena.boss) && b.prizes && !np) y.npDone = true;   // (a win (or a boss fight) that paid no Neopoints: today's NP is done)
+        for (const it of items) y.items.push({ name: it.name, img: it.img });
+        if (y.items.length > 60) y.items.splice(0, y.items.length - 60);
+        if (arena.boss) d.tot = (d.tot || 0) + 1;
+        d.hist.unshift({ t: Date.now(), pet: arena.pet, vs: arena.p2, boss: arena.boss, won, lost, np, items: items.map((x) => x.name).concat(pp) });
+        d.hist.length = Math.min(d.hist.length, 150);
+      });
+      arena.result = { won, lost, prizes, np, again: !!b.fightagain };
+      D = load();
+      if (!arena.mine) { if (ui) ui.render(); return; }
+      // the run of fights: count it, and stop where you asked
+      const a = autoRun.get();
+      let going = !!a, why = '';
+      if (a) {
+        a.fights++;
+        if (won) a.wins = (a.wins || 0) + 1;
+        const y = day(D);
+        if (a.kind === 'count' && a.fights >= a.max) why = `Fought ${a.fights} fights for you, as many as you chose.`;
+        else if (a.kind === 'limits') {
+          const itemsDone = !a.items || (y.cap != null && y.prizes >= y.cap);
+          const npDone = !a.np || y.npDone;
+          if ((a.items || a.np) && itemsDone && npDone) why = `Today's Battledome prizes are all won (${y.prizes != null ? `${y.prizes}/${y.cap} items` : 'items'}${a.np ? ', Neopoints done' : ''}).`;
+        }
+        if (why) { autoRun.end(`${why} Stopped after ${a.fights} fight${a.fights === 1 ? '' : 's'} (${a.wins || 0} won).`, 'ok'); going = false; }
+        else {
+          if (a.rest && a.fights % a.restEvery === 0) { const m = a.restMin * 60000; a.restUntil = Date.now() + Math.round(m * (0.75 + Math.random() * 0.5)); }
+          autoRun.set(a);
+        }
+      }
+      if (ui) ui.render();
+      const t = tgtOf(D);
+      const again = going || (!a && lost && featGet('bdAgain'));   // (a run that just finished is a full stop)
+      if (!again) {
+        if (ui && !why) ui.say(won ? 'Won!' : lost ? `${arena.pet} lost: heal and go again whenever you like.` : 'A draw.', won ? 'ok' : 'warn');
+        if (lost || why) endOverlayButton();
+        return;
+      }
+      const p = petOf(D, arena.pet);
+      const replay = t.kind === 'npc' && won && b.fightagain && !needsHeal(p) && !(autoRun.get() && autoRun.get().restUntil);
+      let n = 3 + Math.floor(Math.random() * 3);
+      arena.countdown = n;
+      const tick = () => {
+        if (stopAsked || !arena.countdown) return;
+        if (document.hidden && !bgOk()) { if (ui) ui.say("Paused while you're on another tab: it carries on when you're back.", 'warn'); later(tick); return; }
+        arena.countdown = --n;
+        if (ui && n > 0) ui.say(cdText(), 'busy');
+        if (n > 0) { later(tick); return; }
+        arena.countdown = 0;
+        if (replay) playAgain(); else startCycle({ needHeal: lost || needsHeal(petOf(D, arena.pet)) });
+      };
+      if (ui) { ui.render(); ui.say(cdText(), 'busy'); }
+      later(tick);
+    }
+    const later = (fn) => { const tok = arena.tok = {}; bgSleep(1000 * SPEED).then(() => { if (arena.tok === tok) fn(); }); };   // (the countdown's next second; cancelTick() drops it)
+    const cancelTick = () => { arena.tok = null; };
+    const cdText = () => (arena.result && arena.result.won && tgtOf(D).kind === 'npc' ? `Won! Next fight in ${arena.countdown}…` : `${arena.pet} lost. Healing and going again in ${arena.countdown}…`);
+    async function playAgain() {   // (a win against a challenger: the arena's own Collect, then its Play Again)
+      try {
+        run.set({ step: 'arena', pet: arena.pet, tries: 0, healed: true });
+        const ack = $('#playground .end_game button.end_ack');
+        if (visible(ack)) { click(ack); await pause(800, 1700); }
+        const pa = $('#bdplayagain');
+        if (!pa) throw fail("The arena's Play Again isn't there: going round by the Battledome.", 'info');
+        if (ui) ui.say('Play again…', 'busy');
+        click(pa);
+        setTimeout(() => { if (location.pathname === '/dome/arena.phtml' && arena.ended) startCycle({}); }, 15000);
+      } catch (e) { startCycle({}); }
+    }
+    function endOverlayButton() {   // (an extra button on Neopets' own end screen, and in its rewards window after Collect; theirs keep doing what they did)
+      const make = () => {
+        const b = document.createElement('div');
+        b.className = 'bnp-bd-endbtn button-default__2020 button-yellow__2020';
+        b.textContent = arena.result && arena.result.lost ? `Heal ${arena.pet} & fight again` : 'Fight again';
+        b.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); cancelTick(); arena.countdown = 0; startCycle({ needHeal: !!(arena.result && arena.result.lost) }); });
+        return b;
+      };
+      const nav = $('#bd_rewardsnav');
+      if (nav && !nav.querySelector('.bnp-bd-endbtn')) { const td = document.createElement('td'); td.appendChild(make()); (nav.querySelector('tr') || nav).appendChild(td); }
+      const put = () => { const host = $('#playground .end_game'); if (!host) return false; if (!host.querySelector('.bnp-bd-endbtn')) host.appendChild(make()); return true; };
+      if (!put()) { const mo = new MutationObserver(() => { if (put()) mo.disconnect(); }); mo.observe(document.body, { childList: true, subtree: true }); setTimeout(() => mo.disconnect(), 60000); }
+    }
+    function arenaPage() {
+      const info = arenaInfo();
+      { const m = /\/dome\/arenas\/\d{3}_[0-9a-f]{10}_([a-z0-9]+)\//.exec(document.documentElement.innerHTML); const x = m && ARENAS.find((y) => y[2].split('_')[2] === m[1]); arenaHere = x ? x[0] : ''; }
+      arena.pet = info.pet;
+      arena.p2 = info.p2;
+      arena.boss = info.isBoss;
+      D = load();
+      const t = tgtOf(D);
+      arena.mine = !!arena.pet && low(arena.pet) === low(D.pet) && (arena.boss ? t.kind === 'boss' : t.kind === 'npc' && (!info.npc || info.npc === t.id || low(info.p2) === low(t.name)));
+      const r = run.get();
+      if (r && r.step === 'arena') run.end();
+      lock.drop();
+      try {
+        const jq = W.jQuery || W.$;
+        jq(W.document).ajaxComplete((ev, xhr, opt) => {
+          if (!opt || !/arena\.php/.test(String(opt.url || ''))) return;
+          let data = null;
+          try { data = xhr.responseJSON && typeof xhr.responseJSON === 'object' ? xhr.responseJSON : JSON.parse(xhr.responseText); } catch (_) { return; }
+          arena.heard = true;
+          try { arenaAnswer(data); } catch (e) { reportErr(e); }
+        });
+      } catch (_) { /* (no jQuery: the loadout is still picked by the timer below) */ }
+      document.addEventListener('click', (e) => { const f = e.target.closest && e.target.closest('#fight'); if (f && !f.classList.contains('inactive') && e.isTrusted) learnPicks(); }, true);
+      (async () => { while (!arena.ended) { try { arenaTick(); } catch (e) { reportErr(e); } await bgSleep(700); } })();
+    }
+    function arenaTick() {
+        const kit = arenaKit();
+        if (arena.pet && (kit.items.length || kit.abil.length)) {
+          const k = low(arena.pet), old = D.pool[k];
+          const sig = JSON.stringify([kit.items.map((i) => i.key), kit.abil.map((x) => x.id)]);
+          if (!old || old.sig !== sig) edit((d) => { const o = d.pool[k] || {}; d.pool[k] = { items: o.items && o.items.length && o.from !== 'arena' ? o.items : kit.items.map(slim), abil: kit.abil.map(({ id, name, img }) => ({ id, name, img })), sig, at: Date.now(), from: o.from && o.from !== 'arena' ? o.from : 'arena' }; });
+        }
+        if (!arena.heard && !arena.ended && $('#playground .end_game') && !$('#fight')) {   // (no word from the page's own requests: its end screen and HP numbers say how it went)
+          const hp = (sel) => { const t = (($(sel) || {}).textContent || '').trim(); const m = /(\d[\d,.]*)\s*([MB])?/i.exec(t); return m ? (m[2] ? 1e9 : +m[1].replace(/,/g, '')) : null; };
+          const lim = /(\d+)\s*\/\s*(\d+)/.exec((($('#prizeLimits') || {}).textContent || ''));
+          const prizes = $$('#bd_rewardsloot img').map((im) => { const name = im.getAttribute('alt') || ''; const np = /neopoints?/i.test(name); return { type: np ? 'np' : 'item', name, img: im.src, value: np ? parseInt(name.replace(/[^\d]/g, ''), 10) || 0 : 0 }; });
+          try { arenaAnswer({ battle: { status: 2, prizes, fightagain: !!$('#bdplayagain') }, p1: { hp: hp('#p1hp') || 0 }, p2: { hp: hp('#p2hp') == null ? 1 : hp('#p2hp') }, prizeLimit: lim ? { PrizesEarnedToday: +lim[1], TotalPrizesPerday: +lim[2] } : undefined }); } catch (e) { reportErr(e); }
+        }
+        if (document.hidden && bgOk() && autoRun.get() && arena.mine && !arena.ended) {   // (a background tab: the arena's own Skip, so a round's replay doesn't crawl on slowed animations)
+          const sk = $('#skipreplay');
+          if (sk && visible(sk) && !sk.classList.contains('replay') && Date.now() - (arena.skipped || 0) > 1500) { arena.skipped = Date.now(); click(sk); }
+        }
+        applyLoadout();
+        autoPress();
+    }
+
+    // ───────────────────────── /dome/neopets.phtml: the Equipment page ─────────────────────────
+    function equipPet() {
+      const shown = $$('.petContainer[data-name]').find((c) => visible(c)) || $$('[data-name]').find((c) => c.querySelector('.equipFrame') && visible(c));
+      if (shown) return { name: shown.dataset.name, root: shown };
+      const t = $('.petThumbContainer.selectedPet[data-name]') || $('.petThumbContainer[data-name]');
+      const q = new URLSearchParams(location.search).get('pet');
+      const name = (t && t.dataset.name) || q || '';
+      const root = (name && $(`.equipTable[data-name="${CSS.escape(name)}"]`)) || $('.equipTable') || document;
+      return { name, root };
+    }
+
+    function equipAuto(force) {   // (what the shown pet has equipped, kept for the helper as you look; the loadout is laid again only when that changed)
+      const ep = equipPet();
+      if (!ep.name || !ep.root || ep.root === document) return;
+      const items = readEquipFrames(ep.root), abil = readAbilities(ep.root);
+      const sig = `${items.map((i) => i.key).join(',')}|${abil.map((x) => x.id).join(',')}`;
+      D = load();
+      const old = poolOf(D, ep.name);
+      if (!force && old.sig2 === sig) { if (ui) ui.render(); return; }
+      if (!items.length) { if (ui) { ui.render(); ui.say(`${ep.name} has nothing equipped. Equip weapons here and they're saved for the helper.`, 'info'); } return; }
+      savePool(ep.name, items, abil, 'equip', true, sig, true);
+      if (ui) { ui.render(); ui.say(`Saved for the helper: ${items.map((i) => i.name).join(', ')}.`, 'ok'); }
+    }
+
+    // ───────────────────────── the look ─────────────────────────
+    const CSS_TEXT = `
+    .bnp-bd{max-width:900px;margin:14px auto 18px;background:var(--bd-bg);border:1px solid var(--bd-frame);border-radius:12px;overflow:hidden;color:var(--bd-ink);text-align:left;font-family:inherit;font-size:14px;line-height:1.38;position:relative;box-shadow:var(--bd-shadow)}
+    .bnp-bd *,.bnp-bd *::before,.bnp-bd *::after{box-sizing:border-box}
+    .bnp-bd button{font-family:inherit}
+    .bnp-bd-cafe,.bnp-bd-title,.bnp-bd-cap,.bnp-bd-petname,.bnp-bd-vs b,.bnp-bd-go-sub,.bnp-bd-stat b,.bnp-bd-band,.bnp-bd-sub,.bnp-bd-steps li,.bnp-bd-pill,.bnp-bd-tag,.bnp-bd-n,.bnp-bd-hptext,.bnp-bd-ko,.bnp-bd-tough,.bnp-bd-tile-q,.bnp-bd-meter-top b,.bnp-bd-chal b,.bnp-bd-card b,.bnp-bd-li b,.bnp-bd-petchip b,.bnp-bd-mini b,.bnp-bd-look b,.bnp-bd-res{font-family:"Cafeteria",'Arial Bold',sans-serif;font-weight:normal}
+    /* head */
+    .bnp-bd-head{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:9px 16px;background:var(--bd-head-bg);color:var(--bd-head-ink);border-bottom:2px solid var(--bd-line)}
+    .bnp-bd-title{font-size:1.45em;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:var(--bd-head-shadow)}
+    .bnp-bd-title b{color:var(--bd-head-accent);font-weight:normal;text-transform:uppercase}
+    .bnp-bd-head.has-art{min-height:0;aspect-ratio:980/111;padding:0 14px;background:var(--bd-head-bg-art) center/100% auto no-repeat,var(--bd-head-bg)}
+    .bnp-bd-gap{width:6px;flex:0 0 6px}
+    .bnp-bd-head.has-art .bnp-bd-title{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+    .bnp-bd-head.has-art .bnp-bd-head-r{position:absolute;top:8px;right:12px;margin:0}
+    .bnp-bd-head-r{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;font-family:"Cafeteria",'Arial Bold',sans-serif;font-size:1.05em}
+    .bnp-bd-ends{display:flex;align-items:center;gap:6px;white-space:nowrap}
+    .bnp-bd-ends img{width:24px;height:24px}
+    .bnp-bd-chip{display:inline-flex;align-items:center;gap:6px;padding:2px 11px;border:2px solid var(--bd-chip-line);border-radius:999px;background:var(--bd-chip-bg);color:var(--bd-chip-ink);white-space:nowrap}
+    .bnp-bd-chip b{color:var(--bd-chip-accent);font-weight:normal}
+    /* stage */
+    .bnp-bd-stage{position:relative;display:grid;grid-template-columns:176px minmax(0,1fr) 284px;gap:18px;padding:16px 18px 16px;align-items:start;background:var(--bd-scene-color) var(--bd-scene) center 50%/cover no-repeat}
+    .bnp-bd-stage::before{content:'';position:absolute;inset:0;background:var(--bd-dim)}
+    .bnp-bd-stage>*{position:relative;z-index:1}
+    .bnp-bd-cap{display:block;margin:0 0 6px;font-size:.92em;letter-spacing:.06em;text-transform:uppercase;color:var(--bd-soft)}
+    .bnp-bd-cap small{font-family:inherit;text-transform:none;letter-spacing:0;color:var(--bd-accent)}
+    .bnp-bd-band{display:block;margin:0 auto 12px;padding:5px 24px;font-size:1.2em;line-height:1.2;text-transform:uppercase;letter-spacing:.5px;color:var(--bd-band-ink);text-align:center;background:var(--bd-band)}
+    .bnp-bd-pet{text-align:center}
+    .bnp-bd-pettile{position:relative;width:158px;height:158px;margin:0 auto;border:2px solid var(--bd-tile-line);border-radius:12px;background:var(--bd-pet-bg);display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .bnp-bd-pettile img{width:150px;height:150px;display:block}
+    .bnp-bd-pettile .bnp-bd-tile-q{font-size:3em}
+    .bnp-bd-pettile.is-down img{filter:grayscale(.85) brightness(.85)}
+    .bnp-bd-ko{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);padding:2px 10px;border-radius:999px;background:var(--bd-badge);border:2px solid var(--bd-badge-line);color:var(--bd-badge-ink);font-size:.95em;white-space:nowrap}
+    .bnp-bd-petname{margin-top:8px;font-size:1.55em;line-height:1.1;color:var(--bd-accent);word-break:break-word}
+    .bnp-bd-petsub{font-size:.85em;color:var(--bd-soft);margin-top:2px}
+    .bnp-bd-hpbar{height:12px;margin:8px auto 3px;max-width:170px;background:var(--bd-hp-track);border:2px solid var(--bd-hp-line);border-radius:10px;overflow:hidden}
+    .bnp-bd-hpbar i{display:block;height:100%;background:var(--bd-hp-fill);border-radius:10px;transition:width .4s}
+    .bnp-bd-hptext{font-size:1.05em}
+    .bnp-bd-hptext small{font-family:inherit;font-size:.8em;color:var(--bd-soft)}
+    .bnp-bd-mid{min-width:0;display:grid;gap:12px}
+    .bnp-bd-vs{display:flex;align-items:center;gap:14px;padding:10px 12px;border:2px solid var(--bd-card-line);border-radius:12px;background:var(--bd-card)}
+    .bnp-bd-vs img{flex:0 0 100px;width:100px;height:100px;border-radius:10px;border:2px solid var(--bd-line);background:var(--bd-tile)}
+    .bnp-bd-vs-k{font-size:.76em;letter-spacing:.08em;text-transform:uppercase;color:var(--bd-soft)}
+    .bnp-bd-vs b{display:block;font-size:1.45em;line-height:1.1;color:var(--bd-ink)}
+    .bnp-bd-vs .bnp-bd-acts{justify-content:flex-start;margin-top:6px}
+    .bnp-bd-tough{display:inline-block;margin-left:6px;padding:0 8px;border-radius:999px;background:var(--bd-badge);border:2px solid var(--bd-badge-line);font-size:.62em;vertical-align:4px;color:var(--bd-badge-ink)}
+    .bnp-bd-groups{display:flex;align-items:flex-start;justify-content:center;gap:14px;flex-wrap:wrap}
+    .bnp-bd-group{display:flex;flex-direction:column;align-items:center}
+    .bnp-bd-group .bnp-bd-cap{text-align:center}
+    .bnp-bd-row,.bnp-bd-kitrow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+    .bnp-bd-tile{width:74px;text-align:center;background:none;border:0;padding:0;color:inherit;cursor:default}
+    button.bnp-bd-tile{cursor:pointer}
+    .bnp-bd-tile-box{position:relative;width:64px;height:64px;margin:0 auto;background:var(--bd-tile);border:2px solid var(--bd-tile-line);border-radius:8px;display:flex;align-items:center;justify-content:center}
+    .bnp-bd-tile.is-on .bnp-bd-tile-box{background:var(--bd-tile-on);border-color:var(--bd-tile-on-line)}
+    button.bnp-bd-tile:hover .bnp-bd-tile-box,button.bnp-bd-tile:focus-visible .bnp-bd-tile-box{border-color:var(--bd-focus);box-shadow:0 0 0 2px var(--bd-focus-ring)}
+    button.bnp-bd-tile:focus-visible{outline:none}
+    .bnp-bd-tile-box img{max-width:58px;max-height:58px;display:block}
+    .bnp-bd-tile-q{font-size:2em;color:var(--bd-accent);line-height:1}
+    .bnp-bd-tag{position:absolute;left:-8px;top:-8px;min-width:22px;height:22px;padding:0 5px;border-radius:999px;background:var(--bd-badge);border:2px solid var(--bd-badge-line);color:var(--bd-badge-ink);font-size:13px;line-height:18px;text-align:center}
+    .bnp-bd-n{position:absolute;right:-8px;bottom:-8px;min-width:24px;height:22px;padding:0 6px;border-radius:999px;background:#2e9e46;border:2px solid #fff;color:#fff;font-size:13px;line-height:18px;text-align:center}
+    .bnp-bd-n.is-zero{background:#c0392b}
+    .bnp-bd-tile-label{font-size:.74em;margin-top:5px;color:var(--bd-label);line-height:1.2;max-height:2.45em;overflow:hidden}
+    .bnp-bd-hint{margin:6px 0 0;text-align:center;font-size:.84em;color:var(--bd-soft)}
+    .bnp-bd-hint b{color:var(--bd-accent);font-weight:normal;font-family:"Cafeteria",'Arial Bold',sans-serif}
+    .bnp-bd-go{text-align:center}
+    .bnp-bd-battle{display:block;width:274px;max-width:100%;height:76px;margin:0 auto;padding:0;border:0;background:url(https://images.neopets.com/dome/pages/buttons/battle.png) 0 0 no-repeat;cursor:pointer;font-size:0;color:transparent;border-radius:6px}
+    .bnp-bd-battle:hover,.bnp-bd-battle:focus-visible{background-position:0 -76px}
+    .bnp-bd-battle:focus-visible{outline:2px solid var(--bd-focus);outline-offset:3px}
+    .bnp-bd-battle:disabled{background-position:0 -152px;cursor:default}
+    .bnp-bd-go-sub{margin-top:4px;font-size:1.15em;color:var(--bd-accent)}
+    .bnp-bd-mode{margin-top:2px;font-size:.84em;color:var(--bd-soft)}
+    .bnp-bd-steps{display:flex;justify-content:center;gap:5px;margin:10px 0 8px;padding:0;list-style:none}
+    .bnp-bd-steps li{padding:2px 10px;border:2px solid var(--bd-step-line);border-radius:999px;background:var(--bd-step-bg);color:var(--bd-step-ink);font-size:.95em}
+    .bnp-bd-steps li.is-now{border-color:var(--bd-step-now-line);color:var(--bd-step-now-ink);background:var(--bd-step-now-bg)}
+    .bnp-bd-steps li.is-done{border-color:#2e9e46;color:var(--bd-ok)}
+    .bnp-bd-status{min-height:2.7em;margin:0 auto;max-width:290px;font-size:.9em;color:var(--bd-ink);display:flex;align-items:center;justify-content:center;gap:6px}
+    .bnp-bd-status.is-err{color:var(--bd-err)}.bnp-bd-status.is-warn{color:var(--bd-warn)}.bnp-bd-status.is-ok{color:var(--bd-ok)}
+    .bnp-bd-status.is-busy::before{content:'';flex:0 0 14px;height:14px;border-radius:50%;border:2px solid var(--bd-accent);border-right-color:transparent;animation:bnp-bd-spin .8s linear infinite}
+    @keyframes bnp-bd-spin{to{transform:rotate(360deg)}}
+    .bnp-bd-acts{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+    /* buttons */
+    .bnp-bd .bnp-bd-pill,.bnp-bd-pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 13px;border:2px solid var(--bd-pill-line,#cfcbbd);border-radius:999px;background:var(--bd-pill-bg,#fff);color:var(--bd-pill-ink,#363636);font-size:1em;line-height:1;cursor:pointer;text-decoration:none!important;white-space:nowrap;box-shadow:var(--bd-pill-shadow,none)}
+    .bnp-bd .bnp-bd-pill:hover,.bnp-bd .bnp-bd-pill:focus-visible,.bnp-bd .bnp-bd-pill.is-on{background:var(--bd-pill-on-bg);color:var(--bd-pill-on-ink);border-color:var(--bd-pill-on-line);outline:none}
+    .bnp-bd .bnp-bd-pill.is-stop{border-color:#e46a5a;color:var(--bd-stop-ink)}
+    .bnp-bd .bnp-bd-pill.is-stop:hover{background:linear-gradient(#ff6b5b,#b51a0e);color:#fff;border-color:#ffb0a5}
+    .bnp-bd .bnp-bd-pill[disabled]{opacity:.45;cursor:default}
+    .bnp-bd .bnp-bd-ico{width:28px;padding:0;font-size:.95em}
+    .bnp-bd-switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:.9em;color:var(--bd-ink);user-select:none}
+    .bnp-bd-switch input{appearance:none;-webkit-appearance:none;flex:0 0 auto;width:36px;height:20px;margin:0;border-radius:999px;background:var(--bd-input-bg);border:2px solid var(--bd-input-line);position:relative;cursor:pointer;transition:background .15s}
+    .bnp-bd-switch input::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--bd-switch-knob);transition:transform .15s}
+    .bnp-bd-switch input:checked{background:#2e9e46;border-color:#1f7a34}
+    .bnp-bd-switch input:checked::after{transform:translateX(16px);background:#fff}
+    .bnp-bd-switch input:focus-visible{outline:2px solid var(--bd-focus);outline-offset:2px}
+    /* foot */
+    .bnp-bd-foot{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:12px 20px;padding:12px 18px 14px;border-top:1px solid var(--bd-divider);background:var(--bd-foot-bg);align-items:center}
+    .bnp-bd-meter-top{display:flex;justify-content:space-between;gap:8px;font-size:.85em;color:var(--bd-soft);margin-bottom:4px}
+    .bnp-bd-meter-top b{color:var(--bd-accent);font-size:1.15em}
+    .bnp-bd-meter{height:14px;background:var(--bd-meter-track);border:2px solid var(--bd-meter-line);border-radius:10px;overflow:hidden}
+    .bnp-bd-meter i{display:block;height:100%;background:var(--bd-meter-fill);border-radius:8px;transition:width .4s}
+    .bnp-bd-meter-sub{margin-top:4px;font-size:.8em;color:var(--bd-soft)}
+    .bnp-bd-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .bnp-bd-stat{text-align:center;padding:6px 4px 5px;border:1px solid var(--bd-card-line);border-radius:10px;background:var(--bd-stat-bg)}
+    .bnp-bd-stat b{display:block;font-size:1.38em;line-height:1.1;color:var(--bd-ink)}
+    .bnp-bd-stat span{font-size:.74em;color:var(--bd-soft)}
+    .bnp-bd-wide{grid-column:1/-1}
+    .bnp-bd-claim{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px;border:2px dashed var(--bd-line);border-radius:10px;color:var(--bd-accent);font-size:.92em}
+    .bnp-bd-won{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;font-size:.86em;color:var(--bd-soft)}
+    .bnp-bd-won img{width:40px;height:40px;background:#fff;border:2px solid var(--bd-tile-on-line);border-radius:8px}
+    /* tabs + drawer */
+    .bnp-bd-tabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:11px 18px;border-top:1px solid var(--bd-divider);background:var(--bd-tabs-bg)}
+    .bnp-bd-drawer{padding:16px 18px 18px;background:var(--bd-drawer-bg);border-top:1px solid var(--bd-divider)}
+    .bnp-bd-drawer[hidden]{display:none}
+    .bnp-bd-sub{margin:18px 0 8px;text-align:center;font-size:1.12em;color:var(--bd-accent)}
+    .bnp-bd-sub small{display:inline-block;min-width:22px;height:20px;margin-left:6px;padding:0 6px;border-radius:999px;background:var(--bd-badge);border:2px solid var(--bd-badge-line);color:var(--bd-badge-ink);font-size:.75em;line-height:16px;vertical-align:2px}
+    .bnp-bd-empty{text-align:center;color:var(--bd-soft);font-size:.9em;margin:4px 0}
+    .bnp-bd-seg{display:inline-flex;flex-wrap:wrap;gap:6px;justify-content:center}
+    .bnp-bd-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px 18px}
+    .bnp-bd-field{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--bd-card-line);border-radius:10px;background:var(--bd-field-bg);font-size:.9em;color:var(--bd-ink)}
+    .bnp-bd-field>.bnp-bd-cap{margin-bottom:0}
+    .bnp-bd-field>small{color:var(--bd-soft);font-size:.9em}
+    .bnp-bd-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--bd-ink)}
+    .bnp-bd-in{height:30px;padding:3px 9px;background:var(--bd-input-bg);border:2px solid var(--bd-input-line);border-radius:7px;color:var(--bd-input-ink);font:inherit;font-size:1em}
+    .bnp-bd-in:focus{outline:none;border-color:var(--bd-focus)}
+    .bnp-bd-in.is-num{width:88px;text-align:right}
+    .bnp-bd-in.is-sm{width:58px;text-align:center}
+    select.bnp-bd-in{padding-right:4px}
+    .bnp-bd-risk{margin:2px 0 4px;padding:9px 11px;border:2px solid #e0a800;border-radius:10px;background:var(--bd-risk-bg);color:var(--bd-risk-ink);font-size:.92em;line-height:1.42}
+    .bnp-bd-risk b{color:var(--bd-risk-head);font-weight:normal;font-family:"Cafeteria",'Arial Bold',sans-serif}
+    .bnp-bd-pets{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+    .bnp-bd-petchip,.bnp-bd-card,.bnp-bd-look{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px 6px;background:var(--bd-card);border:2px solid var(--bd-card-line);border-radius:10px;color:var(--bd-ink);cursor:pointer;text-align:center}
+    .bnp-bd-petchip img{width:60px;height:60px}
+    .bnp-bd-petchip b,.bnp-bd-card b{font-size:1em;line-height:1.15;color:var(--bd-accent);max-width:100%;overflow:hidden;text-overflow:ellipsis}
+    .bnp-bd-petchip b{white-space:nowrap}
+    .bnp-bd-petchip small,.bnp-bd-card small{font-size:.75em;color:var(--bd-soft)}
+    .bnp-bd-petchip:hover,.bnp-bd-petchip:focus-visible,.bnp-bd-card:hover,.bnp-bd-card:focus-visible,.bnp-bd-look:hover,.bnp-bd-look:focus-visible{border-color:var(--bd-focus);outline:none}
+    .bnp-bd-petchip.is-on,.bnp-bd-card.is-on,.bnp-bd-look.is-on{border-color:var(--bd-on-line);background:var(--bd-on-bg);box-shadow:inset 0 0 0 1px var(--bd-on-line)}
+    .bnp-bd-petchip.is-down small{color:var(--bd-err)}
+    .bnp-bd-typed{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:12px}
+    .bnp-bd-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:10px 8px}
+    .bnp-bd-card img{width:100px;height:100px;border-radius:8px;background:var(--bd-tile)}
+    .bnp-bd-find{display:flex;justify-content:center;gap:8px;margin:0 0 12px}
+    .bnp-bd-find .bnp-bd-in{width:260px}
+    .bnp-bd-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .bnp-bd-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+    .bnp-bd-li{display:grid;grid-template-columns:22px 48px minmax(0,1fr) auto;align-items:center;gap:8px;padding:6px 8px;border:2px solid var(--bd-card-line);border-radius:10px;background:var(--bd-card)}
+    .bnp-bd-li>span:first-child{font-family:"Cafeteria",'Arial Bold',sans-serif;color:var(--bd-accent);text-align:center}
+    .bnp-bd-li img{width:44px;height:44px;border-radius:7px;background:#fff;border:2px solid var(--bd-tile-on-line)}
+    .bnp-bd-li b{display:block;color:var(--bd-ink);font-size:1.02em;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .bnp-bd-li small{color:var(--bd-soft);font-size:.8em}
+    .bnp-bd-li-r{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+    .bnp-bd-li select.bnp-bd-in{height:26px;font-size:.85em;padding:0 2px}
+    .bnp-bd-li.is-turn{border-color:var(--bd-line)}
+    .bnp-bd-add{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bd-divider)}
+    .bnp-bd-presets{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:12px}
+    .bnp-bd-chal-top{display:flex;align-items:center;justify-content:center;gap:24px;flex-wrap:wrap;margin:2px 0 8px}
+    .bnp-bd-chal-top .bnp-bd-stat{min-width:110px}
+    .bnp-bd-chal-when{display:flex;align-items:center;gap:10px;font-size:.86em;color:var(--bd-soft)}
+    .bnp-bd-chal-new{margin:6px 0 4px;text-align:center;color:var(--bd-ok);font-size:.92em}
+    .bnp-bd-chal-new b{font-family:"Cafeteria",'Arial Bold',sans-serif;font-weight:normal;color:var(--bd-ink)}
+    .bnp-bd-chal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:10px}
+    .bnp-bd-chal{display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--bd-card);border:2px solid var(--bd-card-line);border-radius:10px}
+    .bnp-bd-chal img{flex:0 0 100px;width:100px;height:100px;border-radius:8px;background:var(--bd-tile);border:2px solid var(--bd-line)}
+    .bnp-bd-chal b{display:block;margin:2px 0 4px;font-size:1.22em;line-height:1.1;color:var(--bd-accent)}
+    .bnp-bd-chal p{margin:0 0 8px;font-size:.84em;line-height:1.38;color:var(--bd-ink)}
+    .bnp-bd-log{list-style:none;margin:0;padding:0;max-height:240px;overflow:auto;font-size:.86em}
+    .bnp-bd-log li{display:flex;gap:10px;padding:5px 2px;border-bottom:1px solid var(--bd-divider)}
+    .bnp-bd-log time{flex:0 0 74px;color:var(--bd-soft)}
+    .bnp-bd-log .is-err{color:var(--bd-err)}.bnp-bd-log .is-ok{color:var(--bd-ok)}.bnp-bd-log .is-warn{color:var(--bd-warn)}
+    .bnp-bd-hist{width:100%;border-collapse:collapse;font-size:.86em}
+    .bnp-bd-hist td{padding:5px 6px;border-bottom:1px solid var(--bd-divider);vertical-align:middle}
+    .bnp-bd-hist td:first-child{color:var(--bd-soft);white-space:nowrap}
+    .bnp-bd-res{display:inline-block;min-width:44px;padding:0 6px;border-radius:999px;text-align:center;font-size:.95em;color:#fff}
+    .bnp-bd-res.is-won{background:#2e9e46}.bnp-bd-res.is-lost{background:#c0392b}.bnp-bd-res.is-draw{background:#8a7a4a}
+    /* the Look tab */
+    .bnp-bd-looks{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:10px}
+    .bnp-bd-look{padding:6px 6px 8px;gap:6px}
+    .bnp-bd-look i{display:block;position:relative;width:100%;aspect-ratio:980/420;border-radius:7px;overflow:hidden;background:var(--lk-color,#222) var(--lk-scene) center/cover no-repeat;border:1px solid rgba(0,0,0,.25)}
+    .bnp-bd-look i::after{content:'';position:absolute;left:0;right:0;top:0;height:28%;background:var(--lk-head) center top/100% auto no-repeat}
+    .bnp-bd-look i em{position:absolute;left:8px;right:8px;bottom:8px;display:flex;gap:4px;font-style:normal}
+    .bnp-bd-look i em span{flex:1;height:10px;border-radius:999px;border:1px solid rgba(0,0,0,.25)}
+    .bnp-bd-look b{font-size:1.02em;color:var(--bd-ink)}
+    .bnp-bd-look small{font-size:.75em;color:var(--bd-soft)}
+    /* compact (Barracks, Fight page, Equipment page) */
+    .bnp-bd--compact .bnp-bd-stage{grid-template-columns:120px minmax(0,1fr) 284px;gap:16px;padding:14px 16px}
+    .bnp-bd--compact .bnp-bd-pettile{width:108px;height:108px}
+    .bnp-bd--compact .bnp-bd-pettile img{width:100px;height:100px}
+    .bnp-bd--compact .bnp-bd-petname{font-size:1.3em}
+    /* the arena's strip */
+    .bnp-bd--strip{margin:10px auto}
+    .bnp-bd--strip .bnp-bd-head.has-art{aspect-ratio:auto;min-height:58px;background-size:auto 100%,cover}
+    .bnp-bd--strip .bnp-bd-stage{grid-template-columns:auto minmax(0,1fr) auto;gap:14px;padding:10px 14px;align-items:center}
+    .bnp-bd--strip .bnp-bd-tile{width:56px}.bnp-bd--strip .bnp-bd-tile-box{width:48px;height:48px}.bnp-bd--strip .bnp-bd-tile-box img{max-width:44px;max-height:44px}
+    .bnp-bd--strip .bnp-bd-tile-label{display:none}
+    .bnp-bd-mini{display:flex;align-items:center;gap:10px}
+    .bnp-bd-mini img{width:60px;height:60px;border:2px solid var(--bd-tile-line);border-radius:10px;background:var(--bd-tile)}
+    .bnp-bd-mini b{display:block;font-size:1.25em;color:var(--bd-accent)}
+    .bnp-bd--strip .bnp-bd-status{max-width:none;min-height:0;justify-content:flex-start;text-align:left}
+    .bnp-bd-endbtn{margin:10px auto 0;display:inline-block;min-width:220px;color:#000!important;background:linear-gradient(#f6e250,#ebb233)!important;box-shadow:inset 0 0 0 1px #f6e250,inset 0 -3px 2px 3px #c47c19,inset 0 2px 0 1px #fdf9dc,0 0 0 2px #000!important}
+    #playground .end_game .bnp-bd-endbtn{position:relative;z-index:5;display:block;width:max-content;min-width:240px;max-width:320px;margin:10px auto 0;padding:0 22px}
+    @media (max-width:860px){.bnp-bd-stage,.bnp-bd--compact .bnp-bd-stage{grid-template-columns:1fr}.bnp-bd-foot,.bnp-bd-cols{grid-template-columns:1fr}.bnp-bd--strip .bnp-bd-stage{grid-template-columns:1fr}.bnp-bd-head.has-art{aspect-ratio:auto;min-height:64px;background-size:auto 100%,auto}.bnp-bd-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    `;
+    // ───────────────────────── looks: Neopets (your NE theme), the raid boss, and every Battledome arena's own ─────────────────────────
+    const ARENAS = [   // [key, name, folder under dome/arenas/, scene, title strip, light/dark, colours from its art]
+      ['frost', 'Frost Arena', '001_e4ce78270c_icearena', 'ice_arena_bg.jpg', 'frost_arena.png', 'light', { paper: '#f4fbfe', paper2: '#d6eef7', ink: '#0f3a4a', soft: '#47707e', accent: '#1d7fa8', line: '#7cc6df', badge: '#1d7fa8' }],
+      ['cauldron', 'Rattling Cauldron', '002_ba53ceb795_hauntedwoods1', 'stone_arena_bg.jpg', 'rattling_cauldron.png', 'dark', { deep: '#1b1f26', mid: '#363d48', accent: '#bfe7d3', line: '#6e7a88', badge: '#3f6b5c' }],
+      ['neocola', 'Neocola Centre', '003_2dd01eba32_neocolacentre', 'neocola_centre_bg.jpg', 'neocola_centre.png', 'dark', { deep: '#110e30', mid: '#2a1f68', accent: '#ff6adb', line: '#4fdcff', badge: '#d8338c' }],
+      ['deep', 'Dome of the Deep', '004_75ed07cd5e_domeofthedeep', 'dome_of_the_deep_bg.jpg', 'dome_of_the_deep.png', 'dark', { deep: '#062e36', mid: '#125866', accent: '#79f5e8', line: '#3fb9b0', badge: '#0d8a82' }],
+      ['central', 'Central Arena', '005_22bff765ec_centralarena', 'central_arena_bg.jpg', 'central_arena.png', 'light', { paper: '#f7f8fb', paper2: '#e1e4ed', ink: '#2a2b36', soft: '#5d6070', accent: '#a8770a', line: '#a4abbd', badge: '#8a4b22' }],
+      ['pango', 'Pango Palladium', '006_fb8c706cc2_pangopalladium', 'pango_palladium_bg.jpg', 'pango_palladium.png', 'light', { paper: '#fbfbea', paper2: '#e5eec3', ink: '#22401b', soft: '#4f6b3c', accent: '#3f7d22', line: '#9cc27a', badge: '#b5602a' }],
+      ['ugga', 'Ugga Dome', '007_fa0de4213a_uggadome', 'ugga_dome_bg.jpg', 'ugga_dome.png', 'dark', { deep: '#221a14', mid: '#4a3d31', accent: '#ecc65c', line: '#8d7a63', badge: '#8a5a2b' }],
+      ['cosmic', 'Cosmic Dome', '008_3d3d828b3e_cosmicdome', 'cosmic_dome_bg.jpg', 'cosmic_dome.png', 'dark', { deep: '#1a1326', mid: '#47325c', accent: '#ffb680', line: '#b17ad6', badge: '#9c3ccc' }],
+      ['graveyard', 'Forgotten Graveyard', '009_7a812cd6a8_fwr', 'forgotten_graveyard_bg.png', 'forgotten_graveyard.png', 'dark', { deep: '#0b0c12', mid: '#252b32', accent: '#c3d0d5', line: '#56646b', badge: '#4d5e65' }],
+      ['void', 'Void Arena', '021_37198add1d_voidarena', 'voiddomebg.png', 'void_arena.png', 'dark', { deep: '#110a30', mid: '#2c1858', accent: '#d97bff', line: '#8f5be0', badge: '#9238dc' }],
+    ];
+    const STAGING = `${IMG}/dome/pages/staging_bg.jpg`;   // (the Battledome's own pale arena hall)
+    const toHex = (c) => {
+      c = String(c || '').trim();
+      let m = /^#([0-9a-f]{3})$/i.exec(c);
+      if (m) return `#${m[1].split('').map((x) => x + x).join('')}`;
+      if (/^#[0-9a-f]{6}$/i.test(c)) return c.toLowerCase();
+      m = /rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i.exec(c);
+      return m ? `#${[m[1], m[2], m[3]].map((v) => (+v).toString(16).padStart(2, '0')).join('')}` : '';
+    };
+    const rgbOf = (h) => { const n = parseInt((toHex(h) || '#000000').slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+    const hexOf = (a) => `#${a.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('')}`;
+    const mix = (x, y, t) => { const p = rgbOf(x), q = rgbOf(y); return hexOf(p.map((v, i) => v * (1 - t) + q[i] * t)); };   // (t: how much of y)
+    const alpha = (x, o) => { const p = rgbOf(x); return `rgba(${p[0]},${p[1]},${p[2]},${o})`; };
+    const lum = (x) => { const [r, g, b] = rgbOf(x); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; };
+    const darkVars = (p) => {
+      const card = mix(p.line, p.deep, 0.45);
+      return {
+        bg: `linear-gradient(${p.deep}, ${p.mid})`, frame: p.deep, shadow: '0 2px 0 rgba(0,0,0,.25)', ink: '#f7f3ef', soft: mix('#ffffff', p.mid, 0.3), accent: p.accent, label: p.accent, line: p.line,
+        'head-bg': p.headBg || `linear-gradient(#000, ${p.deep})`, 'head-ink': '#ffffff', 'head-accent': p.accent, 'head-shadow': '0 1px 2px rgba(0,0,0,.8)',
+        'chip-bg': 'rgba(0,0,0,.5)', 'chip-line': p.line, 'chip-ink': '#ffffff', 'chip-accent': p.accent,
+        'scene-color': p.deep, dim: `linear-gradient(180deg, ${alpha(p.deep, 0.9)}, ${alpha(p.mid, 0.82)} 70%, ${alpha(p.deep, 0.9)})`,
+        band: `linear-gradient(90deg, ${alpha(p.deep, 0)} 0%, ${p.deep} 8%, ${mix(p.accent, p.deep, 0.55)} 24%, ${p.accent} 40%, ${p.accent} 60%, ${mix(p.accent, p.deep, 0.55)} 76%, ${p.deep} 92%, ${alpha(p.deep, 0)} 100%)`, 'band-ink': mix(p.deep, '#000000', 0.3),
+        tile: alpha(p.deep, 0.85), 'tile-line': card, 'tile-on': '#ffffff', 'tile-on-line': p.accent, badge: p.badge, 'badge-line': p.accent, 'badge-ink': '#ffffff',
+        'pet-bg': `radial-gradient(circle at 50% 40%, ${mix(p.mid, '#ffffff', 0.08)}, ${p.deep} 72%)`, 'hp-track': mix(p.badge, p.deep, 0.5), 'hp-line': p.deep, 'hp-fill': p.accent,
+        card: `linear-gradient(90deg, ${alpha(p.mid, 0.92)}, ${alpha(p.deep, 0.65)})`, 'card-line': card, focus: '#ffffff', 'focus-ring': p.accent,
+        'step-bg': alpha(p.deep, 0.85), 'step-line': card, 'step-ink': mix('#ffffff', p.mid, 0.4), 'step-now-bg': p.badge, 'step-now-line': p.accent, 'step-now-ink': '#ffffff',
+        ok: '#bdf0c8', warn: '#ffe08a', err: '#ffc2b5', 'stop-ink': '#ffd0c8',
+        'pill-bg': `linear-gradient(${p.mid}, ${p.deep})`, 'pill-ink': p.accent, 'pill-line': p.line, 'pill-on-bg': `linear-gradient(${mix(p.accent, '#ffffff', 0.25)}, ${p.accent})`, 'pill-on-ink': mix(p.deep, '#000000', 0.3), 'pill-on-line': mix(p.accent, '#ffffff', 0.25), 'pill-shadow': 'none',
+        'input-bg': alpha(p.deep, 0.9), 'input-line': card, 'input-ink': '#ffffff', 'switch-knob': mix('#ffffff', p.mid, 0.35),
+        divider: alpha(p.line, 0.4), 'foot-bg': 'transparent', 'tabs-bg': 'rgba(0,0,0,.15)', 'drawer-bg': 'rgba(0,0,0,.28)',
+        'meter-track': p.deep, 'meter-fill': `linear-gradient(${mix(p.accent, '#ffffff', 0.3)}, ${p.accent})`, 'meter-line': mix(p.line, p.deep, 0.3),
+        'stat-bg': alpha(p.deep, 0.45), 'field-bg': alpha(p.deep, 0.35), 'risk-bg': 'rgba(0,0,0,.3)', 'risk-ink': '#f7f3ef', 'risk-head': '#ffe08a', 'on-bg': mix(p.mid, p.accent, 0.18), 'on-line': p.accent,
+      };
+    };
+    const lightVars = (p) => {
+      const line2 = mix(p.line, '#ffffff', 0.35);
+      return {
+        bg: p.paper, frame: mix(p.line, '#000000', 0.12), shadow: '0 2px 8px rgba(0,0,0,.08)', ink: p.ink, soft: p.soft, accent: p.accent, label: p.soft, line: p.line,
+        'head-bg': p.headBg, 'head-ink': p.headInk, 'head-accent': p.headAccent || p.headInk, 'head-shadow': p.headShadow || 'none',
+        'chip-bg': p.chipBg, 'chip-line': p.chipLine, 'chip-ink': p.chipInk, 'chip-accent': p.chipAccent,
+        'scene-color': p.paper2, dim: `linear-gradient(180deg, ${alpha(p.paper, p.dim || 0.88)}, ${alpha(p.paper, (p.dim || 0.88) - 0.06)} 70%, ${alpha(p.paper2, p.dim || 0.88)})`,
+        band: p.band || `linear-gradient(90deg, ${alpha(p.paper, 0)} 0%, ${mix(p.accent, p.paper, 0.75)} 12%, ${p.accent} 38%, ${p.accent} 62%, ${mix(p.accent, p.paper, 0.75)} 88%, ${alpha(p.paper, 0)} 100%)`, 'band-ink': p.bandInk || '#ffffff',
+        tile: '#ffffff', 'tile-line': line2, 'tile-on': '#ffffff', 'tile-on-line': p.accent, badge: p.badge, 'badge-line': '#ffffff', 'badge-ink': p.badgeInk || '#ffffff',
+        'pet-bg': `radial-gradient(circle at 50% 40%, #ffffff, ${p.paper2} 78%)`, 'hp-track': mix(p.paper2, '#ffffff', 0.2), 'hp-line': line2, 'hp-fill': 'linear-gradient(#7fd36b,#3e9b35)',
+        card: alpha('#ffffff', 0.9), 'card-line': line2, focus: p.accent, 'focus-ring': alpha(p.accent, 0.3),
+        'step-bg': '#ffffff', 'step-line': line2, 'step-ink': p.soft, 'step-now-bg': p.pillOn || p.accent, 'step-now-line': p.pillOn || p.accent, 'step-now-ink': p.pillOnInk || '#ffffff',
+        ok: '#1f7a34', warn: '#8a5a00', err: '#b42318', 'stop-ink': '#b42318',
+        'pill-bg': `linear-gradient(#ffffff, ${mix(p.paper2, '#ffffff', 0.5)})`, 'pill-ink': p.ink, 'pill-line': line2, 'pill-on-bg': p.pillOn || p.accent, 'pill-on-ink': p.pillOnInk || '#ffffff', 'pill-on-line': mix(p.pillOn || p.accent, '#000000', 0.18), 'pill-shadow': '0 1px 0 rgba(0,0,0,.06)',
+        'input-bg': '#ffffff', 'input-line': line2, 'input-ink': p.ink, 'switch-knob': '#ffffff',
+        divider: mix(p.line, '#ffffff', 0.45), 'foot-bg': alpha(p.paper2, 0.5), 'tabs-bg': alpha(p.paper2, 0.75), 'drawer-bg': p.paper,
+        'meter-track': mix(p.paper2, '#ffffff', 0.3), 'meter-fill': 'linear-gradient(#f6e250,#ebb233)', 'meter-line': '#d9b24a',
+        'stat-bg': '#ffffff', 'field-bg': alpha('#ffffff', 0.7), 'risk-bg': '#fff8dc', 'risk-ink': '#363636', 'risk-head': '#8a5a00', 'on-bg': mix(p.pillOn || p.accent, '#ffffff', 0.86), 'on-line': p.pillOn || p.accent,
+      };
+    };
+    const LOOKS = [['neo', 'Neopets', 'light'], ['boss', 'Raid boss', 'dark'], ...ARENAS.map((x) => [x[0], x[1], x[5]])];
+    let arenaHere = '';   // (the arena page: which arena this fight is in)
+    const lookKey = () => { if (featGet('bdLookMatch') && arenaHere) return arenaHere; const k = featGet('bdLook'); return LOOKS.some((x) => x[0] === k) ? k : 'neo'; };
+    function look(key = lookKey()) {
+      if (key === 'boss') {
+        const v = darkVars({ deep: '#1C0404', mid: '#3C0808', accent: '#EFC13C', line: '#D69826', badge: '#AA0000' });
+        Object.assign(v, { bg: 'linear-gradient(#000,#3C0808)', 'head-bg': 'linear-gradient(#000,#1C0404)', tile: '#270303', 'tile-line': '#690101', 'card-line': '#690101', 'step-line': '#690101', 'input-line': '#690101', 'band-ink': '#270303', 'pill-bg': 'linear-gradient(#3C0808,#1C0404)', 'pill-on-bg': 'linear-gradient(#f6e250,#ebb233)', 'pill-on-ink': '#270303', 'pill-on-line': '#f6e250', 'meter-fill': 'linear-gradient(#f6e250,#ebb233)', 'meter-line': '#7a5615', 'hp-track': '#750B0A', 'hp-line': '#3C0808', 'hp-fill': '#F1C63B', divider: '#690101', 'meter-track': '#270303' });
+        return { key, name: 'Raid boss', kind: 'dark', scene: ART.bg(boss().slug), title: '', vars: v };
+      }
+      const A2 = ARENAS.find((x) => x[0] === key);
+      if (A2) {
+        const [k, name, dir, bg, title, kind, pal] = A2;
+        const scene = `${IMG}/dome/arenas/${dir}/${bg}`;
+        const headBg = `url("${scene}") center 8%/cover, ${pal.deep || pal.paper2}`;
+        const vars = kind === 'dark' ? darkVars(Object.assign({ headBg }, pal)) : lightVars(Object.assign({ headBg, headInk: '#ffffff', headShadow: '0 1px 2px rgba(0,0,0,.8)', chipBg: 'rgba(0,0,0,.5)', chipLine: 'rgba(255,255,255,.6)', chipInk: '#ffffff', chipAccent: '#ffe08a' }, pal));
+        return { key: k, name, kind, scene, title: `${IMG}/dome/arenas/${dir}/${title}`, vars };
+      }
+      const t = themeNow();   // Neopets: white, your NE theme's bar colour for headers and what's chosen
+      const bar = toHex(t && t.bar) || '#4e83c4', barInk = toHex(t && t.ink) || (lum(bar) > 0.6 ? '#2b2b2b' : '#ffffff');
+      const deep = lum(bar) > 0.55 ? mix(bar, '#000000', 0.45) : bar;
+      const vars = lightVars({ paper: '#ffffff', paper2: '#f4f0e4', ink: '#363636', soft: '#6b6b6b', accent: deep, line: '#d9d3c3', badge: bar, badgeInk: barInk, pillOn: bar, pillOnInk: barInk, headBg: `linear-gradient(${mix(bar, '#ffffff', 0.14)}, ${bar})`, headInk: barInk, headAccent: barInk, chipBg: 'rgba(255,255,255,.9)', chipLine: mix(bar, '#000000', 0.18), chipInk: '#363636', chipAccent: deep, dim: 0.86, band: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${mix(bar, '#ffffff', 0.7)} 12%, ${bar} 38%, ${bar} 62%, ${mix(bar, '#ffffff', 0.7)} 88%, rgba(255,255,255,0) 100%)`, bandInk: barInk });
+      return { key: 'neo', name: 'Neopets', kind: 'light', scene: STAGING, title: '', vars };
+    }
+    function applyLook(el) {
+      const L = look();
+      el.dataset.look = L.key;
+      for (const [k, v] of Object.entries(L.vars)) el.style.setProperty(`--bd-${k}`, v);
+      el.style.setProperty('--bd-scene', L.scene ? `url("${L.scene}")` : 'none');
+      el.style.setProperty('--bd-head-bg-art', L.title ? `url("${L.title}")` : 'none');
+      el.classList.toggle('is-dark', L.kind === 'dark');
+      return L;
+    }
+    const addCss = () => { if (document.getElementById('bnp-bd-css')) return; const s = document.createElement('style'); s.id = 'bnp-bd-css'; s.textContent = CSS_TEXT; (document.head || document.documentElement).appendChild(s); };
+
+    function tile({ img, label, tag, n, on, q = '?', btn, data = '', title = '' }) {
+      const t = btn ? 'button' : 'div';
+      return `<${t} class="bnp-bd-tile${on ? ' is-on' : ''}" ${btn ? 'type="button"' : ''} ${data} title="${esc(title || label || '')}"><div class="bnp-bd-tile-box">${img ? `<img src="${esc(img)}" alt="">` : `<span class="bnp-bd-tile-q">${esc(q)}</span>`}${tag ? `<span class="bnp-bd-tag">${esc(tag)}</span>` : ''}${n != null ? `<span class="bnp-bd-n${n ? '' : ' is-zero'}">${n > 99 ? '99+' : n}</span>` : ''}</div>${label ? `<div class="bnp-bd-tile-label">${esc(label)}</div>` : ''}</${t}>`;
+    }
+    const turnOpts = (cur) => `<option value="0"${!+cur ? ' selected' : ''}>Any turn</option>${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => `<option value="${n}"${+cur === n ? ' selected' : ''}>Only turn ${n}</option>`).join('')}`;
+
+    function makePanel(kind) {
+      addCss();
+      const el = document.createElement('section');
+      el.className = `bnp-bd bnp-bd--${kind}`;
+      el.setAttribute('aria-label', 'Battledome helper');
+      let tab = '', status = null, chalAll = false, find = '', renaming = false;
+
+      const stepIdx = () => { const r = run.get(); return !r ? -1 : r.step === 'dome' ? 0 : r.step === 'arena' ? 2 : 1; };
+      const loTiles = (lo, small) => {
+        const w = lo ? lo.w.slice(0, 2) : [], ab = lo ? lo.a[0] : null;
+        const more = lo ? Math.max(0, lo.w.length - 2) + Math.max(0, lo.a.length - 1) : 0;
+        return `${[0, 1].map((i) => tile({ img: w[i] && w[i].img, label: w[i] ? w[i].name : `Weapon ${i + 1}`, tag: String(i + 1), on: !!w[i], btn: !small, data: 'data-bd="tab-loadout"' })).join('')}<span class="bnp-bd-gap"></span>${tile({ img: ab && ab.img, label: ab ? ab.name : 'Ability', tag: '✦', on: !!ab, btn: !small, data: 'data-bd="tab-loadout"' })}${more && !small ? `<span class="bnp-bd-hint" style="align-self:center;margin:0 0 18px">+${more} more</span>` : ''}`;
+      };
+
+      function body() {
+        D = load();
+        const B = boss(), pet = petOf(D, D.pet), lo = D.pet ? loCur(D, D.pet) : null, d = day(D), t = tgtOf(D), r = run.get(), ar = autoRun.get(), st = stepIdx();
+        const down = pet && typeof pet.hp === 'number' && pet.hp <= 0;
+        const hpKnown = pet && typeof pet.hp === 'number';
+        const hpPct = hpKnown && pet.max ? Math.max(0, Math.min(100, (pet.hp / pet.max) * 100)) : 0;
+        const cap = d.cap || DAY_PRIZES;
+        const running = busy || !!r;
+        const LK = look();
+        const head = `<header class="bnp-bd-head${LK.title ? ' has-art' : ''}"><div class="bnp-bd-title"><b>Battledome</b> · ${kind === 'equip' ? 'Your loadout' : t.kind === 'boss' ? esc(B.name) : 'Challengers'}</div><div class="bnp-bd-head-r">${raidLive() && t.kind === 'boss' && D.raid.endsAt ? `<span class="bnp-bd-ends" title="The raid ends at ${esc(new Date(D.raid.endsAt).toLocaleString())}"><img src="${esc(ART.timer(B.slug))}" alt="">${esc(left(D.raid.endsAt - Date.now()))}</span>` : ''}<span class="bnp-bd-chip" title="Battledome prizes today; a new day at ${esc(clock(nstReset()))}">Prizes <b>${d.prizes != null ? `${d.prizes}/${cap}` : `–/${cap}`}</b></span></div></header>`;
+
+        if (kind === 'equip') {
+          const ep = equipPet(), pool = poolOf(D, ep.name), elo = loCur(D, ep.name);
+          return `${head}<div class="bnp-bd-stage"><div class="bnp-bd-pet"><div class="bnp-bd-pettile" style="width:108px;height:108px"><img src="${esc(petPic(petOf(D, ep.name) || { name: ep.name }, 5))}" alt="" style="width:100px;height:100px"></div></div>
+            <div class="bnp-bd-mid"><div><span class="bnp-bd-band">${esc(ep.name || 'This pet')}'s loadout</span><div class="bnp-bd-kitrow">${loTiles(elo, true)}</div>
+            <p class="bnp-bd-hint">${pool.at ? `Equipment saved ${esc(ago(pool.at))}: ${esc(pool.items.map((i) => i.name).join(', '))}` : 'Nothing saved for this pet yet.'}</p></div></div>
+            <div class="bnp-bd-go"><p class="bnp-bd-hint" style="margin-top:0">What ${esc(ep.name || 'this pet')} has equipped is saved for the helper by itself as you look, and goes into its loadout (your order and turns stay). In the arena it picks from it each round.</p>
+            <div class="bnp-bd-acts"><button type="button" class="bnp-bd-pill" data-bd="save-equip">Save again</button>${D.pet && low(D.pet) !== low(ep.name || '') && ep.name ? `<button type="button" class="bnp-bd-pill" data-bd="pick" data-pet="${esc(ep.name)}">Fight with ${esc(ep.name)}</button>` : ''}</div>
+            ${status ? `<div class="bnp-bd-status is-${esc(status.k)}">${esc(status.m)}</div>` : ''}</div></div>`;
+        }
+
+        if (kind === 'strip') {
+          const a = arena.result;
+          let msg = status ? status.m : '', k = status ? status.k : '';
+          if (arena.countdown > 0) { msg = esc(cdText()); k = 'busy'; }
+          else if (!msg && ar && arena.mine && !arena.ended) { msg = `Fighting for you: fight ${ar.fights + 1}${ar.max ? ` of ${ar.max}` : ''}.`; k = 'busy'; }
+          else if (!msg && a) { msg = a.won ? 'Won!' : a.lost ? 'Lost this one.' : 'A draw.'; k = a.won ? 'ok' : 'warn'; }
+          else if (!msg) msg = lo ? 'Your loadout gets picked each round.' : 'Pick your weapons: the helper remembers them for next time.';
+          const showAgain = a && arena.mine && !arena.countdown && !ar;
+          return `${head}<div class="bnp-bd-stage">
+            <div class="bnp-bd-mini"><img src="${esc(petPic(petOf(D, arena.pet) || { name: arena.pet }, 6))}" alt=""><div><b>${esc(arena.pet)}</b><span class="bnp-bd-petsub">${d.fights} fight${d.fights === 1 ? '' : 's'} today · ${d.wins} won</span></div></div>
+            <div><div class="bnp-bd-kitrow" style="justify-content:flex-start">${loTiles(loCur(D, arena.pet), true)}</div></div>
+            <div class="bnp-bd-acts" style="justify-content:flex-end">${arena.countdown > 0 || (ar && arena.mine) ? `<button type="button" class="bnp-bd-pill is-stop" data-bd="stop">${ar ? 'Stop fighting for me' : 'Stop'}</button>` : ''}${showAgain ? `<button type="button" class="bnp-bd-pill is-on" data-bd="again">${a.lost ? `Heal ${esc(arena.pet)} &amp; fight again` : 'Fight again'}</button>` : ''}</div>
+            <div class="bnp-bd-status is-${esc(k)} bnp-bd-wide">${msg}</div>
+            ${a && a.prizes && a.prizes.length ? `<div class="bnp-bd-won bnp-bd-wide">This fight: ${a.np ? `<b>${num(a.np)} NP</b>` : ''}${a.prizes.filter((x) => x.type !== 'np').map((p) => `<img src="${esc(p.img)}" alt="${esc(p.name)}" title="${esc(p.name)}">`).join('')}</div>` : ''}
+          </div>`;
+        }
+
+        const petBlock = '<span class="bnp-bd-cap">Your pet</span>' + (pet ? `<div class="bnp-bd-pettile${down ? ' is-down' : ''}"><img src="${esc(petPic(pet, kind === 'compact' ? 5 : 2))}" alt="">${down ? '<span class="bnp-bd-ko">Knocked out</span>' : ''}</div>
+            <div class="bnp-bd-petname">${esc(pet.name)}</div>
+            <div class="bnp-bd-petsub">${pet.lvl ? `Level ${esc(pet.lvl)}` : ''}${pet.species ? ` · ${esc(pet.color || '')} ${esc(pet.species)}` : ''}</div>
+            ${hpKnown ? `<div class="bnp-bd-hpbar" title="Hit points"><i style="width:${hpPct}%"></i></div><div class="bnp-bd-hptext">${num(pet.hp)}${pet.max ? ` / ${num(pet.max)}` : ''} HP <small>· ${esc(ago(pet.at))}</small></div>` : '<div class="bnp-bd-petsub" style="margin-top:8px">HP shows once you open the Fight page</div>'}
+            <div class="bnp-bd-acts"><button type="button" class="bnp-bd-pill" data-bd="tab-pets">Change pet</button></div>`
+          : `<div class="bnp-bd-pettile"><span class="bnp-bd-tile-q">?</span></div><div class="bnp-bd-petname">No pet yet</div><div class="bnp-bd-acts"><button type="button" class="bnp-bd-pill is-on" data-bd="tab-pets">Choose a pet</button></div>`);
+
+        const vs = `<div class="bnp-bd-vs"><img src="${esc(tgtPic(t))}" alt=""><div><span class="bnp-bd-vs-k">${t.kind === 'boss' ? 'Raid boss' : 'Challenger'}</span><b>${esc(tgtName(t))}${t.kind === 'npc' ? `<span class="bnp-bd-tough">${esc((TOUGH.find((x) => x[0] === t.tough) || TOUGH[0])[1])}</span>` : ''}</b>
+            ${t.kind === 'boss' && raidOver() ? '<span class="bnp-bd-petsub">No raid right now: pick a challenger</span>' : ''}<div class="bnp-bd-acts"><button type="button" class="bnp-bd-pill" data-bd="tab-fight">Change</button></div></div></div>`;
+        const hi = healItems(D)[0];
+        const invN = hi && D.inv[low(hi.name)] ? D.inv[low(hi.name)].n : null;
+        const healTile = tile({ img: hi ? hi.img || ITEM0_IMG : '', label: hi ? hi.name : 'Healing', n: invN, on: !!hi, btn: true, data: 'data-bd="tab-heal"', title: hi ? `${hi.name}${invN != null ? `: ${invN} in your inventory` : ''}` : 'Healing items' });
+        const kit = `<div class="bnp-bd-groups"><div class="bnp-bd-group"><span class="bnp-bd-cap">Loadout${lo && (lo.w.length || lo.a.length) ? ` <small>· ${esc(lo.name)}</small>` : ''}</span><div class="bnp-bd-kitrow">${loTiles(lo, false)}</div></div><div class="bnp-bd-group"><span class="bnp-bd-cap">Healing</span><div class="bnp-bd-kitrow">${healTile}</div></div></div>${pet && !(lo && (lo.w.length || lo.a.length)) ? `<p class="bnp-bd-hint">No loadout yet: open ${esc(pet.name)}'s Equipment page, or pick in your next fight.</p>` : ''}`;
+
+        const sub = !pet ? 'Choose a pet first' : ar ? `Fighting for you: ${ar.fights}${ar.max ? ` of ${ar.max}` : ''} done` : running ? 'Working…' : featGet('bdAuto') ? 'Fights for you' : down || (pet && needsHeal(pet)) ? `Heals ${pet.name}, then fights` : `Takes ${pet.name} to the fight`;
+        const m = D.mode;
+        const modeTxt = featGet('bdAuto') ? (m.kind === 'count' ? `${m.count} fights` : m.kind === 'limits' ? `Until today's ${[m.items && 'items', m.np && 'NP'].filter(Boolean).join(' and ') || 'prizes'} are done` : 'Until you stop it') + (m.rest ? ` · a break every ${m.restEvery}` : '') + (featGet('bdBg') ? ' · in the background too' : '') : (featGet('bdAgain') ? 'You press Fight · it goes again after a loss' : 'You press Fight');
+        const steps = ['Heal', t.kind === 'boss' ? 'Barracks' : 'Fight page', 'Arena'].map((n, i) => `<li class="${i === st ? 'is-now' : i < st ? 'is-done' : ''}">${n}</li>`).join('');
+        let stTxt = status ? status.m : '', stK = status ? status.k : '';
+        if (!stTxt && D.log[0] && Date.now() - D.log[0].t < 10 * 60000) { stTxt = D.log[0].m; stK = D.log[0].k; }
+        const canGo = !!pet && !running && !(t.kind === 'boss' && raidOver());
+        const goBlock = `<button type="button" class="bnp-bd-battle" data-bd="go" aria-label="${esc(sub)}" ${canGo ? '' : 'disabled'}>Battle!</button>
+            <div class="bnp-bd-go-sub">${esc(sub)}</div><div class="bnp-bd-mode">${esc(modeTxt)}</div>
+            <ol class="bnp-bd-steps">${steps}</ol>
+            <div class="bnp-bd-status is-${esc(stK)}" role="status" aria-live="polite">${esc(stTxt)}</div>
+            <div class="bnp-bd-acts">${running || ar ? `<button type="button" class="bnp-bd-pill is-stop" data-bd="stop">${ar ? 'Stop fighting for me' : 'Stop'}</button>` : ''}${ar && ar.restUntil > Date.now() ? '<button type="button" class="bnp-bd-pill" data-bd="skip-rest">End the break now</button>' : ''}${run.get() && run.get().waitUntil > Date.now() ? '<button type="button" class="bnp-bd-pill" data-bd="try-now">Try now</button>' : ''}${kind === 'compact' && pet && PATH === '/dome/barracks.phtml' ? `<button type="button" class="bnp-bd-pill" data-bd="save-barracks">Save ${esc(pet.name)}'s equipment</button>` : ''}</div>`;
+
+        const R = D.raid;
+        const span = R && R.next ? Math.max(1, R.next - (R.prevAt || 0)) : 1;
+        const pct = R && R.next ? Math.max(2, Math.min(100, ((R.dmg - (R.prevAt || 0)) / span) * 100)) : 100;
+        const fightsLeft = R && R.next && R.avg ? Math.ceil((R.next - R.dmg) / R.avg) : null;
+        const reset = nstReset();
+        const foot = `<div class="bnp-bd-foot">
+            <div>${t.kind === 'boss' && R ? `<div class="bnp-bd-meter-top"><span>Your raid damage <b>${num(R.dmg)}</b></span><span>${R.next ? `next prize at <b>${num(R.next)}</b>` : 'every personal prize reached'}</span></div><div class="bnp-bd-meter"><i style="width:${pct}%"></i></div><div class="bnp-bd-meter-sub">${R.avg ? `About ${num(R.avg)} a fight${fightsLeft ? ` · about ${num(fightsLeft)} more fight${fightsLeft === 1 ? '' : 's'} to ${esc(R.nextName || 'the next prize')}` : ''}` : 'Damage a fight shows after your next fight.'}</div>`
+              : `<div class="bnp-bd-meter-top"><span>Prizes today <b>${d.prizes != null ? `${d.prizes} of ${cap}` : `– of ${cap}`}</b></span><span>new day at <b>${esc(clock(reset))}</b></span></div><div class="bnp-bd-meter"><i style="width:${d.prizes != null ? Math.min(100, (d.prizes / cap) * 100) : 0}%"></i></div><div class="bnp-bd-meter-sub">${d.npDone ? 'Neopoints for today: done.' : 'Every fight\'s prizes count toward today\'s limit.'}</div>`}</div>
+            <div class="bnp-bd-stats"><div class="bnp-bd-stat"><b>${d.fights}</b><span>fights</span></div><div class="bnp-bd-stat"><b>${d.wins}–${d.losses}</b><span>won–lost</span></div><div class="bnp-bd-stat"><b>${num(d.npWon)}</b><span>NP won</span></div><div class="bnp-bd-stat"><b>${num(d.np)}</b><span>NP on healing</span></div></div>
+            ${R && R.claim && t.kind === 'boss' && kind === 'full' && $('#RaidModule') ? `<div class="bnp-bd-claim bnp-bd-wide">You have ${R.claim} raid prize${R.claim > 1 ? 's' : ''} to claim. <button type="button" class="bnp-bd-pill is-on" data-bd="claim">Claim</button></div>` : ''}
+            ${d.items.length ? `<div class="bnp-bd-won bnp-bd-wide">Won today: ${d.items.slice(-14).map((p) => `<img src="${esc(p.img)}" alt="${esc(p.name)}" title="${esc(p.name)}">`).join('')}${d.items.length > 14 ? ` <span>+${d.items.length - 14}</span>` : ''}</div>` : ''}
+          </div>`;
+        const tabs = `<nav class="bnp-bd-tabs" aria-label="Battledome helper">${[['fight', 'Fight'], ['loadout', 'Loadout'], ['heal', 'Healing'], ['pets', 'Pets'], ['chal', 'Challengers'], ['hist', 'History'], ['look', 'Look']].map(([k, n]) => `<button type="button" class="bnp-bd-pill${tab === k ? ' is-on' : ''}" data-bd="tab-${k}" aria-expanded="${tab === k}">${n}</button>`).join('')}</nav>`;
+        return `${head}<div class="bnp-bd-stage"><div class="bnp-bd-pet">${petBlock}</div><div class="bnp-bd-mid">${vs}${kit}</div><div class="bnp-bd-go">${goBlock}</div></div>${kind === 'full' ? foot : ''}${tabs}<div class="bnp-bd-drawer" ${tab ? '' : 'hidden'}>${drawer()}</div>`;
+      }
+
+      function drawer() {
+        const pet = D.pet;
+        if (tab === 'fight') {
+          const t = tgtOf(D), m = D.mode, C = D.chal;
+          const list = C && Array.isArray(C.list) ? C.list.filter((c) => !find || low(c.name).includes(low(find))).sort((a, b) => a.name.localeCompare(b.name)) : [];
+          const bossCard = `<button type="button" class="bnp-bd-card${t.kind === 'boss' ? ' is-on' : ''}" data-bd="tgt-boss" aria-pressed="${t.kind === 'boss'}"><img src="${esc(portrait(boss().dir || BOSS0.dir, boss().id))}" alt=""><b>${esc(boss().name)}</b><small>${raidOver() ? 'No raid right now' : 'Raid boss'}</small></button>`;
+          return `<span class="bnp-bd-band">What to fight</span>
+            <div class="bnp-bd-find"><input class="bnp-bd-in" data-bd="find" placeholder="Find a challenger" value="${esc(find)}" aria-label="Find a challenger">${C ? '' : `<button type="button" class="bnp-bd-pill is-on" data-bd="chal-check" ${chalBusy ? 'disabled' : ''}>${chalBusy ? 'Reading your Fight page…' : 'Load my challengers'}</button>`}</div>
+            <div class="bnp-bd-cards">${!find ? bossCard : ''}${list.map((c) => `<button type="button" class="bnp-bd-card${t.kind === 'npc' && t.id === c.id ? ' is-on' : ''}" data-bd="tgt" data-id="${c.id}" aria-pressed="${t.kind === 'npc' && t.id === c.id}"><img src="${esc(portrait(c.dir, c.id))}" alt="" loading="lazy"><b>${esc(c.name)}</b>${c.diff ? `<small>Difficulty ${esc(c.diff)}</small>` : ''}</button>`).join('')}</div>
+            ${!C ? '<p class="bnp-bd-empty">Your challengers come from your Fight page: opening it does it too.</p>' : ''}
+            ${t.kind === 'npc' ? `<div class="bnp-bd-sub">How tough</div><div class="bnp-bd-acts"><span class="bnp-bd-seg">${TOUGH.map(([v, n]) => `<button type="button" class="bnp-bd-pill${t.tough === v ? ' is-on' : ''}" data-bd="tough" data-v="${v}" aria-pressed="${t.tough === v}">${n}</button>`).join('')}</span></div>` : ''}
+            <span class="bnp-bd-band" style="margin-top:18px">How you fight</span>
+            <div class="bnp-bd-form">
+              <div class="bnp-bd-field">Each round<label class="bnp-bd-switch"><input type="checkbox" data-bd="feat" data-k="bdSet" ${featGet('bdSet') ? 'checked' : ''}> Pick my loadout for me</label><label class="bnp-bd-switch"><input type="checkbox" data-bd="feat" data-k="bdAgain" ${featGet('bdAgain') ? 'checked' : ''}> After a loss, heal and go again by itself</label><small>You press Fight; the helper does the rest between fights.</small></div>
+              <div class="bnp-bd-field bnp-bd-wide">Fight for me<label class="bnp-bd-switch"><input type="checkbox" data-bd="feat" data-k="bdAuto" ${featGet('bdAuto') ? 'checked' : ''}> Press Fight for me too, fight after fight</label>
+                <p class="bnp-bd-risk"><b>Use at your own risk.</b> With this on, BATTLE! starts a run: the helper fights for you round after round, heals and starts the next fight by itself, until the run is done or you press Stop. Neopets' rules don't allow programs that play for you.</p>
+                <label class="bnp-bd-switch"><input type="checkbox" data-bd="feat" data-k="bdBg" ${featGet('bdBg') ? 'checked' : ''}> Keep going when this tab isn't in front (it skips the arena's replays there). Off: it waits till you're back.</label>
+                ${featGet('bdAuto') ? `<div class="bnp-bd-line">The run: <span class="bnp-bd-seg">${[['count', 'A number of fights'], ['limits', "Until today's prizes are done"], ['keep', 'Until I stop it']].map(([v, n]) => `<button type="button" class="bnp-bd-pill${m.kind === v ? ' is-on' : ''}" data-bd="mode" data-v="${v}" aria-pressed="${m.kind === v}">${n}</button>`).join('')}</span></div>
+                ${m.kind === 'count' ? `<label class="bnp-bd-line">Fights <input class="bnp-bd-in is-sm" data-bd="m-count" inputmode="numeric" value="${esc(m.count)}" maxlength="4"></label>` : ''}
+                ${m.kind === 'limits' ? `<div class="bnp-bd-line"><label class="bnp-bd-switch"><input type="checkbox" data-bd="m-items" ${m.items ? 'checked' : ''}> Items (Neopets counts them: ${day(D).prizes != null ? `${day(D).prizes} of ${day(D).cap}` : 'after a fight'})</label><label class="bnp-bd-switch"><input type="checkbox" data-bd="m-np" ${m.np ? 'checked' : ''}> Neopoints (until a fight pays none)</label></div>` : ''}
+                <div class="bnp-bd-line"><label class="bnp-bd-switch"><input type="checkbox" data-bd="m-rest" ${m.rest ? 'checked' : ''}> Take a break</label>${m.rest ? `every <input class="bnp-bd-in is-sm" data-bd="m-every" inputmode="numeric" value="${esc(m.restEvery)}" maxlength="3"> fights, for about <input class="bnp-bd-in is-sm" data-bd="m-min" inputmode="numeric" value="${esc(m.restMin)}" maxlength="3"> minutes (a little longer or shorter each time)` : ''}</div>` : ''}
+              </div>
+            </div>`;
+        }
+        if (tab === 'loadout') {
+          if (!pet) return '<p class="bnp-bd-empty">Choose a pet first.</p>';
+          const L = loList(D, pet), lo = loCur(D, pet), pool = poolOf(D, pet);
+          const presets = `<div class="bnp-bd-presets">${(L ? L.list : []).map((x) => `<button type="button" class="bnp-bd-pill${lo && lo.id === x.id ? ' is-on' : ''}" data-bd="preset" data-id="${esc(x.id)}" aria-pressed="${lo && lo.id === x.id}">${esc(x.name)}</button>`).join('')}<button type="button" class="bnp-bd-pill" data-bd="preset-new" title="A new loadout for ${esc(pet)}">+ New</button>${lo ? (renaming ? `<input class="bnp-bd-in" data-bd="preset-name" value="${esc(lo.name)}" maxlength="24" aria-label="Loadout name" style="width:150px"><button type="button" class="bnp-bd-pill is-on" data-bd="preset-ok">Save name</button>` : `<button type="button" class="bnp-bd-pill" data-bd="preset-rename">Rename</button>`) + (L && L.list.length > 1 ? '<button type="button" class="bnp-bd-pill is-stop" data-bd="preset-del">Delete</button>' : '') : ''}</div>`;
+          const row = (x, i, col, n) => `<li class="bnp-bd-li${+x.turn ? ' is-turn' : ''}"><span>${i + 1}</span><img src="${esc(x.img)}" alt=""><div><b title="${esc(x.name)}">${esc(x.name)}</b><small>${+x.turn ? `kept for turn ${x.turn}` : i < (col === 'w' ? 2 : 1) ? 'first choice' : 'if the ones above can’t'}</small></div><div class="bnp-bd-li-r"><select class="bnp-bd-in" data-bd="turn" data-col="${col}" data-i="${i}" aria-label="When">${turnOpts(x.turn)}</select><button type="button" class="bnp-bd-pill bnp-bd-ico" data-bd="up" data-col="${col}" data-i="${i}" title="Higher" ${i ? '' : 'disabled'}>▲</button><button type="button" class="bnp-bd-pill bnp-bd-ico" data-bd="down" data-col="${col}" data-i="${i}" title="Lower" ${i < n - 1 ? '' : 'disabled'}>▼</button><button type="button" class="bnp-bd-pill bnp-bd-ico is-stop" data-bd="rm" data-col="${col}" data-i="${i}" title="Take it out">✕</button></div></li>`;
+          const wl = lo ? lo.w : [], al = lo ? lo.a : [];
+          const addW = pool.items.filter((x) => wl.filter((y) => y.key === x.key).length < pool.items.filter((y) => y.key === x.key).length);
+          const addA = (pool.abil || []).filter((x) => !al.some((y) => y.id === x.id));
+          return `${presets}<div class="bnp-bd-cols">
+            <div><div class="bnp-bd-sub" style="margin-top:0">Weapons <small>${wl.length}</small></div>${wl.length ? `<ol class="bnp-bd-list">${wl.map((x, i) => row(x, i, 'w', wl.length)).join('')}</ol>` : '<p class="bnp-bd-empty">None yet.</p>'}
+              ${addW.length ? `<div class="bnp-bd-add">${addW.map((x, i) => tile({ img: x.img, label: x.name, btn: true, data: `data-bd="add-w" data-i="${pool.items.indexOf(x)}"`, title: `Add ${x.name}` })).join('')}</div>` : `<p class="bnp-bd-hint">${pool.at ? 'Everything equipped is in the list.' : `Save ${esc(pet)}'s equipment on its <a class="bnp-bd-pill" href="/dome/neopets.phtml?pet=${encodeURIComponent(pet)}">Equipment page</a> to add weapons here.`}</p>`}</div>
+            <div><div class="bnp-bd-sub" style="margin-top:0">Abilities <small>${al.length}</small></div>${al.length ? `<ol class="bnp-bd-list">${al.map((x, i) => row(x, i, 'a', al.length)).join('')}</ol>` : '<p class="bnp-bd-empty">None yet.</p>'}
+              ${addA.length ? `<div class="bnp-bd-add">${addA.map((x) => tile({ img: x.img, label: x.name, btn: true, data: `data-bd="add-a" data-id="${x.id}"`, title: `Add ${x.name}` })).join('')}</div>` : `<p class="bnp-bd-hint">${(pool.abil || []).length ? 'Every ability is in the list.' : 'Your abilities show here after a fight with the helper on.'}</p>`}</div>
+            </div><p class="bnp-bd-hint">Each round it takes the top two weapons it can and the top ability that isn't cooling down. <b>Only turn N</b> keeps one for that turn (a one-use item, say).</p>`;
+        }
+        if (tab === 'heal') {
+          const H = D.heal, items = H.items;
+          return `<span class="bnp-bd-band">Healing items</span>${items.length ? `<ol class="bnp-bd-list">${items.map((x, i) => { const inv = D.inv[low(x.name)]; return `<li class="bnp-bd-li" style="grid-template-columns:22px 48px minmax(0,1fr) auto"><span>${i + 1}</span><img src="${esc(x.img || ITEM0_IMG)}" alt=""><div><b>${esc(x.name)}</b><small>${inv ? `${inv.n} in your inventory · ${esc(ago(inv.at))}` : 'not counted yet'}</small></div><div class="bnp-bd-li-r"><label class="bnp-bd-line" title="It never pays more">up to <input class="bnp-bd-in is-num" data-bd="h-max" data-i="${i}" inputmode="numeric" value="${esc(x.max)}"> NP</label><label class="bnp-bd-line" title="Each time you run out it buys this many again, as often as it needs">buy <input class="bnp-bd-in is-sm" data-bd="h-batch" data-i="${i}" inputmode="numeric" value="${esc(x.batch)}"> each time</label><button type="button" class="bnp-bd-pill bnp-bd-ico" data-bd="h-up" data-i="${i}" title="Higher" ${i ? '' : 'disabled'}>▲</button><button type="button" class="bnp-bd-pill bnp-bd-ico is-stop" data-bd="h-rm" data-i="${i}" title="Take it out">✕</button></div></li>`; }).join('')}</ol>` : '<p class="bnp-bd-empty">No healing items: add one below.</p>'}
+            <div class="bnp-bd-typed"><input class="bnp-bd-in" data-bd="h-name" placeholder="A healing item's exact name" maxlength="60" style="width:280px" aria-label="Healing item"><button type="button" class="bnp-bd-pill" data-bd="h-add">Add</button></div>
+            <p class="bnp-bd-hint">It uses the first one you have, one per heal, only ever these (never a morphing potion by mistake). With none left, it buys the first on the Shop Wizard. <b>1 HP is enough to enter any fight.</b></p>
+            <div class="bnp-bd-form" style="margin-top:14px">
+              <div class="bnp-bd-field">Against challengers, heal when HP is below<span class="bnp-bd-seg" style="justify-content:flex-start">${[[0, "Only when it can't fight"], [25, '25%'], [50, '50%'], [75, '75%'], [100, 'Always full']].map(([v, n]) => `<button type="button" class="bnp-bd-pill${H.below === v ? ' is-on' : ''}" data-bd="h-below" data-v="${v}" aria-pressed="${H.below === v}">${n}</button>`).join('')}</span><small>Against the raid boss it heals after every loss (HP 0).</small></div>
+              <div class="bnp-bd-field">Most to spend on healing a day<span class="bnp-bd-seg" style="justify-content:flex-start"><button type="button" class="bnp-bd-pill${!H.spend ? ' is-on' : ''}" data-bd="h-nolimit" aria-pressed="${!H.spend}">No limit</button><button type="button" class="bnp-bd-pill${H.spend ? ' is-on' : ''}" data-bd="h-limit" aria-pressed="${!!H.spend}">A limit</button></span>${H.spend ? `<label class="bnp-bd-line">Up to <input class="bnp-bd-in is-num" data-bd="h-spend" inputmode="numeric" value="${esc(H.spend)}"> NP a day</label>` : ''}<small>${!H.spend ? 'It buys a new batch every time you run out, as long as you keep fighting (never over each item’s price above).' : 'When today’s healing reaches it, buying stops till the new day.'} Spent today: ${num(day(D).np)} NP.</small></div>
+            </div>`;
+        }
+        if (tab === 'pets') {
+          const list = Object.values(D.pets).filter((p) => p && p.name).sort((a, b) => a.name.localeCompare(b.name));
+          return `<span class="bnp-bd-band">Fight with</span>${list.length ? `<div class="bnp-bd-pets">${list.map((p) => `<button type="button" class="bnp-bd-petchip${low(p.name) === low(D.pet) ? ' is-on' : ''}${typeof p.hp === 'number' && p.hp <= 0 ? ' is-down' : ''}" data-bd="pick" data-pet="${esc(p.name)}" aria-pressed="${low(p.name) === low(D.pet)}"><img src="${esc(petPic(p, 6))}" alt=""><b>${esc(p.name)}</b><small>${typeof p.hp === 'number' ? `${num(p.hp)}${p.max ? `/${num(p.max)}` : ''} HP` : '&nbsp;'}</small></button>`).join('')}</div>` : "<p class=\"bnp-bd-empty\">Your pets show here once you open the boss's Fight page or the Battledome's Fight page.</p>"}
+            <div class="bnp-bd-typed"><input class="bnp-bd-in" data-bd="pet-name" placeholder="Or type a pet's name" maxlength="20" aria-label="Pet name"><button type="button" class="bnp-bd-pill" data-bd="pet-typed">Use this pet</button></div>`;
+        }
+        if (tab === 'chal') {
+          const C = D.chal, head2 = '<span class="bnp-bd-band">Challengers</span>';
+          if (!C || !Array.isArray(C.ids)) return `${head2}<p class="bnp-bd-empty">Which Battledome challengers you can fight, and how to find the ones still hidden from you. It reads your Fight page once (opening that page yourself does it too).</p><div class="bnp-bd-acts"><button type="button" class="bnp-bd-pill is-on" data-bd="chal-check" ${chalBusy ? 'disabled' : ''}>${chalBusy ? 'Reading your Fight page…' : 'Check my challengers'}</button></div>`;
+          const have = new Set(C.ids);
+          const locked = BD_CHAL.filter((c) => !have.has(c[0]) && c[2] !== 'auto');
+          const card = (c) => `<div class="bnp-bd-chal"><img src="${esc(portrait(c[5], c[0]))}" alt="" width="100" height="100" loading="lazy"><div><b>${esc(c[1])}</b><p>${esc(c[3])}</p>${c[4] ? `<a class="bnp-bd-pill" href="${esc(c[4])}" target="_blank" rel="noopener">Go there</a>` : ''}</div></div>`;
+          const fresh = (C.fresh || []).filter((i) => have.has(i)), showFresh = fresh.length && Date.now() - (C.freshAt || 0) < 7 * 86400000;
+          const groups = CHAL_KIND.map(([k, n]) => { const g = locked.filter((c) => c[2] === k); return g.length ? `<div class="bnp-bd-sub">${esc(n)} <small>${g.length}</small></div><div class="bnp-bd-chal-grid">${g.map(card).join('')}</div>` : ''; }).join('');
+          const mine = [...C.list].sort((a, b) => a.name.localeCompare(b.name));
+          return `${head2}<div class="bnp-bd-chal-top"><div class="bnp-bd-stat"><b>${C.ids.length}</b><span>you can fight</span></div><div class="bnp-bd-stat"><b>${locked.length}</b><span>still to unlock</span></div><div class="bnp-bd-chal-when">Checked ${esc(ago(C.at))}<button type="button" class="bnp-bd-pill" data-bd="chal-check" ${chalBusy ? 'disabled' : ''}>${chalBusy ? 'Reading…' : 'Check again'}</button></div></div>
+            ${showFresh ? `<p class="bnp-bd-chal-new">New since your last check: <b>${esc(fresh.map((i) => (C.list.find((r) => r.id === i) || {}).name).filter(Boolean).join(', '))}</b></p>` : ''}
+            ${locked.length ? groups : '<p class="bnp-bd-chal-new">You can fight every challenger there is to unlock. Well done!</p>'}
+            <div class="bnp-bd-acts" style="margin-top:14px"><button type="button" class="bnp-bd-pill${chalAll ? ' is-on' : ''}" data-bd="chal-all" aria-expanded="${chalAll}">${chalAll ? 'Hide' : 'Show'} the ${C.ids.length} you can fight</button></div>
+            ${chalAll ? `<div class="bnp-bd-cards" style="margin-top:12px">${mine.map((c) => `<button type="button" class="bnp-bd-card" data-bd="tgt" data-id="${c.id}" title="Fight ${esc(c.name)}"><img src="${esc(portrait(c.dir, c.id))}" alt="" loading="lazy"><b>${esc(c.name)}</b>${c.diff ? `<small>Difficulty ${esc(c.diff)}</small>` : ''}</button>`).join('')}</div>` : ''}
+            <p class="bnp-bd-hint">How to unlock each one: from Jellyneo's Challenger Checklist.</p>`;
+        }
+        if (tab === 'look') {
+          const cur = featGet('bdLook') || 'neo';
+          const cards = LOOKS.map(([k, n, kind]) => {
+            const L = look(k), v = L.vars;
+            return `<button type="button" class="bnp-bd-look${cur === k ? ' is-on' : ''}" data-bd="look" data-k="${k}" aria-pressed="${cur === k}"><i style="--lk-scene:${L.scene ? `url('${L.scene}')` : 'none'};--lk-head:${L.title ? `url('${L.title}')` : 'none'};--lk-color:${v['scene-color']}"><em><span style="background:${String(v['head-bg']).startsWith('url') ? v['scene-color'] : v['head-bg']}"></span><span style="background:${v.accent}"></span><span style="background:${v.badge}"></span></em></i><b>${esc(n)}</b><small>${k === 'neo' ? 'Your Neopets theme’s colours' : k === 'boss' ? 'The raid’s maroon and gold' : `${kind === 'light' ? 'Light' : 'Dark'}, from the arena’s own art`}</small></button>`;
+          }).join('');
+          return `<span class="bnp-bd-band">Look</span><div class="bnp-bd-looks">${cards}</div><div class="bnp-bd-acts" style="margin-top:14px"><label class="bnp-bd-switch"><input type="checkbox" data-bd="feat" data-k="bdLookMatch" ${featGet('bdLookMatch') ? 'checked' : ''}> In the arena, wear that arena's own look</label></div>`;
+        }
+        if (tab === 'hist') {
+          const h = D.hist.slice(0, 40);
+          return `<span class="bnp-bd-band">Recent fights</span>${h.length ? `<table class="bnp-bd-hist"><tbody>${h.map((x) => `<tr><td>${esc(clock(x.t))}</td><td>${esc(x.pet)} vs <b>${esc(x.vs || '?')}</b></td><td><span class="bnp-bd-res ${x.won ? 'is-won' : x.lost ? 'is-lost' : 'is-draw'}">${x.won ? 'Won' : x.lost ? 'Lost' : 'Draw'}</span></td><td>${x.np ? `${num(x.np)} NP` : ''}${x.items && x.items.length ? `${x.np ? ' · ' : ''}${esc(x.items.join(', '))}` : ''}</td></tr>`).join('')}</tbody></table>` : '<p class="bnp-bd-empty">No fights yet.</p>'}
+            <div class="bnp-bd-sub">Log</div>${D.log.length ? `<ul class="bnp-bd-log">${D.log.slice(0, 30).map((l) => `<li><time>${esc(clock(l.t))}</time><span class="is-${esc(l.k)}">${esc(l.m)}</span></li>`).join('')}</ul>` : '<p class="bnp-bd-empty">Nothing yet.</p>'}`;
+        }
+        return '';
+      }
+
+      const api = {
+        el,
+        render() {
+          const f = document.activeElement && el.contains(document.activeElement) ? document.activeElement.getAttribute('data-bd') : null;
+          applyLook(el);
+          el.innerHTML = body();
+          for (const im of el.querySelectorAll('img')) im.addEventListener('error', () => { const box = im.closest('.bnp-bd-pettile,.bnp-bd-tile-box'); if (box && !box.querySelector('.bnp-bd-tile-q')) { const q = document.createElement('span'); q.className = 'bnp-bd-tile-q'; q.textContent = '?'; box.prepend(q); } im.style.display = 'none'; }, { once: true });
+          if (f && /^(find|h-|m-|pet-name|preset-name)/.test(f)) { const x = el.querySelector(`[data-bd="${f}"]`); if (x) { x.focus(); const v = x.value; x.value = ''; x.value = v; } }
+        },
+        say(m, k = 'info') {   // (just the message line, when there is one: a whole redraw would swallow a click in progress)
+          status = { m, k };
+          const line = el.querySelector('.bnp-bd-status');
+          if (!line) { api.render(); return; }
+          line.className = `${line.className.replace(/\bis-[a-z]*\b/g, '').replace(/\s+/g, ' ').trim()} is-${k}`;
+          line.textContent = m;
+        },
+        open(t) { tab = t; api.render(); },
+      };
+      const loEdit = (fn) => { edit((d) => { const L = loEnsure(d, d.pet); fn(L, L.list.find((x) => x.id === L.cur) || L.list[0], d); }); api.render(); };
+
+      el.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-bd]');
+        if (!b || !el.contains(b) || b.disabled) return;
+        const a = b.getAttribute('data-bd');
+        const i = +b.getAttribute('data-i'), col = b.getAttribute('data-col');
+        if (a.startsWith('tab-')) { const t = a.slice(4); tab = tab === t ? '' : t; status = null; renaming = false; api.render(); return; }
+        if (a === 'go') { status = null; startCycle({ autoStart: featGet('bdAuto') }); return; }
+        if (a === 'again') { cancelTick(); arena.countdown = 0; startCycle({ needHeal: !!(arena.result && arena.result.lost) }); return; }
+        if (a === 'stop') { stopCycle('Stopped. Nothing else happens until you press the button again.'); return; }
+        if (a === 'try-now') { const r = run.get(); if (r) { r.waitUntil = Date.now(); run.set(r); } return; }
+        if (a === 'skip-rest') { const r = autoRun.get(); if (r) { r.restUntil = Date.now(); autoRun.set(r); } return; }
+        if (a === 'claim') { try { if (typeof W.raidModOpenClaim === 'function') W.raidModOpenClaim(); else click($('.raid-mod__claim')); } catch (_) { /* */ } return; }
+        if (a === 'pick') { const n = b.getAttribute('data-pet'); edit((d) => { d.pet = n; }); status = { m: `${n} will fight.`, k: 'ok' }; tab = ''; api.render(); return; }
+        if (a === 'pet-typed') { const n = ((el.querySelector('[data-bd="pet-name"]') || {}).value || '').trim(); if (!/^[A-Za-z0-9_]{1,20}$/.test(n)) { api.say('A pet name is letters, numbers and _ only.', 'warn'); return; } edit((d) => { d.pet = n; if (!d.pets[low(n)]) d.pets[low(n)] = { name: n }; }); status = { m: `${n} will fight.`, k: 'ok' }; tab = ''; api.render(); return; }
+        if (a === 'tgt-boss') { edit((d) => { d.target = { kind: 'boss' }; }); api.render(); return; }
+        if (a === 'tgt') { const id = +b.getAttribute('data-id'); const c = D.chal && D.chal.list.find((x) => x.id === id); if (c) edit((d) => { d.target = { kind: 'npc', id: c.id, name: c.name, dir: c.dir, tough: (d.target && d.target.tough) || 1 }; }); tab = 'fight'; api.render(); return; }
+        if (a === 'tough') { const v = +b.getAttribute('data-v'); edit((d) => { if (d.target && d.target.kind === 'npc') d.target.tough = v; }); api.render(); return; }
+        if (a === 'mode') { const v = b.getAttribute('data-v'); edit((d) => { d.mode.kind = v; }); api.render(); return; }
+        if (a === 'preset') { const id = b.getAttribute('data-id'); loEdit((L) => { L.cur = id; }); return; }
+        if (a === 'preset-new') { loEdit((L, lo) => { const id = `p${Date.now().toString(36)}`; L.list.push({ id, name: `Loadout ${L.list.length + 1}`, w: lo.w.map((x) => Object.assign({}, x)), a: lo.a.map((x) => Object.assign({}, x)) }); L.cur = id; }); renaming = true; api.render(); return; }
+        if (a === 'preset-rename') { renaming = true; api.render(); return; }
+        if (a === 'preset-ok') { const v = ((el.querySelector('[data-bd="preset-name"]') || {}).value || '').trim().slice(0, 24); renaming = false; if (v) loEdit((L, lo) => { lo.name = v; }); else api.render(); return; }
+        if (a === 'preset-del') { loEdit((L, lo) => { if (L.list.length > 1) { L.list = L.list.filter((x) => x !== lo); L.cur = L.list[0].id; } }); return; }
+        if (a === 'up' || a === 'down') { loEdit((L, lo) => { const arr = lo[col]; const j = a === 'up' ? i - 1 : i + 1; if (arr && arr[i] && arr[j]) [arr[i], arr[j]] = [arr[j], arr[i]]; }); return; }
+        if (a === 'rm') { loEdit((L, lo) => { if (lo[col]) lo[col].splice(i, 1); }); return; }
+        if (a === 'add-w') { const x = poolOf(D, D.pet).items[i]; if (x) loEdit((L, lo) => { lo.w.push(Object.assign({ turn: 0 }, slim(x))); }); return; }
+        if (a === 'add-a') { const id = +b.getAttribute('data-id'); const x = (poolOf(D, D.pet).abil || []).find((y) => y.id === id); if (x) loEdit((L, lo) => { lo.a.push({ id: x.id, name: x.name, img: x.img, turn: 0 }); }); return; }
+        if (a === 'h-up') { edit((d) => { const arr = d.heal.items; if (arr[i] && arr[i - 1]) [arr[i], arr[i - 1]] = [arr[i - 1], arr[i]]; }); api.render(); return; }
+        if (a === 'h-rm') { edit((d) => { d.heal.items.splice(i, 1); }); api.render(); return; }
+        if (a === 'h-add') { const v = ((el.querySelector('[data-bd="h-name"]') || {}).value || '').trim().replace(/\s+/g, ' '); if (v.length < 3) { api.say("Type the healing item's exact name.", 'warn'); return; } edit((d) => { if (!d.heal.items.some((x) => low(x.name) === low(v))) d.heal.items.push({ name: v, img: low(v) === low(ITEM0) ? ITEM0_IMG : '', max: 3500, batch: 5 }); }); api.render(); return; }
+        if (a === 'h-nolimit') { edit((d) => { if (d.heal.spend) d.heal.lastSpend = d.heal.spend; d.heal.spend = 0; }); api.render(); return; }
+        if (a === 'h-limit') { edit((d) => { if (!d.heal.spend) d.heal.spend = d.heal.lastSpend || 100000; }); api.render(); return; }
+        if (a === 'h-below') { const v = +b.getAttribute('data-v'); edit((d) => { d.heal.below = v; }); api.render(); return; }
+        if (a === 'look') { featSet('bdLook', b.getAttribute('data-k')); api.render(); return; }
+        if (a === 'chal-all') { chalAll = !chalAll; api.render(); return; }
+        if (a === 'chal-check') {
+          if (chalBusy) return;
+          chalBusy = true;
+          api.render();
+          api.say('Reading your Fight page for your challengers (a few seconds)…', 'busy');
+          checkFight().then((l) => { chalBusy = false; status = null; note(`Read your Fight page: ${l.length} challengers you can fight.`, 'ok'); api.render(); }).catch((err) => { chalBusy = false; note(err && err.bdOwn ? err.message : `Something went wrong: ${err && err.message}`, (err && err.kind) || 'err'); api.render(); });
+          return;
+        }
+        if (a === 'save-equip') { const ep = equipPet(); if (!ep.name) { api.say('Choose a pet on this page first.', 'warn'); return; } const ok = savePool(ep.name, readEquipFrames(ep.root), readAbilities(ep.root), 'equip', true, '', false); if (ok) api.say(`Saved. ${D.pet && low(D.pet) !== low(ep.name) ? `(The helper fights with ${D.pet}: change the pet in its Pets tab to use this one.)` : ''}`, 'ok'); return; }
+        if (a === 'save-barracks') { const n = D.pet; const root = $(`.equipTable[data-name="${CSS.escape(n)}"]`); if (!root) { api.say(`${n} isn't on this page.`, 'warn'); return; } const abRoot = $(`.bdNPabilExpand[data-name="${CSS.escape(n)}"]`); if (savePool(n, readEquipFrames(root), abRoot ? readAbilities(abRoot) : [], 'barracks', true)) api.say(`Saved ${n}'s equipment.`, 'ok'); return; }
+      });
+      el.addEventListener('change', (e) => {
+        const b = e.target.closest('[data-bd]');
+        if (!b) return;
+        const a = b.getAttribute('data-bd'), i = +b.getAttribute('data-i');
+        if (a === 'feat') { featSet(b.getAttribute('data-k'), b.checked); if (b.getAttribute('data-k') === 'bdAuto' && !b.checked) autoRun.end(); api.render(); return; }
+        if (a === 'turn') { const col = b.getAttribute('data-col'), v = +b.value; loEdit((L, lo) => { if (lo[col] && lo[col][i]) lo[col][i].turn = v; }); return; }
+        if (a === 'm-count') { const v = int(b.value, 25, 1, 9999); edit((d) => { d.mode.count = v; }); api.render(); return; }
+        if (a === 'm-items' || a === 'm-np' || a === 'm-rest') { const k = { 'm-items': 'items', 'm-np': 'np', 'm-rest': 'rest' }[a]; edit((d) => { d.mode[k] = b.checked; }); api.render(); return; }
+        if (a === 'm-every') { const v = int(b.value, 25, 1, 999); edit((d) => { d.mode.restEvery = v; }); api.render(); return; }
+        if (a === 'm-min') { const v = int(b.value, 5, 1, 240); edit((d) => { d.mode.restMin = v; }); api.render(); return; }
+        if (a === 'h-max') { const v = int(b.value, 3500, 1, 9999999); edit((d) => { if (d.heal.items[i]) d.heal.items[i].max = v; }); api.render(); return; }
+        if (a === 'h-batch') { const v = int(b.value, 5, 1, 10); edit((d) => { if (d.heal.items[i]) d.heal.items[i].batch = v; }); api.render(); return; }
+        if (a === 'h-spend') { const v = int(b.value, 100000, 0, 99999999); edit((d) => { d.heal.spend = v; }); api.render(); }
+      });
+      el.addEventListener('input', (e) => { const b = e.target.closest('[data-bd="find"]'); if (b) { find = b.value; api.render(); } });
+      el.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        const m = { 'pet-name': 'pet-typed', 'h-name': 'h-add', 'preset-name': 'preset-ok' }[e.target.getAttribute && e.target.getAttribute('data-bd')];
+        if (m) { e.preventDefault(); const x = el.querySelector(`[data-bd="${m}"]`); if (x) x.click(); }
+      });
+      return api;
+    }
+
+    // ───────────────────────── pages ─────────────────────────
+    const underNav = (el) => { const nav = $('#bdNav'); if (!nav) return false; nav.insertAdjacentElement('afterend', el); return true; };   // (outside the Battledome's own absolutely-placed frames)
+    function mount(kind, place) {
+      const p = makePanel(kind);
+      place(p.el);
+      ui = p;
+      p.el.__bdRender = () => p.render();   // (Settings › The Battledome changed: redraw)
+      p.render();
+      return p;
+    }
+    const keepFresh = () => setInterval(() => { if (ui && !busy && document.visibilityState === 'visible' && !ui.el.contains(document.activeElement)) ui.render(); }, 60000);
+    function domePage() {
+      const raid = readRaid();
+      if (raid) keepRaid(raid);
+      const host = $('#RaidModule') || $('#bdNav') || $('.battledome-container') || $('#bdHeader');
+      if (!host) return;
+      mount('full', (el) => (host.id === 'RaidModule' ? host.insertAdjacentElement('afterend', el) : host.insertAdjacentElement(host.id === 'bdHeader' ? 'afterend' : host.id === 'bdNav' ? 'afterend' : 'afterbegin', el)));
+      keepFresh();
+      const r = run.get();
+      if (r && r.step === 'dome') domeStep();
+      else if (r && r.step !== 'dome') run.end();
+    }
+    function barracksPage() {
+      if (!/[?&]raid=1/.test(location.search)) return;
+      const pets = readBarracks();
+      const bs = $('#rb-boss-section [data-bossid]'), bn = (($('#rb-boss-section .rb-boss-name') || {}).textContent || '').trim();
+      edit((d) => { Object.assign(d.pets, pets); if (bs) { const id = parseInt(bs.dataset.bossid, 10) || BOSS0.id; d.boss = Object.assign({}, d.boss || BOSS0, { id, name: bn || (d.boss || BOSS0).name }); if (!d.raid || (d.raid.endsAt && d.raid.endsAt < Date.now())) d.raid = Object.assign({}, d.raid || {}, { endsAt: null, at: Date.now() }); } });   // (the raid's own Barracks: so the raid is on)
+      const host = $('.reserve-barracks') || $('#rbfightStep2');
+      if (!host) return;
+      mount('compact', (el) => host.insertAdjacentElement('beforebegin', el));
+      const r = run.get();
+      if (r && r.step === 'barracks') barracksStep();
+      else if (r) run.end();
+    }
+    function fightPage() {
+      keepFight(readFight(document));
+      const pets = readFightPets();
+      if (Object.keys(pets).length) edit((d) => { for (const [k, v] of Object.entries(pets)) d.pets[k] = Object.assign({}, d.pets[k] || {}, v); });
+      const host = $('#bdFightStepContainer') || $('#bdFightStep1') || $('#bdNav');
+      if (!host) return;
+      mount('compact', (el) => underNav(el) || host.insertAdjacentElement('beforebegin', el));
+      const r = run.get();
+      if (r && r.step === 'fight') fightStep();
+      else if (r) run.end();
+    }
+    function arenaMount() {
+      arenaPage();
+      const host = $('#arenacontainer');
+      if (!host || !arena.pet) return;
+      mount('strip', (el) => host.insertAdjacentElement('afterend', el));
+    }
+    function equipPageMount() {
+      const host = $('#bdStatusFrame') || ($('.petContainer') && $('.petContainer').parentElement) || $('#bdStatusPetThumbs') || $('.equipTable');
+      if (!host && !$('#bdNav')) return;
+      mount('equip', (el) => underNav(el) || host.insertAdjacentElement('beforebegin', el));
+      until(() => $$('.petContainer[data-name]').find((c) => visible(c)), 6000, 200).then(() => equipAuto());   // (the page opens its pet itself, a moment after it loads)
+      document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('.petThumbContainer')) setTimeout(() => equipAuto(), 350); });
+      let t = 0;
+      new MutationObserver((m) => { if (m.some((x) => x.target.closest && x.target.closest('.equipTable') && !(x.target.closest('[data-bnp]')))) { clearTimeout(t); t = setTimeout(() => equipAuto(), 800); } }).observe(document.body, { childList: true, subtree: true });   // (equipped or taken off here)
+    }
+
+    try {
+      if (PATH === '/dome/' || PATH === '/dome/index.phtml') domePage();
+      else if (PATH === '/dome/barracks.phtml') barracksPage();
+      else if (PATH === '/dome/fight.phtml') fightPage();
+      else if (PATH === '/dome/arena.phtml') arenaMount();
+      else if (PATH === '/dome/neopets.phtml') equipPageMount();
+    } catch (e) { reportErr(e); }
+    window.addEventListener('pagehide', () => { if (busy) lock.drop(); });
+  }
+  // ───────────────────────── /The Battledome ─────────────────────────
   function boot() {   // (the page is read: the rest)
     try { actListen(); } catch (e) { report(e); }
     setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 4000 + Math.random() * 12000);   // (the Turmaculus' due hours, if they're needed: a moment after the page, not at once)
     document.addEventListener('visibilitychange', () => { if (document.hidden) return; clearTimeout(turmacRead.t); turmacRead.t = setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 3000 + Math.random() * 6000); });
     try { startKeep(); } catch (e) { report(e); }
-    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, sdrBoot, salBoot, labPage, soupBoot, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, kpopPage, kadPage, kadCheckBoot, kadLookupRead, kadFeedPage, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, bfPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
+    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, sdrBoot, salBoot, labPage, soupBoot, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, kpopPage, kadPage, kadCheckBoot, kadLookupRead, kadFeedPage, bdHelper, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, bfPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
     themeAfter(themeChanged);   // (an old page, its theme's sheets still coming: everything of ours dressed again once they're in)
     whenLoaded(() => { setTimeout(() => { try { boxFootNote(); } catch (e) { report(e); } }, 900); try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } setTimeout(() => { updCheck(false).catch(report); try { updSeen(); } catch (e) { report(e); } }, 1500); try { const w = myWorn(), sw = w && themeData().sw[myLive(w).base]; if (w && (!sw || sw.v !== 7)) themeSwatches(); } catch (e) { report(e); } });   // (a theme of yours: its base's sheet read, if it hasn't been yet)   // (a random event Neopets adds a moment later; theme pictures for the tab)
     if (document.getElementById('navtop__2020') || document.getElementById('navbottom__2020')) startOnce();

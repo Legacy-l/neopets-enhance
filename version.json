@@ -1,10 +1,9 @@
 {
- "version": "5.4.4",
+ "version": "5.5",
  "date": "2026-11-10",
  "notes": [
-  "Left Sidebar: your avatar, with a switch button",
-  "Bank: a bigger Current Balance",
-  "Stamp Album: new stamps get their page from itemdb",
-  "Older pages: no more borrowed backgrounds"
+  "The Battledome: a helper for the raid boss and challengers",
+  "Battledome: loadouts, healing and Fight for me",
+  "Left Sidebar: scrolls with no scrollbar"
  ]
 }
