@@ -1,9 +1,10 @@
 {
- "version": "5.5",
- "date": "2026-11-10",
+ "version": "5.5.1",
+ "date": "2026-11-11",
  "notes": [
-  "The Battledome: a helper for the raid boss and challengers",
-  "Battledome: loadouts, healing and Fight for me",
-  "Left Sidebar: scrolls with no scrollbar"
+  "Battledome: plan turn by turn",
+  "Battledome: Fight for me in every fight",
+  "Battledome: one-time and raid-off weapons",
+  "Battledome: make room in your SDB for heals"
  ]
 }
