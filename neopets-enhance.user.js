@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.5.1
+// @version      5.5.2
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -28103,6 +28103,14 @@
   function galRead(content, form) {   // (what Neopets' page says: whose it is, how full, its items and each one's own box)
     const links = [...content.querySelectorAll('a[href]')], hrefOf = (a) => a.getAttribute('href') || '';
     const by = (re) => links.find((a) => re.test(hrefOf(a)));
+    const byNav = (re) => links.find((a) => a.classList.contains('nav_link') && re.test(hrefOf(a))) || by(re);   // (Neopets' own row of links first: a category's link names a mode too)
+    const catOf = (a) => { try { return new URL(hrefOf(a), location.href).searchParams.get('user_cat_g') || ''; } catch (_) { return ''; } };
+    const cats = [];
+    for (const a of links) {   // (the "Categories for …" list: each category once, its name as Neopets writes it, the one shown now without its »«)
+      const v = catOf(a);
+      if (!v || a.classList.contains('nav_link') || /is_owner=no|display_cat_links/.test(hrefOf(a)) || cats.some((c) => c.v === v)) continue;
+      cats.push({ v, name: (a.textContent || '').replace(/[»«]/g, '').trim() || v, href: hrefOf(a) });
+    }
     const head = [...content.querySelectorAll('div.tablestyle')].find((d) => !d.contains(form) && d.firstElementChild && d.firstElementChild.tagName === 'B');
     const nav = (by(/gallery_desc_edit\.phtml/) || { closest: () => null }).closest('table');
     const modes = form.closest('div.tablestyle');
@@ -28130,10 +28138,10 @@
       who: gm ? gm[1] : '', say: gm ? gm[2] : greet ? greet.textContent.trim() : '',
       ownerA: head && head.querySelector('a[href*="randomfriend"], a[href*="userlookup.phtml"]'),   // (NE may have made it a lookup link already) report: head && head.querySelector('a[href*="autoform_abuse"]'),
       guestA: head && head.querySelector('a[href*="is_owner=no"]'), editA: head && head.querySelector('a[href*="user_cat_g="]'),
-      cats: links.filter((a) => /[?&]user_cat_g=\d+/.test(hrefOf(a)) && a !== (head && head.querySelector('a[href*="user_cat_g="]'))),
+      cats, catNow: new URLSearchParams(location.search).get('user_cat_g') || '',
       noCats: owner && dowhat === '' && !items.some((x) => x.ctl) && !!form.querySelector('a[href*="gallery_user_cats"]'),
       submit: form.querySelector('input[type="submit"], .save_rank1'),
-      by,
+      by, byNav,
     };
   }
   function galDesc(head, keeper) {   // (the gallery's own words, as its owner wrote them (their own HTML kept): what follows the keeper)
@@ -28173,7 +28181,7 @@
     const np = r.items.length - nc;
     box.innerHTML = galNcNpHtml(nc, np);
     box.hidden = false;
-    galInfoPut({ ...galInfo(), nc, np, ncAll });
+    if (!r.catNow && !r.uncat) galInfoPut({ ...galInfo(), nc, np, ncAll });   // (a category's own count is never kept as the gallery's)
   }
   const galNcNpHtml = (nc, np) => `<i class="is-nc"><b>${nc.toLocaleString()}</b> NC</i><i class="is-np"><b>${np.toLocaleString()}</b> Neopoints</i>`;
   function galBand(o = {}) {   // (the gallery's band on its other pages: its keeper and their words, its name and how full it is (o.title, o.keeper, o.say, o.sub: the page's own, else as kept); its figures along the foot, for the page to fill)
@@ -28260,7 +28268,9 @@
     root.dataset.mode = r.mode;
     root.classList.toggle('no-hovacts', P.hoverActs !== true);   // (NE's item buttons on hover: off unless you turn them on (user, 2026-10-31: "have this turned off by default"))
     // (Neopets' own links: its pages as tabs, the pages beside the gallery as small pills; the very same links, moved)
-    galInfoPut({ ...galInfo(), name: r.name, keeper: r.keeper ? String(r.keeper.src || '').replace(/^http:/, 'https:') : '', who: r.who, say: r.say, size: r.size, free: r.free, kinds: r.items.length, all: r.items.reduce((s, x) => s + x.q, 0), gu: r.gu, at: Date.now() });   // (for the band on its other pages)
+    const part = !!(r.catNow || r.uncat), gi = galInfo();   // (one category or Uncategorised: what the band says of the whole gallery comes from All items, as last seen)
+    if (part && r.free == null && gi.free != null && (!r.size || gi.size === r.size)) r.free = gi.free;
+    galInfoPut({ ...gi, name: r.name, keeper: r.keeper ? String(r.keeper.src || '').replace(/^http:/, 'https:') : '', who: r.who, say: r.say, size: r.size, free: r.free, ...(part ? {} : { kinds: r.items.length, all: r.items.reduce((s, x) => s + x.q, 0) }), gu: r.gu, at: Date.now() });   // (for the band on its other pages)
     const tabs = galTabs(r.nav, 'index');
     // (the band: its name, its keeper and their words, its own description; how full it is and what it's worth)
     const band = document.createElement('section');
@@ -28269,7 +28279,7 @@
     band.innerHTML = `${r.keeper ? `<figure class="bnp-gal-keeper"><span class="bnp-gal-keepic"></span>${r.say ? `<figcaption class="bnp-gal-say"><b>${esc(r.who || 'The Keeper')}</b><span>${esc(r.say)}</span></figcaption>` : ''}</figure>` : ''}
       <div class="bnp-gal-about"><div class="bnp-gal-head"><div class="bnp-gal-titlerow"><h2 class="bnp-gal-title">${esc(r.name || 'Gallery')}</h2>${r.size ? `<div class="bnp-gal-space" title="${esc(`Your gallery holds ${r.size.toLocaleString()} items: each copy takes a space`)}"><span class="bnp-gal-spacewords"><b>${used.toLocaleString()}</b> of ${r.size.toLocaleString()} spaces used</span><span class="bnp-gal-bar" role="progressbar" aria-label="Space used" aria-valuemin="0" aria-valuemax="${r.size}" aria-valuenow="${used}"><i style="width:${pct}%"></i></span>${r.free != null ? `<small>${r.free.toLocaleString()} free · ${pct}% full</small>` : ''}</div>` : ''}</div><div class="bnp-gal-owner" data-gal-owner></div><div data-gal-desc></div><div class="bnp-gal-acts" data-gal-acts></div></div>
       <div class="bnp-gal-stats">
-        <div class="bnp-gal-count"><b>${r.items.length.toLocaleString()}</b><span>different item${r.items.length === 1 ? '' : 's'}<small>${r.items.reduce((s, x) => s + x.q, 0).toLocaleString()} in all</small><span class="bnp-gal-ncnp" data-gal-ncnp hidden></span></span></div>
+        <div class="bnp-gal-count"><b>${r.items.length.toLocaleString()}</b><span>${part ? `${r.uncat ? 'uncategorised' : `in ${esc((r.cats.find((c) => c.v === r.catNow) || {}).name || r.catNow)}`}<small>${gi.kinds ? `of ${Number(gi.kinds).toLocaleString()} different items` : `${r.items.reduce((s, x) => s + x.q, 0).toLocaleString()} in all`}</small>` : `different item${r.items.length === 1 ? '' : 's'}<small>${r.items.reduce((s, x) => s + x.q, 0).toLocaleString()} in all</small>`}<span class="bnp-gal-ncnp" data-gal-ncnp hidden></span></span></div>
         <span class="bnp-gal-wt" data-bnp="wtline"></span>
       </div></div>`;   // (as Shop Stock's band: one panel, how full at its top right, the figures along its foot)
     const desc = r.head ? galDesc(r.head, r.keeper) : null;   // (read before the keeper's picture moves: its words follow the keeper)
@@ -28297,15 +28307,16 @@
       seg.setAttribute('role', 'group');
       seg.setAttribute('aria-label', 'What to do with your items');
       for (const [re, label, k] of [[/dowhat=categorize/, 'Categorise', 'cat'], [/dowhat=rank/, 'Rank', 'rank'], [/dowhat=remove/, 'Take out', 'remove']]) {
-        const a = r.by(re);
+        const a = r.byNav(re);
         if (!a) continue;
+        if (r.catNow) a.setAttribute('href', `index.phtml?user_cat_g=${encodeURIComponent(r.catNow)}&dowhat=${{ cat: 'categorize', rank: 'rank', remove: 'remove' }[k]}&`);   // (one category shown: another mode, the same category)
         a.className = 'bnp-gal-segb';
         a.textContent = label;
         if (k === r.mode) a.setAttribute('aria-current', 'page');
         seg.append(a);
       }
       m.append(seg);
-      const un = r.by(/[?&]view=uncat/);
+      const un = r.byNav(/[?&]view=uncat/);
       if (un) {
         un.className = `bnp-gal-pill${r.uncat ? ' is-on' : ''}`;
         un.textContent = 'Uncategorised only';
@@ -28318,12 +28329,17 @@
       else if (tip) root.insertAdjacentHTML('beforeend', `<p class="bnp-gal-note">${esc(tip)}</p>`);
       if (r.noCats && r.mode === 'cat') { const mk = r.by(/gallery_user_cats/); const note = root.querySelector('.bnp-gal-note.is-cats'); if (note) note.insertAdjacentHTML('beforeend', `<a class="bnp-gal-pill is-go" href="${esc(mk ? mk.getAttribute('href') : '/gallery/gallery_user_cats.phtml')}">Make categories</a>`); }
     }
-    if (r.cats.length) {   // (its categories: Neopets' own links, as chips)
-      const chips = document.createElement('div');
-      chips.className = 'bnp-gal-chips';
-      chips.setAttribute('aria-label', 'Categories');
-      for (const a of r.cats) { a.className = 'bnp-gal-chip'; if (new URL(a.href, location.href).search === location.search) a.setAttribute('aria-current', 'page'); chips.append(a); }
-      root.append(chips);
+    if (r.owner && r.cats.length) {   // (one category to see and work on, in the mode you're in (Neopets' own links): All items first)
+      const dw = { cat: 'categorize', rank: 'rank', remove: 'remove' }[r.mode] || 'categorize';
+      const row = document.createElement('div');
+      row.className = 'bnp-gal-cats';
+      row.setAttribute('role', 'group');
+      row.setAttribute('aria-label', 'Show one category');
+      row.innerHTML = '<span class="bnp-gal-catlab">Show</span>';
+      const pill = (href, label, on, title) => { const a = document.createElement('a'); a.className = `bnp-gal-pill bnp-gal-catpill${on ? ' is-on' : ''}`; a.href = href; a.textContent = label; if (title) a.title = title; if (on) a.setAttribute('aria-current', 'page'); row.append(a); };
+      pill(`index.phtml?dowhat=${dw}&view=all`, 'All items', !r.catNow && !r.uncat, 'Every item in your gallery');
+      for (const c of r.cats) pill(/dowhat=/.test(c.href) ? c.href : `index.phtml?user_cat_g=${encodeURIComponent(c.v)}&dowhat=${dw}&`, c.name, c.v === r.catNow, `Only what's in ${c.name}`);
+      root.append(row);
     }
     // (the tools: find, sort, size; how many shown)
     const tools = document.createElement('div');
@@ -28340,7 +28356,8 @@
     const grid = gal.grid = document.createElement('div');
     grid.className = `bnp-gal-grid is-${gal.view}`;
     grid.setAttribute('data-gal-grid', '');
-    grid.innerHTML = r.items.map(galCardHtml).join('') || '<p class="bnp-gal-empty">Nothing in this gallery yet.</p>';
+    const catName = r.catNow ? ((r.cats.find((c) => c.v === r.catNow) || {}).name || r.catNow) : '';
+    grid.innerHTML = r.items.map(galCardHtml).join('') || (catName ? `<p class="bnp-gal-empty">Nothing in ${esc(catName)} yet. To put items in it, choose ${esc(catName)} under them in Categorise, then Submit. <a class="bnp-gal-pill" href="index.phtml?dowhat=categorize&view=all">Categorise all items</a></p>` : r.uncat ? '<p class="bnp-gal-empty">Every item has a category.</p>' : '<p class="bnp-gal-empty">Nothing in this gallery yet.</p>');
     for (const x of r.items) { x.card = grid.children[x.i]; if (x.ctl) galCtl(x); }
     form.append(grid);
     if (r.submit && r.mode !== 'view' && !(r.mode === 'cat' && r.noCats)) {
@@ -28355,7 +28372,7 @@
     }
     root.append(form);
     if (r.linkP) r.linkP.classList.add('bnp-gal-old');
-    for (const p of content.querySelectorAll(':scope > p')) if (!p.textContent.trim() && !p.children.length) p.classList.add('bnp-gal-old');
+    for (const p of content.querySelectorAll(':scope > p')) if ((!p.textContent.trim() && !p.children.length) || (!p.contains(root) && /^\s*viewing all\b|not finding any items in user defined category/i.test(p.textContent))) p.classList.add('bnp-gal-old');
     for (const el of content.querySelectorAll(':scope > br, :scope > table, :scope > div')) {   // (its spacers, its list of categories (now chips) and its red how-to box (now the note above): said here already)
       if (el.tagName === 'BR' || /categories for|viewing (?:all|uncategori)|rank items by category/i.test(el.textContent)) el.classList.add('bnp-gal-old');
       else if (S.features.hidePinAd !== false && el.querySelector('img[src*="bank_pin_mgr"]')) el.classList.add('bnp-gal-old');   // (Neopets' "Add a PIN" notice, out of sight as on the Closet and SDB (Settings › Your Closet))
@@ -29171,6 +29188,9 @@
     html.bnp-gal-page .bnp-gal-note.is-cats { padding: 12px 16px; }
     html.bnp-gal-page .bnp-gal-note.is-cats > span { flex: 1 1 320px; text-align: left; }
     html.bnp-gal-page .bnp-gal-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+    html.bnp-gal-page .bnp-gal-cats { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; }
+    html.bnp-gal-page .bnp-gal-catlab { color: var(--nb-muted); font: 13px var(--nb-ui); }
+    html.bnp-gal-page .bnp-gal .bnp-gal-empty .bnp-gal-pill { margin: 0 0 0 6px; vertical-align: middle; }
     html.bnp-gal-page .bnp-gal .bnp-gal-chip { display: inline-flex; align-items: center; height: 30px; padding: 0 13px; border: 2px solid var(--nb-line); border-radius: 99px; background: #fff; color: #333; font: 13px var(--nb-ui); }
     html.bnp-gal-page .bnp-gal .bnp-gal-chip:hover { border-color: var(--nb-frame); }
     html.bnp-gal-page .bnp-gal .bnp-gal-chip[aria-current="page"] { border-color: var(--nb-bar-edge); background: var(--nb-bar); color: var(--nb-bar-ink); }
@@ -29208,7 +29228,7 @@
     html.bnp-gal-page .bnp-gal-card:hover .bnp-gal-itacts, html.bnp-gal-page .bnp-gal-card:focus-within .bnp-gal-itacts { opacity: 1; pointer-events: auto; }
     html.bnp-gal-page .bnp-gal-itacts .bnp-it { margin: 0; }
     html.bnp-gal-page .is-small .bnp-gal-itacts { top: 38px; }
-    html.bnp-gal-page .bnp-gal-empty { margin: 0; padding: 22px; border: 2px dashed var(--nb-line); border-radius: 14px; color: var(--nb-muted); font: 14px var(--nb-ui); text-align: center; }
+    html.bnp-gal-page .bnp-gal-empty { grid-column: 1 / -1; margin: 0; padding: 22px; border: 2px dashed var(--nb-line); border-radius: 14px; color: var(--nb-muted); font: 14px var(--nb-ui); text-align: center; }
     /* each mode's box on its card */
     html.bnp-gal-page .bnp-gal-ctl { display: flex; justify-content: center; width: 100%; margin-top: 2px; }
     html.bnp-gal-page .bnp-gal-ctl:empty { display: none; }
@@ -54618,6 +54638,10 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.5.2', '2026-11-17', [
+      'My Gallery: a Show row to see and work on one category at a time (All items, then each of yours), in Categorise, Rank or Take out',
+      'My Gallery: the Categorise / Rank / Take out switch keeps the category you are in, and no longer opens a category by mistake',
+    ]],
     ['5.5.1', '2026-11-11', [
       'Battledome: plan a fight turn by turn, weapons and an ability for each turn (the rest on Auto); a new turn starts empty for you to fill',
       'Battledome: Fight for me presses Fight in every fight against the raid boss or a challenger, however it started (Stop still stops it)',
