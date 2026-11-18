@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.5.4
+// @version      5.5.5
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -5099,6 +5099,7 @@
     if (ssw) { e.preventDefault(); itSsw(t.dataset.item); }
   }, true);
   for (const type of ['mousedown', 'pointerdown', 'touchstart']) document.addEventListener(type, (e) => { if (e.target instanceof Element && e.target.closest('[data-bnp="it"]')) e.stopPropagation(); }, true);
+  document.addEventListener('click', (e) => { const b = e.target instanceof Element && e.target.closest('.bnp-it-price.is-busy'); if (!b) return; e.preventDefault(); e.stopPropagation(); idbTryAnyway(); }, true);   // (a price waiting on the rest, pressed: asked anyway)
   document.addEventListener('pointerdown', (e) => { if (e.target instanceof Element && e.target.closest('.bnp-it-price.is-visit a')) { try { localStorage.removeItem(IT_401); } catch (_) { /* */ } } }, true);   // ("Price: open itemdb" pressed, in an item row or not: the "no" forgotten, the visit lets the prices in. Heard at the page's top, where the row stops it)
   // The Super Shop Wizard on old pages: Neopets' beta panel comes with its beta pages only. An old page in the beta look gets the same
   // panel, its search done as Neopets' own page does it, so the bar's SSW button and the item buttons open it there; an old page in its own
@@ -5223,12 +5224,13 @@
   const idbBudget = (g) => (g.since && Date.now() - g.since > 5 * 864e5 && !g.bans.length ? IDB_CLEAN : IDB_SAFE);
   function idbGate() {   // (the count as itemdb keeps it: n items since it was last forgotten, the last that counted, a ban's end)
     const now = Date.now(), g = get(IDB_GATE, null) || {};
-    const o = { n: +g.n || 0, last: +g.last || 0, sent: +g.sent || 0, until: +g.until || 0, small: !!g.small, since: +g.since || 0, bans: (Array.isArray(g.bans) ? g.bans : []).filter((t) => now - t < 5 * 864e5) };
+    const o = { n: +g.n || 0, last: +g.last || 0, sent: +g.sent || 0, until: +g.until || 0, small: !!g.small, since: +g.since || 0, force: +g.force || 0, bans: (Array.isArray(g.bans) ? g.bans : []).filter((t) => now - t < 5 * 864e5) };
     if (now - o.last > IDB_IDLE) o.n = 0;
     return o;
   }
   function idbWait(expect = 1) {   // (0: an ask of this many items may go now; else when one may)
     const g = idbGate(), now = Date.now();
+    if (now < g.force) return 0;   // (you said ask anyway: till itemdb says no)
     if (now < g.until) return g.until;
     if (g.n && g.n + expect > idbBudget(g)) return g.last + IDB_IDLE;
     return 0;
@@ -5264,7 +5266,7 @@
               try { json = JSON.parse(r.responseText); } catch (_) { json = null; }
               if (r.status === 429) {   // (banned: nothing more from any tab till both its Retry-After and itemdb's 30 minutes since the last counted ask are over)
                 const m = /(?:^|\n)\s*retry-after:\s*(\d+)/i.exec(r.responseHeaders || ''), now = Date.now();
-                idbNote((x) => { x.bans.push(now); x.until = Math.max(now + (m ? +m[1] * 1000 : 10 * 60e3), (x.last || now) + IDB_IDLE) + 60e3 + Math.round(Math.random() * 120e3); x.small = true; });
+                idbNote((x) => { if (!(x.until > now)) x.bans.push(now); x.until = Math.max(now + (m ? +m[1] * 1000 : 10 * 60e3), (x.last || now) + IDB_IDLE) + 60e3 + Math.round(Math.random() * 120e3); x.small = true; x.force = 0; });
               } else if (r.status === 401) {   // (no itemdb visit lately: as before, a 10-minute hold, or till a visit)
                 const refused = Date.now() - itVisitAt() < 3 * 60000;
                 try { localStorage.setItem(IT_401, `${Date.now()}|401${refused ? 'r' : ''}`); } catch (_) { /* */ }
@@ -5281,6 +5283,11 @@
         } catch (_) { res({ status: 0 }); }
       }, Math.max(0, gap));
     });
+  }
+  function idbTryAnyway() {   // (your say: itemdb asked now, whatever NE's own count or a ban's rest says, for half an hour or till it says no; the prices waiting asked for again)
+    idbNote((x) => { x.force = Date.now() + 30 * 60e3; x.small = false; });
+    itRetry();
+    try { if (bf) bfPriceAgain(); } catch (_) { /* */ }
   }
   // Every ask of itemdb: { url, method, body, expect (how many items it may hand back), count(json) } → { status: 200|401|429|0|'wait', json, wait }
   const idbAsk = (o) => { const w = idbWait(o.expect || 1); return w ? Promise.resolve({ status: 'wait', wait: w }) : idbLock(() => idbSend(o)); };
@@ -5353,7 +5360,7 @@
       itMerge(await idbGet(IT_STORE).catch(() => null));   // (another tab may have just been given some of these)
       names = names.filter((n) => { const c = itCache[n]; if (!c) return true; tell([n], c.r); if (itDue(n, c)) itStaleAdd(n); return false; });
       for (let i = 0; i < names.length;) {
-        const g = idbGate(), size = Math.min(names.length - i, g.small ? 20 : 100, idbBudget(g) - g.n);   // (just after a ban, a small one first)
+        const g = idbGate(), forced = Date.now() < g.force, size = Math.min(names.length - i, g.small && !forced ? 20 : 100, forced ? 100 : idbBudget(g) - g.n);   // (just after a ban, a small one first; asked anyway: a hundred)
         if (size < 1 || idbWait(size)) { tell(names.slice(i), itBusyRes()); itBusyLater(); return; }
         const part = names.slice(i, i + size);
         const r = await idbSend({ method: 'POST', url: 'https://itemdb.com.br/api/v1/items/many', body: { name: part }, expect: part.length });
@@ -5428,7 +5435,7 @@
       itWatchVisit();
       return;
     }
-    if (res.err) { b.className = `bnp-it-price is-none${res.busy ? ' is-busy' : ''}`; b.textContent = '?'; b.title = res.busy ? (res.until ? `${idbRestText(res.until)}: its prices come by themselves after that.` : 'itemdb asked for a pause: prices again in a few minutes') : 'itemdb didn’t answer just now'; if (res.busy) { itWatchVisit(); itBusyLater(); } return; }
+    if (res.err) { b.className = `bnp-it-price is-none${res.busy ? ' is-busy' : ''}`; b.textContent = '?'; b.title = res.busy ? (res.until ? `${idbRestText(res.until)}: its prices come by themselves after that. Press to ask itemdb now anyway (if it’s still counting, its next ban is longer).` : 'itemdb asked for a pause: prices again in a few minutes') : 'itemdb didn’t answer just now'; if (res.busy) { itWatchVisit(); itBusyLater(); } return; }
     if (res.p == null) { b.className = 'bnp-it-price is-none'; b.textContent = 'No price'; b.title = 'itemdb has no price for it'; return; }
     const at = b.closest('[data-item]'), name = at ? at.dataset.item : '';
     b.className = `bnp-it-price${res.inf ? ' is-inflated' : ''}`;
@@ -34123,7 +34130,7 @@
     const k = wtKeep(), others = Object.keys(k).filter((x) => x.startsWith('gallery@')).sort((a, b) => (k[b].at || 0) - (k[a].at || 0));
     if (others.length > 8) { for (const x of others.slice(8)) delete k[x]; try { localStorage.setItem(acctKey('bnp-worth'), JSON.stringify(k)); } catch (_) { /* */ } }
   }
-  const wtErrHtml = (e) => { const end = wtPauseEnd(); return `<p class="bnp-wt-say is-err">${esc(e === 'visit' ? 'itemdb gives its prices once you’ve opened itemdb.com.br today: open it, then count again.' : e === 'busy' ? `itemdb only gives so many prices each half hour, so NE is giving it a rest${end ? ` till ${hmOf(end)}` : ''} rather than get you banned there. Then carry on: what’s counted so far is kept.` : e === 'fail' ? 'itemdb didn’t answer just now: count again in a moment.' : e)}</p>`; };
+  const wtErrHtml = (e) => { const end = wtPauseEnd(); return `<p class="bnp-wt-say is-err">${esc(e === 'visit' ? 'itemdb gives its prices once you’ve opened itemdb.com.br today: open it, then count again.' : e === 'busy' ? (end ? `${idbRestText(end)}. What’s counted so far is kept, and it carries on by itself then while this page is open.` : 'itemdb stopped this count part way (a pause or a ban at the time). What’s counted so far is kept: carry on whenever you like.') : e === 'fail' ? 'itemdb didn’t answer just now: count again in a moment.' : e)}</p>`; };
   function wtPlace(kept, p) {   // (a place as last seen whole, the Inventory's NP and NC items put together)
     const w = (k) => (kept[k] && kept[k].whole ? kept[k] : null), a = w(p), b = p === 'inventory' ? w('inventory:nc') : null;
     if (!a || !b) return a || b;
@@ -34317,7 +34324,8 @@
     } else if (paged && part) {   // (itemdb paused it partway: what's counted so far, and Carry on)
       const p = wt.part, end = wtPauseEnd();
       top = `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${allLbl}, counted so far</span><b class="bnp-wt-big">${wtCoin(tab)}${esc(big(part))}</b><span class="bnp-wt-sub">${esc(`${(p.priced || 0).toLocaleString()} of ${(p.toPrice || 0).toLocaleString()} priced · ${(p.pages || 0).toLocaleString()} page${p.pages === 1 ? '' : 's'} read ${colAgo(p.at)}`)}</span>
-          <div class="bnp-wt-meta"><span>${end ? `itemdb’s pause is over at ${esc(new Date(end).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}` : 'itemdb’s pause should be over'}</span><button type="button" class="bnp-wt-pb is-go" data-wt="resume">Carry on</button><button type="button" class="bnp-wt-pb" data-wt="count">Start again</button></div></div>`;
+          <div class="bnp-wt-meta"><span>${end ? `${idbGate().until > Date.now() ? 'itemdb’s ban' : 'NE’s rest'} ends at ${esc(hmOf(end))}: it carries on by itself then` : 'Ready to carry on'}</span>${end ? '<button type="button" class="bnp-wt-pb is-go" data-wt="tryany" title="Ask itemdb now, before the wait is over (if it’s still counting, its next ban is longer)">Try now anyway</button>' : '<button type="button" class="bnp-wt-pb is-go" data-wt="resume">Carry on</button>'}<button type="button" class="bnp-wt-pb" data-wt="count">Start again</button></div></div>`;
+      wtAutoLater();
       top += wtErrHtml('busy');
     } else if (key === 'gallery') {   // (the Gallery: its last count, kept till you count again)
       const stale = whole && wtStale(whole), shown = here || whole;
@@ -34326,6 +34334,7 @@
         : `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${lbl}</span><p class="bnp-wt-ask">${wt.items.length ? `${wt.items.length.toLocaleString()} item${wt.items.length === 1 ? '' : 's'}. ` : ''}Count them at itemdb’s prices whenever you like: the count is kept and shown each time you come, till you count again.</p>
           <div class="bnp-wt-meta"><button type="button" class="button-default__2020 button-yellow__2020" data-wt="count"${wt.pricing ? ' disabled' : ''}>${wt.pricing ? 'Counting…' : 'Count it'}</button></div></div>`;
       if (wt.err) top += wtErrHtml(wt.err);
+      if (wt.err === 'busy' && wtPauseEnd()) top += '<p class="bnp-wt-say"><button type="button" class="bnp-wt-pb" data-wt="tryany" title="Ask itemdb now, before the wait is over (if it’s still counting, its next ban is longer)">Try now anyway</button></p>';
     } else if (paged) {
       const stale = whole && wtStale(whole), seen = wtSeen(), secs = seen ? Math.ceil(seen.items / 90) * 4.3 + Math.ceil(seen.items / 100) * 3 : 0;
       const what = seen ? `${seen.items.toLocaleString()} ${key === 'safetydeposit' && seen.pool === 'nc' ? 'NC items' : 'items'} over every page${key === 'safetydeposit' ? `, and your ${seen.pool === 'nc' ? 'NP' : 'NC'} items` : ''}.` : 'Every page of it.';
@@ -34495,6 +34504,7 @@
     if (a === 'x') wtClose();
     else if (a === 'count') { if (WT_PAGED.has(wt.key)) wtCount(); else wtCountHere().catch(report); }
     else if (a === 'resume') wtCount(true);
+    else if (a === 'tryany') { idbTryAnyway(); if (WT_PAGED.has(wt.key)) wtCount(true); else { wt.err = ''; wtCountHere().catch(report); } }
     else if (a === 'stop') { if (wt.count) wt.count.stop = true; }
     else if (a === 'more') { if (wt.tab === 'nc') wt.more = !wt.more; else wt.show = (wt.show || 10) <= 10 ? 50 : wt.show + 50; wtWinPaint(); }   // (NP: 50, then 50 more at a time)
     else if (a === 'fewer') { wt.show = 10; wt.toTop = true; wtWinPaint(); }
@@ -34533,6 +34543,12 @@
     if (key !== 'safetydeposit') return '';
     const v = S.features.wtPools || 'both';
     return `<span class="bnp-wt-pools" role="group" aria-label="What to count">${[['both', 'NP and NC'], ['np', 'NP only'], ['nc', 'NC only']].map(([k, l]) => `<button type="button" class="bnp-wt-pb is-sm" data-wtpools="${k}" aria-pressed="${v === k}">${l}</button>`).join('')}</span>`;
+  }
+  function wtAutoLater() {   // (a count paused for itemdb's limit: carried on by itself once the wait is over, while the page is open)
+    if (!wt || !wt.part || wt.count || wtAutoLater.t) return;
+    const end = wtPauseEnd();
+    if (!end) return;
+    wtAutoLater.t = setTimeout(() => { wtAutoLater.t = 0; if (!wt || !wt.part || wt.count) return; if (wtPauseEnd()) wtAutoLater(); else wtCount(true); }, Math.max(5000, end - Date.now() + 10000 + Math.random() * 20000));
   }
   async function wtCount(resume) {   // (the whole SDB or Closet: every page read as you'd turn them, one at a time with a pause between, only while this tab's in front; then priced)
     if (!wt || wt.count || wt.picking || !WT_PAGED.has(wt.key)) return;
@@ -36498,7 +36514,7 @@
     const tools = showList ? `<div class="bnp-bf-tools"><span class="bnp-bf-seg" role="group" aria-label="Show">${[['deals', 'Bargains'], ['all', 'Everything']].map(([k, l]) => `<button type="button" data-bfshow="${k}" aria-pressed="${P.show === k}">${l}</button>`).join('')}</span><label><span>Sort</span><select data-bfsort aria-label="Sort them">${BF_SORTS.map(([k, l]) => `<option value="${k}"${P.sort === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>${P.show === 'deals' ? `<span class="bnp-bf-offby" role="group" aria-label="How far under itemdb’s price"><span>Off by</span>${BF_MINS.map((m) => `<button type="button" data-bfmin="${m}" aria-pressed="${!P.minOwn && P.min === m}" title="${esc(m ? `Only those at least ${m}% under itemdb’s price` : 'Anything under itemdb’s price')}">${m ? `${m}%+` : 'any'}</button>`).join('')}<label class="bnp-bf-num${P.minOwn ? ' is-on' : ''}" title="Your own: at least this % under itemdb’s price"><input type="text" inputmode="numeric" maxlength="2" data-bfnum="min" value="${P.minOwn ? P.min : ''}" placeholder="__" aria-label="Your own % off" autocomplete="off" spellcheck="false">%</label></span><span class="bnp-bf-saveby" role="group" aria-label="How many Neopoints under itemdb’s price"><span>Saving at least</span><label class="bnp-bf-num is-np${P.np ? ' is-on' : ''}" title="Only those at least this many Neopoints under itemdb’s price (and the % above too, when you’ve chosen one)"><input type="text" inputmode="numeric" maxlength="13" data-bfnum="np" value="${P.np ? P.np.toLocaleString() : ''}" placeholder="any" aria-label="Saving at least this many Neopoints" autocomplete="off" spellcheck="false">NP</label>${P.np ? '<button type="button" class="bnp-bf-numx" data-bfnpx title="Any amount" aria-label="Any amount">×</button>' : ''}</span>` : ''}</div>` : '';
     const shown = L.list.slice(0, bf.shown), more = L.list.length - shown.length;
     const rows = showList ? `<div class="bnp-bf-list">${shown.map((x) => bfRowHtml(x.it, x.d, onThis)).join('')}${more > 0 ? `<p class="bnp-bf-more"><button type="button" class="bnp-sdr-lb" data-bf="more">Show ${Math.min(BF_SHOW, more).toLocaleString()} more</button><span>${more.toLocaleString()} more below these</span></p>` : ''}${!L.list.length ? `<p class="bnp-bf-empty">${waitN ? (hold ? 'No prices from itemdb yet.' : 'Looking up itemdb’s prices…') : P.show === 'deals' ? `Nothing ${onThis ? 'here' : 'in this shop'} is under itemdb’s price${P.min || P.np ? ` by ${esc(bfWant(P, true))}` : ''}.${(P.min || P.np) && L.rows.some((x) => x.d.save > 0) ? ' <button type="button" class="bnp-sdr-lb" data-bfany>Any saving</button>' : L.rows.length ? ' <button type="button" class="bnp-sdr-lb" data-bfshow="all">Show everything</button>' : ''}` : 'No items.'}</p>` : ''}</div>` : '';
-    const blocked = bf.blocked === 'visit' ? '<p class="bnp-bf-note">itemdb shares its prices once you’ve visited it today. <a class="bnp-sdr-lb" href="https://itemdb.com.br/" target="_blank" rel="noopener">Open itemdb</a> <button type="button" class="bnp-sdr-lb" data-bf="again">Try again</button></p>' : bf.blocked === 'busy' ? `<p class="bnp-bf-note">${esc(idbRestSay())} The rest of the prices come by themselves.</p>` : '';
+    const blocked = bf.blocked === 'visit' ? '<p class="bnp-bf-note">itemdb shares its prices once you’ve visited it today. <a class="bnp-sdr-lb" href="https://itemdb.com.br/" target="_blank" rel="noopener">Open itemdb</a> <button type="button" class="bnp-sdr-lb" data-bf="again">Try again</button></p>' : bf.blocked === 'busy' ? `<p class="bnp-bf-note">${esc(idbRestSay())} The rest of the prices come by themselves.${idbWait(1) ? ' <button type="button" class="bnp-sdr-lb" data-bf="tryany" title="Ask itemdb now, before the wait is over (if it’s still counting, its next ban is longer)">Try now anyway</button>' : ''}</p>` : '';
     const got = bf.gotN ? `<p class="bnp-bf-got">You bought ${bf.gotN.toLocaleString()} here: ${bmNp(bf.spent)}</p>` : '';
     body.innerHTML = `${banner}${scopes}${mid}${blocked}${tools}${rows}${got}<p class="bnp-bf-foot">itemdb’s prices are a guide: <span>the Shop Wizard has the real ones.</span></p>`;
     const l2 = body.querySelector('.bnp-bf-list');
@@ -36547,6 +36563,7 @@
     if (a === 'min') bfOpen(false);
     else if (a === 'more') { bf.shown += BF_SHOW; bfPaint(); }
     else if (a === 'again') bfPriceAgain();
+    else if (a === 'tryany') idbTryAnyway();
     else if (a === 'scan') bfScan(false).catch((err) => { report(err); bfScanEnd('Something went wrong: what it found so far is below.'); });
     else if (a === 'rescan') bfScan(true).catch((err) => { report(err); bfScanEnd('Something went wrong: what it found so far is below.'); });
     else if (a === 'stop') { if (bf.run) { bf.run.stop = true; bfPaint(); } }
@@ -47009,7 +47026,7 @@
       <div class="bnp-card"><h4>Item buttons</h4>
         <label class="bnp-switch"><input type="checkbox" data-feat="items"${f.items ? ' checked' : ''}><span>Item buttons<small>Your inventory, Quick Stock, SDB and Closet, Neopia’s shops and users’ shops, your shop, Auctions, the Trading Post, galleries, quests, the Quest Log, the Battledome and more (each page below). NC items get only the buttons that fit them.</small></span></label>
         <div class="bnp-itsize"><div class="bnp-itslides"><label class="bnp-myslide bnp-itslide"><span>Their size on most pages</span><input type="range" min="12" max="36" step="1" value="${itPx(set)}" data-itpx="px" aria-label="Their size on most pages"><b data-itpxsay="px">${itPx(set)} px</b></label><label class="bnp-myslide bnp-itslide"><span>In your inventory and shops’ grids</span><input type="range" min="10" max="30" step="1" value="${itPxGrid(set)}" data-itpx="grid" aria-label="In your inventory and shops’ grids"><b data-itpxsay="grid">${itPxGrid(set)} px</b></label><label class="bnp-myslide bnp-itslide"><span>itemdb prices’ text</span><input type="range" min="8" max="16" step="0.5" value="${itPricePx(set)}" data-itpx="price" aria-label="itemdb prices’ text"><b data-itpxsay="price">${itPricePx(set)} px</b></label><button type="button" class="bnp-pillbtn bnp-itsizes" data-itsizes${set.px || set.pxGrid || set.pricePx || set.size ? '' : ' disabled'}>Back to the sizes they started at</button></div><div class="bnp-itdemobox"><span class="bnp-it bnp-itdemo">${['sw', 'tp', 'au', 'sdb', 'jn', 'idb'].map((k) => { const ic = itIcon(k); return `<span class="bnp-it-b">${ic ? `<span class="bnp-ico" style="background-image:url('${esc(cssUrl(ic))}')"></span>` : ''}</span>`; }).join('')}<span class="bnp-it-price"><a>~12k NP</a></span>${set.ncVal !== false ? '<span class="bnp-it-nc">2-3 caps</span>' : ''}</span><small>On most pages</small><span class="bnp-it bnp-itdemo is-grid">${['sw', 'tp', 'au', 'sdb', 'jn', 'idb'].map((k) => { const ic = itIcon(k); return `<span class="bnp-it-b">${ic ? `<span class="bnp-ico" style="background-image:url('${esc(cssUrl(ic))}')"></span>` : ''}</span>`; }).join('')}<span class="bnp-it-price"><a>~12k NP</a></span>${set.ncVal !== false ? '<span class="bnp-it-nc">2-3 caps</span>' : ''}</span><small>In your inventory and shops’ grids</small></div></div>
-        <p class="bnp-note">Prices come from <a href="https://itemdb.com.br/" target="_blank" rel="noopener">itemdb</a> (kept a few days in this browser; NE never asks for more than itemdb allows each half hour, so you don’t get banned there). ${esc(idbUseLine())} itemdb gives them to scripts once you’ve opened itemdb.com.br that day, or logged in there in the last 14 days: if a price says “open itemdb”, open it, and the prices fill in by themselves. <button type="button" class="bnp-linkbtn" data-ittest>Test itemdb</button></p>
+        <p class="bnp-note">Prices come from <a href="https://itemdb.com.br/" target="_blank" rel="noopener">itemdb</a> (kept a few days in this browser; NE never asks for more than itemdb allows each half hour, so you don’t get banned there). ${esc(idbUseLine())}${idbWait(1) ? ' <button type="button" class="bnp-linkbtn" data-idbtry>Ask itemdb now anyway</button>' : ''} itemdb gives them to scripts once you’ve opened itemdb.com.br that day, or logged in there in the last 14 days: if a price says “open itemdb”, open it, and the prices fill in by themselves. <button type="button" class="bnp-linkbtn" data-ittest>Test itemdb</button></p>
         <p class="bnp-note bnp-ittest" data-g="ittest" hidden></p>
       </div>
       <div class="bnp-card"><h4>NC values</h4>
@@ -47102,6 +47119,7 @@
   function itemsHubClick(t) {
     const set = itSettings();
     if ('ittest' in t.dataset) { itTest(); return; }
+    if ('idbtry' in t.dataset) { idbTryAnyway(); t.replaceWith(Object.assign(document.createElement('span'), { textContent: 'Asking itemdb now, till it says no.' })); return; }
 
     if (t.dataset.itnc) { const i = t.dataset.itnc.indexOf(':'); set.ncLook = Object.assign(ncLook(), { [t.dataset.itnc.slice(0, i)]: t.dataset.itnc.slice(i + 1) }); ncLookApply(set.ncLook); changed(); return; }
     if (t.dataset.itk) { const [k, key] = t.dataset.itk.split(':'), p = set.pages[k]; p.keys = p.keys.includes(key) ? p.keys.filter((x) => x !== key) : IT_KEYS.filter((x) => x === key || p.keys.includes(x)); changed(); }
@@ -49014,7 +49032,7 @@
   }
   document.addEventListener('click', (e) => {   // (the hub's other buttons: folder shortcuts, chips, backup)
     if (!hub || !(e.target instanceof Element) || !hub.win.contains(e.target)) return;
-    const t = e.target.closest('[data-dtab], [data-dedit], [data-secfold], [data-updnow], [data-dset], [data-bk], [data-unchip], [data-dcdel], [data-rset], [data-rcdel], button[data-re], [data-rek], [data-redel], button[data-tb], [data-avs], [data-avr], [data-avo], [data-avv], [data-avk], [data-avx], button[data-av], [data-avdo], [data-avgo], button[data-game], button[data-itk], button[data-its], button[data-ittest], button[data-itnc], button[data-nbh], button[data-nbov], [data-tablk], button[data-featv], button[data-tpforget], button[data-nclset], button[data-dtiv], button[data-nclhb], button[data-nprange], button[data-npshow], button[data-npforget], [data-smforget], button[data-colun], button[data-colpets], button[data-starthow], button[data-startgo], button[data-qspics], button[data-itcol], button[data-itsizes]');
+    const t = e.target.closest('[data-dtab], [data-dedit], [data-secfold], [data-updnow], [data-dset], [data-bk], [data-unchip], [data-dcdel], [data-rset], [data-rcdel], button[data-re], [data-rek], [data-redel], button[data-tb], [data-avs], [data-avr], [data-avo], [data-avv], [data-avk], [data-avx], button[data-av], [data-avdo], [data-avgo], button[data-game], button[data-itk], button[data-its], button[data-ittest], [data-idbtry], button[data-itnc], button[data-nbh], button[data-nbov], [data-tablk], button[data-featv], button[data-tpforget], button[data-nclset], button[data-dtiv], button[data-nclhb], button[data-nprange], button[data-npshow], button[data-npforget], [data-smforget], button[data-colun], button[data-colpets], button[data-starthow], button[data-startgo], button[data-qspics], button[data-itcol], button[data-itsizes]');
     if (!t) return;
     if (t.dataset.nbh || t.dataset.nbov) { nbHubClick(t); return; }
     if (t.dataset.qspics != null) { itSettings().qsPics = Number(t.dataset.qspics) || 0; changed(); qsPicsApply(); try { qsBar(); } catch (_) { /* */ } return; }   // (Quick Stock's pictures: the same choice as over its table)
@@ -49027,7 +49045,7 @@
     if (t.dataset.nclhb) { const k = t.dataset.nclhb, hide = new Set(nclHideList()); if (hide.has(k)) hide.delete(k); else hide.add(k); S.features.nclHide = [...hide]; changed(); nclHeadPaint(); return; }   // (NeoChat's header: that button shown, or hidden)
     if (t.dataset.featv) { const [k, v] = t.dataset.featv.split(':'); S.features[k] = v; changed(); if (k === 'qsHeads') { const qt = $('#quickstock-table-container table.quickstock-table'); if (qt) qsCols(qt); } for (const h of $$('.bnp-hub-head')) { try { themeWin(h.parentElement); } catch (_) { /* */ } } if (/^ncl/.test(k)) nclSettingsChanged(k); if (/^tr[A-Z]/.test(k)) trainerFeature(); if (/^tp/.test(k) && tpOn()) { try { tpApply(); tpPaint(); } catch (e) { report(e); } } oftenWarn(k, v); if (k === 'avPicksAt' && v === 'top') { const c = hub.main.querySelector('.bnp-avpicks'); hub.main.scrollTop = 0; if (c) { c.scrollIntoView({ block: 'nearest' }); c.classList.add('bnp-lit'); } } return; }   // (a choice of pills: this one. The avatars' menu-picture card moved to the top: you go with it)   // (a choice of pills: this one)
     if (t.dataset.tablk) { S.features.tabLookup = t.dataset.tablk; lookupPick = null; changed(); tabsApply(true); return; }   // (a lookup's tab picture: this one, from now on)
-    if (t.dataset.itk || t.dataset.itnc || t.dataset.itcol || 'ittest' in t.dataset || 'itsizes' in t.dataset) { itemsHubClick(t); return; }
+    if (t.dataset.itk || t.dataset.itnc || t.dataset.itcol || 'ittest' in t.dataset || 'idbtry' in t.dataset || 'itsizes' in t.dataset) { itemsHubClick(t); return; }
     if (t.dataset.game) { const on = gameToggle(t.dataset.game); changed(`${gameName(t.dataset.game)} is ${on ? 'in My Games' : 'out of My Games'}`); return; }
     if (t.dataset.tb) { tabsClick(t); return; }
     if (['avs', 'avr', 'avo', 'avv', 'avk', 'avx', 'av', 'avdo', 'avgo'].some((k) => k in t.dataset)) { avHubClick(t); return; }
@@ -54702,6 +54720,11 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.5.5', '2026-11-18', [
+      'itemdb prices: Try now anyway, on a paused count, the Bargain Finder, Settings › Items, or any waiting price: NE’s own limit set aside for half an hour',
+      'What it’s worth: a paused count says whether it’s itemdb’s ban or NE’s rest and when it ends, then carries on by itself',
+      'What it’s worth: Carry on works on counts paused before 5.5.4, and a ban’s refusals no longer count twice',
+    ]],
     ['5.5.4', '2026-11-18', [
       'itemdb prices: NE keeps to itemdb’s own limit for you, across every tab and page, so big galleries and shops no longer get you banned there',
       'itemdb prices: after a ban NE asks nothing till it is fully over, so bans don’t grow longer; prices carry on by themselves after it',

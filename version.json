@@ -1,10 +1,9 @@
 {
- "version": "5.5.4",
+ "version": "5.5.5",
  "date": "2026-11-18",
  "notes": [
-  "itemdb: no more bans from big galleries or shops",
-  "itemdb: bans no longer grow",
-  "itemdb prices kept for days",
-  "The exact time while itemdb rests"
+  "itemdb: Try now anyway",
+  "Paused counts carry on by themselves",
+  "Clearer itemdb pause messages"
  ]
 }
