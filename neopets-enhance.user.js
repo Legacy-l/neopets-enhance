@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.5.3
+// @version      5.5.4
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -5209,78 +5209,194 @@
     const go = () => { if (typeof PAGE.toggleWidget__2020 === 'function' && $('#searchstr')) itSsw(name); else if (++n < 40) setTimeout(go, 250); };
     whenLoaded(go);
   }
-  // Prices: itemdb's, asked for a page's items at once, kept a day (in this browser: never in your settings)
-  const IT_PRICES = 'bnp-prices';
-  let itCache = null, itAsk = new Map(), itAskT = 0;
-  function itPriceCache() {
-    if (itCache) return itCache;
-    itCache = {};
-    try { const raw = JSON.parse(localStorage.getItem(IT_PRICES) || '{}'), now = Date.now(); for (const [k, v] of Object.entries(raw)) if (v && now - v.t < DAY_MS) itCache[k] = v; } catch (_) { /* */ }
-    return itCache;
+  // Prices: itemdb's, asked for a page's items at once, kept in this browser (never in your settings)
+  // itemdb's limit (2026-11-18: friends banned day after day, 2 hours a time, by a big gallery and a big shop's Bargain Finder). From
+  // itemdb's own code: it counts, per connection, the items it hands back (5,000; 10,000 logged in there; repeat bans cut that to as
+  // little as 2,000), and forgets the count only once 30 minutes go by with no ask that counts. Past it, a ban: 5 min, 20, 45, 80, 2 h,
+  // up to 3 h, longer the more bans in 5 days. An ask during a ban isn't counted, but the first one after a short ban comes before the
+  // 30 minutes are up and bans again, longer. So every ask NE makes of itemdb goes through one door (idbAsk), which keeps that same
+  // count for every tab and page (GM idbgate): never past NE's own allowance, then nothing till the count is forgotten; a ban stops
+  // everything till its Retry-After and those 30 minutes are both over, and the first ask after it is a small one. NE's allowance:
+  // 4,000 when it has watched 5 days with no ban (itemdb's ban count is forgotten by then: its 5,000 stands), else 1,800, under its
+  // lowest (2,000) whatever bans came before. Room is left for itemdb's own pages and another device on the same connection.
+  const IDB_GATE = 'idbgate', IDB_IDLE = 31 * 60e3, IDB_SAFE = 1800, IDB_CLEAN = 4000;
+  const idbBudget = (g) => (g.since && Date.now() - g.since > 5 * 864e5 && !g.bans.length ? IDB_CLEAN : IDB_SAFE);
+  function idbGate() {   // (the count as itemdb keeps it: n items since it was last forgotten, the last that counted, a ban's end)
+    const now = Date.now(), g = get(IDB_GATE, null) || {};
+    const o = { n: +g.n || 0, last: +g.last || 0, sent: +g.sent || 0, until: +g.until || 0, small: !!g.small, since: +g.since || 0, bans: (Array.isArray(g.bans) ? g.bans : []).filter((t) => now - t < 5 * 864e5) };
+    if (now - o.last > IDB_IDLE) o.n = 0;
+    return o;
   }
-  // (itemdb gives userscripts its prices through your own itemdb visit: once a day, or every 14 days logged in. Until then it
-  // says 401; then nothing is asked for 10 minutes, and each price says to open itemdb)
+  function idbWait(expect = 1) {   // (0: an ask of this many items may go now; else when one may)
+    const g = idbGate(), now = Date.now();
+    if (now < g.until) return g.until;
+    if (g.n && g.n + expect > idbBudget(g)) return g.last + IDB_IDLE;
+    return 0;
+  }
+  const idbNote = (fn) => { const g = idbGate(); fn(g); set(IDB_GATE, g); };
+  const idbItemsIn = (j) => (!j || typeof j !== 'object' ? 0 : Array.isArray(j) ? j.length : Array.isArray(j.content) ? j.content.length : Array.isArray(j.items) ? j.items.length : Object.keys(j).length);   // (what itemdb counts: the items an answer holds)
+  const hmOf = (t) => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const idbRestText = (t) => (idbGate().until > Date.now() ? `itemdb has paused its prices for this connection: NE asks it nothing till ${hmOf(t)}, so the pause doesn’t grow (prices seen before still show)` : `NE is giving itemdb a rest till ${hmOf(t)}, so you don’t get banned there (it only gives so many prices each half hour)`);
+  const idbRestSay = () => { const w = idbWait(1); return w ? `${idbRestText(w)}.` : 'itemdb asked for a pause: try again in a few minutes.'; };
+  function idbUseLine() {   // (Settings › Items: how much of itemdb's allowance this connection has used)
+    const g = idbGate(), w = idbWait(1);
+    const bans = g.bans.length ? ` itemdb has banned this connection ${g.bans.length} time${g.bans.length > 1 ? 's' : ''} in the last 5 days.` : '';
+    return w ? `${idbRestText(w)}.${bans}` : `Asked of itemdb in the last half hour: ${g.n.toLocaleString()} items of the ${idbBudget(g).toLocaleString()} NE allows itself.${bans}`;
+  }
+  let idbChain = Promise.resolve();
+  function idbLock(fn) {   // (one ask at a time across this site's tabs; a tab's own asks in turn)
+    try { if (navigator.locks && navigator.locks.request) return navigator.locks.request('bnp-itemdb', () => fn()); } catch (_) { /* */ }
+    const p = idbChain.then(() => fn(), () => fn());
+    idbChain = p.catch(() => {});
+    return p;
+  }
+  function idbSend(o) {   // (the ask itself, inside the lock: a moment after the last one from any tab (itemdb has a burst limit too); counted; a ban kept)
+    return new Promise((res) => {
+      const gap = idbGate().sent + 1500 + Math.random() * 1500 - Date.now();
+      setTimeout(() => {
+        const w = idbWait(o.expect || 1);
+        if (w) { res({ status: 'wait', wait: w }); return; }
+        idbNote((x) => { x.sent = Date.now(); if (!x.since) x.since = Date.now(); });
+        try {
+          GM_xmlhttpRequest({ method: o.method || 'GET', url: o.url, headers: o.body != null ? { 'Content-Type': 'application/json', Accept: 'application/json' } : { Accept: 'application/json' }, ...(o.body != null ? { data: JSON.stringify(o.body) } : {}), timeout: o.timeout || 20000,
+            onload: (r) => {
+              let json = null;
+              try { json = JSON.parse(r.responseText); } catch (_) { json = null; }
+              if (r.status === 429) {   // (banned: nothing more from any tab till both its Retry-After and itemdb's 30 minutes since the last counted ask are over)
+                const m = /(?:^|\n)\s*retry-after:\s*(\d+)/i.exec(r.responseHeaders || ''), now = Date.now();
+                idbNote((x) => { x.bans.push(now); x.until = Math.max(now + (m ? +m[1] * 1000 : 10 * 60e3), (x.last || now) + IDB_IDLE) + 60e3 + Math.round(Math.random() * 120e3); x.small = true; });
+              } else if (r.status === 401) {   // (no itemdb visit lately: as before, a 10-minute hold, or till a visit)
+                const refused = Date.now() - itVisitAt() < 3 * 60000;
+                try { localStorage.setItem(IT_401, `${Date.now()}|401${refused ? 'r' : ''}`); } catch (_) { /* */ }
+                res({ status: 401, json, refused });
+                return;
+              } else if (r.status === 200) {
+                const n = o.count ? o.count(json) : idbItemsIn(json);
+                idbNote((x) => { x.n += Math.max(0, n | 0); x.last = Date.now(); if (x.until <= Date.now()) { x.until = 0; x.small = false; } });
+                try { localStorage.removeItem(IT_401); } catch (_) { /* */ }
+              }
+              res({ status: r.status, json });
+            },
+            onerror: () => res({ status: 0 }), ontimeout: () => res({ status: 0 }) });
+        } catch (_) { res({ status: 0 }); }
+      }, Math.max(0, gap));
+    });
+  }
+  // Every ask of itemdb: { url, method, body, expect (how many items it may hand back), count(json) } → { status: 200|401|429|0|'wait', json, wait }
+  const idbAsk = (o) => { const w = idbWait(o.expect || 1); return w ? Promise.resolve({ status: 'wait', wait: w }) : idbLock(() => idbSend(o)); };
+  // (itemdb gives userscripts its prices through your own itemdb visit: once a day, or every 14 days logged in. Until then it says 401;
+  // then nothing is asked for 10 minutes, and each price says to open itemdb)
   const IT_401 = 'bnp-idb401';
   const itVisitAt = () => { const v = get('idbvisit', null); return (v && v.at) || 0; };   // (when itemdb last let this browser have its prices, as seen on itemdb itself)
-  const itBlocked = () => { try { const raw = localStorage.getItem(IT_401) || '', t = parseInt(raw, 10) || 0; return Date.now() - t < 10 * 60000 && !(/\|401/.test(raw) && itVisitAt() > t); } catch (_) { return false; } };   // (a "no" holds for 10 minutes, or till an itemdb visit after it)
-  const itBlockedBusy = () => { try { return /\|429$/.test(localStorage.getItem(IT_401) || ''); } catch (_) { return false; } };   // (itemdb asked for a pause, rather than a visit)
+  const itVisitBlocked = () => { try { const raw = localStorage.getItem(IT_401) || '', t = parseInt(raw, 10) || 0; return /\|401/.test(raw) && Date.now() - t < 10 * 60000 && !(itVisitAt() > t); } catch (_) { return false; } };   // (a "no" holds for 10 minutes, or till an itemdb visit after it)
+  const itBlocked = () => itVisitBlocked() || !!idbWait(1);
+  const itBlockedBusy = () => !itVisitBlocked() && !!idbWait(1);   // (resting from itemdb's limit, rather than waiting on a visit)
+  const itVisitRes = () => ({ visit: 1, refused: /\|401r$/.test(localStorage.getItem(IT_401) || '') });
+  const itBusyRes = () => ({ err: 1, busy: 1, until: idbWait(1) });
   const itTell = (b, res) => { if (typeof b === 'function') { try { b(res); } catch (e) { report(e); } } else itPriceShow(b, res); };   // (a price's badge; or something else that wants to know it)
+  // Kept prices (IndexedDB 'prices2', one record merged in one step, so tabs never undo each other's): as they are for 3 days (a week for
+  // "no price" or not on itemdb), plus up to 2 more by the name, so a big gallery's don't all come due the same day; after that still
+  // shown, and asked for again only while most of itemdb's allowance is unused; dropped after 30 days.
+  const IT_PRICES = 'bnp-prices', IT_STORE = 'prices2', IT_FRESH = 3 * DAY_MS, IT_NONE = 7 * DAY_MS, IT_KEEP = 30 * DAY_MS;
+  let itCache = {}, itLoaded = false, itLoading = null, itAsk = new Map(), itAskT = 0, itStale = new Set(), itStaleT = 0;
+  const itJit = (n) => { let h = 7; for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0; return (h % 1000) / 1000; };
+  const itDue = (n, c) => Date.now() - c.t > (c.r && c.r.p > 0 ? IT_FRESH : IT_NONE) + itJit(n) * 2 * DAY_MS;
+  function itMerge(v) { if (!v || typeof v !== 'object') return; const now = Date.now(); for (const [k, e] of Object.entries(v)) if (e && e.r && now - e.t < IT_KEEP && !(itCache[k] && itCache[k].t >= e.t)) itCache[k] = e; }
+  function itSave(add) {   // (into what's kept, in one step: another tab's prices kept too; the oldest let go)
+    return idb().then((db) => (db ? new Promise((ok) => {
+      try {
+        const t = db.transaction('kv', 'readwrite'), st = t.objectStore('kv'), q = st.get(IT_STORE);
+        q.onsuccess = () => { const cur = q.result && typeof q.result === 'object' ? q.result : {}, now = Date.now(); for (const [k, e] of Object.entries(add)) if (!cur[k] || cur[k].t <= e.t) cur[k] = e; for (const k of Object.keys(cur)) if (!cur[k] || now - cur[k].t > IT_KEEP) delete cur[k]; st.put(cur, IT_STORE); };
+        t.oncomplete = () => ok(true); t.onerror = () => ok(false);
+      } catch (_) { ok(false); }
+    }) : false)).catch(() => false);
+  }
+  function itLoad() {   // (what's kept, read once a page; the old day-long store moved in, then cleared)
+    if (itLoading) return itLoading;
+    return (itLoading = (async () => {
+      itMerge(await idbGet(IT_STORE).catch(() => null));
+      try {
+        const raw = localStorage.getItem(IT_PRICES);
+        if (raw) {
+          let old = {};
+          try { old = JSON.parse(raw) || {}; } catch (_) { old = {}; }
+          const add = {};
+          for (const [k, e] of Object.entries(old)) if (e && e.r && !(itCache[k] && itCache[k].t >= e.t)) add[k] = e;
+          itMerge(add);
+          if (Object.keys(add).length) await itSave(add);
+          localStorage.removeItem(IT_PRICES);
+        }
+      } catch (_) { /* */ }
+      itLoaded = true;
+    })());
+  }
+  function itPriceCache() { if (!itLoading) itLoad(); return itCache; }
+  const itRes = (d) => ({ p: d && d.price && Number(d.price.value) > 0 ? Number(d.price.value) : null, inf: !!(d && d.price && d.price.inflated), slug: (d && d.slug) || '', r: d && d.rarity != null ? d.rarity : null, img: (d && (d.image || d.image_url)) || '', at: (d && d.price && d.price.addedAt) || '', ...(d ? {} : { none: 1 }) });
   function itPriceAsk(name, badge) {
     if (typeof badge !== 'function') badge.dataset.itn = name;   // (asked again by it, once itemdb lets this browser in)
-    const c = itPriceCache()[name];
-    if (c) { itTell(badge, c.r); return; }
-    if (itBlocked()) { itTell(badge, itBlockedBusy() ? { err: 1, busy: 1 } : { visit: 1, refused: /\|401r$/.test(localStorage.getItem(IT_401) || '') }); return; }
+    if (!itLoaded) { itLoad().then(() => itPriceAsk(name, badge)); return; }
+    const c = itCache[name];
+    if (c) { itTell(badge, c.r); if (itDue(name, c)) itStaleAdd(name); return; }
+    if (itVisitBlocked()) { itTell(badge, itVisitRes()); return; }
+    if (idbWait(1)) { itTell(badge, itBusyRes()); return; }
     if (!itAsk.has(name)) itAsk.set(name, []);
     itAsk.get(name).push(badge);
     clearTimeout(itAskT);
     itAskT = setTimeout(itPriceSend, 250);
   }
-  async function itPriceSend() {   // (a hundred names at a time, one after another, a moment between: never all at once)
+  async function itPriceSend() {   // (a hundred names an ask, one ask at a time from any tab, never past itemdb's allowance; what comes kept)
     const batch = itAsk;
     itAsk = new Map();
-    const names = [...batch.keys()];
-    for (let i = 0; i < names.length; i += 100) {   // (itemdb takes them a hundred at a time)
-      const part = names.slice(i, i + 100);
-      if (i) {
-        await new Promise((ok) => setTimeout(ok, 1000 + Math.random() * 1000));
-        if (itBlocked()) { for (const n of names.slice(i)) for (const b of batch.get(n) || []) itTell(b, itBlockedBusy() ? { err: 1, busy: 1 } : { visit: 1 }); return; }   // (told to wait meanwhile: the rest not asked)
+    const tell = (list, res) => { for (const n of list) for (const b of batch.get(n) || []) itTell(b, res); };
+    let names = [...batch.keys()];
+    await idbLock(async () => {
+      itMerge(await idbGet(IT_STORE).catch(() => null));   // (another tab may have just been given some of these)
+      names = names.filter((n) => { const c = itCache[n]; if (!c) return true; tell([n], c.r); if (itDue(n, c)) itStaleAdd(n); return false; });
+      for (let i = 0; i < names.length;) {
+        const g = idbGate(), size = Math.min(names.length - i, g.small ? 20 : 100, idbBudget(g) - g.n);   // (just after a ban, a small one first)
+        if (size < 1 || idbWait(size)) { tell(names.slice(i), itBusyRes()); itBusyLater(); return; }
+        const part = names.slice(i, i + size);
+        const r = await idbSend({ method: 'POST', url: 'https://itemdb.com.br/api/v1/items/many', body: { name: part }, expect: part.length });
+        if (r.status === 401) { tell(names.slice(i), { visit: 1, refused: !!r.refused }); return; }
+        if (r.status === 429 || r.status === 'wait') { tell(names.slice(i), itBusyRes()); itBusyLater(); return; }   // (the rest wait with it: not asked)
+        if (r.status !== 200 || !r.json || typeof r.json !== 'object') { tell(part, { err: 1 }); i += size; continue; }
+        const add = {}, t = Date.now();
+        for (const n of part) { const res = itRes(r.json[n]); add[n] = itCache[n] = { r: res, t }; tell([n], res); }
+        await itSave(add);
+        i += size;
       }
-      await new Promise((done) => {
-      try {
-        GM_xmlhttpRequest({ method: 'POST', url: 'https://itemdb.com.br/api/v1/items/many', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, data: JSON.stringify({ name: part }), timeout: 15000,
-          onload: (r) => {
-            if (r.status === 401 || r.status === 429) {   // (no itemdb visit lately, or its limit for now: ask again in a while)
-              const refused = r.status === 401 && Date.now() - itVisitAt() < 3 * 60000;   // (turned away just after a visit: its pass isn't reaching itemdb)
-              try { localStorage.setItem(IT_401, `${Date.now()}|${r.status}${refused ? 'r' : ''}`); } catch (_) { /* */ }
-              for (const n of part) for (const b of batch.get(n) || []) itTell(b, r.status === 401 ? { visit: 1, refused } : { err: 1, busy: 1 });
-              done();
-              return;
-            }
-            let data = {};
-            try { data = JSON.parse(r.responseText) || {}; } catch (_) { data = {}; }
-            if (r.status === 200) { try { localStorage.removeItem(IT_401); } catch (_) { /* */ } }   // (let in again: its earlier "no" forgotten)
-            const cache = itPriceCache(), now = Date.now();
-            for (const n of part) {
-              const d = data[n], res = { p: d && d.price && Number(d.price.value) > 0 ? Number(d.price.value) : null, inf: !!(d && d.price && d.price.inflated), slug: (d && d.slug) || '', r: d && d.rarity != null ? d.rarity : null, img: (d && (d.image || d.image_url)) || '', at: (d && d.price && d.price.addedAt) || '' };
-              if (res.p != null) cache[n] = { r: res, t: now };
-              for (const b of batch.get(n) || []) itTell(b, res);
-            }
-            try { localStorage.setItem(IT_PRICES, JSON.stringify(cache)); } catch (_) { /* */ }
-            done();
-          },
-          onerror: () => { for (const n of part) for (const b of batch.get(n) || []) itTell(b, { err: 1 }); done(); },
-          ontimeout: () => { for (const n of part) for (const b of batch.get(n) || []) itTell(b, { err: 1 }); done(); } });
-      } catch (_) { for (const n of part) for (const b of batch.get(n) || []) itTell(b, { err: 1 }); done(); }
-      });
-    }
+    });
   }
-  function itBusyLater() {   // (itemdb's "too busy": asked again once its pause is over, a moment after)
+  function itStaleAdd(n) { itStale.add(n); if (!itStaleT) itStaleT = setTimeout(itStaleSend, 8000 + Math.random() * 7000); }
+  async function itStaleSend() {   // (prices past their days, shown meanwhile: asked for again only while itemdb's allowance is mostly unused)
+    itStaleT = 0;
+    const later = (ms) => { if (!itStaleT && itStale.size) itStaleT = setTimeout(itStaleSend, ms); };
+    const g0 = idbGate();
+    if (itAsk.size || itBlocked() || g0.small || g0.n > idbBudget(g0) / 2) { later(Math.max(60000, (idbWait(1) || (g0.n ? g0.last + IDB_IDLE : 0)) - Date.now())); return; }
+    const names = [...itStale].slice(0, 300);
+    for (const n of names) itStale.delete(n);
+    await idbLock(async () => {
+      itMerge(await idbGet(IT_STORE).catch(() => null));
+      const due = names.filter((n) => { const c = itCache[n]; return !c || itDue(n, c); });
+      for (let i = 0; i < due.length; i += 100) {
+        const g = idbGate();
+        if (g.small || g.n + 100 > idbBudget(g) / 2 || idbWait(100)) { for (const n of due.slice(i)) itStale.add(n); return; }
+        const part = due.slice(i, i + 100);
+        const r = await idbSend({ method: 'POST', url: 'https://itemdb.com.br/api/v1/items/many', body: { name: part }, expect: part.length });
+        if (r.status !== 200 || !r.json || typeof r.json !== 'object') { for (const n of due.slice(i)) itStale.add(n); return; }
+        const add = {}, t = Date.now();
+        for (const n of part) add[n] = itCache[n] = { r: itRes(r.json[n]), t };
+        await itSave(add);
+      }
+    });
+    later(30000 + Math.random() * 30000);
+  }
+  function itBusyLater() {   // (resting from itemdb's limit: the prices waiting asked for again once the rest is over, a moment after)
     if (itBusyLater.t) return;
-    let at = 0;
-    try { at = parseInt(localStorage.getItem(IT_401) || '', 10) || 0; } catch (_) { /* */ }
-    itBusyLater.t = setTimeout(() => { itBusyLater.t = 0; itRetry(); }, Math.max(15000, at + 10 * 60000 - Date.now()) + 5000 + Math.random() * 20000);
+    const w = idbWait(1) || Date.now();
+    itBusyLater.t = setTimeout(() => { itBusyLater.t = 0; itRetry(); }, Math.max(15000, w - Date.now()) + 5000 + Math.random() * 20000);
   }
-  function itRetry() {   // (itemdb has let this browser in since it last said no, or its pause is over: the prices waiting on it, asked for again where they are)
+  function itRetry() {   // (itemdb has let this browser in since it last said no, or the rest is over: the prices waiting on it, asked for again where they are)
     if (itBlocked()) return;
     for (const b of document.querySelectorAll('.bnp-it-price.is-visit, .bnp-it-price.is-busy')) {
       if (!b.dataset.itn || !b.isConnected) continue;
@@ -5312,7 +5428,7 @@
       itWatchVisit();
       return;
     }
-    if (res.err) { b.className = `bnp-it-price is-none${res.busy ? ' is-busy' : ''}`; b.textContent = '?'; b.title = res.busy ? 'itemdb asked for a pause: prices again in a few minutes' : 'itemdb didn’t answer just now'; if (res.busy) { itWatchVisit(); itBusyLater(); } return; }
+    if (res.err) { b.className = `bnp-it-price is-none${res.busy ? ' is-busy' : ''}`; b.textContent = '?'; b.title = res.busy ? (res.until ? `${idbRestText(res.until)}: its prices come by themselves after that.` : 'itemdb asked for a pause: prices again in a few minutes') : 'itemdb didn’t answer just now'; if (res.busy) { itWatchVisit(); itBusyLater(); } return; }
     if (res.p == null) { b.className = 'bnp-it-price is-none'; b.textContent = 'No price'; b.title = 'itemdb has no price for it'; return; }
     const at = b.closest('[data-item]'), name = at ? at.dataset.item : '';
     b.className = `bnp-it-price${res.inf ? ' is-inflated' : ''}`;
@@ -6214,18 +6330,7 @@
     (td.querySelector(':scope > .bnp-qs-cell') || td).prepend(img);   // (a row made already: into its cell, before its name)
     const c = itPriceCache()[name];
     if (c && c.r.img) { img.src = c.r.img; return; }
-    itPicWant.set(name, [...(itPicWant.get(name) || []), img]);
-    clearTimeout(itPicT);
-    itPicT = setTimeout(() => {   // (the same itemdb call as prices: pictures for the lot at once)
-      const want = itPicWant;
-      itPicWant = new Map();
-      const names = [...want.keys()];
-      try {
-        if (itBlocked()) return;
-        GM_xmlhttpRequest({ method: 'POST', url: 'https://itemdb.com.br/api/v1/items/many', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, data: JSON.stringify({ name: names.slice(0, 100) }), timeout: 15000,
-          onload: (r) => { if (r.status === 401 || r.status === 429) { try { localStorage.setItem(IT_401, `${Date.now()}|${r.status}`); } catch (_) { /* */ } return; } let data = {}; try { data = JSON.parse(r.responseText) || {}; } catch (_) { /* */ } for (const n of names) { const u = data[n] && (data[n].image || data[n].image_url); if (u) for (const im of want.get(n) || []) im.src = u; } } });
-      } catch (_) { /* */ }
-    }, 300);
+    itPriceAsk(name, (res) => { if (res && res.img) img.src = res.img; });   // (the same itemdb ask as prices, through the same door)
   }
   let itPicWant = new Map(), itPicT = 0;
   function itNoReload() {   // (Inventory: after an item's used, sent or moved, no reload: the grid as Neopets has it now, asked for quietly, laid over the one on the page)
@@ -21544,25 +21649,18 @@
   const colBoardKind = () => { const p = location.pathname; return p === '/book_award.phtml' ? 'books' : p === '/moon/book_award.phtml' ? 'bt' : p === '/gourmet_club.phtml' && !colPetHere() ? 'food' : ''; };
   const colBoardOn = () => S.features.col !== false && !!colBoardKind();
   // itemdb's lists: one ask for each kind (two for books, past 3,000), as the Item Helper asks (your own itemdb visit lets it in)
-  function colGet(url) {
-    return new Promise((res) => {
-      try {
-        GM_xmlhttpRequest({ method: 'GET', url, headers: { Accept: 'application/json' }, timeout: 45000,
-          onload: (r) => { let json = null; try { json = JSON.parse(r.responseText); } catch (_) { /* */ } res({ status: r.status, json }); },
-          onerror: () => res({ status: 0 }), ontimeout: () => res({ status: 0 }) });
-      } catch (_) { res({ status: 0 }); }
-    });
-  }
+  const COL_PAGE = 1000;   // (itemdb's list a thousand at a time: each page a share of its allowance, asked for only when it fits)
+  const colGet = (url) => idbAsk({ url, expect: COL_PAGE, timeout: 45000 });
   const colCatAsk = {};
   const COL_PART_TTL = 12 * 3600e3;   // (a read itemdb cut short: carried on within half a day, its prices still fresh enough; begun again after that)
-  const itPauseEnds = () => { try { const t = parseInt(localStorage.getItem(IT_401) || '', 10) || 0; return t ? t + 10 * 60000 : 0; } catch (_) { return 0; } };   // (when itemdb's "no" stops holding: itBlocked's 10 minutes)
+  const itPauseEnds = () => idbWait(1);   // (when NE's rest from itemdb's limit is over)
   function colCatalog(kind, force) {   // ({ t, items: [[picture, name, rarity, price, kind's index, itemdb's slug, NC, retired, item id]] } or { err }; cut short by itemdb, what's in so far and how far: { items, partial: { got, total }, err }, or the list before it with { part })
     if (!force && colCatAsk[kind]) return colCatAsk[kind];
     return (colCatAsk[kind] = (async () => {
       const k = COL_KINDS[kind], key = `col-cat-${kind}`, pkey = `${key}-part`, kept = await idbGet(key).catch(() => null);
       if (!force && kept && Array.isArray(kept.items) && kept.items.length && Date.now() - kept.t < COL_TTL) return kept;
       const old = kept && Array.isArray(kept.items) && kept.items.length ? { ...kept, stale: true } : null;
-      const sig = JSON.stringify([k.cats, k.rarity || 0]);   // (the list asked for: a part kept for another isn't carried on)
+      const sig = JSON.stringify([k.cats, k.rarity || 0, COL_PAGE]);   // (the list asked for: a part kept for another isn't carried on)
       let part = await idbGet(pkey).catch(() => null);
       if (!part || part.sig !== sig || !Array.isArray(part.items) || !(part.page >= 1) || Date.now() - part.t > COL_PART_TTL) part = null;
       const cut = (err, extra = {}) => {   // (stopped part way: the list before it while there is one, else what's in so far)
@@ -21573,16 +21671,11 @@
       };
       if (itBlocked()) return cut(itBlockedBusy() ? 'busy' : 'visit');
       if (!part) part = { sig, t: Date.now(), page: 0, total: 0, items: [] };
-      for (let page = part.page + 1; page <= 5; page++) {
-        const q = new URLSearchParams([...k.cats.map((c) => ['category[]', c]), ...(k.rarity ? [['rarity[]', String(k.rarity[0])], ['rarity[]', String(k.rarity[1])]] : []), ['limit', '3000'], ['page', String(page)], ['intent', 'card'], ['includeStats', 'true']]);
+      for (let page = part.page + 1; page <= 15; page++) {
+        const q = new URLSearchParams([...k.cats.map((c) => ['category[]', c]), ...(k.rarity ? [['rarity[]', String(k.rarity[0])], ['rarity[]', String(k.rarity[1])]] : []), ['limit', String(COL_PAGE)], ['page', String(page)], ['intent', 'card'], ['includeStats', 'true']]);
         const r = await colGet(`https://itemdb.com.br/api/v2/search?${q}`);
-        if (r.status === 401 || r.status === 429) {   // (no itemdb visit lately, or its limit for now: as the Item Helper's prices say it; what's in so far kept)
-          const refused = r.status === 401 && Date.now() - itVisitAt() < 3 * 60000;
-          try { localStorage.setItem(IT_401, `${Date.now()}|${r.status}${refused ? 'r' : ''}`); } catch (_) { /* */ }
-          return cut(r.status === 401 ? 'visit' : 'busy', { refused });
-        }
+        if (r.status === 401 || r.status === 429 || r.status === 'wait') { await idbSet(pkey, part).catch(() => {}); return cut(r.status === 401 ? 'visit' : 'busy', { refused: !!r.refused }); }   // (no itemdb visit lately, or resting from its limit: what's in so far kept, carried on from after)
         if (r.status !== 200 || !r.json || !Array.isArray(r.json.content)) return cut('down');
-        try { localStorage.removeItem(IT_401); } catch (_) { /* */ }
         for (const x of r.json.content) {
           const img = colImgOf(x.image && (x.image.url || x.image)) || (x.image && x.image.id ? `${x.image.id}.gif` : '');
           if (!img || !x.name) continue;
@@ -21591,7 +21684,7 @@
         }
         part.page = page;
         part.total = Number(r.json.totalResults) || part.total;
-        if (r.json.content.length < 3000 || part.items.length >= part.total) break;
+        if (r.json.content.length < COL_PAGE || part.items.length >= part.total) break;
         await idbSet(pkey, part).catch(() => {});   // (so far, kept: a pause, or the page shut, carries on from the next page)
         await new Promise((ok) => setTimeout(ok, 1600 + Math.random() * 1200));
       }
@@ -21908,7 +22001,7 @@
     const hadIt = items.filter((it) => col.had.has(colImgKey(it[0])) && it[3] > 0), worth = hadIt.reduce((s, it) => s + it[3], 0);   // (what it has had, at itemdb's prices: to know, never to price anything by (the user, 2026-11-02))
     const part = col.part, so = part ? `NE has ${part.got.toLocaleString()} of its ${part.total.toLocaleString()} ${esc(k.what)} so far${col.cat && col.cat.stale ? ' for the new list (the one shown is the one before)' : ''}, and carries on from there, never from the start. ` : '', back = itPauseEnds();
     const err = col.err === 'visit' ? `itemdb gives its lists to scripts like this one once you’ve opened itemdb today; then the list comes by itself. ${so}<a class="bnp-col-btn is-small" href="https://itemdb.com.br/" target="_blank" rel="noopener">Open itemdb</a>`
-      : col.err === 'busy' ? `itemdb asked for a pause. ${so}It goes on by itself ${back > Date.now() ? `after ${esc(fmtNst(back))} NST` : 'in a moment'}, while this tab is open.` : col.err === 'down' ? `itemdb didn’t answer just now. ${so}` : '';
+      : col.err === 'busy' ? `NE is giving itemdb a rest, so you don’t get banned there (it only gives so many each half hour). ${so}It goes on by itself ${back > Date.now() ? `after ${esc(fmtNst(back))} NST` : 'in a moment'}, while this tab is open.` : col.err === 'down' ? `itemdb didn’t answer just now. ${so}` : '';
     const sorts = col.view === 'had' ? [['order', 'Newest read first'], ['name', 'Name, A to Z'], ['rare', 'Rarest first'], ['rarelow', 'Least rare first'], ['dear', 'Priciest first']] : [['cheap', 'Cheapest first'], ['dear', 'Priciest first'], ['rarelow', 'Least rare first'], ['rare', 'Rarest first'], ['name', 'Name, A to Z'], ['new', 'Newest to itemdb']];
     if (col.view === 'had') sorts[0][1] = kind === 'food' ? 'Newest eaten first' : 'Newest read first';
     root.innerHTML = `<section class="bnp-col-head"><div class="bnp-col-band">
@@ -22573,16 +22666,7 @@
   const SA_IDB = 'saidb';
   let saIdbBusy = false;
   const saIdbAt = (n) => { const k = (get(SA_IDB, null) || {})[String(n || '').toLowerCase()]; return k && k.p > 0 ? [k.p, k.i] : null; };   // (where itemdb put it, when its place couldn't be learnt: another stamp is known there)
-  const saIdbGet = (u) => new Promise((ok) => {   // (its answer; null: itemdb wants a visit or a pause (nothing more asked); undefined: no answer this time)
-    try {
-      GM_xmlhttpRequest({ method: 'GET', url: `https://itemdb.com.br${u}`, headers: { Accept: 'application/json' }, timeout: 15000,
-        onload: (r) => {
-          if (r.status === 401 || r.status === 429) { try { localStorage.setItem(IT_401, `${Date.now()}|${r.status}`); } catch (_) { /* */ } ok(null); return; }
-          if (r.status !== 200) { ok(undefined); return; }
-          try { ok(JSON.parse(r.responseText)); } catch (_) { ok(undefined); }
-        }, onerror: () => ok(undefined), ontimeout: () => ok(undefined) });
-    } catch (_) { ok(undefined); }
-  });
+  const saIdbGet = (u) => idbAsk({ url: `https://itemdb.com.br${u}`, expect: 25, timeout: 15000 }).then((r) => (r.status === 401 || r.status === 429 || r.status === 'wait' ? null : r.status === 200 && r.json ? r.json : undefined));   // (its answer; null: itemdb wants a visit or a rest (nothing more asked); undefined: no answer this time)
   function saLearnOne(pid, i, x) {
     const K = saKnown(), f = saFile(x.img);
     if (!f || !(pid > 0) || !(i >= 0 && i < 25) || (K.pages[pid] && K.pages[pid][i]) || saPlace(x.n, x.img)) return false;
@@ -23358,7 +23442,7 @@
       return `<div class="bnp-sa-newit${have ? ' is-have' : ''}"><img src="${esc(x.img)}" alt="" width="80" height="80" loading="lazy"><b title="${esc(x.n)}">${esc(x.n)}</b><small>${x.at ? `Out ${esc(saWhen(x.at).replace(/ at .*/, ''))}` : 'Just out'}${x.p ? ` · ${saNp(x.p)} NP` : ''}</small>${at ? `<a class="bnp-sa-btn is-small" href="/stamps.phtml?type=album&amp;page_id=${at[0]}"${have ? ' title="In your album"' : ''}>${have ? `<i class="bnp-sa-havedot" aria-hidden="true">${SA_IC.check}</i>` : ''}Page ${at[0]}</a>` : '<small class="bnp-sa-newq">Its page isn’t known yet</small>'}</div>`;
     };
     const when = busy ? 'Asking itemdb…' : v && v.at ? `Checked ${esc(colAgo(v.at))}` : 'Not checked yet';
-    const err = v && v.err === 'visit' ? 'itemdb wants a visit first: open itemdb.com.br once in this browser, then Check now.' : v && v.err === 'busy' ? 'itemdb asked for a pause: try again in a few minutes.' : '';
+    const err = v && v.err === 'visit' ? 'itemdb wants a visit first: open itemdb.com.br once in this browser, then Check now.' : v && v.err === 'busy' ? idbRestSay() : '';
     let fold = true;   // (folded unless you've opened it: the albums come first on this page)
     try { fold = localStorage.getItem('bnp-sa-newfold') !== '0'; } catch (_) { fold = true; }
     const saIc = tabIconOf('side:/stamps.phtml?type=album') || `${NPI}themes/h5/basic/images/v3/stamps-icon.svg`;   // (your theme's own stamp, as the side menu's Stamps has it, kept from a beta page when the album's is an old one (the user, 2026-11-02))
@@ -24968,21 +25052,14 @@
   function mallNewIdb() {   // (itemdb's newest NC items with their Mall dates (item_id is the Mall's own number): asked at most every half hour)
     const c = get(MALL_NEW_IDB, null), old = c && Array.isArray(c.list) ? c.list : [];
     if ((c && Date.now() - (c.at || 0) < 30 * 60e3) || itBlocked()) return Promise.resolve(old);
-    return new Promise((res) => {
-      try {
-        GM_xmlhttpRequest({ method: 'GET', url: 'https://itemdb.com.br/api/v1/search?s=&type[]=nc&sortBy=added&sortDir=desc&limit=150&skipStats=true', headers: { Accept: 'application/json' }, timeout: 20000,
-          onload: (r) => {
-            if (r.status === 401 || r.status === 429) { try { localStorage.setItem(IT_401, `${Date.now()}|${r.status}`); } catch (_) { /* */ } res(old); return; }
-            let j = null;
-            try { j = JSON.parse(r.responseText); } catch (_) { j = null; }
-            if (!j || !Array.isArray(j.content)) { res(old); return; }
-            const list = j.content.map((x) => { const m = x && x.mallData, b = m && Date.parse(m.saleBegin || ''); return m && Number(m.price) > 0 && b ? { id: Number(x.item_id) || 0, n: reClean(String(x.name || '')).slice(0, 90), fs: Date.parse(x.firstSeen || '') || 0, b: Math.round(b / 1000), e: Math.round((Date.parse(m.saleEnd || '') || 0) / 1000) } : null; }).filter((x) => x && x.id && x.n);
-            set(MALL_NEW_IDB, { at: Date.now(), list });
-            mallNewIdx = null;
-            res(list);
-          }, onerror: () => res(old), ontimeout: () => res(old) });
-      } catch (_) { res(old); }
-    });
+    return idbAsk({ url: 'https://itemdb.com.br/api/v1/search?s=&type[]=nc&sortBy=added&sortDir=desc&limit=150&skipStats=true', expect: 150 }).then((r) => {
+      const j = r.status === 200 ? r.json : null;
+      if (!j || !Array.isArray(j.content)) return old;
+      const list = j.content.map((x) => { const m = x && x.mallData, b = m && Date.parse(m.saleBegin || ''); return m && Number(m.price) > 0 && b ? { id: Number(x.item_id) || 0, n: reClean(String(x.name || '')).slice(0, 90), fs: Date.parse(x.firstSeen || '') || 0, b: Math.round(b / 1000), e: Math.round((Date.parse(m.saleEnd || '') || 0) / 1000) } : null; }).filter((x) => x && x.id && x.n);
+      set(MALL_NEW_IDB, { at: Date.now(), list });
+      mallNewIdx = null;
+      return list;
+    }, () => old);
   }
   async function mallNewFill(d) {   // (Neopets' New list as it is, and the Mall's new things it leaves out added in by when they came out)
     if (!d || !Array.isArray(d.items) || d.fillAsked) return;
@@ -34030,7 +34107,7 @@
   const wtGu = () => (new URLSearchParams(location.search).get('gu') || '').toLowerCase();
   const wtSlot = () => (wt.key === 'inventory' && wtInvNc() ? 'inventory:nc' : wt.key === 'gallery' && !wt.own ? `gallery@${wtGu()}` : wt.key);   // (where this view is kept: the Inventory's NP and NC items apart, as it shows them one at a time; someone else's gallery under its own name)
   const wtPartKey = () => `wt-part-${wt.key}:${nclMe() || '-'}`;   // (a count itemdb paused: what was read, to carry on from)
-  const wtPauseEnd = () => { try { const raw = localStorage.getItem(IT_401) || '', t = parseInt(raw, 10) || 0; return /\|429/.test(raw) && Date.now() - t < 10 * 60000 ? t + 10 * 60000 : 0; } catch (_) { return 0; } };   // (itemdb's pause: when it's over)
+  const wtPauseEnd = () => idbWait(1);   // (itemdb's pause: when it's over)
   const wtFig = (d) => `${d.np > 0 || !d.nc.valued ? `≈ ${npShort(d.np)} NP` : ''}${d.np > 0 && d.nc.valued ? ' · ' : ''}${d.nc.valued ? `${d.np > 0 ? '' : '≈ '}${wtCapsText(d.nc)}` : ''}`;   // (Neopoints and caps, as much as there is of each)
   const WT_K = '<span class="bnp-wt-k">Worth</span> ';   // (spaces between the parts: the flex layout ignores them, a screen reader hears "Worth ≈ 537k NP")
   const wtSay = (t) => `${WT_K}<b class="bnp-wt-say">${t}</b>`;   // (Worth, then what's happening: counting, paused, itemdb busy…)
@@ -34046,7 +34123,7 @@
     const k = wtKeep(), others = Object.keys(k).filter((x) => x.startsWith('gallery@')).sort((a, b) => (k[b].at || 0) - (k[a].at || 0));
     if (others.length > 8) { for (const x of others.slice(8)) delete k[x]; try { localStorage.setItem(acctKey('bnp-worth'), JSON.stringify(k)); } catch (_) { /* */ } }
   }
-  const wtErrHtml = (e) => { const end = wtPauseEnd(); return `<p class="bnp-wt-say is-err">${esc(e === 'visit' ? 'itemdb gives its prices once you’ve opened itemdb.com.br today: open it, then count again.' : e === 'busy' ? `itemdb asked for a pause: it gives only so many prices at a time. Wait about 10 minutes${end ? ` (till ${new Date(end).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })})` : ''}, then carry on: what’s counted so far is kept.` : e === 'fail' ? 'itemdb didn’t answer just now: count again in a moment.' : e)}</p>`; };
+  const wtErrHtml = (e) => { const end = wtPauseEnd(); return `<p class="bnp-wt-say is-err">${esc(e === 'visit' ? 'itemdb gives its prices once you’ve opened itemdb.com.br today: open it, then count again.' : e === 'busy' ? `itemdb only gives so many prices each half hour, so NE is giving it a rest${end ? ` till ${hmOf(end)}` : ''} rather than get you banned there. Then carry on: what’s counted so far is kept.` : e === 'fail' ? 'itemdb didn’t answer just now: count again in a moment.' : e)}</p>`; };
   function wtPlace(kept, p) {   // (a place as last seen whole, the Inventory's NP and NC items put together)
     const w = (k) => (kept[k] && kept[k].whole ? kept[k] : null), a = w(p), b = p === 'inventory' ? w('inventory:nc') : null;
     if (!a || !b) return a || b;
@@ -34145,7 +34222,7 @@
     } else if (paged) { html = wtSay('count it'); title = `What your whole ${WT_NAME[wt.key]} is worth at itemdb’s prices: click to count it all (kept till you count again)`; }
     else if (!s) html = wt.pricing ? wtSay('…') : '';
     else if (s.visit) { html = wtSay('open itemdb'); title = 'itemdb gives its prices once you’ve opened itemdb.com.br today: click for more'; }
-    else if (s.busy) { html = wtSay('itemdb is busy'); title = 'itemdb asked for a pause: its prices come again in a few minutes'; }
+    else if (s.busy) { html = wtSay('itemdb resting'); title = idbRestSay(); }
     else if (s.fail && !s.priced && !s.nc.valued) { html = wtSay('itemdb didn’t answer'); title = 'itemdb didn’t answer just now: click to try again'; }
     else {
       html = wtFigHtml(s);
@@ -34261,7 +34338,7 @@
     } else if (src) top = `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${lbl}${other ? `, as last seen ${esc(colAgo(src.at))}` : ''}</span><b class="bnp-wt-big">${wtCoin(tab)}${esc(big(src))}</b><span class="bnp-wt-sub">${esc(sub(src))}</span></div>`;
     else if (other) top = `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${lbl}</span><p class="bnp-wt-ask">Not seen yet: show your inventory’s ${nc ? 'NC' : 'NP'} items (the ${nc ? 'NC' : 'NP'} button above them) and they’re counted.</p></div>`;
     else top = `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${lbl}</span><span class="bnp-wt-sub">${wt.pricing ? 'Asking itemdb for prices…' : 'No items here.'}</span></div>`;
-    if (!nc && s && (s.visit || s.busy)) top += `<p class="bnp-wt-say is-err">${s.visit ? 'itemdb gives its prices to scripts once you’ve opened itemdb.com.br today (or logged in there in the last 14 days).' : 'itemdb asked for a pause: its prices come again in a few minutes.'} <a class="bnp-wt-pb" href="https://itemdb.com.br/" target="_blank" rel="noopener">Open itemdb</a><button type="button" class="bnp-wt-pb" data-wt="again">Try again</button></p>`;
+    if (!nc && s && (s.visit || s.busy)) top += `<p class="bnp-wt-say is-err">${s.visit ? 'itemdb gives its prices to scripts once you’ve opened itemdb.com.br today (or logged in there in the last 14 days).' : esc(idbRestSay())} <a class="bnp-wt-pb" href="https://itemdb.com.br/" target="_blank" rel="noopener">Open itemdb</a><button type="button" class="bnp-wt-pb" data-wt="again">Try again</button></p>`;
     ncLookApply();
     const set = wt.pick[tab], busy = !!wt.picking, can = wtCan() && !c, ok = (it) => can && !(nc && it.np);   // (an NC-valued item that sits with your NP items can't be selected with NC ones)
     const pic = (u) => (u ? `<img src="${esc(u)}" alt="" width="80" height="80" loading="lazy">` : '<span class="bnp-wt-nopic"></span>');   // (Neopets' items are 80 × 80: full screen shows them so, the window smaller)
@@ -36284,9 +36361,8 @@
   }
   function bfPriceLater() {   // (itemdb asked for a pause: the names it held back asked for again once it's over)
     if (bf.laterT) return;
-    let at = 0;
-    try { at = parseInt(localStorage.getItem(IT_401) || '', 10) || 0; } catch (_) { /* */ }
-    bf.laterT = setTimeout(() => { bf.laterT = 0; bfPriceAgain(); }, Math.max(15000, at + 10 * 60000 - Date.now()) + 4000 + Math.random() * 15000);
+    const at = idbWait(1) || Date.now();
+    bf.laterT = setTimeout(() => { bf.laterT = 0; bfPriceAgain(); }, Math.max(15000, at - Date.now()) + 4000 + Math.random() * 15000);
   }
   function bfPriceAgain() {
     if (!bf || itBlocked()) return;
@@ -36422,7 +36498,7 @@
     const tools = showList ? `<div class="bnp-bf-tools"><span class="bnp-bf-seg" role="group" aria-label="Show">${[['deals', 'Bargains'], ['all', 'Everything']].map(([k, l]) => `<button type="button" data-bfshow="${k}" aria-pressed="${P.show === k}">${l}</button>`).join('')}</span><label><span>Sort</span><select data-bfsort aria-label="Sort them">${BF_SORTS.map(([k, l]) => `<option value="${k}"${P.sort === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>${P.show === 'deals' ? `<span class="bnp-bf-offby" role="group" aria-label="How far under itemdb’s price"><span>Off by</span>${BF_MINS.map((m) => `<button type="button" data-bfmin="${m}" aria-pressed="${!P.minOwn && P.min === m}" title="${esc(m ? `Only those at least ${m}% under itemdb’s price` : 'Anything under itemdb’s price')}">${m ? `${m}%+` : 'any'}</button>`).join('')}<label class="bnp-bf-num${P.minOwn ? ' is-on' : ''}" title="Your own: at least this % under itemdb’s price"><input type="text" inputmode="numeric" maxlength="2" data-bfnum="min" value="${P.minOwn ? P.min : ''}" placeholder="__" aria-label="Your own % off" autocomplete="off" spellcheck="false">%</label></span><span class="bnp-bf-saveby" role="group" aria-label="How many Neopoints under itemdb’s price"><span>Saving at least</span><label class="bnp-bf-num is-np${P.np ? ' is-on' : ''}" title="Only those at least this many Neopoints under itemdb’s price (and the % above too, when you’ve chosen one)"><input type="text" inputmode="numeric" maxlength="13" data-bfnum="np" value="${P.np ? P.np.toLocaleString() : ''}" placeholder="any" aria-label="Saving at least this many Neopoints" autocomplete="off" spellcheck="false">NP</label>${P.np ? '<button type="button" class="bnp-bf-numx" data-bfnpx title="Any amount" aria-label="Any amount">×</button>' : ''}</span>` : ''}</div>` : '';
     const shown = L.list.slice(0, bf.shown), more = L.list.length - shown.length;
     const rows = showList ? `<div class="bnp-bf-list">${shown.map((x) => bfRowHtml(x.it, x.d, onThis)).join('')}${more > 0 ? `<p class="bnp-bf-more"><button type="button" class="bnp-sdr-lb" data-bf="more">Show ${Math.min(BF_SHOW, more).toLocaleString()} more</button><span>${more.toLocaleString()} more below these</span></p>` : ''}${!L.list.length ? `<p class="bnp-bf-empty">${waitN ? (hold ? 'No prices from itemdb yet.' : 'Looking up itemdb’s prices…') : P.show === 'deals' ? `Nothing ${onThis ? 'here' : 'in this shop'} is under itemdb’s price${P.min || P.np ? ` by ${esc(bfWant(P, true))}` : ''}.${(P.min || P.np) && L.rows.some((x) => x.d.save > 0) ? ' <button type="button" class="bnp-sdr-lb" data-bfany>Any saving</button>' : L.rows.length ? ' <button type="button" class="bnp-sdr-lb" data-bfshow="all">Show everything</button>' : ''}` : 'No items.'}</p>` : ''}</div>` : '';
-    const blocked = bf.blocked === 'visit' ? '<p class="bnp-bf-note">itemdb shares its prices once you’ve visited it today. <a class="bnp-sdr-lb" href="https://itemdb.com.br/" target="_blank" rel="noopener">Open itemdb</a> <button type="button" class="bnp-sdr-lb" data-bf="again">Try again</button></p>' : bf.blocked === 'busy' ? '<p class="bnp-bf-note">itemdb asked for a short pause: the rest of the prices come in a few minutes, by themselves.</p>' : '';
+    const blocked = bf.blocked === 'visit' ? '<p class="bnp-bf-note">itemdb shares its prices once you’ve visited it today. <a class="bnp-sdr-lb" href="https://itemdb.com.br/" target="_blank" rel="noopener">Open itemdb</a> <button type="button" class="bnp-sdr-lb" data-bf="again">Try again</button></p>' : bf.blocked === 'busy' ? `<p class="bnp-bf-note">${esc(idbRestSay())} The rest of the prices come by themselves.</p>` : '';
     const got = bf.gotN ? `<p class="bnp-bf-got">You bought ${bf.gotN.toLocaleString()} here: ${bmNp(bf.spent)}</p>` : '';
     body.innerHTML = `${banner}${scopes}${mid}${blocked}${tools}${rows}${got}<p class="bnp-bf-foot">itemdb’s prices are a guide: <span>the Shop Wizard has the real ones.</span></p>`;
     const l2 = body.querySelector('.bnp-bf-list');
@@ -46255,19 +46331,14 @@
     if (stkIdbBusy || (k && Date.now() - (k.at || 0) < 7 * 86400e3) || itBlocked()) return;
     stkIdbBusy = true;
     const end = () => { stkIdbBusy = false; };
-    try {
-      GM_xmlhttpRequest({ method: 'GET', url: 'https://itemdb.com.br/api/v1/search?s=Sticker%20Pack&limit=300&skipStats=true', headers: { Accept: 'application/json' }, timeout: 20000,
-        onload: (r) => {
-          end();
-          if (r.status === 401 || r.status === 429) { try { localStorage.setItem(IT_401, `${Date.now()}|${r.status}`); } catch (_) { /* */ } return; }
-          let j = null;
-          try { j = JSON.parse(r.responseText); } catch (_) { j = null; }
-          const packs = {};
-          for (const x of (j && Array.isArray(j.content) ? j.content : [])) { const n = reClean(String((x && x.name) || '')); const list = /sticker/i.test(n) ? stkParse(x.description) : null; if (list) packs[n.slice(0, 80)] = { s: list, b: Math.floor((Date.parse(x.firstSeen || '') || 0) / 1000) }; }
-          set('stkidb', { at: Object.keys(packs).length ? Date.now() : Date.now() - 6 * 86400e3, packs });
-          if (done) done();
-        }, onerror: end, ontimeout: end });
-    } catch (_) { end(); }
+    idbAsk({ url: 'https://itemdb.com.br/api/v1/search?s=Sticker%20Pack&limit=300&skipStats=true', expect: 300 }).then((r) => {
+      end();
+      if (r.status !== 200) return;
+      const j = r.json, packs = {};
+      for (const x of (j && Array.isArray(j.content) ? j.content : [])) { const n = reClean(String((x && x.name) || '')); const list = /sticker/i.test(n) ? stkParse(x.description) : null; if (list) packs[n.slice(0, 80)] = { s: list, b: Math.floor((Date.parse(x.firstSeen || '') || 0) / 1000) }; }
+      set('stkidb', { at: Object.keys(packs).length ? Date.now() : Date.now() - 6 * 86400e3, packs });
+      if (done) done();
+    }, end);
   }
   function stkPopGroup(pop) {   // (Neoboard Settings' Insert Sticker window: find a sticker; All, or By pack: each pack under its name, how many of it are yours, the NC Mall's own a press away while it sells it; the rest under Other stickers)
     const body = pop && pop.querySelector('.popup-body__2020'), box = body && body.querySelector('.settings-stickers');
@@ -46337,17 +46408,14 @@
     const v = nwKept(k), wait = k === 'stamp' ? 6 * 3600e3 : 30 * 60e3, fin = (ok) => { nwBusy[k] = false; if (done) done(ok); };
     if (nwBusy[k] || itBlocked() || (v && v.at && Date.now() - v.at < (force ? 60e3 : wait))) { if (done) done(false); return; }
     nwBusy[k] = true;
-    try {
-      GM_xmlhttpRequest({ method: 'GET', url: `https://itemdb.com.br/api/v1/search?s=${encodeURIComponent(NW_Q[k])}&sortBy=added&sortDir=desc&limit=${k === 'stamp' ? 30 : 150}&skipStats=true`, headers: { Accept: 'application/json' }, timeout: 20000,
-        onload: (r) => {
-          if (r.status === 401 || r.status === 429) { try { localStorage.setItem(IT_401, `${Date.now()}|${r.status}`); } catch (_) { /* */ } set(`nw_${k}`, { at: v ? v.at : 0, list: v ? v.list : [], err: r.status === 401 ? 'visit' : 'busy' }); fin(false); return; }
-          let j = null;
-          try { j = JSON.parse(r.responseText); } catch (_) { j = null; }
-          const list = (j && Array.isArray(j.content) ? j.content : []).map(nwRow).filter(Boolean);
-          if (list.length) set(`nw_${k}`, { at: Date.now(), list });
-          fin(!!list.length);
-        }, onerror: () => fin(false), ontimeout: () => fin(false) });
-    } catch (_) { fin(false); }
+    const lim = k === 'stamp' ? 30 : 150;
+    idbAsk({ url: `https://itemdb.com.br/api/v1/search?s=${encodeURIComponent(NW_Q[k])}&sortBy=added&sortDir=desc&limit=${lim}&skipStats=true`, expect: lim }).then((r) => {
+      if (r.status === 401 || r.status === 429 || r.status === 'wait') { set(`nw_${k}`, { at: v ? v.at : 0, list: v ? v.list : [], err: r.status === 401 ? 'visit' : 'busy' }); fin(false); return; }
+      const j = r.status === 200 ? r.json : null;
+      const list = (j && Array.isArray(j.content) ? j.content : []).map(nwRow).filter(Boolean);
+      if (list.length) set(`nw_${k}`, { at: Date.now(), list });
+      fin(!!list.length);
+    }, () => fin(false));
   }
   function nwDays(list) {   // (each row's day in Neopian time; one itemdb hasn't dated yet goes with the dated one after it, the next newest)
     const days = list.map((x) => (x.at ? nstOf(x.at).day : null));
@@ -46369,7 +46437,7 @@
     const finds = (x) => (x.nc ? `${srFinds(x.n, ['idb', 'jn'])}<a class="bnp-sr-find is-named" href="https://ncmall.neopets.com/mall/search.phtml?type=search&amp;text=${encodeURIComponent(x.n)}" title="Look for it in the NC Mall">NC Mall</a>` : srFinds(x.n, ['sw', 'tp', 'idb', 'jn']));
     const tile = (x) => `<div class="bnp-nw-it${x.nc ? ' is-nc' : ''}"><img src="${esc(x.img)}" alt="" width="80" height="80" loading="lazy"><b title="${esc(x.n)}">${esc(x.n)}</b><small>${esc(x.c || (x.nc ? 'Neocash' : 'Item'))}${x.r ? ` · r${x.r}` : ''}</small><span class="bnp-nw-p${x.nc ? ' is-nc' : ''}">${x.nc ? 'Neocash' : x.p ? `${x.p.toLocaleString()} NP` : 'No price yet'}</span><span class="bnp-nw-finds">${finds(x)}</span></div>`;
     const chip = (k, l, n) => `<button type="button" class="bnp-rechip" data-nw-tab="${k}" aria-pressed="${nwTab === k}"><span>${l}</span><em>${n}</em></button>`;
-    const err = v && v.err === 'visit' ? '<p class="bnp-note">itemdb wants a visit first: open <a href="https://itemdb.com.br/" target="_blank" rel="noopener">itemdb.com.br</a> once in this browser, then press Check now.</p>' : v && v.err === 'busy' ? '<p class="bnp-note">itemdb asked for a pause: try again in a few minutes.</p>' : '';
+    const err = v && v.err === 'visit' ? '<p class="bnp-note">itemdb wants a visit first: open <a href="https://itemdb.com.br/" target="_blank" rel="noopener">itemdb.com.br</a> once in this browser, then press Check now.</p>' : v && v.err === 'busy' ? `<p class="bnp-note">${esc(idbRestSay())}</p>` : '';
     return `<div class="bnp-mhead" data-nojumps><h2>Newest items</h2><span class="bnp-note">What Neopets has just released, newest first, from itemdb.</span></div>
       <div class="bnp-nw-bar"><span class="bnp-nw-chips">${chip('all', 'Everything', list.length)}${chip('np', 'Neopoint items', list.filter((x) => !x.nc).length)}${chip('nc', 'NC Mall', list.filter((x) => x.nc).length)}</span><span class="bnp-nw-when">${busy ? 'Asking itemdb…' : v && v.at ? `Checked ${esc(colAgo(v.at))}` : 'Not checked yet'}</span><button type="button" class="bnp-pillbtn" data-nw-check${busy ? ' disabled' : ''}>Check now</button></div>
       ${err}${groups.length ? groups.map((g) => `<section class="bnp-card bnp-nw-day"><h3>${esc(nwDayName(g.d))}<em>${g.list.length}</em></h3><div class="bnp-nw-grid">${g.list.map(tile).join('')}</div></section>`).join('') : `<p class="bnp-note">${busy || !v ? 'Asking itemdb for the newest items…' : 'Nothing here yet.'}</p>`}`;
@@ -46941,7 +47009,7 @@
       <div class="bnp-card"><h4>Item buttons</h4>
         <label class="bnp-switch"><input type="checkbox" data-feat="items"${f.items ? ' checked' : ''}><span>Item buttons<small>Your inventory, Quick Stock, SDB and Closet, Neopia’s shops and users’ shops, your shop, Auctions, the Trading Post, galleries, quests, the Quest Log, the Battledome and more (each page below). NC items get only the buttons that fit them.</small></span></label>
         <div class="bnp-itsize"><div class="bnp-itslides"><label class="bnp-myslide bnp-itslide"><span>Their size on most pages</span><input type="range" min="12" max="36" step="1" value="${itPx(set)}" data-itpx="px" aria-label="Their size on most pages"><b data-itpxsay="px">${itPx(set)} px</b></label><label class="bnp-myslide bnp-itslide"><span>In your inventory and shops’ grids</span><input type="range" min="10" max="30" step="1" value="${itPxGrid(set)}" data-itpx="grid" aria-label="In your inventory and shops’ grids"><b data-itpxsay="grid">${itPxGrid(set)} px</b></label><label class="bnp-myslide bnp-itslide"><span>itemdb prices’ text</span><input type="range" min="8" max="16" step="0.5" value="${itPricePx(set)}" data-itpx="price" aria-label="itemdb prices’ text"><b data-itpxsay="price">${itPricePx(set)} px</b></label><button type="button" class="bnp-pillbtn bnp-itsizes" data-itsizes${set.px || set.pxGrid || set.pricePx || set.size ? '' : ' disabled'}>Back to the sizes they started at</button></div><div class="bnp-itdemobox"><span class="bnp-it bnp-itdemo">${['sw', 'tp', 'au', 'sdb', 'jn', 'idb'].map((k) => { const ic = itIcon(k); return `<span class="bnp-it-b">${ic ? `<span class="bnp-ico" style="background-image:url('${esc(cssUrl(ic))}')"></span>` : ''}</span>`; }).join('')}<span class="bnp-it-price"><a>~12k NP</a></span>${set.ncVal !== false ? '<span class="bnp-it-nc">2-3 caps</span>' : ''}</span><small>On most pages</small><span class="bnp-it bnp-itdemo is-grid">${['sw', 'tp', 'au', 'sdb', 'jn', 'idb'].map((k) => { const ic = itIcon(k); return `<span class="bnp-it-b">${ic ? `<span class="bnp-ico" style="background-image:url('${esc(cssUrl(ic))}')"></span>` : ''}</span>`; }).join('')}<span class="bnp-it-price"><a>~12k NP</a></span>${set.ncVal !== false ? '<span class="bnp-it-nc">2-3 caps</span>' : ''}</span><small>In your inventory and shops’ grids</small></div></div>
-        <p class="bnp-note">Prices come from <a href="https://itemdb.com.br/" target="_blank" rel="noopener">itemdb</a> (kept a day in this browser). itemdb gives them to scripts once you’ve opened itemdb.com.br that day, or logged in there in the last 14 days: if a price says “open itemdb”, open it, and the prices fill in by themselves. <button type="button" class="bnp-linkbtn" data-ittest>Test itemdb</button></p>
+        <p class="bnp-note">Prices come from <a href="https://itemdb.com.br/" target="_blank" rel="noopener">itemdb</a> (kept a few days in this browser; NE never asks for more than itemdb allows each half hour, so you don’t get banned there). ${esc(idbUseLine())} itemdb gives them to scripts once you’ve opened itemdb.com.br that day, or logged in there in the last 14 days: if a price says “open itemdb”, open it, and the prices fill in by themselves. <button type="button" class="bnp-linkbtn" data-ittest>Test itemdb</button></p>
         <p class="bnp-note bnp-ittest" data-g="ittest" hidden></p>
       </div>
       <div class="bnp-card"><h4>NC values</h4>
@@ -47004,19 +47072,15 @@
     out.hidden = false;
     out.textContent = 'Asking itemdb…';
     const say = (html) => { out.innerHTML = html; };
-    try {
-      GM_xmlhttpRequest({ method: 'POST', url: 'https://itemdb.com.br/api/v1/items/many', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, data: JSON.stringify({ name: ['Hot Buttered Toast'] }), timeout: 15000,
-        onload: (r) => {
-          let ok = false;
-          try { const d = JSON.parse(r.responseText); ok = !!(d && d['Hot Buttered Toast'] && d['Hot Buttered Toast'].price); } catch (_) { ok = false; }
-          if (ok) { try { localStorage.removeItem(IT_401); } catch (_) { /* */ } say('<b>✓ It works:</b> itemdb answered with its prices.'); return; }
-          if (r.status === 401) { say('<b>itemdb turned it away</b> (it doesn’t see an itemdb visit). <a href="https://itemdb.com.br/" target="_blank" rel="noopener">Open itemdb.com.br</a> in this browser, then press Test again. <b>Still turned away after that?</b> Your browser isn’t letting Tampermonkey send itemdb’s cookie: Brave blocks cross-site cookies for it. In Brave, open <code>brave://settings/cookies</code> and add <code>[*.]itemdb.com.br</code> to the sites allowed to use third-party cookies, open itemdb.com.br once more, then Test.'); return; }
-          if (r.status === 429) { say('itemdb’s limit for now: try again in a few minutes.'); return; }
-          say(`itemdb answered ${esc(String(r.status || '?'))}.`);
-        },
-        onerror: () => say('itemdb didn’t answer (no connection, or Tampermonkey hasn’t been allowed to reach itemdb.com.br).'),
-        ontimeout: () => say('itemdb took too long to answer.') });
-    } catch (e) { say('Tampermonkey couldn’t ask itemdb.'); }
+    if (idbWait(1)) { say(esc(`${idbRestText(idbWait(1))}.`)); return; }
+    idbAsk({ method: 'POST', url: 'https://itemdb.com.br/api/v1/items/many', body: { name: ['Hot Buttered Toast'] }, expect: 1, timeout: 15000 }).then((r) => {
+      const d = r.json && r.json['Hot Buttered Toast'];
+      if (r.status === 200 && d && d.price) { say('<b>✓ It works:</b> itemdb answered with its prices.'); return; }
+      if (r.status === 401) { say('<b>itemdb turned it away</b> (it doesn’t see an itemdb visit). <a href="https://itemdb.com.br/" target="_blank" rel="noopener">Open itemdb.com.br</a> in this browser, then press Test again. <b>Still turned away after that?</b> Your browser isn’t letting Tampermonkey send itemdb’s cookie: Brave blocks cross-site cookies for it. In Brave, open <code>brave://settings/cookies</code> and add <code>[*.]itemdb.com.br</code> to the sites allowed to use third-party cookies, open itemdb.com.br once more, then Test.'); return; }
+      if (r.status === 429 || r.status === 'wait') { say(`<b>itemdb has banned this connection for now.</b> ${esc(`${idbRestText(idbWait(1) || Date.now() + IDB_IDLE)}.`)}`); return; }
+      if (r.status === 0) { say('itemdb didn’t answer (no connection, or Tampermonkey hasn’t been allowed to reach itemdb.com.br).'); return; }
+      say(`itemdb answered ${esc(String(r.status || '?'))}.`);
+    });
   }
   document.addEventListener('input', (e) => {   // (the item buttons' sizes and the prices': on every page as a slider moves, kept when it stops)
     const el = e.target instanceof Element && e.target.matches('.bnp-hub input[data-itpx]') ? e.target : null;
@@ -54638,6 +54702,12 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.5.4', '2026-11-18', [
+      'itemdb prices: NE keeps to itemdb’s own limit for you, across every tab and page, so big galleries and shops no longer get you banned there',
+      'itemdb prices: after a ban NE asks nothing till it is fully over, so bans don’t grow longer; prices carry on by themselves after it',
+      'itemdb prices: kept for 3 to 5 days (no-price items a week), and older ones still shown while a fresh one waits its turn',
+      'itemdb prices: ones still waiting say exactly when they come; Settings › Items shows how much of the half hour’s allowance is used',
+    ]],
     ['5.5.3', '2026-11-17', [
       'Battledome: heals during a fight. When HP falls below your line (Loadout › Healing in the fight), the best healer that is ready goes in',
       'Battledome: healers are kept back while HP is fine, learnt from your fights (how much each heals, once a fight or not), or marked by you',
