@@ -1,8 +1,10 @@
 {
- "version": "5.5.2",
+ "version": "5.5.3",
  "date": "2026-11-17",
  "notes": [
-  "My Gallery: view and edit one category",
-  "My Gallery: the mode switch fixed"
+  "Battledome: healing during fights",
+  "Battledome: a Challengers tab and icon tabs",
+  "Battledome: a polished look",
+  "Battledome: fight and healing fixes"
  ]
 }
