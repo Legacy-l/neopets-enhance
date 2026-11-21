@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.5.5
+// @version      5.5.6
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -5217,33 +5217,40 @@
   // up to 3 h, longer the more bans in 5 days. An ask during a ban isn't counted, but the first one after a short ban comes before the
   // 30 minutes are up and bans again, longer. So every ask NE makes of itemdb goes through one door (idbAsk), which keeps that same
   // count for every tab and page (GM idbgate): never past NE's own allowance, then nothing till the count is forgotten; a ban stops
-  // everything till its Retry-After and those 30 minutes are both over, and the first ask after it is a small one. NE's allowance:
-  // 4,000 when it has watched 5 days with no ban (itemdb's ban count is forgotten by then: its 5,000 stands), else 1,800, under its
-  // lowest (2,000) whatever bans came before. Room is left for itemdb's own pages and another device on the same connection.
-  const IDB_GATE = 'idbgate', IDB_IDLE = 31 * 60e3, IDB_SAFE = 1800, IDB_CLEAN = 4000;
-  const idbBudget = (g) => (g.since && Date.now() - g.since > 5 * 864e5 && !g.bans.length ? IDB_CLEAN : IDB_SAFE);
+  // everything till its Retry-After and those 30 minutes are both over, and the first ask after it is a small one. Two ceilings, out of
+  // itemdb's allowance for this connection (idbLimit: 5,000, cut by its bans in the last 5 days; how many, told by a ban's own length,
+  // (n+1)²×5 min; not known yet: taken as 3,000): big jobs (counts, a whole shop, the trackers' lists) stop at 60% of it, so they never
+  // use it all; a page's own prices are never held back by NE, only by a ban itemdb has made (the user, 2026-11-18: "prices on random
+  // pages are not loading anymore once limit has been hit", "help bans not be reached but not prevent users from using the price feature").
+  const IDB_GATE = 'idbgate', IDB_IDLE = 31 * 60e3;
+  function idbLimit(g) {
+    const now = Date.now(), b = Math.max(g.bans.length, g.banAt && now - g.banAt < 5 * 864e5 ? g.banN || 0 : 0);
+    if (!b && !(g.since && now - g.since > 5 * 864e5)) return 3000;   // (5 days not watched yet: bans before NE knew are taken as some)
+    return Math.round(5000 * Math.max(0.4, 1 - (b / 13) ** 2));
+  }
+  const idbCap = (g, bulk) => (bulk ? Math.floor(idbLimit(g) * 0.6) : Infinity);
   function idbGate() {   // (the count as itemdb keeps it: n items since it was last forgotten, the last that counted, a ban's end)
     const now = Date.now(), g = get(IDB_GATE, null) || {};
-    const o = { n: +g.n || 0, last: +g.last || 0, sent: +g.sent || 0, until: +g.until || 0, small: !!g.small, since: +g.since || 0, force: +g.force || 0, bans: (Array.isArray(g.bans) ? g.bans : []).filter((t) => now - t < 5 * 864e5) };
+    const o = { n: +g.n || 0, last: +g.last || 0, sent: +g.sent || 0, until: +g.until || 0, small: !!g.small, since: +g.since || 0, force: +g.force || 0, banN: +g.banN || 0, banAt: +g.banAt || 0, bans: (Array.isArray(g.bans) ? g.bans : []).filter((t) => now - t < 5 * 864e5) };
     if (now - o.last > IDB_IDLE) o.n = 0;
     return o;
   }
-  function idbWait(expect = 1) {   // (0: an ask of this many items may go now; else when one may)
+  function idbWait(expect = 1, bulk = false) {   // (0: an ask of this many items may go now (bulk: a big job's); else when one may)
     const g = idbGate(), now = Date.now();
     if (now < g.force) return 0;   // (you said ask anyway: till itemdb says no)
     if (now < g.until) return g.until;
-    if (g.n && g.n + expect > idbBudget(g)) return g.last + IDB_IDLE;
+    if (g.n && g.n + expect > idbCap(g, bulk)) return g.last + IDB_IDLE;
     return 0;
   }
   const idbNote = (fn) => { const g = idbGate(); fn(g); set(IDB_GATE, g); };
   const idbItemsIn = (j) => (!j || typeof j !== 'object' ? 0 : Array.isArray(j) ? j.length : Array.isArray(j.content) ? j.content.length : Array.isArray(j.items) ? j.items.length : Object.keys(j).length);   // (what itemdb counts: the items an answer holds)
   const hmOf = (t) => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  const idbRestText = (t) => (idbGate().until > Date.now() ? `itemdb has paused its prices for this connection: NE asks it nothing till ${hmOf(t)}, so the pause doesn’t grow (prices seen before still show)` : `NE is giving itemdb a rest till ${hmOf(t)}, so you don’t get banned there (it only gives so many prices each half hour)`);
+  const idbRestText = (t) => (idbGate().until > Date.now() ? `itemdb has paused its prices for this connection: NE asks it nothing till ${hmOf(t)}, so the pause doesn’t grow (prices seen before still show)` : `Big counts rest till ${hmOf(t)}, so they don’t use up itemdb’s allowance (it only gives so many prices each half hour); prices on pages carry on`);
   const idbRestSay = () => { const w = idbWait(1); return w ? `${idbRestText(w)}.` : 'itemdb asked for a pause: try again in a few minutes.'; };
   function idbUseLine() {   // (Settings › Items: how much of itemdb's allowance this connection has used)
     const g = idbGate(), w = idbWait(1);
     const bans = g.bans.length ? ` itemdb has banned this connection ${g.bans.length} time${g.bans.length > 1 ? 's' : ''} in the last 5 days.` : '';
-    return w ? `${idbRestText(w)}.${bans}` : `Asked of itemdb in the last half hour: ${g.n.toLocaleString()} items of the ${idbBudget(g).toLocaleString()} NE allows itself.${bans}`;
+    return w ? `${idbRestText(w)}.${bans}` : `Asked of itemdb in the last half hour: ${g.n.toLocaleString()} items. Prices on pages are never held back by NE; big counts and whole shops stop at ${idbCap(g, true).toLocaleString()} a half hour, so they don’t use up itemdb’s allowance.${bans}`;
   }
   let idbChain = Promise.resolve();
   function idbLock(fn) {   // (one ask at a time across this site's tabs; a tab's own asks in turn)
@@ -5256,7 +5263,7 @@
     return new Promise((res) => {
       const gap = idbGate().sent + 1500 + Math.random() * 1500 - Date.now();
       setTimeout(() => {
-        const w = idbWait(o.expect || 1);
+        const w = idbWait(o.expect || 1, !!o.bulk);
         if (w) { res({ status: 'wait', wait: w }); return; }
         idbNote((x) => { x.sent = Date.now(); if (!x.since) x.since = Date.now(); });
         try {
@@ -5266,7 +5273,7 @@
               try { json = JSON.parse(r.responseText); } catch (_) { json = null; }
               if (r.status === 429) {   // (banned: nothing more from any tab till both its Retry-After and itemdb's 30 minutes since the last counted ask are over)
                 const m = /(?:^|\n)\s*retry-after:\s*(\d+)/i.exec(r.responseHeaders || ''), now = Date.now();
-                idbNote((x) => { if (!(x.until > now)) x.bans.push(now); x.until = Math.max(now + (m ? +m[1] * 1000 : 10 * 60e3), (x.last || now) + IDB_IDLE) + 60e3 + Math.round(Math.random() * 120e3); x.small = true; x.force = 0; });
+                idbNote((x) => { const ra = m ? +m[1] : 0, had = x.banAt && now - x.banAt < 5 * 864e5 ? x.banN || 0 : 0; if (ra > 0) x.banN = Math.max(had, Math.max(1, Math.round(Math.sqrt(ra / 300)))); else if (!(x.until > now)) x.banN = had + 1; x.banAt = now; if (!(x.until > now)) x.bans.push(now); x.until = Math.max(now + (m ? +m[1] * 1000 : 10 * 60e3), (x.last || now) + IDB_IDLE) + 60e3 + Math.round(Math.random() * 120e3); x.small = true; x.force = 0; });
               } else if (r.status === 401) {   // (no itemdb visit lately: as before, a 10-minute hold, or till a visit)
                 const refused = Date.now() - itVisitAt() < 3 * 60000;
                 try { localStorage.setItem(IT_401, `${Date.now()}|401${refused ? 'r' : ''}`); } catch (_) { /* */ }
@@ -5290,7 +5297,7 @@
     try { if (bf) bfPriceAgain(); } catch (_) { /* */ }
   }
   // Every ask of itemdb: { url, method, body, expect (how many items it may hand back), count(json) } → { status: 200|401|429|0|'wait', json, wait }
-  const idbAsk = (o) => { const w = idbWait(o.expect || 1); return w ? Promise.resolve({ status: 'wait', wait: w }) : idbLock(() => idbSend(o)); };
+  const idbAsk = (o) => { const w = idbWait(o.expect || 1, !!o.bulk); return w ? Promise.resolve({ status: 'wait', wait: w }) : idbLock(() => idbSend(o)); };
   // (itemdb gives userscripts its prices through your own itemdb visit: once a day, or every 14 days logged in. Until then it says 401;
   // then nothing is asked for 10 minutes, and each price says to open itemdb)
   const IT_401 = 'bnp-idb401';
@@ -5299,13 +5306,14 @@
   const itBlocked = () => itVisitBlocked() || !!idbWait(1);
   const itBlockedBusy = () => !itVisitBlocked() && !!idbWait(1);   // (resting from itemdb's limit, rather than waiting on a visit)
   const itVisitRes = () => ({ visit: 1, refused: /\|401r$/.test(localStorage.getItem(IT_401) || '') });
-  const itBusyRes = () => ({ err: 1, busy: 1, until: idbWait(1) });
+  const itBusyRes = (bulk) => ({ err: 1, busy: 1, until: idbWait(1, !!bulk) });
   const itTell = (b, res) => { if (typeof b === 'function') { try { b(res); } catch (e) { report(e); } } else itPriceShow(b, res); };   // (a price's badge; or something else that wants to know it)
   // Kept prices (IndexedDB 'prices2', one record merged in one step, so tabs never undo each other's): as they are for 3 days (a week for
   // "no price" or not on itemdb), plus up to 2 more by the name, so a big gallery's don't all come due the same day; after that still
   // shown, and asked for again only while most of itemdb's allowance is unused; dropped after 30 days.
   const IT_PRICES = 'bnp-prices', IT_STORE = 'prices2', IT_FRESH = 3 * DAY_MS, IT_NONE = 7 * DAY_MS, IT_KEEP = 30 * DAY_MS;
-  let itCache = {}, itLoaded = false, itLoading = null, itAsk = new Map(), itAskT = 0, itStale = new Set(), itStaleT = 0;
+  let itCache = {}, itLoaded = false, itLoading = null, itStale = new Set(), itStaleT = 0;
+  const itQ = { page: new Map(), bulk: new Map() }, itQT = { page: 0, bulk: 0 };
   const itJit = (n) => { let h = 7; for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0; return (h % 1000) / 1000; };
   const itDue = (n, c) => Date.now() - c.t > (c.r && c.r.p > 0 ? IT_FRESH : IT_NONE) + itJit(n) * 2 * DAY_MS;
   function itMerge(v) { if (!v || typeof v !== 'object') return; const now = Date.now(); for (const [k, e] of Object.entries(v)) if (e && e.r && now - e.t < IT_KEEP && !(itCache[k] && itCache[k].t >= e.t)) itCache[k] = e; }
@@ -5339,33 +5347,34 @@
   }
   function itPriceCache() { if (!itLoading) itLoad(); return itCache; }
   const itRes = (d) => ({ p: d && d.price && Number(d.price.value) > 0 ? Number(d.price.value) : null, inf: !!(d && d.price && d.price.inflated), slug: (d && d.slug) || '', r: d && d.rarity != null ? d.rarity : null, img: (d && (d.image || d.image_url)) || '', at: (d && d.price && d.price.addedAt) || '', ...(d ? {} : { none: 1 }) });
-  function itPriceAsk(name, badge) {
+  function itPriceAsk(name, badge, bulk) {   // (bulk: a big job's (a count, a whole shop), to its lower ceiling)
     if (typeof badge !== 'function') badge.dataset.itn = name;   // (asked again by it, once itemdb lets this browser in)
-    if (!itLoaded) { itLoad().then(() => itPriceAsk(name, badge)); return; }
+    if (!itLoaded) { itLoad().then(() => itPriceAsk(name, badge, bulk)); return; }
     const c = itCache[name];
     if (c) { itTell(badge, c.r); if (itDue(name, c)) itStaleAdd(name); return; }
     if (itVisitBlocked()) { itTell(badge, itVisitRes()); return; }
-    if (idbWait(1)) { itTell(badge, itBusyRes()); return; }
-    if (!itAsk.has(name)) itAsk.set(name, []);
-    itAsk.get(name).push(badge);
-    clearTimeout(itAskT);
-    itAskT = setTimeout(itPriceSend, 250);
+    if (idbWait(1, bulk)) { itTell(badge, itBusyRes(bulk)); return; }
+    const k = bulk ? 'bulk' : 'page', q = itQ[k];
+    if (!q.has(name)) q.set(name, []);
+    q.get(name).push(badge);
+    clearTimeout(itQT[k]);
+    itQT[k] = setTimeout(() => itPriceSend(k === 'bulk'), 250);
   }
-  async function itPriceSend() {   // (a hundred names an ask, one ask at a time from any tab, never past itemdb's allowance; what comes kept)
-    const batch = itAsk;
-    itAsk = new Map();
+  async function itPriceSend(bulk) {   // (a hundred names an ask, one ask at a time from any tab, never past this kind's ceiling; what comes kept)
+    const k = bulk ? 'bulk' : 'page', batch = itQ[k];
+    itQ[k] = new Map();
     const tell = (list, res) => { for (const n of list) for (const b of batch.get(n) || []) itTell(b, res); };
     let names = [...batch.keys()];
     await idbLock(async () => {
       itMerge(await idbGet(IT_STORE).catch(() => null));   // (another tab may have just been given some of these)
       names = names.filter((n) => { const c = itCache[n]; if (!c) return true; tell([n], c.r); if (itDue(n, c)) itStaleAdd(n); return false; });
       for (let i = 0; i < names.length;) {
-        const g = idbGate(), forced = Date.now() < g.force, size = Math.min(names.length - i, g.small && !forced ? 20 : 100, forced ? 100 : idbBudget(g) - g.n);   // (just after a ban, a small one first; asked anyway: a hundred)
-        if (size < 1 || idbWait(size)) { tell(names.slice(i), itBusyRes()); itBusyLater(); return; }
+        const g = idbGate(), forced = Date.now() < g.force, size = Math.min(names.length - i, g.small && !forced ? 20 : 100, forced ? 100 : idbCap(g, bulk) - g.n);   // (just after a ban, a small one first; asked anyway: a hundred)
+        if (size < 1 || idbWait(size, bulk)) { tell(names.slice(i), itBusyRes(bulk)); itBusyLater(); return; }
         const part = names.slice(i, i + size);
-        const r = await idbSend({ method: 'POST', url: 'https://itemdb.com.br/api/v1/items/many', body: { name: part }, expect: part.length });
+        const r = await idbSend({ method: 'POST', url: 'https://itemdb.com.br/api/v1/items/many', body: { name: part }, expect: part.length, bulk });
         if (r.status === 401) { tell(names.slice(i), { visit: 1, refused: !!r.refused }); return; }
-        if (r.status === 429 || r.status === 'wait') { tell(names.slice(i), itBusyRes()); itBusyLater(); return; }   // (the rest wait with it: not asked)
+        if (r.status === 429 || r.status === 'wait') { tell(names.slice(i), itBusyRes(bulk)); itBusyLater(); return; }   // (the rest wait with it: not asked)
         if (r.status !== 200 || !r.json || typeof r.json !== 'object') { tell(part, { err: 1 }); i += size; continue; }
         const add = {}, t = Date.now();
         for (const n of part) { const res = itRes(r.json[n]); add[n] = itCache[n] = { r: res, t }; tell([n], res); }
@@ -5379,7 +5388,7 @@
     itStaleT = 0;
     const later = (ms) => { if (!itStaleT && itStale.size) itStaleT = setTimeout(itStaleSend, ms); };
     const g0 = idbGate();
-    if (itAsk.size || itBlocked() || g0.small || g0.n > idbBudget(g0) / 2) { later(Math.max(60000, (idbWait(1) || (g0.n ? g0.last + IDB_IDLE : 0)) - Date.now())); return; }
+    if (itQ.page.size || itQ.bulk.size || itBlocked() || g0.small || g0.n > idbCap(g0, true) / 2) { later(Math.max(60000, (idbWait(1) || (g0.n ? g0.last + IDB_IDLE : 0)) - Date.now())); return; }
     const names = [...itStale].slice(0, 300);
     for (const n of names) itStale.delete(n);
     await idbLock(async () => {
@@ -5387,9 +5396,9 @@
       const due = names.filter((n) => { const c = itCache[n]; return !c || itDue(n, c); });
       for (let i = 0; i < due.length; i += 100) {
         const g = idbGate();
-        if (g.small || g.n + 100 > idbBudget(g) / 2 || idbWait(100)) { for (const n of due.slice(i)) itStale.add(n); return; }
+        if (g.small || g.n + 100 > idbCap(g, true) / 2 || idbWait(100, true)) { for (const n of due.slice(i)) itStale.add(n); return; }
         const part = due.slice(i, i + 100);
-        const r = await idbSend({ method: 'POST', url: 'https://itemdb.com.br/api/v1/items/many', body: { name: part }, expect: part.length });
+        const r = await idbSend({ method: 'POST', url: 'https://itemdb.com.br/api/v1/items/many', body: { name: part }, expect: part.length, bulk: true });
         if (r.status !== 200 || !r.json || typeof r.json !== 'object') { for (const n of due.slice(i)) itStale.add(n); return; }
         const add = {}, t = Date.now();
         for (const n of part) add[n] = itCache[n] = { r: itRes(r.json[n]), t };
@@ -13352,21 +13361,22 @@
   }
 
   // ---- writing: a toolbar with all of Neopets' formatting and every smilie, a preview, your words kept until they're sent ----
-  const NB_SM_RAW = [   // [name, its tab's smilie, its smilies: "code file|…", or names that are *name*.gif]
-    ['Faces', 'smiley', ':) smiley|0:-) angel|:o oh|:( sad|:D grin|B) sunglasses|:P tongue|:K vampire|;) winking|*yarr* yarr|:* kisskiss|*angry* angry|*complain* complain|*facepalm* facepalm|*cough* cough|*lol* lol|*unsure* unsure|*cry* cry|*clap* clap|*violin* violin'],
-    ['Neopians', 'mrcoconut', 'aaa abigail angrylawyerbot awakened boatswain brutes brynn cabinboy capn3legs dreamy coltzan cook fyora gunner hanso happiness illusen jazan jhudora lawyerbot lulu mate mipsy mrcoconut nabile nox order quartermaster rigger rohane rower seekers shopwiz sloth snowager swabbie sway talinia techomaster thieves turmaculus velm wizard'],
-    ['Neopets', 'lenny', 'acara aisha blumaroo bori bruce buzz chia chomby cybunny draik elephante eyrie flotsam gelert gnorbu grarrl grundo hissi ixi jetsam jubjub kacheek kau kiko koi korbat kougra krawk kyrii lenny lupe lutari meerca moehog mynci nimmo ogrin peophin poogle pteri quiggle ruki scorchio shoyru skeith techo tonu tuskaninny uni usul vandagyre wocky xweetok yurble zafara'],
-    ['Petpets', 'slorg', 'angelpuss feepit jellykacheek jimmi jinjah kadoatery kadoatie larnikin meepit meowclops mootix niptor noil pinchit plumpy purplebug slorg snowbunny spyder swipe warf weewoo woogy yooyu zomutt'],
+  const NB_SM_RAW = [   // [name, its tab's smilie, its smilies: [[code, file], …], or names that are *name*.gif (name=file where they differ)]
+    ['Faces', 'smiley', [[':)', 'smiley'], ['0:-)', 'angel'], [':o', 'oh'], [':(', 'sad'], [':D', 'grin'], ['B)', 'sunglasses'], [':P', 'tongue'], [':K', 'vampire'], [';)', 'winking'], ['*yarr*', 'yarr'], [':*', 'kisskiss'], ['*angry*', 'angry'], ['*complain*', 'complain'], ['*facepalm*', 'facepalm'], ['*cough*', 'cough'], ['*lol*', 'lol'], ['*unsure*', 'unsure'], ['*cry*', 'cry'], ['*clap*', 'clap'], ['*violin*', 'violin'], ['8c', 'plead'], [":')", 'happycry'], [':*)', 'happyblush'], [':S', 'yikes'], [':|', 'straightface'], [":'D", 'crylaugh'], ['(:', 'smileupsidedown'], ['*eye*', 'eye'], ['*eyeroll*', 'eyeroll'], ['*eyes*', 'eyes'], ['*hmm*', 'thinking'], ['=)', 'happy'], ['*happyhearts*', 'happyhearts'], ['*hearteyes*', 'hearteyes'], ['*heartred*', 'heartred'], ['*heartorange*', 'heartorange'], ['*heartyellow*', 'heartyellow'], ['*heartgreen*', 'heartgreen'], ['*heartblue*', 'heartblue'], ['*heartpurple*', 'heartpurple'], ['*heartblack*', 'heartblack'], ['*heartsparkle*', 'heartsparkle'], ['*heartpink*', 'heartpink'], ['*sob*', 'sob']]],
+    ['Neopians', 'mrcoconut', 'aaa abigail angrylawyerbot awakened boatswain brutes brynn cabinboy capn3legs dreamy coltzan cook deadchia fyora gunner hanso happiness illusen jazan jhudora lawyerbot lulu mate mipsy mrcoconut nabile nox order quartermaster rigger rohane rower seekers shopwiz sloth snowager swabbie sway talinia techomaster thieves turmaculus velm wizard'],
+    ['Neopets', 'lenny', 'acara aisha blumaroo bori bruce buzz chia chomby cybunny draik elephante eyrie flotsam gelert gnorbu grarrl grundo hissi ixi jetsam jubjub kacheek kau kiko koi korbat kougra krawk kyrii lenny lupe lutari meerca moehog mynci nimmo ogrin peophin poogle pteri quiggle ruki scorchio shoyru skeith techo tonu tuskaninny uni usul vandagyre varwolf wocky xweetok yurble zafara'],
+    ['Petpets', 'slorg', 'angelpuss ditrey doglefox faellie feepit jellykacheek jimmi jinjah kadoatery kadoatie larnikin meepit meowclops mootix niptor noil pandora pebble pinchit plumpy purplebug slorg snowbunny spyder swipe talpidat warf weewoo woogy yooyu zomutt'],
     ['Things', 'babypb', 'babypb bacon baf battleduck bdf bef bff bgc blf bluesand blurf book bwf codestone cookie cupcake dariganpb dbd dubloon eventidepb eventidepppb faeriepb greensand icecream islandpb jelly maractitepb mspp omelette orangesand pie pinksand piratepb popcorn scroll sock starberry stonepie suap tigerfruit twirlyfruit ummagine woodlandpb wraithpb'],
     ['Holidays', 'web', 'aishadow angrynegg bauble bballoon brownleaf candle candycane creepyspyder eekeek fence festivalnegg fishnegg flower gballoon ghost happynegg heart holly jackolantern leafleft leafright luckydraik mistletoe negg paperlantern present pumpkin rballoon redleaf rednose roses santa shamrock snowflake snowman tombstone web witch=witchhat xmastree yballoon yellowleaf'],
-    ['Lands and more', 'moon', 'altador brightvale dacardia darigan faerieland haunted kikolake krawkisland kreludor lostdesert maraqua meridell mystery moltara rooisland shenkuu terror tyrannia virtupets air dark earth fire light physical water 0.o.0 carrot catfish cloud rainbow coffee dung genie indubitably kqdoor kqkey map moneybag monocle moon raincloud star sun tea tophat yarn'],
+    ['Lands and more', 'moon', 'altador brightvale dacardia darigan faerieland haunted kikolake krawkisland kreludor lostdesert maraqua meridell mystery neopiacentral moltara rooisland shenkuu terror tyrannia virtupets air dark earth fire light physical water 0.o.0 carrot catfish cloud rainbow coffee dung genie indubitably kqdoor kqkey map moneybag monocle moon pinkclouds raincloud star sun tea tophat yarn'],
   ];
   let NB_SM = null, NB_SMMAP = null, NB_SMRE = null, nbSmCat = null;   // (nbSmCat −1: every group at once)
   function nbSmilies() {   // ([[name, tab, [[code, file], …]], …], built once when first wanted)
     if (NB_SM) return NB_SM;
-    NB_SM = NB_SM_RAW.map(([cat, tab, s]) => [cat, tab, s.includes('|') ? s.split('|').map((x) => { const i = x.lastIndexOf(' '); return [x.slice(0, i), x.slice(i + 1)]; }) : s.split(' ').map((w) => { const [n, f] = w.split('='); return [`*${n}*`, f || n]; })]);
+    NB_SM = NB_SM_RAW.map(([cat, tab, s]) => [cat, tab, Array.isArray(s) ? s : s.split(' ').map((w) => { const [n, f] = w.split('='); return [`*${n}*`, f || n]; })]);
     NB_SMMAP = new Map(NB_SM.flatMap(([, , l]) => l));
-    NB_SMRE = new RegExp([...NB_SMMAP.keys()].sort((a, b) => b.length - a.length).map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g');
+    const an = /[A-Za-z0-9]/;
+    NB_SMRE = new RegExp([...NB_SMMAP.keys()].sort((a, b) => b.length - a.length).map((c) => `${an.test(c[0]) ? '(?<![A-Za-z0-9])' : ''}${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}${an.test(c[c.length - 1]) ? '(?![A-Za-z0-9])' : ''}`).join('|'), 'g');
     return NB_SM;
   }
   const nbSmPic = (f) => `${NPI}neoboards/smilies/${f}.gif`;
@@ -16368,7 +16378,7 @@
   }
   function nclSmShow(h) {   // (your words as they reach them: each smilie's code as its picture, as Neopets shows it. Tags, and the likes of &#39; before a ")", left as they are)
     nbSmilies();
-    return String(h || '').split(/(<[^>]*>)/).map((part, i) => (i % 2 ? part : part.replace(NB_SMRE, (c, at, all) => (c[0] === ';' && /&#?\w+$/.test(all.slice(Math.max(0, at - 12), at)) ? c : `<img class="bnp-ncl-sm" src="${esc(nbSmPic(NB_SMMAP.get(c)))}" alt="${esc(c)}">`)))).join('');
+    return String(h || '').split(/(<[^>]*>)/).map((part, i) => (i % 2 ? part : part.replace(/:&#0*39;([)D])/g, ":'$1").replace(NB_SMRE, (c, at, all) => (c[0] === ';' && /&#?\w+$/.test(all.slice(Math.max(0, at - 12), at)) ? c : `<img class="bnp-ncl-sm" src="${esc(nbSmPic(NB_SMMAP.get(c)))}" alt="${esc(c)}">`)))).join('');
   }
   function nclTextOf(h) {   // (a message's words back as you'd write them: its lines, each smilie as its code, nothing else)
     nbSmilies();
@@ -21657,7 +21667,7 @@
   const colBoardOn = () => S.features.col !== false && !!colBoardKind();
   // itemdb's lists: one ask for each kind (two for books, past 3,000), as the Item Helper asks (your own itemdb visit lets it in)
   const COL_PAGE = 1000;   // (itemdb's list a thousand at a time: each page a share of its allowance, asked for only when it fits)
-  const colGet = (url) => idbAsk({ url, expect: COL_PAGE, timeout: 45000 });
+  const colGet = (url) => idbAsk({ url, expect: COL_PAGE, timeout: 45000, bulk: true });
   const colCatAsk = {};
   const COL_PART_TTL = 12 * 3600e3;   // (a read itemdb cut short: carried on within half a day, its prices still fresh enough; begun again after that)
   const itPauseEnds = () => idbWait(1);   // (when NE's rest from itemdb's limit is over)
@@ -34020,23 +34030,24 @@
     }
     return out;
   }
-  function wtAsk(names) {   // (itemdb's price for each of these, in one ask)
+  function wtAsk(names, bulk) {   // (itemdb's price for each of these, in one ask)
     return new Promise((done) => {
       const got = {};
       let left = names.length;
       if (!left) { done(got); return; }
-      for (const n of names) itPriceAsk(n, (res) => { got[n] = res; if (--left === 0) done(got); });
+      for (const n of names) itPriceAsk(n, (res) => { got[n] = res; if (--left === 0) done(got); }, bulk);
     });
   }
-  async function wtPrices(names, paced, step) {   // (kept ones at once; the rest a hundred at a time, and counting a whole SDB, a moment between)
+  async function wtPrices(names, paced, step) {   // (kept ones at once, counted as done; the rest a hundred at a time (paced: a big job, to its ceiling))
+    await itLoad();   // (what's kept, read first: a count carried on never asks again for what it has)
     const all = [...new Set(names)], out = {}, cache = itPriceCache();
     for (const n of all) if (cache[n]) out[n] = cache[n].r;
-    const need = all.filter((n) => !out[n]);
+    const need = all.filter((n) => !out[n]), had = all.length - need.length;
+    if (step) step(had, all.length);
     for (let i = 0; i < need.length; i += 100) {
-      if (i && paced) await wtSleep(2000 + Math.random() * 1500);
-      const part = need.slice(i, i + 100), got = await wtAsk(part);
+      const part = need.slice(i, i + 100), got = await wtAsk(part, !!paced);
       Object.assign(out, got);
-      if (step) step(Math.min(i + 100, need.length), need.length);
+      if (step) step(had + Math.min(i + 100, need.length), all.length);
       const no = part.map((n) => got[n]).find((r) => r && (r.visit || r.busy));
       if (no) { for (const n of need.slice(i + 100)) out[n] = no; break; }   // (itemdb said no: the rest wait with it)
     }
@@ -34114,7 +34125,7 @@
   const wtGu = () => (new URLSearchParams(location.search).get('gu') || '').toLowerCase();
   const wtSlot = () => (wt.key === 'inventory' && wtInvNc() ? 'inventory:nc' : wt.key === 'gallery' && !wt.own ? `gallery@${wtGu()}` : wt.key);   // (where this view is kept: the Inventory's NP and NC items apart, as it shows them one at a time; someone else's gallery under its own name)
   const wtPartKey = () => `wt-part-${wt.key}:${nclMe() || '-'}`;   // (a count itemdb paused: what was read, to carry on from)
-  const wtPauseEnd = () => idbWait(1);   // (itemdb's pause: when it's over)
+  const wtPauseEnd = () => idbWait(1, true);   // (itemdb's pause: when it's over)
   const wtFig = (d) => `${d.np > 0 || !d.nc.valued ? `≈ ${npShort(d.np)} NP` : ''}${d.np > 0 && d.nc.valued ? ' · ' : ''}${d.nc.valued ? `${d.np > 0 ? '' : '≈ '}${wtCapsText(d.nc)}` : ''}`;   // (Neopoints and caps, as much as there is of each)
   const WT_K = '<span class="bnp-wt-k">Worth</span> ';   // (spaces between the parts: the flex layout ignores them, a screen reader hears "Worth ≈ 537k NP")
   const wtSay = (t) => `${WT_K}<b class="bnp-wt-say">${t}</b>`;   // (Worth, then what's happening: counting, paused, itemdb busy…)
@@ -34319,7 +34330,7 @@
       const pct = c.phase === 'price' ? (c.toPrice ? Math.round(100 * c.priced / c.toPrice) : 100) : (c.pages ? Math.round(100 * c.read / c.pages) : 4);
       top = `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${allLbl}</span>
         <div class="bnp-wt-prog"><div class="bnp-wt-track"><i style="width:${Math.max(4, Math.min(100, pct))}%"></i></div>
-        <span class="bnp-wt-sub">${c.phase === 'price' ? `Asking itemdb for prices: ${c.priced.toLocaleString()} of ${c.toPrice.toLocaleString()}…` : `${c.restUntil ? `A short break, carrying on at about ${bmAt(c.restUntil)}: next, ` : c.paused ? 'Waiting for you to come back to this tab: ' : 'Reading '}page ${c.read + (c.paused ? 0 : 1)}${c.pages ? ` of ${c.pages}` : ''}${key === 'safetydeposit' && c.pool === 'np' ? ' (your NC items after)' : key === 'safetydeposit' && c.pool === 'nc' ? ' (NC items)' : ''}…`}</span></div>
+        <span class="bnp-wt-sub">${c.phase === 'price' ? `Asking itemdb for prices: ${c.priced.toLocaleString()} of ${c.toPrice.toLocaleString()}…` : `${c.restUntil ? `A short break, carrying on at about ${bmAt(c.restUntil)}: next, ` : c.paused ? 'Waiting for you to come back to this tab: ' : 'Reading '}page ${c.read + (c.paused ? 0 : 1)}${c.pages > c.read ? ` of ${c.pages}` : ''}${key === 'safetydeposit' && c.pool ? ` (your ${c.pool === 'nc' ? 'NC' : 'NP'} items${(c.pools || []).length > 1 ? (c.pool === 'np' ? ', your NC items after' : '') : ' only'})` : ''}…`}</span></div>
         <div class="bnp-wt-meta"><span>One page at a time, as you’d turn them; nothing is moved.</span><button type="button" class="bnp-wt-pb" data-wt="stop">Stop</button></div></div>`;
     } else if (paged && part) {   // (itemdb paused it partway: what's counted so far, and Carry on)
       const p = wt.part, end = wtPauseEnd();
@@ -34336,10 +34347,14 @@
       if (wt.err) top += wtErrHtml(wt.err);
       if (wt.err === 'busy' && wtPauseEnd()) top += '<p class="bnp-wt-say"><button type="button" class="bnp-wt-pb" data-wt="tryany" title="Ask itemdb now, before the wait is over (if it’s still counting, its next ban is longer)">Try now anyway</button></p>';
     } else if (paged) {
-      const stale = whole && wtStale(whole), seen = wtSeen(), secs = seen ? Math.ceil(seen.items / 90) * 4.3 + Math.ceil(seen.items / 100) * 3 : 0;
-      const what = seen ? `${seen.items.toLocaleString()} ${key === 'safetydeposit' && seen.pool === 'nc' ? 'NC items' : 'items'} over every page${key === 'safetydeposit' ? `, and your ${seen.pool === 'nc' ? 'NP' : 'NC'} items` : ''}.` : 'Every page of it.';
+      const stale = whole && wtStale(whole), seen = wtSeen(), pick = key === 'safetydeposit' ? S.features.wtPools || 'both' : 'both';
+      const secs = seen && (pick === 'both' || pick === seen.pool) ? Math.ceil(seen.items / 90) * 4.3 + Math.ceil(seen.items / 100) * 3 : 0;   // (the time for the pool shown, when it's one that's read)
+      const PN = (p) => (p === 'nc' ? 'NC' : 'NP'), other = pick === 'nc' ? 'np' : 'nc';
+      const what = !seen ? 'Every page of it.' : key !== 'safetydeposit' ? `${seen.items.toLocaleString()} items over every page.`
+        : pick === 'both' ? `${seen.items.toLocaleString()} ${seen.pool === 'nc' ? 'NC items' : 'items'} over every page, and your ${PN(seen.pool === 'nc' ? 'np' : 'nc')} items.`
+          : `${pick === seen.pool ? `${seen.items.toLocaleString()} ${PN(pick)} items over every page` : `Your ${PN(pick)} items, every page`}, and only those: your ${PN(other)} items ${wtKeep().safetydeposit && wtKeep().safetydeposit.whole ? 'stay as last counted' : 'aren’t counted'}.`;
       top = whole ? `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${allLbl}</span><b class="bnp-wt-big">${wtCoin(tab)}${esc(big(whole))}</b><span class="bnp-wt-sub">${esc(sub(whole))}</span>
-          <div class="bnp-wt-meta"><span>Counted ${esc(colAgo(whole.at))}${whole.carried ? ` (its ${whole.carried.pool === 'nc' ? 'NC' : 'NP'} items as counted ${esc(colAgo(whole.carried.at))})` : ''}${stale ? ' · <b class="bnp-wt-warn">it has changed since</b>' : whole.upd ? ' · kept up to date since' : ''}</span>${wtPoolsHtml(key)}<button type="button" class="bnp-wt-pb${stale ? ' is-go' : ''}" data-wt="count">Count again</button></div></div>`
+          <div class="bnp-wt-meta"><span>Counted ${esc(colAgo(whole.at))}${whole.carried ? ` (only its ${whole.carried.pool === 'nc' ? 'NP' : 'NC'} items: its ${whole.carried.pool === 'nc' ? 'NC' : 'NP'} items as counted ${esc(colAgo(whole.carried.at))})` : ''}${stale ? ' · <b class="bnp-wt-warn">it has changed since</b>' : whole.upd ? ' · kept up to date since' : ''}</span>${wtPoolsHtml(key)}<button type="button" class="bnp-wt-pb${stale ? ' is-go' : ''}" data-wt="count">Count again</button></div></div>`
         : `<div class="bnp-wt-fig"><span class="bnp-wt-lbl">${allLbl}</span><p class="bnp-wt-ask">${what} Count them all: each page read as you’d turn it, a moment between, then priced at itemdb.</p>
           <div class="bnp-wt-meta">${wtPoolsHtml(key)}<button type="button" class="button-default__2020 button-yellow__2020" data-wt="count">Count it all</button>${seen ? `<span>About ${secs < 60 ? `${Math.max(5, Math.round(secs / 5) * 5)} seconds` : `${Math.round(secs / 60)} minute${Math.round(secs / 60) === 1 ? '' : 's'}`}</span>` : ''}</div></div>`;
       if (wt.err) top += wtErrHtml(wt.err);
@@ -34530,7 +34545,7 @@
     const d = await r.json().catch(() => null);
     if (!d || !d.success || !d.data) throw new Error('Neopets didn’t give your SDB’s items just now: try again in a moment.');
     const pg = d.data.pagination || {};
-    return { items: (d.data.items || []).map((i) => ({ n: reClean(i.obj_name), q: Math.max(1, Number(i.amount) || 1), nc: !!i.is_nc || pool === 'nc', pb: false, img: i.obj_filename ? `https://images.neopets.com/items/${i.obj_filename}.gif` : '', id: i.obj_info_id, ns: !!(i.is_notrade || i.is_nosell) })), pages: Number(pg.total_pages) || 1, total: Number(pg.total_items) || 0, qty: pg.total_qty != null ? Number(pg.total_qty) : null };
+    return { items: (d.data.items || []).map((i) => ({ n: reClean(i.obj_name), q: Math.max(1, Number(i.amount) || 1), nc: !!i.is_nc || pool === 'nc', pb: false, img: i.obj_filename ? `https://images.neopets.com/items/${i.obj_filename}.gif` : '', id: i.obj_info_id, ns: !!(i.is_notrade || i.is_nosell), ...(i.can_discard == null ? {} : { cd: !!i.can_discard }) })), pages: Number(pg.total_pages) || 1, total: Number(pg.total_items) || 0, qty: pg.total_qty != null ? Number(pg.total_qty) : null };
   }
   async function wtCountHere() {   // (the Gallery: all of it on its page — priced when you ask, a hundred at a time a moment apart; kept till you ask again)
     if (!wt || wt.pricing) return;
@@ -34553,7 +34568,8 @@
   async function wtCount(resume) {   // (the whole SDB or Closet: every page read as you'd turn them, one at a time with a pause between, only while this tab's in front; then priced)
     if (!wt || wt.count || wt.picking || !WT_PAGED.has(wt.key)) return;
     const key = wt.key, me = { key, read: 0, pages: 0, pool: '', phase: 'read', stop: false, paused: false, priced: 0, toPrice: 0 };
-    const was = resume && wt.part, seen = wtSeen(), fits = !!(was && (!was.seen || !seen || (was.seen.items === seen.items && was.seen.qty === seen.qty)));   // (its pages read before and still as they were: not read again)
+    const was = resume && wt.part, seen = wtSeen(), pw = was && seen && was.pools && was.pools[seen.pool];
+    const fits = !!(was && (!seen || (pw ? pw.items === seen.items && (pw.qty == null || seen.qty == null || pw.qty === seen.qty) : !was.seen || was.seen.pool !== seen.pool || (was.seen.items === seen.items && was.seen.qty === seen.qty))));   // (its pages read before and still as they were (the pool on show now, as it was then): not read again)
     wt.count = me;
     wt.err = '';
     wtPillPaint();
@@ -34562,6 +34578,7 @@
     if (fits) { me.read = me.pages = was.pages || 0; }
     let err = '', carried = null;
     const choice = key === 'safetydeposit' ? S.features.wtPools || 'both' : 'both', POOLS = key !== 'safetydeposit' ? [''] : choice === 'np' ? ['np'] : choice === 'nc' ? ['nc'] : ['np', 'nc'];
+    me.pools = POOLS;
     try {
       if (!fits) for (const pool of POOLS) {
         me.pool = pool;
@@ -34816,6 +34833,7 @@
   const sdrOn = () => !FRAME && location.pathname === '/safetydeposit.phtml' && S.features.sdbRead !== false;
   const sdrPets = () => { try { return [...((PAGE.__sdbData && PAGE.__sdbData.pets) || [])].map((p) => String((p && p.name) || '')).filter(Boolean); } catch (_) { return []; } };
   const sdrPic = (it) => (it && it.obj_filename ? `https://images.neopets.com/items/${it.obj_filename}.gif` : '');
+  const sdrShelfPic = () => { let u = ''; try { u = iconOf(['side:/bookshelf/pet-bookshelf.phtml', `url:${NPI}themes/h5/basic/images/v3/petbookshelf-icon.png`]); } catch (_) { u = ''; } return u || `${NPI}themes/h5/basic/images/v3/petbookshelf-icon.png`; };   // (the Pet Bookshelf's own picture: your theme's, as Quick Ref's Bookshelf shows it)
   const sdrHead = (pet) => `https://pets.neopets.com/cpn/${encodeURIComponent(pet)}/1/6.png`;
   const sdrPinAsked = () => { const st = sdbVm(); try { return !!((st && st.pinRequired) || (PAGE.__sdbData && PAGE.__sdbData.pinRequired)); } catch (_) { return false; } };
   function sdrPicked() {   // (the books among what's selected in Neopets' own list, on every page of it)
@@ -34865,7 +34883,7 @@
       p.className = 'bnp-sdr-pill';
       p.setAttribute('data-bnp', 'sdrpill');
       p.title = 'Read the books in your SDB to a pet, the ones it hasn’t read, several at once';
-      p.innerHTML = `<span class="bnp-sdr-pic" aria-hidden="true">${COL_IC.books}</span>Read books to a pet`;
+      p.innerHTML = `<span class="bnp-sdr-pic" aria-hidden="true"><img src="${esc(sdrShelfPic())}" alt="" width="18" height="18"></span>Read books to a pet`;
       const th = themeHead();
       if (th && th.bg) { p.style.setProperty('--bnp-sdr-c', th.bg); p.style.setProperty('--bnp-sdr-ink', inkReads(th.ink, th.bg)); }   // (your theme's colour, as its pop-ups' headers wear it)
       p.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); sdrOpen(sdrPicked().length ? 'sel' : 'all'); });
@@ -34905,7 +34923,7 @@
     const run = sdr.run, busy = !!(run && !run.over);
     if (sdr.win.classList.contains('open') || !run || (!busy && !sdr.unseen)) { runChip('sdrchip', null); return; }
     const n = run.read || 0, text = busy ? (run.restUntil ? `A short break, till about ${bmAt(run.restUntil)}` : `Reading ${Math.min(run.i + 1, run.n).toLocaleString()} of ${run.n.toLocaleString()} to ${sdr.pet}${run.at && run.at.st === 'now' ? `: ${run.at.name}` : ''}`) : n ? `Done: ${n.toLocaleString()} ${n === 1 ? 'book' : 'books'} read to ${sdr.pet}` : `Done: nothing read to ${sdr.pet}`;
-    runChip('sdrchip', { win: sdr.win, icon: COL_IC.books, title: 'Read to a pet', text, busy, pct: busy ? 100 * run.i / Math.max(1, run.n) : 100, tip: 'Open Read to a pet', open: sdrShow, dismiss: () => { sdr.unseen = false; sdrChip(); } });
+    runChip('sdrchip', { win: sdr.win, icon: `<img src="${esc(sdrShelfPic())}" alt="" width="18" height="18">`, title: 'Read to a pet', text, busy, pct: busy ? 100 * run.i / Math.max(1, run.n) : 100, tip: 'Open Read to a pet', open: sdrShow, dismiss: () => { sdr.unseen = false; sdrChip(); } });
   }
   function sdrOpen(src) {
     if (!sdrOn()) return;
@@ -35647,6 +35665,311 @@
     if (np) { np.value = pv || sal.pin || ''; np.addEventListener('input', () => { sal.pin = np.value; if (sal.err) { sal.err = ''; const n = sal.win.querySelector('.bnp-sdr-main .is-err'); if (n) n.remove(); } }); }
   }
   // ═══════════════════════════════════════════════════════════════════════════
+  // Discard from your SDB (the user, 2026-11-21: "add a discarding system to the SDB, this helps with the avatar and with people who want
+  // to clean out their sdb", "discard items under X value (no value items are skipped and kept) and settings of max amount to discard, and
+  // a warning message when trying to run"). Your SDB as What it's worth last counted it (kept up to date as things go in and out; counted
+  // first when it isn't, or when it's changed since), with each item's itemdb price as counted: the NP items under your line, cheapest
+  // first, as many as your most for a run. An item with no itemdb price, an NC item and paint brush clothes are never on it; anything NE
+  // marks as still wanted (a stamp your album needs, a book or food a pet you track hasn't had) is left unticked unless you tick it. Each
+  // one ticked or not. Before anything goes, what it comes to and that it's for good, said and ticked. Then sent as the SDB's own Discard
+  // sends several (move-items, action "discard", each with how many), twenty kinds a go, through the page's own fetch (so what NE keeps of
+  // your SDB hears it and follows), a person's moment between; a PIN your SDB asks for is used for this run only. Neopets saying only some
+  // went: stopped, and a fresh count asked for before the next run
+  // ═══════════════════════════════════════════════════════════════════════════
+  const SDD_KEY = 'bnp-sdd', SDD_DOUBT = 'bnp-sdd-doubt', SDD_MOST = 20;
+  const SDD_IC = '<svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path d="M3.5 5.5h13M8 5.5V4c0-.6.4-1 1-1h2c.6 0 1 .4 1 1v1.5M5.3 5.5l.8 10.5c.1.9.8 1.5 1.6 1.5h4.6c.8 0 1.5-.6 1.6-1.5l.8-10.5M8.6 8.6v5.8M11.4 8.6v5.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';   // (a trash can, as the books pill's icon is drawn)
+  const sddP = () => { const v = saJson(SDD_KEY, {}); return { under: bmNumOk(v.under, 100), most: bmNumOk(v.most, 50), wanted: v.wanted !== false }; };   // (under: discard what itemdb prices below this; most: how many items a run, at most)
+  const sddPSet = (k, v) => { try { localStorage.setItem(SDD_KEY, JSON.stringify({ ...saJson(SDD_KEY, {}), [k]: v })); } catch (_) { /* */ } };
+  const sddDoubt = () => { try { return Number(localStorage.getItem(SDD_DOUBT)) || 0; } catch (_) { return 0; } };   // (the count a run left in doubt: Neopets said only some went)
+  let sdd = null;
+  const sddRunning = () => !!(sdd && sdd.run && !sdd.run.over);
+  const sddOn = () => !FRAME && location.pathname === '/safetydeposit.phtml' && S.features.sdbDiscard !== false;
+  function sddBoot() {   // (its way in, kept in place as Neopets' header bar comes and goes)
+    if (!sddOn() || sddBoot.on) return;
+    sddBoot.on = true;
+    styles();
+    let t = 0;
+    new MutationObserver(() => { if (t) return; t = setTimeout(() => { t = 0; sddEntries(); }, 250); }).observe(document.body, { childList: true, subtree: true });
+    sddEntries();
+  }
+  function sddEntries() {
+    if (!sddOn()) return;
+    const bar = $('.sdb-header-bar');
+    if (!bar || $('[data-bnp="sddpill"]')) return;
+    const p = document.createElement('button');
+    p.type = 'button';
+    p.className = 'bnp-sdr-pill';
+    p.setAttribute('data-bnp', 'sddpill');
+    p.title = 'Discard what in your SDB is worth less than you choose, several at once: you see the list and say yes first';
+    p.innerHTML = `<span class="bnp-sdr-pic" aria-hidden="true">${SDD_IC}</span>Discard cheap items`;
+    const th = themeHead();
+    if (th && th.bg) { p.style.setProperty('--bnp-sdr-c', th.bg); p.style.setProperty('--bnp-sdr-ink', inkReads(th.ink, th.bg)); }
+    p.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); sddOpen(); });
+    sdbPills(bar).append(p);
+  }
+  function sddChip() {   // (at work, or just done, while its window is closed)
+    if (!sdd) return;
+    const run = sdd.run, busy = !!(run && !run.over);
+    if (sdd.win.classList.contains('open') || !run || (!busy && !sdd.unseen)) { runChip('sddchip', null); return; }
+    const text = busy ? (run.restUntil ? `A short break, till about ${bmAt(run.restUntil)}` : `${run.i.toLocaleString()} of ${run.n.toLocaleString()} discarded`) : run.gone ? `Done: ${run.gone.toLocaleString()} discarded` : 'Done: nothing discarded';
+    runChip('sddchip', { win: sdd.win, icon: SDD_IC, title: 'Discard cheap items', text, busy, pct: busy ? 100 * run.i / Math.max(1, run.n) : 100, tip: 'Open Discard cheap items', open: sddShow, dismiss: () => { sdd.unseen = false; sddChip(); } });
+  }
+  function sddOpen() {
+    if (!sddOn()) return;
+    if (sdrRunning()) { sdrShow(); return; }   // (Read to a pet or the albumer at work: that window; this one when it's done)
+    if (salRunning()) { salShow(); return; }
+    styles();
+    if (!sdd) {
+      const veil = document.createElement('div'), win = document.createElement('div');
+      veil.className = 'bnp-veil';
+      veil.setAttribute('data-bnp', 'sddveil');
+      win.className = 'bnp-go bnp-sdr bnp-sdd';
+      win.setAttribute('data-bnp', 'sddwin');
+      win.setAttribute('role', 'dialog');
+      win.setAttribute('aria-modal', 'true');
+      win.setAttribute('aria-label', 'Discard cheap items');
+      win.innerHTML = '<div class="popup-header__2020 bnp-hub-head"><h3>Discard cheap items</h3><button type="button" class="popup-exit button-default__2020 button-red__2020 bnp-sdr-x" data-sdd="x" title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button><div class="popup-header-pattern__2020"></div></div><div class="bnp-sdr-body" data-sdd-body></div><div class="bnp-sdr-foot" data-sdd-foot></div>';
+      document.body.append(veil, win);
+      veil.addEventListener('click', () => sddClose());
+      win.addEventListener('click', sddClick);
+      win.addEventListener('change', sddChange);
+      win.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target instanceof HTMLInputElement && e.target.matches('[data-sddunder], [data-sddmost]')) { e.preventDefault(); e.target.blur(); } });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sdd && sdd.win.classList.contains('open')) { e.preventDefault(); if (sdd.state === 'confirm') { sdd.state = 'ready'; sdd.sure = false; sddPaint(); } else sddClose(); } });
+      sdd = { win, veil, state: 'load', need: '', rows: [], err: '', run: null, pin: '', sure: false, off: new Set(), led: null };
+      addEventListener('beforeunload', (e) => { if (sddRunning()) { e.preventDefault(); e.returnValue = ''; } });   // (leaving the page ends it: asked first)
+    }
+    if (sdd.run && (!sdd.run.over || sdd.unseen)) { sddShow(); return; }
+    Object.assign(sdd, { state: 'load', need: '', rows: [], err: '', run: null, pin: '', sure: false });
+    sddShow();
+    sddLoad().catch(report);
+  }
+  function sddShow() {
+    sdd.unseen = false;
+    themeWin(sdd.win);
+    sdd.veil.classList.add('open');
+    sdd.win.classList.add('open');
+    sddPaint();
+    sddChip();
+    const f = sdd.win.querySelector('[data-sdd="x"]');
+    if (f) f.focus({ preventScroll: true });
+  }
+  function sddClose() {
+    if (!sdd || !sdd.win.classList.contains('open')) return;
+    if (!sddRunning()) { sdd.pin = ''; sdd.sure = false; if (sdd.state === 'confirm') sdd.state = 'ready'; }   // (at work it carries on, shown on the page; anything else let go)
+    sdd.win.classList.remove('open');
+    sdd.veil.classList.remove('open');
+    sddChip();
+    const b = $('[data-bnp="sddpill"]');
+    if (b) b.focus({ preventScroll: true });
+  }
+  async function sddLoad() {   // (your SDB as NE last counted it, if it's still as it is: then what's under your line)
+    if (!sdd || sddRunning()) return;
+    Object.assign(sdd, { state: 'load', need: '', err: '', rows: [], run: null, led: null });
+    sddPaint();
+    const need = (k) => { sdd.state = 'need'; sdd.need = k; sddPaint(); if (k === 'counting') sddWatch(); };
+    if (S.features.worth === false || !wt || wt.key !== 'safetydeposit') { need('worth'); return; }
+    if (wt.count) { need('counting'); return; }
+    const kept = wtKeep().safetydeposit, led = kept && kept.whole ? await idbGet(wtLedKey()).catch(() => null) : null;
+    if (!led || led.at !== kept.at || !Array.isArray(led.items)) { need(wt.part ? 'paused' : 'count'); return; }
+    if (wtStale(kept) || sddDoubt() === led.at) { need('stale'); return; }
+    try { await colMarksLoad(); } catch (_) { /* */ }
+    try { await saMineLoad(); } catch (_) { /* */ }
+    if (!sdd || sddRunning()) return;
+    sdd.led = led;
+    sdd.counted = led.upd || led.at || kept.at;
+    sddRows();
+    sdd.state = 'ready';
+    sddPaint();
+  }
+  function sddWatch() {   // (What it's worth counting your SDB: shown here as it goes; the list once it's done)
+    clearInterval(sddWatch.t);
+    sddWatch.t = setInterval(() => {
+      if (!sdd || sdd.state !== 'need' || sdd.need !== 'counting') { clearInterval(sddWatch.t); return; }
+      if (wt && wt.count) { sddPaint(); return; }
+      clearInterval(sddWatch.t);
+      sddLoad().catch(report);
+    }, 800);
+  }
+  function sddRows() {   // (what itemdb prices under your line, cheapest first; never an NC item, paint brush clothes or one with no itemdb price)
+    const P = sddP(), pr = sdd.led.prices || {}, rows = [];
+    for (const it of sdd.led.items) {
+      if (it.nc || it.pb || it.id == null || it.cd === false || !(it.q > 0)) continue;
+      const r = pr[it.n], p = r && r.p > 0 ? r.p : 0;
+      if (!p || p >= P.under) continue;   // (no itemdb price: kept, always)
+      let want = '';
+      if (P.wanted) { try { const m = itMarks(it.n); if (m) { const t = m.querySelector('[title]'); want = reClean((t && t.getAttribute('title')) || m.getAttribute('title') || '') || 'NE marks it as still wanted'; } } catch (_) { /* */ } }
+      const id = String(it.id);
+      rows.push({ id, raw: it.id, n: it.n, q: it.q, p, img: it.img || (r && r.img) || '', want, on: !want && !sdd.off.has(id), take: 0, st: '', why: '' });
+    }
+    rows.sort((a, b) => a.p - b.p || a.n.localeCompare(b.n));
+    sdd.rows = rows;
+    sddTakes();
+  }
+  function sddTakes() {   // (how many of each this run: the ticked ones, cheapest first, till your most for a run)
+    let left = sddP().most;
+    for (const b of sdd.rows) { b.take = b.on && left > 0 ? Math.min(b.q, left) : 0; left -= b.take; }
+  }
+  const sddGoing = () => sdd.rows.filter((b) => b.on && b.take > 0);
+  async function sddPut(list, pin) {   // (as the SDB's own Discard sends several: each with how many; through the page's own fetch, so what NE keeps of your SDB hears it as it hears Neopets' own)
+    const ck = (PAGE.__sdbData && PAGE.__sdbData.refCk) || '';
+    const init = { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-requested-with': 'XMLHttpRequest' }, body: JSON.stringify({ moves: list.map((b) => ({ obj_info_id: b.raw, quantity: b.take, action: 'discard' })), pin, _ref_ck: ck }) };
+    let d = null;
+    try {
+      const f = typeof PAGE.fetch === 'function' ? PAGE.fetch : fetch;
+      const r = await f.call(PAGE, '/np-templates/ajax/safetydeposit/move-items.php', typeof cloneInto === 'function' ? cloneInto(init, PAGE) : init);
+      if (!r.ok) return { net: true };
+      d = await r.json();
+    } catch (_) { return { net: true }; }
+    if (!d) return { net: true };
+    if (d.success) return { ok: true };
+    if (d.error === 'pin_required' || d.error === 'pin_wrong') return { pin: true, why: reClean(String(d.message || '')) || (d.error === 'pin_wrong' ? 'That PIN doesn’t match.' : 'Your SDB asks for your PIN.') };
+    if (d.error === 'partial_error') return { partial: true, n: Number(d.success_count) || 0, why: sdrWords(d.message || '') };
+    return { why: sdrWords(d.message || d.error || '') || 'Neopets didn’t discard it.' };
+  }
+  async function sddRun() {   // (twenty kinds a go, as you'd tick them and press its Discard, a person's moment between; Stop ends it)
+    if (!sdd || sdd.state !== 'confirm' || !sdd.sure || sddRunning()) return;
+    const list = sddGoing();
+    if (!list.length) return;
+    if (sdrPinAsked() && !sdd.pin) { sdd.err = 'Your SDB asks for your PIN first.'; sddPaint(); const p = sdd.win.querySelector('[data-sddpin]'); if (p) p.focus(); return; }
+    const kept = wtKeep().safetydeposit;
+    if (!kept || wtStale(kept)) { sdd.state = 'need'; sdd.need = 'stale'; sddPaint(); return; }   // (changed since the list was made: counted again first)
+    const run = sdd.run = { n: list.reduce((t, b) => t + b.take, 0), i: 0, gone: 0, kinds: 0, np: 0, stop: false, over: false, fails: 0, pinStop: '', halt: '', restUntil: 0 };
+    for (const b of sdd.rows) { b.st = list.includes(b) ? 'wait' : ''; b.why = ''; }
+    Object.assign(sdd, { err: '', state: 'run', sure: false });
+    sddPaint();
+    const back = (take) => { for (const b of take) b.st = 'wait'; };
+    let restAt = runRestEvery();
+    try {
+      for (let k = 0; k < list.length && !run.stop && !run.halt;) {
+        while (document.hidden && !bmP().bg && !run.stop) await bmSleep(500);   // (in a background tab only if you've turned that on)
+        if (run.stop) break;
+        const take = list.slice(k, k + SDD_MOST);
+        for (const b of take) b.st = 'now';
+        sddPaint();
+        if (!(await sdrWait(run, 900 + take.length * 250, take.length * 300))) { back(take); break; }   // (a moment to find them and tick them)
+        const pinNow = await sdrPinStatus();   // (as its own confirm asks on opening)
+        if (pinNow && !sdd.pin) { back(take); run.pinStop = 'your SDB asks for your PIN now: type it, then press Discard again'; break; }
+        if (!(await sdrWait(run, 1200, 1600))) { back(take); break; }   // (the moment its confirm is read, and Confirm pressed)
+        const a = await sddPut(take, sdd.pin);
+        if (a.pin) { back(take); run.pinStop = a.why; sdd.pin = ''; break; }
+        if (a.ok) {
+          for (const b of take) { b.st = 'gone'; run.gone += b.take; run.kinds++; run.np += b.p * b.take; }
+          run.fails = 0;
+        } else if (a.partial) {   // (some went, which isn't said: stopped, and a fresh count asked for before the next run)
+          for (const b of take) { b.st = 'doubt'; b.why = 'Neopets discarded some of these'; }
+          run.some = (run.some || 0) + (a.n || 0);
+          run.halt = `Neopets discarded only ${a.n ? `${a.n} of ` : 'some of '}these${a.why ? ` (${a.why})` : ''}: NE counts your SDB again before the next run`;
+          try { localStorage.setItem(SDD_DOUBT, String(kept.at)); } catch (_) { /* */ }
+        } else {
+          for (const b of take) { b.st = 'no'; b.why = a.net ? 'Neopets didn’t answer just now' : a.why; }
+          run.fails++;
+          if (run.fails >= 2) run.halt = 'nothing went twice in a row';
+        }
+        k += take.length;
+        run.i = list.slice(0, k).reduce((t, b) => t + b.take, 0);
+        sddPaint();
+        if (run.stop || run.halt || k >= list.length) break;
+        if (k >= restAt) { if (!(await runRest(run, sddPaint))) break; restAt = k + runRestEvery(); }   // (a longer break now and then, as a person takes one)
+        else if (!(await sdrWait(run, 2500, 3500, 0.15, 3000, 6000))) break;   // (what Neopets said read, OK pressed, the next ones found)
+      }
+    } catch (e) { run.halt = 'something went wrong'; report(e); }
+    run.over = true;
+    sdd.state = 'done';
+    for (const b of sdd.rows) if (b.st === 'now') b.st = 'wait';
+    if (!sdd.win.classList.contains('open')) { sdd.unseen = true; sdd.pin = ''; }
+    try { const st = sdbVm(); if (st && run.gone) st.onPageChange(Number(st.currentPage) || 1); } catch (e) { report(e); }   // (its own list asked for again: what's gone, gone from it)
+    sddPaint();
+  }
+  function sddClick(e) {
+    const t = e.target instanceof Element ? e.target.closest('[data-sdd]') : null;
+    if (!t || !sdd) return;
+    const a = t.dataset.sdd;
+    if (a === 'x' || a === 'done' || a === 'cancel') sddClose();
+    else if (a === 'count') { if (wt && wt.key === 'safetydeposit' && !wt.count) { wtCount().catch(report); sdd.state = 'need'; sdd.need = 'counting'; sddPaint(); sddWatch(); } }
+    else if (a === 'worth') { sddClose(); try { wtOpen(); } catch (err) { report(err); } }
+    else if (a === 'again') sddLoad().catch(report);
+    else if (a === 'review') { if (sdd.state === 'ready' && sddGoing().length) { sdd.state = 'confirm'; sdd.sure = false; sdd.err = ''; sddPaint(); } }
+    else if (a === 'back') { if (sdd.state === 'confirm') { sdd.state = 'ready'; sdd.sure = false; sddPaint(); } }
+    else if (a === 'go') sddRun().catch(report);
+    else if (a === 'stop') { if (sdd.run) { sdd.run.stop = true; sddPaint(); } }
+    else if (a === 'all' || a === 'none') { if (sdd.state !== 'ready') return; for (const b of sdd.rows) { b.on = a === 'all'; if (b.on) sdd.off.delete(b.id); else sdd.off.add(b.id); } sddTakes(); sddPaint(); }
+  }
+  function sddChange(e) {
+    const i = e.target;
+    if (!(i instanceof HTMLInputElement) || !sdd) return;
+    if (i.matches('[data-sddbg]')) { bmPSet('bg', i.checked); return; }
+    if (i.matches('[data-sddsure]')) { sdd.sure = i.checked; sddPaintFoot(); return; }
+    if (sdd.state !== 'ready') return;
+    if (i.matches('[data-sddunder]')) { const v = Math.min(1e7, bmParse(i.value)); if (v) sddPSet('under', v); sddRows(); sddPaint(); return; }
+    if (i.matches('[data-sddmost]')) { const v = Math.min(10000, Math.round(Number(String(i.value).replace(/[^\d]/g, '')) || 0)); if (v) sddPSet('most', v); sddTakes(); sddPaint(); return; }
+    if (i.matches('[data-sddwanted]')) { sddPSet('wanted', i.checked); sddRows(); sddPaint(); return; }
+    if (i.dataset.sdditem) { const b = sdd.rows.find((x) => x.id === i.dataset.sdditem); if (b) { b.on = i.checked; if (b.on) sdd.off.delete(b.id); else sdd.off.add(b.id); sddTakes(); sddPaint(); } }
+  }
+  function sddRowHtml(b, can) {
+    const st = b.st, mark = { gone: '<i class="bnp-sdr-st is-read" title="Discarded">✓</i>', no: '<i class="bnp-sdr-st is-no" title="Not discarded">!</i>', doubt: '<i class="bnp-sdr-st is-ask" title="Some went: a fresh count tells">?</i>', now: '<i class="bnp-sdr-st is-now" aria-label="Going now"></i>' }[st] || '';
+    const many = b.q > 1 ? (b.take && b.take < b.q ? ` · ${b.take.toLocaleString()} of your ${b.q.toLocaleString()} go` : ` · all ${b.q.toLocaleString()} of yours go`) : '';
+    const why = b.why ? `<small class="bnp-sdr-why">${esc(b.why)}</small>` : b.want && !b.on ? `<small>Kept: ${esc(b.want)}</small>` : b.on && !b.take && can ? `<small>Over your most for a run: not this time</small>` : `<small>itemdb ≈ ${b.p.toLocaleString()} NP each${b.on && b.take ? many : b.q > 1 ? ` · ${b.q.toLocaleString()} in your SDB` : ''}</small>`;
+    return `<label class="bnp-sdr-row${b.on && (b.take || !can) ? '' : ' is-off'}${st ? ` is-${st === 'gone' ? 'read' : st === 'doubt' ? 'kept' : st}` : ''}">${can ? `<input type="checkbox" data-sdditem="${esc(b.id)}"${b.on ? ' checked' : ''}>` : ''}<span class="bnp-sdr-bk">${b.img ? `<img src="${esc(b.img)}" alt="" width="40" height="40" loading="lazy">` : ''}</span><span class="bnp-sdr-nm"><b>${esc(b.n)}</b>${why}</span>${mark}</label>`;
+  }
+  function sddPaint() {
+    if (!sdd) return;
+    sddChip();
+    if (!sdd.win.classList.contains('open')) return;
+    const body = sdd.win.querySelector('[data-sdd-body]'), y = (sdd.win.querySelector('.bnp-sdr-list') || { scrollTop: 0 }).scrollTop, run = sdd.run, P = sddP();
+    let main = '';
+    if (sdd.state === 'load') main = '<p class="bnp-sdr-wait"><i class="bnp-sdr-spin" aria-hidden="true"></i>Looking at your SDB as NE last counted it…</p>';
+    else if (sdd.state === 'need') {
+      const c = wt && wt.count;
+      const say = {
+        worth: ['NE knows what your SDB holds and what it’s worth from What it’s worth, which is off.', 'Switch it on in Settings › Items, then come back.', ''],
+        count: ['NE hasn’t counted your whole SDB yet.', 'Count it: every page read as you’d turn them, and itemdb asked for prices. Then the list of what’s under your line is ready.', '<button type="button" class="button-default__2020 button-yellow__2020 bnp-sdr-btn" data-sdd="count">Count my SDB</button>'],
+        stale: ['Your SDB has changed since NE last counted it.', 'Count it again, so nothing is discarded by a list that’s out of date.', '<button type="button" class="button-default__2020 button-yellow__2020 bnp-sdr-btn" data-sdd="count">Count it again</button>'],
+        paused: ['The count of your SDB is waiting on itemdb.', 'It carries on by itself in What it’s worth; the list is ready once it’s done.', '<button type="button" class="bnp-sdr-lb" data-sdd="worth">Open What it’s worth</button>'],
+        counting: ['Counting your SDB…', c ? (c.phase === 'price' ? `Asking itemdb for prices: ${c.priced.toLocaleString()} of ${c.toPrice.toLocaleString()}` : `Reading page ${(c.read + 1).toLocaleString()}${c.pages ? ` of ${c.pages.toLocaleString()}` : ''}`) : 'Almost done', ''],
+      }[sdd.need] || ['', '', ''];
+      main = `<div class="bnp-sdr-sum"><b>${esc(say[0])}</b><span>${esc(say[1])}</span></div>${sdd.need === 'counting' ? '<p class="bnp-sdr-wait"><i class="bnp-sdr-spin" aria-hidden="true"></i>What it’s worth is reading it now.</p>' : ''}${say[2] ? `<p class="bnp-sdr-note">${say[2]}</p>` : ''}`;
+    } else {
+      const can = sdd.state === 'ready', going = sddGoing(), items = going.reduce((t, b) => t + b.take, 0), worth = going.reduce((t, b) => t + b.take * b.p, 0);
+      const more = sdd.rows.filter((b) => b.on && b.take < b.q).reduce((t, b) => t + b.q - b.take, 0), kept = sdd.rows.filter((b) => !b.on).length;
+      const set = `<div class="bnp-sdd-set"><span class="bnp-upto"><label><span>Discard what itemdb prices under</span><input type="text" inputmode="numeric" autocomplete="off" data-sddunder value="${esc(P.under.toLocaleString())}"${can ? '' : ' disabled'} aria-label="Under this many Neopoints each">NP each</label></span><span class="bnp-upto"><label><span>At most</span><input type="text" inputmode="numeric" autocomplete="off" data-sddmost value="${esc(P.most.toLocaleString())}"${can ? '' : ' disabled'} aria-label="At most this many items a run">items a run</label></span><label class="bnp-sdr-bgchk"><input type="checkbox" data-sddwanted${P.wanted ? ' checked' : ''}${can ? '' : ' disabled'}> Keep what NE marks as still wanted</label></div>`;
+      let head = '';
+      if (run) {
+        const nos = sdd.rows.filter((b) => b.st === 'no').length, left = sdd.rows.filter((b) => b.st === 'wait').reduce((t, b) => t + b.take, 0);
+        head = run.over
+          ? `<div class="bnp-sdr-sum is-done"><b>${run.gone ? `${run.gone.toLocaleString()} ${run.gone === 1 ? 'item' : 'items'} discarded${run.some ? ', and some more' : ''}` : run.some ? `Some discarded: Neopets said ${run.some.toLocaleString()} of a batch went` : 'Nothing discarded'}</b>${run.gone ? `<span>${run.kinds.toLocaleString()} ${run.kinds === 1 ? 'kind' : 'kinds'}, about ${run.np.toLocaleString()} NP by itemdb’s guide</span>` : ''}${nos ? `<span>${nos.toLocaleString()} not discarded: Neopets’ reason is beside ${nos === 1 ? 'it' : 'each'}</span>` : ''}${run.halt || run.pinStop || (run.stop && left) ? `<span>Stopped${run.pinStop ? `: ${esc(run.pinStop.replace(/[.]+$/, ''))}` : run.halt ? `: ${esc(run.halt)}` : ''}.${left ? ` ${left.toLocaleString()} still here.` : ''}</span>` : ''}</div>`
+          : `<div class="bnp-sdr-sum"><b>${run.restUntil ? 'A short break' : `${run.i.toLocaleString()} of ${run.n.toLocaleString()} discarded`}</b><span>${run.restUntil ? `as you’d take one: carrying on at about ${esc(bmAt(run.restUntil))}` : 'twenty kinds at a time, a moment between'}</span><div class="bnp-sdr-track"><i style="width:${Math.max(4, Math.round(100 * run.i / Math.max(1, run.n)))}%"></i></div></div>`;
+      } else if (sdd.state === 'confirm') {
+        const dear = [...going].sort((a, b) => b.p - a.p).slice(0, 3).map((b) => `${b.n} (${b.p.toLocaleString()} NP each)`).join(', ');
+        head = `<div class="bnp-sdd-warn" role="alert"><b>Discard ${items.toLocaleString()} ${items === 1 ? 'item' : 'items'} for good?</b><p>${going.length.toLocaleString()} ${going.length === 1 ? 'kind' : 'kinds'}, about ${worth.toLocaleString()} NP by itemdb’s guide. The priciest going: ${esc(dear)}.</p><p>Discarded items are gone: Neopets can’t give them back, and NE can’t undo it. Prices are itemdb’s as your SDB was counted ${esc(colAgo(sdd.counted))}, and can be out of date.</p><label class="bnp-sdd-sure"><input type="checkbox" data-sddsure${sdd.sure ? ' checked' : ''}> I understand: these are gone for good</label></div>`;
+      } else head = sdd.rows.length ? `<div class="bnp-sdr-sum"><b>${items ? `${items.toLocaleString()} ${items === 1 ? 'item' : 'items'} to discard` : 'Nothing ticked to discard'}</b><span>${going.length.toLocaleString()} ${going.length === 1 ? 'kind' : 'kinds'} under ${P.under.toLocaleString()} NP each${worth ? `, about ${worth.toLocaleString()} NP by itemdb’s guide` : ''}${more ? `; ${more.toLocaleString()} more under your line wait for another run` : ''}${kept ? `; ${kept.toLocaleString()} kept` : ''}.</span><span class="bnp-sdr-tick"><button type="button" class="bnp-sdr-lb" data-sdd="all">All</button><button type="button" class="bnp-sdr-lb" data-sdd="none">None</button></span></div>`
+        : `<div class="bnp-sdr-sum is-done"><b>Nothing in your SDB under ${P.under.toLocaleString()} NP each</b><span>Raise your line to see more. Items with no itemdb price are never discarded.</span></div>`;
+      const rows = sdd.rows.map((b) => sddRowHtml(b, can)).join('');
+      main = `${can ? set : ''}${head}${sdd.err ? `<p class="bnp-sdr-note is-err" role="alert">${esc(sdd.err)}</p>` : ''}${rows && sdd.state !== 'confirm' ? `<div class="bnp-sdr-list">${rows}</div>` : ''}${can ? '<p class="bnp-sdr-note">Never discarded: NC items, paint brush clothes, and anything itemdb has no price for. Cheapest first.</p>' : ''}`;
+    }
+    body.innerHTML = `<div class="bnp-sdr-main">${main}</div>`;
+    const l = body.querySelector('.bnp-sdr-list');
+    if (l) l.scrollTop = y;
+    sddPaintFoot();
+  }
+  function sddPaintFoot() {
+    const foot = sdd.win.querySelector('[data-sdd-foot]'), run = sdd.run, busy = !!(run && !run.over), pin = sdrPinAsked();
+    const had = foot.querySelector('[data-sddpin]'), pv = had ? had.value : '';
+    if (had) sdd.pin = pv;
+    let h = '';
+    if (busy) h = `<span class="bnp-sdr-fnote">${run.restUntil ? `A short break: carrying on at about ${esc(bmAt(run.restUntil))}` : 'A few at a time, a moment between'}${bmP().bg ? '' : ': it carries on while this tab is in front'}.</span><button type="button" class="button-default__2020 button-red__2020 bnp-sdr-btn" data-sdd="stop"${run.stop ? ' disabled' : ''}>${run.stop ? 'Stopping…' : 'Stop'}</button>`;
+    else if (sdd.state === 'done') h = '<span class="bnp-sdr-fnote"></span><button type="button" class="bnp-sdr-lb" data-sdd="again">Look again</button><button type="button" class="button-default__2020 button-yellow__2020 bnp-sdr-btn" data-sdd="done">Done</button>';
+    else if (sdd.state === 'confirm') {
+      const n = sddGoing().reduce((t, b) => t + b.take, 0);
+      h = `${pin ? '<label class="bnp-sdr-pin"><span>Your PIN</span><input type="password" inputmode="numeric" autocomplete="off" maxlength="8" data-sddpin aria-label="Your SDB PIN"></label>' : '<span class="bnp-sdr-fnote"></span>'}<button type="button" class="bnp-sdr-lb" data-sdd="back">Back</button><button type="button" class="button-default__2020 button-red__2020 bnp-sdr-btn" data-sdd="go"${sdd.sure ? '' : ' disabled'}>Discard ${n.toLocaleString()} ${n === 1 ? 'item' : 'items'}</button>`;
+    } else if (sdd.state === 'ready') {
+      const n = sddGoing().reduce((t, b) => t + b.take, 0);
+      h = `<label class="bnp-sdr-bgchk" title="Off: it waits while you’re in another tab, and carries on when you’re back (Buy Mode goes by this too)"><input type="checkbox" data-sddbg${bmP().bg ? ' checked' : ''}> Keep going in a background tab</label><button type="button" class="bnp-sdr-lb" data-sdd="cancel">Cancel</button><button type="button" class="button-default__2020 button-red__2020 bnp-sdr-btn" data-sdd="review"${n ? '' : ' disabled'}>${n ? `Discard ${n.toLocaleString()} ${n === 1 ? 'item' : 'items'}…` : 'Discard…'}</button>`;
+    } else h = '<span class="bnp-sdr-fnote"></span><button type="button" class="bnp-sdr-lb" data-sdd="cancel">Close</button>';
+    foot.innerHTML = h;
+    const np = foot.querySelector('[data-sddpin]');
+    if (np) { np.value = pv || sdd.pin || ''; np.addEventListener('input', () => { sdd.pin = np.value; }); }
+  }
+  // ═══════════════════════════════════════════════════════════════════════════
   // Buy Mode (the user, 2 November 2026: "Buy Mode for buyable books/gourmets/stamps you dont have yet, travel to shops and buy as
   // normally as possible", "ability to select settings with which ones you want to buy and start/pause/stop", "SSW or SW which one you
   // want to use", and "needs to work with shop wizard bans with saying if user is shop wizard banned for the current hour, and settings if
@@ -36362,11 +36685,12 @@
     bfPriceAll(items);
     bfPaintSoon();
   }
-  function bfPriceAll(items) {   // (itemdb's price for each name not asked yet: NE's day-long keep first, then itemdb, as the items' own price rows ask (one ask for a page))
+  function bfPriceAll(items) {   // (itemdb's price for each name not asked yet: what NE keeps first, then itemdb; this page's as a page's, the rest of the shop as a big job)
+    const here = new Set([...bf.page.values()].map((x) => x.name));
     for (const it of items) {
       if (bf.prices.has(it.name) || bf.asked.has(it.name)) continue;
       bf.asked.add(it.name);
-      itPriceAsk(it.name, (res) => bfPriceIn(it.name, res));
+      itPriceAsk(it.name, (res) => bfPriceIn(it.name, res), !here.has(it.name));
     }
   }
   function bfPriceIn(name, res) {
@@ -47064,6 +47388,7 @@
         <label class="bnp-switch"><input type="checkbox" data-feat="sdbTop"${f.sdbTop !== false ? ' checked' : ''}><span>Safety Deposit Box: page buttons at the top too<small>Beside its Grid and List switch: the same buttons as under your items, so a long box needs no scrolling down to turn the page.</small></span></label>
         <label class="bnp-switch"><input type="checkbox" data-feat="sdbRead"${f.sdbRead !== false ? ' checked' : ''}><span>Safety Deposit Box: read books to a pet, several at once<small>Read to a pet in its drawer when books are selected (on any of its pages), and Read books to a pet by its totals for every book in it. NE leaves out the ones the pet has read and reads the rest one at a time, a moment between.</small></span></label>
         <label class="bnp-switch"><input type="checkbox" data-feat="sdbStamps"${f.sdbStamps !== false ? ' checked' : ''}><span>Safety Deposit Box: put stamps in your album, several at once<small>Put in your album in its drawer when stamps are selected (on any of its pages), and Put stamps in your album by its totals for every stamp in it. NE leaves out the ones your album has and puts the rest in a page of your SDB at a time, as its own Put in Stamp Album does.</small></span></label>
+        <label class="bnp-switch"><input type="checkbox" data-feat="sdbDiscard"${f.sdbDiscard !== false ? ' checked' : ''}><span>Safety Deposit Box: discard cheap items, several at once<small>Discard cheap items by its totals: everything What it’s worth prices under your line (cheapest first, as many as your most a run), each one to tick. Never NC items, paint brush clothes or anything itemdb has no price for. You see what it comes to and say yes before anything goes, for good.</small></span></label>
         <label class="bnp-switch"><input type="checkbox" data-itx="descHide"${set.descHide ? ' checked' : ''}><span>Users’ shops without their descriptions<small>The owner’s words and pictures above their items go (some are very long).</small></span></label>
       </div>`;
   }
@@ -51863,6 +52188,16 @@
     .bnp-sdr-bgchk input { width: 15px; height: 15px; margin: 0; accent-color: color-mix(in srgb, var(--bnp-accent) 85%, #000); }
     .bnp-sdr-bgchk ~ .bnp-sdr-pin, .bnp-sdr-bgchk ~ .bnp-sdr-fnote { margin-right: 0; }
     .bnp-sdr-foot .bnp-sdr-btn:disabled { filter: grayscale(.7); opacity: .6; cursor: default; }
+    .bnp-sdd-set { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 14px; padding: 8px 12px; border: 1.5px solid #e6e0cd; border-radius: 12px; background: #fffdf6; }
+    .bnp-sdd-set .bnp-upto { padding-left: 0; border-left: 0; }
+    .bnp-sdd-set .bnp-upto input { width: 82px; }
+    .bnp-sdd-set .bnp-upto input:disabled { background: #f4f1e8; color: #77725f; }
+    .bnp-sdd-set .bnp-sdr-bgchk { margin: 0; }
+    .bnp-sdd-warn { flex: none; display: grid; gap: 7px; padding: 14px 16px 15px; border: 2px solid #d98a2b; border-radius: 14px; background: #fff6e5; color: #3b2a12; }
+    .bnp-sdd-warn > b { color: #8a2a12; font: 20px/1.2 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    .bnp-sdd-warn p { margin: 0; font-size: 13px; line-height: 1.45; }
+    .bnp-sdd-sure { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 0; color: #3b2a12; font: 13.5px "MuseoSansRounded700", Arial, sans-serif; cursor: pointer; }
+    .bnp-sdd-sure input { width: 17px; height: 17px; margin: 0; accent-color: #c0392b; cursor: pointer; }
     @media (max-width: 560px) { .bnp-sdr-list { grid-template-columns: 1fr; } .bnp-sdr-chip { height: 46px; padding-right: 12px; } .bnp-sdr-chip img { width: 36px; height: 36px; } }
     @media (prefers-reduced-motion: reduce) { .bnp-sdr-spin, .bnp-sdr-st.is-now { animation-duration: 2.4s; } .bnp-sdr-pill, .bnp-sdr-chip { transition: none; } }
     /* Buy Mode: its window in your theme's pop-up colours, its settings in a box of their own; the list and rows as Read to a pet's */
@@ -54720,6 +55055,14 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.5.6', '2026-11-21', [
+      'Smilies: Neopets’ 34 new smilies, in the Neoboards and NeoChat pickers and wherever NE shows smilies',
+      'Safety Deposit Box: Discard cheap items: what itemdb prices under your line, as many as you choose, each one to tick, with a warning before anything goes',
+      'itemdb prices: prices on pages always load; only big counts and whole-shop scans keep to a limit, so they never use up itemdb’s allowance',
+      'What it’s worth: a paused count carries on from where it stopped, asking only for the prices it still needs',
+      'What it’s worth: the SDB’s NP only and NC only say what they count, and the other pool stays as last counted',
+      'Safety Deposit Box: Read books to a pet wears the Pet Bookshelf picture',
+    ]],
     ['5.5.5', '2026-11-18', [
       'itemdb prices: Try now anyway, on a paused count, the Bargain Finder, Settings › Items, or any waiting price: NE’s own limit set aside for half an hour',
       'What it’s worth: a paused count says whether it’s itemdb’s ban or NE’s rest and when it ends, then carries on by itself',
@@ -57746,7 +58089,7 @@
     setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 4000 + Math.random() * 12000);   // (the Turmaculus' due hours, if they're needed: a moment after the page, not at once)
     document.addEventListener('visibilitychange', () => { if (document.hidden) return; clearTimeout(turmacRead.t); turmacRead.t = setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 3000 + Math.random() * 6000); });
     try { startKeep(); } catch (e) { report(e); }
-    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, sdrBoot, salBoot, labPage, soupBoot, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, kpopPage, kadPage, kadCheckBoot, kadLookupRead, kadFeedPage, bdHelper, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, bfPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
+    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, sdrBoot, salBoot, sddBoot, labPage, soupBoot, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, kpopPage, kadPage, kadCheckBoot, kadLookupRead, kadFeedPage, bdHelper, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, bfPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
     themeAfter(themeChanged);   // (an old page, its theme's sheets still coming: everything of ours dressed again once they're in)
     whenLoaded(() => { setTimeout(() => { try { boxFootNote(); } catch (e) { report(e); } }, 900); try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } setTimeout(() => { updCheck(false).catch(report); try { updSeen(); } catch (e) { report(e); } }, 1500); try { const w = myWorn(), sw = w && themeData().sw[myLive(w).base]; if (w && (!sw || sw.v !== 7)) themeSwatches(); } catch (e) { report(e); } });   // (a theme of yours: its base's sheet read, if it hasn't been yet)   // (a random event Neopets adds a moment later; theme pictures for the tab)
     if (document.getElementById('navtop__2020') || document.getElementById('navbottom__2020')) startOnce();
