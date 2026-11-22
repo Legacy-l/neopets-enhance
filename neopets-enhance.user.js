@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.6
+// @version      5.6.1
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -15629,6 +15629,17 @@
     html.bnp-nm .bnp-nmfr-foot label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
     html.bnp-nm .bnp-nmfr-del { color: #8f1414; }
     html.bnp-nm .bnp-nmfr-del input { accent-color: #d42326 !important; }
+    /* requests you've sent: a section of their own above your Neofriends; dashed cards, not Neofriends yet */
+    html.bnp-nm .bnp-nmfr-wrap { margin: 6px 0 0; }
+    html.bnp-nm .bnp-nmfr-sec + .bnp-nmfr-sec { margin-top: 4px; padding-top: 14px; border-top: 2px solid var(--nb-line); }
+    html.bnp-nm .bnp-nmfr-h { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; margin: 0 0 4px; color: var(--nb-text); font: 16px/1.3 var(--nb-ui); }
+    html.bnp-nm .bnp-nmfr-h em { min-width: 10px; padding: 1px 9px; border-radius: 999px; background: var(--nb-by); color: #4a4536; font: 13px/1.4 var(--nb-ui); font-style: normal; text-align: center; }
+    html.bnp-nm .bnp-nmfr-h small { flex-basis: 100%; color: var(--nb-muted); font: 13px/1.4 var(--nb-txt); }
+    html.bnp-nm .bnp-nmfr.is-pend { border-style: dashed; border-color: #d4a03c; box-shadow: none; }
+    html.bnp-nm .bnp-nmfr.is-pend .bnp-nmfr-top { border-bottom: 2px dashed #e2bd6e; background: #fff7e0; }
+    html.bnp-nm .bnp-nmfr.is-pend .bnp-nmfr-foot { justify-content: flex-end; border-top-style: dashed; }
+    html.bnp-nm .bnp-nmfr-meta .is-wait { background: #fff1c9; color: #7a5200; }
+    html.bnp-nm .bnp-nmfr-none { margin: 4px 0 14px; color: var(--nb-muted); font: 13.5px var(--nb-txt); }
     /* Neogreetings: the cards in a grid of their own */
     html.bnp-nm-greet td.content table:has(img[src*="greetings"]) { display: block; width: 100% !important; }
     html.bnp-nm-greet td.content table:has(img[src*="greetings"]) > tbody { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
@@ -15669,6 +15680,7 @@
     /* cards just off the page */
     html.bnp-nm .bnp-nmhead, html.bnp-nm form.bnp-nmform, html.bnp-nm form.bnp-nmsend, html.bnp-nm td.content .contentModule, html.bnp-nm table.bnp-nmread tr.bnp-nm-from, html.bnp-nm .bnp-nmfr { box-shadow: 0 3px 0 var(--nb-frame), var(--nb4-soft); }
     html.bnp-nm .bnp-nmfr.is-on { box-shadow: 0 3px 0 #2b8a27, var(--nb4-soft); }
+    html.bnp-nm .bnp-nmfr.is-pend { box-shadow: none; }
     /* the header's band: a touch of light at the top; its title bigger, light letters ringed in the theme's deep colour (as the boards' own) */
     html.bnp-nm .bnp-nmhead-band { box-shadow: inset 0 2px 0 rgba(255, 255, 255, .1); }
     html.bnp-nm .bnp-nmhead h1 { color: var(--nb4-hfill); font-size: 31pt; letter-spacing: 1pt; -webkit-text-stroke: 0; text-shadow: 3px 0 0 var(--nb4-hring), 2.77px 1.15px 0 var(--nb4-hring), 2.12px 2.12px 0 var(--nb4-hring), 1.15px 2.77px 0 var(--nb4-hring), 0 3px 0 var(--nb4-hring), -1.15px 2.77px 0 var(--nb4-hring), -2.12px 2.12px 0 var(--nb4-hring), -2.77px 1.15px 0 var(--nb4-hring), -3px 0 0 var(--nb4-hring), -2.77px -1.15px 0 var(--nb4-hring), -2.12px -2.12px 0 var(--nb4-hring), -1.15px -2.77px 0 var(--nb4-hring), 0 -3px 0 var(--nb4-hring), 1.15px -2.77px 0 var(--nb4-hring), 2.12px -2.12px 0 var(--nb4-hring), 2.77px -1.15px 0 var(--nb4-hring); }
@@ -15900,26 +15912,25 @@
       else await go();
     } catch (e) { report(e); if (nfLoad) { nfLoad.on = false; nfLoadPaint(); } }
   }
-  function nmFriends(tc) {   // (your Neofriends: each one a card, Neopets' own fields in it, its Update button still saving)
+  function nmFriends(tc) {   // (your Neofriends: each one a card, Neopets' own fields in it, its Update button still saving. Requests you've sent, which Neopets lists among them: cards of their own, apart, above)
     const form = tc.querySelector('form[action*="process_neofriend"]'), t = form && form.querySelector('table');
     if (!t || form.querySelector('[data-bnp="nmfriends"]')) return;
-    const d = nfData(), nf = { av: d.av, lk: d.lk, on: new Set(Date.now() - d.at < 15 * 60000 ? d.on : []) };   // (online: as the bar had it in the last quarter ofan hour)
-    const grid = document.createElement('div');
-    grid.className = 'bnp-nmfriends';
-    grid.setAttribute('data-bnp', 'nmfriends');
-    const rows = [...t.rows];
-    let n = 0;
+    const d = nfData(), nf = { av: d.av, lk: d.lk, on: new Set(Date.now() - d.at < 15 * 60000 ? d.on : []) };   // (online: as the bar had it in the last quarter of an hour)
+    const grid = document.createElement('div'), sentGrid = document.createElement('div');
+    grid.className = sentGrid.className = 'bnp-nmfriends';
+    const rows = [...t.rows], sentUsers = [];
     rows.forEach((r, i) => {
-      const vip = r.querySelector('input[name^="vip_"]');
-      if (!vip) { if (r.cells.length >= 7 && !r.querySelector('input[type="submit"]')) r.classList.add('bnp-nm-hide'); if (r.querySelector('hr') && !r.querySelector('input')) r.classList.add('bnp-nm-hide'); return; }
-      const c = [...r.cells], note = rows[i + 1] && rows[i + 1].querySelector('textarea[name^="note_"]') ? rows[i + 1] : null;
-      const status = reClean(c[6] && c[6].textContent), user = reClean(c[1] && c[1].textContent), lc = user.toLowerCase(), real = reClean(c[2] && c[2].textContent);
-      const online = nf.on.has(lc), av = nf.av[lc] || '';
+      const vip = r.querySelector('input[name^="vip_"]'), sent = !vip && r.cells.length >= 7 && !!r.querySelector('input[name^="username_"]');   // (sent: a request of yours, "Not Accepted": Neopets gives it no VIP box and no notes)
+      if (!vip && !sent) { if (r.cells.length >= 7 && !r.querySelector('input[type="submit"]')) r.classList.add('bnp-nm-hide'); if (r.querySelector('hr') && !r.querySelector('input')) r.classList.add('bnp-nm-hide'); return; }
+      const c = [...r.cells], note = !sent && rows[i + 1] && rows[i + 1].querySelector('textarea[name^="note_"]') ? rows[i + 1] : null;
+      const status = reClean(c[6] && c[6].textContent), user = reClean(c[1] && c[1].textContent), lc = user.toLowerCase(), real0 = reClean(c[2] && c[2].textContent), real = real0.toLowerCase() === lc ? '' : real0;   // (a request's Name is their username again: not shown twice)
+      const age = reClean(c[4] && c[4].textContent), sex = reClean(c[5] && c[5].textContent);
+      const online = !sent && nf.on.has(lc), av = nf.av[lc] || '';
       const card = document.createElement('div');
-      card.className = `bnp-nmfr${online ? ' is-on' : ''}`;
+      card.className = `bnp-nmfr${online ? ' is-on' : ''}${sent ? ' is-pend' : ''}`;
       card.innerHTML = `<div class="bnp-nmfr-top"><span class="bnp-nmfr-pic${av ? '' : ' is-none'}" style="background-image:url('${esc(cssUrl(av || AV_DEFAULT_PIC))}')" title="${esc(av ? `${user}’s avatar` : 'Their avatar shows here once you’ve seen it: on their lookup, a post of theirs on the Neoboards, a Neomail from them or in Neofriends online')}"></span><span class="bnp-nmfr-who"><a class="bnp-nmfr-name" href="/userlookup.phtml?place=9999&user=${encodeURIComponent(user)}">${esc(user)}</a>${real ? `<small>${esc(real)}</small>` : ''}</span><span class="bnp-nmfr-acts" data-slot="acts"></span></div>
-        <div class="bnp-nmfr-body"><div class="bnp-nmfr-meta">${online ? '<span class="is-on">Online now</span>' : ''}${reClean(c[4] && c[4].textContent) ? `<span>${esc(reClean(c[4].textContent))} yrs</span>` : ''}${reClean(c[5] && c[5].textContent) ? `<span>${esc(reClean(c[5].textContent))}</span>` : ''}${status && !/^accepted!?$/i.test(status) ? `<span class="is-st">${esc(status)}</span>` : ''}</div><div class="bnp-nmfr-note" data-slot="note"></div></div>
-        <div class="bnp-nmfr-foot"><label class="bnp-nmfr-vip" data-slot="vip" title="A VIP: in All VIP's and Neopets' drop-down lists"></label><label class="bnp-nmfr-del" data-slot="del" title="Ticked, Update NeoFriends takes them off your list"></label></div>`;
+        <div class="bnp-nmfr-body"><div class="bnp-nmfr-meta">${sent ? `<span class="is-wait">${!status || /^not accepted!?$/i.test(status) ? 'Waiting for them to accept' : esc(status)}</span>` : online ? '<span class="is-on">Online now</span>' : ''}${/^\d+$/.test(age) ? `<span>${esc(age)} yrs</span>` : ''}${sex ? `<span>${esc(sex)}</span>` : ''}${!sent && status && !/^accepted!?$/i.test(status) ? `<span class="is-st">${esc(status)}</span>` : ''}</div>${sent ? '' : '<div class="bnp-nmfr-note" data-slot="note"></div>'}</div>
+        <div class="bnp-nmfr-foot">${sent ? '' : '<label class="bnp-nmfr-vip" data-slot="vip" title="A VIP: in All VIP\'s and Neopets\' drop-down lists"></label>'}<label class="bnp-nmfr-del" data-slot="del" title="${sent ? 'Ticked, Update NeoFriends takes your request off your list, as Neopets’ own Del? box does' : 'Ticked, Update NeoFriends takes them off your list'}"></label></div>`;
       const slot = (k) => card.querySelector(`[data-slot="${k}"]`);
       card.dataset.user = lc;
       const keep = document.createElement('span');   // (Neopets' own name cell, kept with its form for anything that reads it)
@@ -15927,15 +15938,27 @@
       keep.append(...c[1].childNodes);
       card.append(keep);
       for (const a of c[3].querySelectorAll('a')) { a.classList.add('bnp-nmfr-a'); a.title = /neomessages/.test(a.getAttribute('href') || '') ? 'Send a Neomail' : 'Their lookup'; slot('acts').append(a); }
-      slot('vip').append(vip, document.createTextNode(' VIP'));
+      if (!sent) slot('vip').append(vip, document.createTextNode(' VIP'));
       slot('del').append(...c[7].childNodes, document.createTextNode(' Remove'));
       if (note) { const ta = note.querySelector('textarea'); ta.placeholder = 'Notes about them (only you see these)'; slot('note').append(ta); note.classList.add('bnp-nm-hide'); }
       r.classList.add('bnp-nm-hide');
-      grid.append(card);
-      n++;
+      (sent ? sentGrid : grid).append(card);
+      if (sent) sentUsers.push(lc);
     });
-    if (n) t.before(grid);
     grid.prepend(...grid.querySelectorAll(':scope > .bnp-nmfr.is-on'));   // (who's online first, in Neopets' order; the rest after)
+    const n = grid.children.length, ns = sentGrid.children.length;
+    if (ns) {   // (requests you've sent: their own section, above your Neofriends)
+      const wrap = document.createElement('div');
+      wrap.className = 'bnp-nmfr-wrap';
+      wrap.setAttribute('data-bnp', 'nmfriends');
+      const sec = (k, head, sub, body) => { const el = document.createElement('section'); el.className = `bnp-nmfr-sec is-${k}`; el.dataset.nmfrSec = k; el.innerHTML = `<h3 class="bnp-nmfr-h">${head}${sub ? `<small>${sub}</small>` : ''}</h3>`; el.append(body); return el; };
+      const none = document.createElement('p');
+      none.className = 'bnp-nmfr-none';
+      none.textContent = 'None here yet.';
+      wrap.append(sec('sent', `Requests you’ve sent <em>${ns}</em>`, 'Not your Neofriends yet: once one accepts, they move down to your Neofriends.', sentGrid), sec('friends', `Your Neofriends <em>${n}</em>`, '', n ? grid : none));
+      t.before(wrap);
+    } else if (n) { grid.setAttribute('data-bnp', 'nmfriends'); t.before(grid); }
+    nfSentKeep(sentUsers);
     const users = [...grid.querySelectorAll('.bnp-nmfr')].map((c) => c.dataset.user).filter(Boolean);
     if (users.length) {   // (who your Neofriends are, kept: their avatars are picked up wherever you see them, and they come up in Write a Neomail)
       const full = !location.search.replace(/^\?/, ''), d2 = nfData(), was = new Set(d2.fr);   // (all of them, or only some: a letter's, the VIPs')
@@ -15943,6 +15966,12 @@
     }
     const saves = rows.filter((r) => r.querySelector('input[type="submit"]'));   // (its Update button at the top and the foot: one, under the cards)
     saves.forEach((r, i) => r.classList.add(i < saves.length - 1 ? 'bnp-nm-hide' : 'bnp-nmfr-save'));
+  }
+  function nfSentKeep(users) {   // (requests you've sent, as Neopets' Neofriends page lists them: NeoChat shows them as sent, and says when one's taken up)
+    if (!users.length) return;
+    const v = nbJson(acctKey('bnp-nf-pend'), {}) || {}, now = Date.now();
+    for (const k of users) v[k] = now;   // (seen waiting still: a month more)
+    nbJsonSet(acctKey('bnp-nf-pend'), v);
   }
   const NM_SVG = {
     pen: NB_SVG.pen, del: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
@@ -16654,6 +16683,7 @@
       const form = doc.querySelector('form[action*="process_neofriend"]');
       if (!form) return;
       const users = [...form.querySelectorAll('tr')].filter((r) => r.querySelector('input[name^="vip_"]') && r.cells[1]).map((r) => reClean(r.cells[1].textContent).toLowerCase()).filter(Boolean);
+      nfSentKeep([...form.querySelectorAll('tr')].filter((r) => !r.querySelector('input[name^="vip_"]') && r.cells.length >= 7 && r.querySelector('input[name^="username_"]')).map((r) => reClean(r.cells[1].textContent).toLowerCase()).filter(Boolean));   // (requests you've sent, listed there too)
       const d = nfData();
       d.fr = users;
       d.frAt = Date.now();
@@ -56621,6 +56651,10 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.6.1', '2026-11-22', [
+      'Neofriends page: requests you’ve sent show again, in a section of their own above your Neofriends, each waiting for them to accept with its Remove box',
+      'NeoChat: knows the requests you’ve sent from Neopets’ own pages too, showing them as sent and saying when one is taken up',
+    ]],
     ['5.6', '2026-11-21', [
       'Trading Card album: made over, its 11 sets as tiles (each one’s logo, or a fan of its own cards) with how many you have',
       'Trading Card album: the set you pick shown whole, every card at once: yours in colour, the ones you don’t have greyed with their real art',
