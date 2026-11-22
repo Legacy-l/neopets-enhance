@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.5.6
+// @version      5.5.7
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -1968,7 +1968,7 @@
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, sideAv: true, sideAvSw: true, sideNoBar: true, tillLog: true, tpSales: true, auSales: true,
     scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: true, oldBtns: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldGalleries: false, oldShops: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
-    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, kpopPlay: true, kadHelp: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trBg: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, bdHelp: true, bdAgain: true, bdSet: true, bdAuto: false, bdBg: true, bdLook: 'neo', bdLookMatch: false, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, bargains: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, bankBig: true, dailyFill: true, soupLog: true, fcHelp: true, fcHist: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
+    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, kpopPlay: true, kadHelp: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclMail: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trBg: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, bdHelp: true, bdAgain: true, bdSet: true, bdAuto: false, bdBg: true, bdLook: 'neo', bdLookMatch: false, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, neodeck: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, bargains: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, bankBig: true, dailyFill: true, soupLog: true, fcHelp: true, fcHist: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, tone: '', vol: 100, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,   // (tone: '' each its own, or one of the sounds for all; vol: how loud, 5 to 100)
@@ -4930,6 +4930,7 @@
     ['search', 'Search results', ['ssw', 'sw', 'tp', 'au', 'sdb', 'closet', 'dti', 'jn', 'idb'], [...IT_STD, 'closet', 'dti']],
     ['collect', 'Books and gourmet food lists (what a pet hasn’t had yet)', IT_STD, IT_STD],
     ['stamps', 'Stamp Album (its pages, and what it still needs)', IT_STD, IT_STD],
+    ['neodeck', 'NeoDeck (a card’s own window)', IT_STD, IT_STD],
   ];
   const IT_PAGE = new Map(IT_PAGES.map((p) => [p[0], p]));
   const IT_PRICED = ['auctions', 'moneytree', 'search'];   // (pages with itemdb's price on from the start: where it decides what you do)
@@ -4988,7 +4989,7 @@
     name = reClean(name).replace(/\s*\(\s*(?:no trade|wearable)\s*\)\s*$/i, '');
     const set = itSettings(), page = set.pages[o.page || itHere];
     if (!name) return null;
-    const cm = o.page === 'collect' || o.page === 'stamps' ? null : itMarks(name);   // (a book or gourmet food a pet you track hasn't had yet, a stamp your album still needs: marked)
+    const cm = o.page === 'collect' || o.page === 'stamps' || o.page === 'neodeck' ? null : itMarks(name);   // (a book or gourmet food a pet you track hasn't had yet, a stamp your album still needs: marked)
     if (!page || !page.on || !S.features.items) return cm ? itMarksOnly(name, cm) : null;
     const cash = !!o.cash, trade = o.trade !== false, wear = !!o.wear, path = location.pathname;
     const fits = { ssw: !cash && trade && itPremium(), sw: !cash && trade, tp: !cash && trade, au: !cash && trade, sdb: !/safetydeposit/.test(path), closet: wear && !/closet\.phtml/.test(path), dti: wear || cash, jn: true, idb: true, bp: /^\/dome\//.test(path) };
@@ -6589,11 +6590,12 @@
           const read = /useobject\.phtml/.test(u) && q && /^Read to /i.test(q.get('action') || '') ? q.get('action') : '';   // (a book read to a pet: which pet, for its lists)
           const opt = document.querySelector('#iteminfo_select_action option:checked'), how = `${(q && q.get('action')) || ''} ${opt ? opt.textContent : ''}`;
           const albNow = /useobject\.phtml/.test(u) && !!q && /album/i.test(how) && !/tcg|trading card|neodeck/i.test(how), im = albNow ? document.querySelector(`.item-img[data-objid="${String(q.get('obj_id') || '').replace(/[^\w-]/g, '')}"]`) : null;
+          const deckNow = /useobject\.phtml/.test(u) && !!q && /neo\s*deck/i.test(how);   // (a Collectable Card put in your NeoDeck)
           const alb = albNow ? { n: (im && im.getAttribute('data-itemname')) || '', img: (im && im.getAttribute('data-image')) || '' } : null;   // (a stamp, coin or shell put in your album: its name and picture from its card, before the grid changes)
           this.addEventListener('loadend', () => {
             let said = '';
             if (alb) try { said = String(this.responseText || '').slice(0, 4000); } catch (_) { said = ''; }
-            document.dispatchEvent(new CustomEvent('bnp-inv-acted', { detail: JSON.stringify({ u, status: this.status, act: read, alb, said }) }));
+            document.dispatchEvent(new CustomEvent('bnp-inv-acted', { detail: JSON.stringify({ u, status: this.status, act: read, alb, said, deck: deckNow }) }));
             if (k) document.dispatchEvent(new CustomEvent('bnp-sdb-done', { detail: JSON.stringify({ k, ok: this.status === 200 }) }));
           });
         }
@@ -10624,9 +10626,10 @@
     for (const m of where.matchAll(/(?:https?:)?\/\/images\.neopets\.com\/neoboards\/avatars\/[\w.-]+\.(?:gif|png|jpe?g)/gi)) avGot(fullUrl(m[0].replace(/^\/\//, 'https://')));
   }
   function sdbEar() {   // (the very start of the SDB, Quick Stock and the Inventory: what goes into or out of your SDB heard, so its counted worth follows without counting again; and what goes in your album from the SDB or the Inventory, counted in)
-    const p = location.pathname, worth = S.features.worth !== false, album = S.features.stamps !== false && p !== '/quickstock.phtml';
-    if (FRAME || !['/safetydeposit.phtml', '/quickstock.phtml', '/inventory.phtml'].includes(p) || (!worth && !album)) return;
+    const p = location.pathname, worth = S.features.worth !== false, album = S.features.stamps !== false && p !== '/quickstock.phtml', deck = S.features.neodeck !== false && p !== '/quickstock.phtml';
+    if (FRAME || !['/safetydeposit.phtml', '/quickstock.phtml', '/inventory.phtml'].includes(p) || (!worth && !album && !deck)) return;
     if (album) saEar(p);   // (stamps put in your album from here, Neopets' own way or NE's)
+    if (deck) ndEar(p);   // (cards put in your NeoDeck from here)
     if (p !== '/inventory.phtml' && !document.getElementById('bnp-sdb-ear')) {   // (the Inventory's own ear tells of what's put in from there)
       const sc = document.createElement('script');
       sc.id = 'bnp-sdb-ear';
@@ -13013,6 +13016,10 @@
     mb.innerHTML = `<span>A post by <b>${esc(name)}</b>, who you’ve muted.</span><button type="button" class="bnp-linkbtn" data-nbshow>Show it</button>`;
     li.prepend(mb);
     li.classList.add('bnp-nbpost');
+    if (nclMailOn() && by && name && name.toLowerCase() !== nbMe()) {   // (NeoChat's speech bubble under the avatar, centred: NeoChat on them)
+      const pa = by.querySelector('.postAuthor'), av = pa && [...pa.children].find((c) => c.tagName === 'A' && c.querySelector('.authorIcon'));
+      if (av && !pa.querySelector('.bnp-nclmail')) pa.append(nclMailBtn(name));   // (last in it: laid over the room under the avatar, it moves nothing)
+    }
     const pet = by && by.querySelector('.postAuthorPetIcon img'), size = { m: [3, 80], l: [2, 150], xl: [4, 225], xxl: [4, 300] }[nbOpt().pet];
     if (pet && size && /\/\d+\/1\.png$/.test(pet.getAttribute('src') || '')) {   // (the pet bigger: Neopets' own picture at that size, never a stretched small one)
       pet.src = pet.getAttribute('src').replace(/\/(\d+)\/1\.png$/, `/$1/${size[0]}.png`);
@@ -17372,6 +17379,7 @@
   function nclBubLook() {   // (the round button: the window's header colours, your theme's pop-up ones)
     if (!ncl || !ncl.bub) return;
     for (const v of ['--bnp-accent', '--bnp-accent-text']) ncl.bub.style.setProperty(v, getComputedStyle(ncl.el).getPropertyValue(v));
+    if (nclMailBtn.looked) nclMailLook();   // (the small buttons by people follow it)
   }
   function nclOpen(o = {}) {   // (the window over the page: open, on whoever you'd like. quiet: opened by itself, so your typing stays where it is)
     if (!S.features.ncl) return;
@@ -17393,6 +17401,88 @@
     if (o.quiet) return;
     const ta = ncl.el.querySelector('[data-ncl-ta]');
     if (ta) ta.focus(); else { const q = ncl.el.querySelector('[data-ncl-q]'); if (q) q.focus(); }
+  }
+  const nclMailOn = () => !!S.features.ncl && S.features.nclMail !== false;
+  const NCL_MAIL_CSS = `
+    .bnp-nclmail { display: inline-grid; place-items: center; box-sizing: border-box; width: 20px; height: 18px; margin: 0; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--bnp-nclm-ink, #363636); opacity: .7; vertical-align: middle; cursor: pointer; transition: opacity .15s, transform .15s; }   /* (the speech bubble alone: there, never the first thing you see) */
+    .bnp-nclmail svg { display: block; width: 16px; height: 16px; }
+    .bnp-nclmail:hover, .bnp-nclmail:focus-visible { opacity: 1; outline: none; transform: translateY(-1px); }
+    .bnp-nclmail:focus-visible { box-shadow: 0 0 0 2px color-mix(in srgb, var(--bnp-nclm-bg, #fed123) 70%, #fff); }
+    .bnp-nclmail.is-inline { width: 18px; height: 16px; margin: 0 0 0 5px; color: inherit; opacity: .6; }   /* (by a name: in its colour, a little faded) */
+    .bnp-nclmail.is-inline svg { width: 14px; height: 14px; }
+    html.bnp-nb #boardTopic li.bnp-nbpost .postAuthor { position: relative; }
+    html.bnp-nb #boardTopic li.bnp-nbpost .postAuthor > .bnp-nclmail { position: absolute; top: 62px; bottom: -12px; left: 31px; width: 26px; height: auto; transform: translateX(-50%); }   /* (the room under the avatar, down to the pet part's line, its icon in the middle of it: the post no taller for it) */
+    html.bnp-nb #boardTopic li.bnp-nbpost .postAuthor > .bnp-nclmail:focus-visible { box-shadow: none; }
+    html.bnp-nb #boardTopic li.bnp-nbpost .postAuthor > .bnp-nclmail:focus-visible svg { border-radius: 4px; outline: 2px solid color-mix(in srgb, var(--bnp-nclm-bg, #fed123) 70%, #000); outline-offset: 2px; }
+    html.bnp-nb #boardTopic li.bnp-nbpost .postAuthor > .bnp-nclmail:is(:hover, :focus-visible) { transform: translate(-50%, -1px); }
+    html.bnp-nb.bnp-nb-bigav #boardTopic li.bnp-nbpost .postAuthor > .bnp-nclmail { top: 94px; bottom: auto; left: 117px; width: 20px; height: 18px; transform: none; }   /* (larger avatars have the name under them: by the avatar's bottom corner) */
+    html.bnp-nb.bnp-nb-midav #boardTopic li.bnp-nbpost .postAuthor > .bnp-nclmail { top: 69px; bottom: auto; left: 92px; width: 20px; height: 18px; transform: none; }
+    html.bnp-nb:is(.bnp-nb-bigav, .bnp-nb-midav) #boardTopic li.bnp-nbpost .postAuthor > .bnp-nclmail:is(:hover, :focus-visible) { transform: translateY(-1px); }
+    @media (prefers-reduced-motion: reduce) { .bnp-nclmail { transition: none; } .bnp-nclmail:hover { transform: none; } }
+  `;
+  function nclMailBtn(name, cls) {   // (a small NeoChat button that opens it on someone: the boards, the Trading Post)
+    if (!document.getElementById('bnp-nclmail-css')) { const st = document.createElement('style'); st.id = 'bnp-nclmail-css'; st.textContent = NCL_MAIL_CSS; (document.head || document.documentElement).append(st); }
+    if (!nclMailBtn.wired) {   // (one listener for them all, before the page's own: a press on one never reaches the name it sits by)
+      nclMailBtn.wired = true;
+      document.addEventListener('click', (e) => {
+        const b = e.target instanceof Element ? e.target.closest('button[data-ncl-to]') : null;
+        if (!b) return;
+        e.preventDefault();
+        e.stopPropagation();
+        nclOpen({ who: b.dataset.nclTo });
+      }, true);
+    }
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `bnp-nclmail${cls ? ` ${cls}` : ''}`;
+    b.setAttribute('data-bnp', 'nclmail');
+    b.dataset.nclTo = name;
+    b.title = `Message ${name} in NeoChat`;
+    b.setAttribute('aria-label', b.title);
+    b.innerHTML = NCL_SVG.chat;
+    if (!nclMailBtn.looked) { nclMailBtn.looked = true; nclMailLook(); setTimeout(nclMailLook, 1500); setTimeout(nclMailLook, 4500); }   // (again as your theme's sheets come in)
+    return b;
+  }
+  function nclMailLook() {   // (the small buttons in NeoChat's round button's colours: from the button itself when it's on the page, else the theme NeoChat wears, else your theme's pop-up header)
+    let bg = '', ink = '', ring = '';
+    try { if (ncl && ncl.bub) { const cs = getComputedStyle(ncl.bub); bg = cs.backgroundColor; ink = cs.color; ring = cs.borderTopColor; } } catch (_) { bg = ''; }
+    if (!bg) { try { const t = nctWorn(), v = t ? nctClean(t.v) : {}; bg = v.foldBg || ''; ink = v.foldInk || ''; ring = v.foldRing || ''; } catch (_) { bg = ''; } }
+    if (!bg) { try { const h = themeHead(); if (h && h.bg) { bg = h.bg; ink = inkReads(h.ink, h.bg); } } catch (_) { bg = ''; } }
+    const root = document.documentElement;
+    for (const [k, v] of [['--bnp-nclm-bg', bg], ['--bnp-nclm-ink', ink], ['--bnp-nclm-ring', ring]]) { if (v) root.style.setProperty(k, v); else root.style.removeProperty(k); }
+  }
+  function nclMailTp() {   // (the Trading Post: after each lot owner's name and each offer's, as Neopets' own app draws and redraws them)
+    if (!nclMailOn() || !/^\/island\/tradingpost(?:\.phtml)?$/.test(location.pathname)) return;
+    const me = () => (nbMe() || nclMe() || '').toLowerCase();
+    const has = (el) => !!(el.nextElementSibling && el.nextElementSibling.matches('.bnp-nclmail') || el.querySelector(':scope > .bnp-nclmail'));
+    const name = (t) => { const m = /^\s*([A-Za-z0-9_]{2,20})\s*$/.exec(t || ''); return m ? m[1] : ''; };
+    const scan = () => {
+      const root = document.getElementById('tp_app__2025');
+      if (!root) return;
+      const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (/owned by/i.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP) }), owners = [];
+      while (w.nextNode()) owners.push(w.currentNode.parentElement);
+      for (const el of owners) {   // (a lot's head: "(owned by name)")
+        if (!el || el.closest('.bnp-nclmail') || el.querySelector(':scope > .bnp-nclmail')) continue;
+        const m = /owned by\s+([A-Za-z0-9_]{2,20})/i.exec(el.textContent || '');
+        if (m && m[1].toLowerCase() !== me()) el.append(nclMailBtn(m[1], 'is-inline'));
+      }
+      for (const a of root.querySelectorAll('a[href*="userlookup.phtml?user="]')) {   // (a name that's a link to its lookup)
+        if (has(a)) continue;
+        const m = /[?&]user=([^&#]+)/.exec(a.getAttribute('href') || '');
+        let n = '';
+        try { n = m ? decodeURIComponent(m[1]) : ''; } catch (_) { n = ''; }
+        if (n && n.toLowerCase() !== me()) a.after(nclMailBtn(n, 'is-inline'));
+      }
+      for (const sp of root.querySelectorAll('span.cursor-pointer')) {   // (an offer's name, as the lot's owner or a bidder sees it)
+        if (!/E0BA5C|869EFF/i.test(sp.className || '') || sp.querySelector(':scope > .bnp-nclmail')) continue;
+        const n = name(sp.firstChild && sp.firstChild.nodeType === 3 ? sp.firstChild.textContent : sp.textContent);
+        if (n && n.toLowerCase() !== me()) sp.append(nclMailBtn(n, 'is-inline'));
+      }
+    };
+    let t = 0;
+    const later = (recs) => { if (recs && recs.every((r) => [...r.addedNodes].every((n) => n.nodeType === 1 && n.matches('.bnp-nclmail')))) return; clearTimeout(t); t = setTimeout(scan, 250); };   // (our own buttons going in never set it looking again)
+    const go = () => { scan(); new MutationObserver(later).observe(document.body, { childList: true, subtree: true, characterData: true }); };
+    if (document.body) go(); else document.addEventListener('DOMContentLoaded', go, { once: true });
   }
   function nclFold() {   // (folded to a round button: it keeps looking for new Neomail)
     if (!S.features.ncl || nclHere()) return;
@@ -18462,6 +18552,7 @@
         ${sw('nclHbHover', 'Its buttons only when you point at its header', 'A clean header: they show as you point at the header itself (not the conversation under it), and while you use them with the keyboard. On a touch screen they always show.')}
         ${sw('nclXFold', 'Close folds it', 'Its × folds NeoChat into its round button in the corner, as Esc does, instead of putting it away in that tab. It keeps looking for new Neomail.')}
         ${sw('nclOutFold', 'A click outside it folds it', 'A click on the page around its window folds NeoChat into its round button in the corner, so the page is yours again. It keeps looking for new Neomail. Never while it’s pinned or full screen.')}
+        ${sw('nclMail', 'A mail button by people', 'NeoChat’s speech bubble by people, opening it on them, even someone you haven’t written to yet: on the boards under each poster’s avatar (taking no room of the post’s), and on the Trading Post by each lot’s owner and each offer.')}
         ${seg('nclPinSide', 'Pinned, it sits', [['right', 'On the right'], ['left', 'On the left']], f.nclPinSide === 'left' ? 'left' : 'right')}
         <p class="bnp-note">The pin in its header keeps NeoChat at that side of every page, under the top bar, with the page beside it (folded or closed in a tab, it stays that way there). Drag its edge to make it wider or narrower; drag the window’s corner to size it when it isn’t pinned.</p>
         <div class="bnp-tools"><button type="button" class="bnp-pillbtn" data-nclset="size"${nclSized() ? '' : ' disabled'}>Back to its first size</button><span class="bnp-note">${nclSized() ? 'Its size, its place and its pinned width, as it started.' : 'It’s the size it started at.'} A double-click on its corner (or, pinned, its edge) does the same.</span></div>
@@ -21603,6 +21694,7 @@
     bt: { page: '/moon/books_read.phtml', label: 'Booktastic', did: 'read', not: 'Not read yet', what: 'Booktastic books', club: 'Booktastic award', clubUrl: '/moon/book_award.phtml', cats: ['Booktastic Book'], short: {} },
     food: { page: '/gourmet_club.phtml', label: 'Gourmet', did: 'eaten', not: 'Not eaten yet', what: 'gourmet foods', club: 'Hall of Fame', clubUrl: '/gourmet_club.phtml', rarity: [90, 100],
       cats: ['Food', 'Baked', 'Candy', 'Coffee', 'Pizza', 'Hot Dog', 'Slushie', 'Smoothie', 'Healthy Food', 'Gross Food', 'Jelly Food', 'Spooky Food', 'Faerie Food', 'Snow Food', 'Space Food', 'Tropical Food', 'Tyrannian Food', 'Medieval Food', 'Desert Food', 'Qasalan Food', 'Altadorian Food', 'Aquatic Food', 'Kiko Lake Food', 'Kreludan Food', 'Exotic Foods', 'Molten Morsels', 'Neovian Pastries', 'Brightvale Fruit', 'Refreshments'], short: {} },
+    deck: { page: '/games/neodeck/index.phtml', label: 'NeoDeck', did: 'got', not: 'Not in your NeoDeck', what: 'cards', club: '', clubUrl: '', cats: ['Collectable Card'], short: {}, byName: true },   // (the NeoDeck's list: kept by name, as every card of a back shares its picture)
   };
   const COL_ORDER = ['books', 'bt', 'food'];
   function archivePage() {
@@ -21706,7 +21798,7 @@
         await new Promise((ok) => setTimeout(ok, 1600 + Math.random() * 1200));
       }
       if (!part.items.length) return cut('down');
-      const seen = new Set(), items = part.items.filter((it) => { const kk = colImgKey(it[0]); if (seen.has(kk)) return false; seen.add(kk); return true; });   // (pages read minutes apart: one that moved along is in once)
+      const seen = new Set(), items = part.items.filter((it) => { const kk = k.byName ? String(it[1]).toLowerCase() : colImgKey(it[0]); if (seen.has(kk)) return false; seen.add(kk); return true; });   // (pages read minutes apart: one that moved along is in once)
       const cat = { t: Date.now(), items };
       await idbSet(key, cat).catch(() => {});
       await idbSet(pkey, null).catch(() => {});
@@ -24149,6 +24241,1039 @@
     @media (max-width: 1000px) { html.bnp-sa-page .bnp-sa-main { grid-template-columns: minmax(0, 1fr); } html.bnp-sa-page .bnp-sa-sheet { justify-self: center; } html.bnp-sa-page .bnp-sa-heroart { grid-row: auto; width: 90px; height: 90px; } html.bnp-sa-page .bnp-sa-heroacts { grid-column: 1 / -1; } }
     @media (max-width: 640px) { html.bnp-sa-page { --sa-slot: calc((100vw - 110px) / 5); } html.bnp-sa-page .bnp-sa-slot > img { width: 82%; height: auto; } html.bnp-sa-page .bnp-sa-grid { gap: 6px; } html.bnp-sa-page .bnp-sa-sheet { padding: 10px; } html.bnp-sa-page .bnp-sa-hero { grid-template-columns: minmax(0, 1fr); } html.bnp-sa-page .bnp-sa-heroart { display: none; } html.bnp-sa-page .bnp-sa-btn.is-step span { display: none; } html.bnp-sa-page .bnp-sa-title h1 { font-size: 24px; } html.bnp-sa-page .bnp-sa-picker { right: -8px; } }
     @media (prefers-reduced-motion: reduce) { html.bnp-sa-page :is(.bnp-sa-slot, .bnp-sa-pg, .bnp-sa-tip) { transition: none; } html.bnp-sa-page :is(.bnp-sa-note, .bnp-sa-picker, .bnp-sa-slot.is-flash) { animation: none; } }
+  `;
+  // ═══════════════════════════════════════════════════════════════════════════
+  // The NeoDeck, made over (the user, 2026-11-21: "all pages related to neodeck reworked completely aesthetically and functionally",
+  // "tiles that show the full cards artwork without having to click", "or ability to change to full size", the Rarity List "in a popup
+  // thats closeable", a checklist "with buy mode"). Each of its pages (your album, your cards, all 366, Premium, your deck, the high
+  // scores) shows the collection by its art: every card framed in its back's colour at 40, 80, 150 or 300 px (Neopets' own pictures, at
+  // their size or half of it); what you have, what you still need, and what itemdb says they're worth. A card's own page and the rarity
+  // list open on the page; Buy Mode buys the ones you don't have and puts them in. What you have is read from Neopets' own pages (your
+  // cards' page lists every one, with how many), never guessed. Neopets' own page stays under ours, a click away
+  // ═══════════════════════════════════════════════════════════════════════════
+  const ND_SP = ["Acara", "Aisha", "Blumaroo", "Bori", "Bruce", "Buzz", "Chia", "Chomby", "Cybunny", "Draik", "Elephante", "Eyrie", "Faerie", "Flotsam", "Gelert", "Gnorbu", "Grarrl", "Grundo", "Hissi", "Ixi", "Jetsam", "JubJub", "Kacheek", "Kau", "Kiko", "Korbat", "Kougra", "Krawk", "Kyrii", "Lenny", "Lupe", "Lutari", "Meerca", "Mixed", "Moehog", "Monster", "Mynci", "Nimmo", "Peophin", "Poogle", "Pteri", "Quiggle", "Scorchio", "Shoyru", "Skeith", "Techo", "Tonu", "Tree", "Tuskaninny", "Uni", "Unknown", "Usul", "Wocky", "Zafara"];   // (the species Neopets gives its cards)
+  const ND_DATA = [   // (each card, No. 1 first: [name, species (ND_SP), back (ND_RARE)], from Neopets’ All Cards pages, 21 November 2026)
+    ["Jahbal", 11, 6], ["Underwater Chef", 13, 1], ["Glug Glug Jones", 28, 2], ["Bug Eye McGee", 45, 4], ["Capara", 28, 5], ["Samuel No Eyes", 0, 1],
+    ["Velvet Pimpernel", 52, 0], ["The Fontaine Sisters", 1, 3], ["Lord Luparn", 30, 0], ["Spectre", 20, 5], ["Ursula Usul", 51, 4], ["Korabric", 5, 0],
+    ["Flutter", 1, 1], ["Gorunda the Wise", 37, 0], ["Princess Fernypoo", 0, 3], ["Brucey B", 4, 7], ["Punchbag Bob", 50, 6], ["Moogi", 39, 0],
+    ["Kyruggi", 28, 3], ["Mrs. Prenderghast", 1, 1], ["Grarrg", 16, 3], ["Antikia Lighten", 43, 1], ["Myncha", 36, 3], ["The Phantom", 6, 1],
+    ["Aurora the Healer", 33, 1], ["Mr. Chuckles", 22, 6], ["Dr. Frank Sloth", 35, 7], ["Umma Bunga", 50, 3], ["Tyrela Softpaw", 52, 1], ["Pomanna", 24, 1],
+    ["Liandra", 13, 2], ["Haiki-Lu", 37, 1], ["Grundo Chef", 17, 1], ["Wrawk the Merciless", 24, 1], ["Sarkif", 30, 1], ["The Lupe Collector", 52, 5],
+    ["Admiral Arvakis", 30, 1], ["Margoreth", 29, 6], ["The Stuff Collectable Card", 50, 1], ["Trrygdorr", 6, 1], ["Green Scale", 42, 1], ["Flaming Wuzzle", 35, 0],
+    ["Fyora The Faerie Queen", 12, 7], ["The Snowager", 35, 5], ["Grargadon", 30, 4], ["Li-sha", 1, 0], ["Otona, Protector of the Seas", 22, 1], ["Kharlos", 22, 3],
+    ["Fire Paw", 26, 2], ["Island Mystic", 28, 1], ["Midas", 17, 1], ["Uzarro", 51, 0], ["Rikti", 25, 1], ["Ghi Pharun", 17, 5],
+    ["Tylix", 22, 3], ["Gors the Mighty", 35, 0], ["Kreai", 35, 6], ["The Spider Grundo", 35, 5], ["Captain Astounding", 16, 4], ["The Incredible Grarrl", 16, 6],
+    ["Electro-Boy", 16, 4], ["The Wall", 16, 4], ["Ryshiki", 28, 1], ["Shylock Usulski", 51, 6], ["Grotson", 16, 6], ["Doirn", 42, 0],
+    ["Xenia, Master Prankster", 52, 1], ["Gargon IV", 1, 7], ["Arlhox VII", 1, 7], ["Rollay Scaleback", 35, 0], ["Shreegla VI", 1, 7], ["Scauderwelsch", 42, 6],
+    ["Boraxis the Healer", 21, 0], ["The Archmagus of Roo", 2, 2], ["Professor Kachevski", 22, 6], ["Eureka", 45, 5], ["Moehawk", 34, 1], ["Alabaster", 51, 1],
+    ["Professor Chesterpot", 0, 1], ["Farlax V", 1, 4], ["Desert Flower", 34, 0], ["Captain Astounding (H)", 16, 7], ["The Incredible Grarrl (H)", 16, 7], ["Electro-Boy (H)", 16, 7],
+    ["The Wall (H)", 16, 7], ["Xantan the Foul", 35, 1], ["Faleinn", 1, 5], ["Denethrir", 4, 1], ["The Shop Wizard", 21, 6], ["Leirobas", 41, 2],
+    ["Beerlap III", 1, 4], ["Captain Threelegs", 11, 4], ["Maelstra The Dark Faerie", 12, 5], ["Gali Yoj", 40, 1], ["Erick", 8, 0], ["Jelly Chia", 35, 1],
+    ["Shadow Usul", 35, 3], ["Mechachiazilla", 6, 6], ["Chiazilla", 6, 2], ["Choras Tillie", 39, 1], ["Eleus Batrin", 28, 1], ["Morax Dorangis", 42, 0],
+    ["Edna the Witch", 53, 4], ["The Gate Keeper", 45, 2], ["Lummock Sendent", 48, 0], ["Mokti", 25, 0], ["Fuhnah The Fire Faerie", 12, 1], ["The Auction Genie", 52, 2],
+    ["Treasure Seekers", 33, 6], ["Mr Irgo", 20, 0], ["Breadoch Big Foot", 16, 0], ["The Esophagor", 35, 3], ["Wock Til You Drop", 52, 6], ["Neopian Tank Patrol 45", 52, 1],
+    ["Gargoyle Troop", 35, 0], ["Uugbah Sharp Spear", 22, 0], ["Rayn Trueshot", 14, 1], ["The Brain Tree", 47, 6], ["Kargrax the Defender", 24, 1], ["Berserker", 36, 0],
+    ["Sharpeye", 42, 0], ["Tehuti", 1, 2], ["Hubert the Hot Dog Salesman", 36, 2], ["Uggsul", 51, 0], ["Bacheek", 22, 2], ["Lady Osiri", 1, 2],
+    ["Senator Palpus", 48, 5], ["Princess Sankara", 1, 6], ["Riyella", 6, 0], ["Senator Barca", 0, 3], ["Giant Grackle Bug", 35, 3], ["General Crustygums", 16, 5],
+    ["Gedda Happycheek", 22, 6], ["Korosu Crestscar", 6, 6], ["Jeuru Stripedmane", 34, 0], ["Money Tree", 47, 4], ["Chimi Magi", 4, 0], ["Guardian of Fire Magic", 35, 0],
+    ["Guardian of Ice Magic", 35, 6], ["The Hairy Tongue Beast", 35, 7], ["Alhazad the Trader", 52, 1], ["Guardian of Life Magic", 35, 5], ["Rhiannon", 42, 0], ["Guardian of Shock Magic", 35, 3],
+    ["Ruali", 30, 1], ["Guardian of Spectral Magic", 35, 5], ["Advisor Wessle", 28, 2], ["Princess Vyssa", 51, 6], ["King Coltzan III", 30, 3], ["Remnok the Nomad", 1, 5],
+    ["Goldwing", 6, 0], ["Daedelon", 38, 5], ["Brack, Cactus Farmer", 30, 3], ["Geirrod Sternhoof", 42, 0], ["Brista Lightfeet", 22, 4], ["Shoonee", 22, 3],
+    ["Cherlops, Protector of Garn", 6, 6], ["Hubrid Nox", 6, 6], ["Professor Agatha", 1, 0], ["Doctor", 2, 0], ["Shahuaga The Red", 16, 4], ["Rhan Tyr", 42, 3],
+    ["Balthazar the Bounty Hunter", 30, 7], ["Lustra the Golden Peophin", 38, 3], ["Arnie Hulltusk", 48, 0], ["Lhika Burrtail", 52, 0], ["Hagalugg", 6, 1], ["Ryshu", 37, 3],
+    ["Captain Dread", 24, 1], ["Gelert Pack", 14, 4], ["Sir Wockilan the Brave", 52, 1], ["Zephiea Boltheart", 1, 3], ["Hagar Mountbane", 30, 0], ["Marillis Harbane", 42, 6],
+    ["Scorchio Mummy", 42, 4], ["Buzz Alchemist", 5, 4], ["Florg the Devourer", 6, 0], ["Hegred Aishann", 1, 4], ["Niten Hiroru", 24, 3], ["Chen-Ra Son of the Sun", 6, 3],
+    ["Uncle Tharg", 1, 2], ["Venuquin", 38, 0], ["Jasper Gen", 52, 7], ["Duel Bazuka", 21, 6], ["Tyran Far", 26, 1], ["Grimilix", 17, 4],
+    ["Frostburn the Chia", 6, 2], ["Keergo", 30, 3], ["Magnus the Torch", 42, 2], ["Draconus Maximus", 44, 6], ["Undead Farmer", 34, 4], ["Undead Grundo Shopkeeper", 17, 1],
+    ["Gog", 42, 3], ["Nadia the Peophin of Love", 38, 2], ["Shyanna", 15, 0], ["Pteri Knight", 40, 3], ["Captain Telhan", 45, 0], ["Scorchio Mage", 42, 1],
+    ["Darien", 31, 0], ["Sir Cheekalot", 22, 1], ["The Monocerous", 35, 7], ["Swamp Ghoul", 35, 6], ["Solar Fyre", 24, 1], ["Ghartun The Grundo Commander", 17, 0],
+    ["Garrox5 The Grundo Trooper", 17, 6], ["Valkyrie", 51, 4], ["Nocan Vish", 37, 6], ["Evil Sloth Clone #32", 35, 5], ["Lavender", 1, 3], ["Mechanoid Warrior", 35, 6],
+    ["Blarthrox", 17, 4], ["Rock Beast", 35, 2], ["The Monoceraptor", 35, 7], ["Grarrl Battlemaster", 16, 2], ["Umbus Alta", 52, 4], ["Imperius Flare", 1, 5],
+    ["Tyragh the Tyrannian Buzz", 5, 5], ["Tazzalor", 17, 4], ["Kyrii Native", 28, 0], ["Kasuki Lu", 6, 1], ["Orig the Great", 30, 7], ["Siona", 22, 6],
+    ["Sir Fufon Lui", 6, 5], ["Luperus", 30, 3], ["Gutan Kai", 6, 1], ["Ukkrah the Fire Grarrl", 16, 2], ["Grackle the Chia Bomber", 6, 4], ["Slychi the Skeith Invader", 44, 0],
+    ["Lunchtime", 16, 6], ["Gragarex the Grarrl Trooper", 16, 5], ["Feemix the Korbat Scout", 25, 3], ["Kraag the Korbat Leader", 25, 0], ["Ghoul Catchers", 52, 6], ["Zafara Hero", 53, 2],
+    ["Plains Aisha", 1, 3], ["Jannen", 28, 1], ["Iyana the Earth Faerie", 12, 4], ["Godfried the Good", 2, 1], ["Psellia the Air Faerie", 12, 1], ["Usinda", 51, 1],
+    ["Meerca Menace", 32, 1], ["Flying Shoyru", 43, 1], ["Highland Chia", 6, 1], ["A Light Faerie", 12, 5], ["The Battle Faerie", 12, 2], ["Taelia The Snow Faerie", 12, 6],
+    ["Zyrolon", 17, 3], ["Annual Gormball Championship", 51, 0], ["Neopet Version Two", 35, 6], ["The Soup Faerie", 12, 6], ["The Tooth Faerie", 12, 2], ["A Two Rings Crusader", 49, 0],
+    ["The Negg Faerie", 12, 4], ["Kauvara", 23, 6], ["Zafara Rogue", 53, 0], ["Malkus Vile", 44, 0], ["Lupe Warrior", 30, 0], ["The Lava Ghoul", 35, 0],
+    ["Spectral Elemental", 28, 0], ["The Pant Devil", 35, 6], ["Fire Breathing Meerca", 32, 0], ["Yes Boy Ice Cream", 43, 2], ["M*ynci", 36, 0], ["2 Gallon Hatz", 33, 3],
+    ["Nereid the Water Faerie", 12, 0], ["Sticks and Stones", 33, 0], ["Uggaroo", 2, 0], ["Dreaming", 23, 0], ["Quiggle Warlord", 41, 0], ["Quiggle Strongman", 41, 0],
+    ["Sargug", 42, 6], ["Trapped", 30, 0], ["Neoquest Hero", 30, 0], ["Undead Cybunny", 8, 0], ["Plesio", 13, 2], ["Chomby and the Fungus Balls", 7, 5],
+    ["The Space Faerie", 12, 5], ["Wesley Clearheart", 43, 4], ["Bazri The Grundo", 17, 4], ["Dr_Death", 45, 5], ["Count Von Roo", 2, 3], ["Two Rings Wizard", 45, 2],
+    ["Temple Watchman", 35, 1], ["King Roo", 2, 6], ["Two Rings Warlock", 36, 0], ["Two Rings Archmagus", 52, 0], ["Garon the Lupe", 30, 5], ["00 Hog", 34, 5],
+    ["Kalora the Kau", 23, 3], ["Chuffer Bob", 32, 3], ["Branston the Eyrie", 11, 6], ["Little Timmy", 48, 7], ["Alstaf Poogle", 39, 7], ["Zygorax", 17, 6],
+    ["Krawk card", 27, 6], ["The Great Blurendo", 2, 6], ["Meruth", 25, 6], ["Captain Xelqued", 1, 6], ["Space Krawk", 27, 6], ["Iskha Lightbringer", 52, 6],
+    ["Krawk Swashbuckler", 27, 6], ["Kyrii Sorceror", 28, 6], ["Extreme Herder", 33, 6], ["Sergeant Brexis", 5, 6], ["Champion", 46, 6], ["Illusen the Earth Faerie", 12, 6],
+    ["Deckswabber", 33, 6], ["Jhudora the Dark Faerie", 12, 6], ["Calabrus the Cloud Aisha", 1, 7], ["Lady Quintara", 19, 6], ["Draik Paladin", 9, 5], ["Jeran", 30, 6],
+    ["Valrigard", 9, 6], ["Ixi Lancer", 19, 5], ["Enchanted Ixi", 19, 6], ["Kalandra", 23, 6], ["Scratch Card Kiosk Wocky", 52, 4], ["Meuka", 32, 5],
+    ["Maths Nightmare", 1, 5], ["Maitre D", 41, 5], ["The Storyteller", 1, 7], ["Snow Wars Collectable Card", 36, 7], ["Mutant Aisha Twins", 1, 5], ["Magax: Destroyer", 52, 5],
+    ["Lord Darigan", 50, 6], ["Pacha The Vet", 10, 4], ["Lightning Lenny", 29, 5], ["Khan the Unstoppable", 46, 6], ["Master Vex", 36, 6], ["Gilly the Usul", 51, 6],
+    ["Stan the Kyrii", 28, 6], ["Dr. Flexo", 6, 7], ["Zeirn the Electric Kougra", 26, 6], ["LDPBSTSCC", 50, 5], ["Tug-O-War Card", 33, 4], ["Deserted Fairground Card", 33, 5],
+    ["Commander Garoo Card", 2, 5], ["Korbats Lab Card", 25, 3], ["Grarrl Keno Card", 16, 3], ["Rainbow Fountain Card", 12, 5], ["The Tax Beast", 50, 6], ["Grey Faerie Card", 12, 5],
+    ["Judge Hog", 34, 5], ["The Masked Intruder", 26, 5], ["Super Happy Icy Fun Snow Shop Card", 29, 7], ["Lord Kass Card", 11, 6], ["Galem Darkhand", 16, 5], ["Armin the Small", 3, 5],
+    ["Buzz Avenger", 5, 5], ["Berti the Creator", 46, 5], ["Gadgadsbogen Festival", 33, 5], ["Hasee Bounce Card", 33, 5], ["Zafara Double Agent", 53, 6], ["Sophie the Swamp Witch", 19, 5],
+    ["Kiko Explorer", 24, 4], ["Neopian Times 200th Anniversary Card", 33, 7], ["King Roos Nemesis", 2, 4], ["Meerouladen and Heermeedjet", 32, 5], ["King Hagan of Brightvale", 44, 5], ["The Navigator", 11, 4],
+    ["Bruce Avenger", 4, 5], ["Mysterious Aisha Sorceress", 1, 4], ["Mystical Hissi Knight", 18, 3], ["Lenny Curator", 29, 3], ["Tonunishiki", 46, 4], ["Jake the Explorer", 26, 2],
+  ];
+  const ND_N = ND_DATA.length;
+  const ND_RARE = [   // (each back from the commonest: its colour as Neopets names it, its rarity, Neopets' own words and guide for it, and the colours NE draws it in: ink, edge, tint, and the ink's text)
+    { k: 'blue', c: 'Blue', l: 'Very Common', est: '100–300 NP', says: 'Blue backs are Very Common: these make up the majority of cards available.', ink: '#2c6cc0', edge: '#1b4c8f', tint: '#e7effb', on: '#fff' },
+    { k: 'red', c: 'Red', l: 'Common', est: '300–500 NP', says: 'Common or Red backed cards are slightly harder to come by than the Blue.', ink: '#c73434', edge: '#8e1f1f', tint: '#fbe9e9', on: '#fff' },
+    { k: 'pink', c: 'Pink', l: 'Uncommon', est: '500–1,000 NP', says: 'Uncommon or Pink backed cards are the next rarity up from Red or Blue cards.', ink: '#d0548e', edge: '#963063', tint: '#fcebf3', on: '#fff' },
+    { k: 'green', c: 'Green', l: 'Quite Rare', est: '1,000–2,000 NP', says: 'Green backed cards are Quite Rare.', ink: '#2f8a3a', edge: '#1d5f26', tint: '#e7f5e9', on: '#fff' },
+    { k: 'purple', c: 'Purple', l: 'Rare', est: '2,000–5,000 NP', says: 'Rare or Purple backed cards are very hard to find.', ink: '#7445b8', edge: '#4f2f88', tint: '#f0e9fa', on: '#fff' },
+    { k: 'black', c: 'Black', l: 'Very Rare', est: '10,000–20,000 NP', says: 'Black backed cards are Very Rare. Be prepared to search a long time or pay a lot for these.', ink: '#2b2b30', edge: '#050505', tint: '#ececef', on: '#fff' },
+    { k: 'gold', c: 'Gold', l: 'Amazingly Rare', est: '30,000–50,000 NP', says: 'Amazingly Rare: these cards are very, very special. You are fortunate to own a Gold backed card!', ink: '#e2a50f', edge: '#8a5e00', tint: '#fff4d2', on: '#3b2800' },
+    { k: 'holo', c: 'Holo', l: 'Out of Print', est: '100,000+ NP', says: 'Out of Print cards have a Holographic Back: these will never again be sold in shops. Hang on to them!', ink: '#8f84e0', edge: '#4d4499', tint: '#f1effc', on: '#1f1a4d' },
+  ];
+  const ND_PX = { list: 40, s: 80, m: 150, l: 300 };   // (each size's picture: Neopets' sm_ at 40, med_ at 80, lg_ at half (150) or whole (300))
+  const ND_SIZES = [['list', 'List'], ['s', 'Small'], ['m', 'Half'], ['l', 'Full']];
+  const ND_SORTS = [['no', 'By number'], ['name', 'By name'], ['rare', 'Rarest first'], ['cheap', 'Cheapest first'], ['dear', 'Dearest first'], ['count', 'Most copies']];
+  const ND_TOP = 365;   // (the most the high score table's leaders have: no one on it has No. 332)
+  const ndArt = (id, sz) => `${NPI}games/tradingcards/${sz === 'list' ? 'sm' : sz === 's' ? 'med' : 'lg'}_${id}.gif`;
+  const ndBack = (r, sm) => `${NPI}items/${sm ? 'sm_' : ''}${ND_RARE[r].k}tradingcardback.gif`;
+  const ndVars = (r) => `--r:${r.ink};--re:${r.edge};--rt:${r.tint};--ro:${r.on}`;
+  const ndKey = (s) => String(s || '').toLowerCase().replace(/&amp;/g, '&').replace(/[^a-z0-9]+/g, '');
+  const ndP = () => saJson('bnp-nd', {});   // (how you like it: this browser's)
+  const ndPSet = (k, v) => { try { localStorage.setItem('bnp-nd', JSON.stringify({ ...ndP(), [k]: v })); } catch (_) { /* */ } };
+  const ndAcct = () => nclMe() || '';
+  let nd = null, ndMine = null, ndCat = null;
+  const ndBlank = () => ({ v: 1, t: 0, have: {}, rid: {}, heard: 0 });
+  // ── what you have: your cards' page read whole (how many of each, and the id each "remove one" takes), an album page's twenty kept as seen
+  async function ndMineLoad() {
+    const a = ndAcct(), k = a ? await idbGet(`nd-mine:${a}`).catch(() => null) : null;
+    ndMine = k && k.v === 1 && k.have && typeof k.have === 'object' ? k : ndBlank();
+    ndMine.acct = a;
+    return ndMine;
+  }
+  function ndMineSave() {
+    if (!ndMine || !ndMine.acct) return Promise.resolve();
+    const { acct, ...keep } = ndMine;
+    return idbSet(`nd-mine:${acct}`, keep).catch(() => {});
+  }
+  const ndHas = (id) => (ndMine && Number(ndMine.have[id])) || 0;
+  const ndKnown = () => !!(ndMine && ndMine.t);   // (your whole deck read at least once)
+  const ndCountOf = (have) => Object.values(have || {}).filter((v) => v > 0).length;
+  const ndCount = () => (ndMine ? ndCountOf(ndMine.have) : 0);
+  function ndParseCards(box) {   // (a cards page as Neopets draws it: each card's number and how many, and for yours the id its "remove one" takes; null when it isn't one)
+    const head = [...box.querySelectorAll('b')].find((b) => /NeoDeck cards$/i.test(reClean(b.textContent)));
+    if (!head) return null;
+    const have = {}, rid = {};
+    for (const a of box.querySelectorAll('a[href*="showCard"]')) {
+      const id = Number((/showCard\s*\(\s*(\d+)/.exec(a.getAttribute('href') || '') || [])[1]);
+      if (!(id >= 1 && id <= 2000)) continue;
+      const t = a.closest('table'), rows = t ? [...t.rows] : [];
+      const nb = rows[1] && rows[1].querySelector('td b');
+      have[id] = (have[id] || 0) + Math.max(1, Number(reClean(nb ? nb.textContent : '1').replace(/\D/g, '')) || 1);
+      const rm = rows[1] && rows[1].querySelector('a[href*="remove_card"]'), m = rm && /neodeck_card_id=(\d+)/.exec(rm.getAttribute('href') || '');
+      if (m) rid[id] = m[1];
+    }
+    return { have, rid, yours: /^your\b/i.test(reClean(head.textContent)) };
+  }
+  function ndParseAlbum(box) {   // (an album page: the deck's count, and which of its twenty cards it has)
+    const m = /This deck contains\s*([\d,]+)\s*of the\s*([\d,]+)\s*total cards/i.exec(reClean(box.textContent));
+    if (!m) return null;
+    const have = [], miss = [];
+    for (const i of box.querySelectorAll('td > font.sf > i')) {
+      const id = Number(reClean(i.textContent));
+      if (!(id >= 1)) continue;
+      (i.closest('td').querySelector('a[href*="showCard"]') ? have : miss).push(id);
+    }
+    return { n: Number(m[1].replace(/,/g, '')), all: Number(m[2].replace(/,/g, '')), have, miss };
+  }
+  function ndParsePrem(box) {   // (your Premium cards: each month's picture, when, and its name)
+    const out = [];
+    for (const img of box.querySelectorAll('img[src*="/tradingcards/premium/"]')) {
+      const td = img.closest('table') && img.closest('table').closest('td');
+      const bs = td ? [...td.children].filter((x) => x.tagName === 'B').map((b) => reClean(b.textContent)) : [];
+      out.push({ img: img.getAttribute('src').replace(/^\/\//, 'https://'), when: bs.slice(0, 2).join(' '), name: bs[2] || '' });
+    }
+    return out;
+  }
+  function ndParseScores(box) {   // (Card Collector's high score table: each place, who and how many; which rows each trophy takes; the least that gets on it)
+    const rows = [];
+    let tier = 0, left = 0;
+    for (const tr of box.querySelectorAll('tr')) {
+      const a = tr.querySelector('a[href*="user="]'), tds = tr.querySelectorAll('td');
+      if (!a || tds.length < 3) continue;
+      const img = tr.querySelector('img[src*="/trophies/1329_"]');
+      if (img) { tier = Number((/1329_(\d)/.exec(img.getAttribute('src')) || [])[1]) || 0; left = Number(img.closest('td').getAttribute('rowspan')) || 1; }
+      const p = Number(reClean(tds[0].textContent)), n = Number(reClean(tds[2].textContent).replace(/[^\d]/g, '')), m = /[?&]user=([^&#]+)/.exec(a.getAttribute('href') || '');
+      let u = reClean(a.textContent);
+      try { if (m) u = decodeURIComponent(m[1]); } catch (_) { /* (as it shows) */ }
+      if (p > 0 && u) rows.push({ p, u, n, tr: left > 0 ? tier : 0 });
+      if (left > 0) left--;
+    }
+    if (rows.length < 3) return null;
+    const min = /minimum score\s*:\s*([\d,]+)/i.exec(reClean(box.textContent));
+    return { rows, min: min ? Number(min[1].replace(/,/g, '')) : rows[rows.length - 1].n };
+  }
+  async function ndKeepCards(c) {   // (your cards' page, just seen: the whole of what you have)
+    if (!ndMine || !ndMine.acct) return;
+    Object.assign(ndMine, { have: c.have, rid: c.rid, t: Date.now(), heard: 0 });
+    await ndMineSave();
+  }
+  async function ndKeepAlbum(a) {   // (an album page of yours, just seen: its twenty as they are; a count that doesn't match what's kept, read whole next)
+    if (!ndMine || !ndMine.acct) return;
+    for (const id of a.have) if (!(ndHas(id) > 0)) ndMine.have[id] = 1;
+    for (const id of a.miss) if (ndMine.have[id]) { delete ndMine.have[id]; delete ndMine.rid[id]; }
+    if (a.n !== ndCount()) ndMine.heard = Date.now();
+    await ndMineSave();
+  }
+  let ndMineAsk = null;
+  function ndReadMine() {   // (your cards' page, read as a visit reads it: every card you have and how many. One at a time)
+    if (ndMineAsk) return ndMineAsk;
+    const me = ndAcct();
+    return (ndMineAsk = (async () => {
+      const html = await pageRead(`/games/neodeck/index.phtml?${me ? `owner=${encodeURIComponent(me)}&` : ''}show=cards`).catch(() => '');
+      const doc = html ? new DOMParser().parseFromString(html, 'text/html') : null;
+      const c = doc && ndParseCards(doc.querySelector('td.content') || doc.body);
+      if (!c || !c.yours) throw new Error('cards');
+      await ndKeepCards(c);
+      return true;
+    })().finally(() => { ndMineAsk = null; }));
+  }
+  async function ndReadTheirs(owner) {   // (someone else's cards' page, read once in ten minutes: every card they have)
+    const key = `bnp-nd-their:${owner.toLowerCase()}`;
+    try { const k = JSON.parse(sessionStorage.getItem(key) || 'null'); if (k && Date.now() - k.t < 600000 && k.have) return k; } catch (_) { /* */ }
+    const html = await pageRead(`/games/neodeck/index.phtml?owner=${encodeURIComponent(owner)}&show=cards`).catch(() => '');
+    const doc = html ? new DOMParser().parseFromString(html, 'text/html') : null;
+    const c = doc && ndParseCards(doc.querySelector('td.content') || doc.body);
+    if (!c) throw new Error('theirs');
+    const k = { t: Date.now(), have: c.have };
+    try { sessionStorage.setItem(key, JSON.stringify(k)); } catch (_) { /* */ }
+    return k;
+  }
+  async function ndDecked(ids) {   // (cards NE just put in your NeoDeck: counted in at once, and read whole the next time a NeoDeck page opens)
+    await ndMineLoad();
+    if (!ndMine.acct) return;
+    for (const id of ids) if (id >= 1) ndMine.have[id] = (ndHas(id) || 0) + 1;
+    ndMine.heard = Date.now();
+    await ndMineSave();
+    if (nd) ndPaint(true);
+  }
+  // ── itemdb: every Collectable Card's name and price in one ask (kept three days), each card matched to its item by name however it's spelt
+  function ndDist(a, b, cap) {   // (how many letters apart, stopping once it's past cap)
+    let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+    for (let i = 1; i <= a.length; i++) {
+      const cur = [i];
+      let low = i;
+      for (let j = 1; j <= b.length; j++) { cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); if (cur[j] < low) low = cur[j]; }
+      if (low > cap) return cap + 1;
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+  function ndMatch(items) {   // (Map: card number → { n: itemdb's name, p: price, r: rarity, nc, gone })
+    const by = new Map(), left = new Map(), one = (it) => ({ n: it[1], p: it[3] > 0 ? it[3] : 0, r: it[2], nc: !!it[6], gone: !!it[7] });
+    const bare = (k) => k.replace(/(?:collectable)?card$/, '');
+    for (const it of items) if (!left.has(ndKey(it[1]))) left.set(ndKey(it[1]), it);
+    const un = [];
+    ND_DATA.forEach((x, i) => { const k = ndKey(x[0]), it = left.get(k); if (it) { by.set(i + 1, one(it)); left.delete(k); } else un.push(i + 1); });
+    const rest = un.filter((id) => {   // (the same but for "Card" or "Collectable Card" on the end)
+      const k = bare(ndKey(ND_DATA[id - 1][0]));
+      for (const [k2, it] of left) if (k && bare(k2) === k) { by.set(id, one(it)); left.delete(k2); return false; }
+      return true;
+    });
+    for (const id of rest) {   // (a letter or two apart: "Meerouladen" on the card, "Merouladen" on the item)
+      const k = ndKey(ND_DATA[id - 1][0]), cap = Math.max(1, Math.floor(k.length / 9));
+      let best = null, bd = cap + 1;
+      for (const [k2, it] of left) { if (Math.abs(k2.length - k.length) > cap) continue; const d = ndDist(k, k2, cap); if (d < bd) { bd = d; best = [k2, it]; } }
+      if (best) { by.set(id, one(best[1])); left.delete(best[0]); }
+    }
+    return by;
+  }
+  let ndCatAsk = null;
+  function ndCatalogLoad(force) {
+    if (ndCatAsk && !force) return ndCatAsk;
+    return (ndCatAsk = colCatalog('deck', force).then((c) => {
+      ndCat = c && Array.isArray(c.items) && c.items.length ? { t: c.t, by: ndMatch(c.items), part: c.partial || c.part || null, err: c.err || '', stale: !!c.stale } : { t: 0, by: new Map(), err: (c && c.err) || 'down' };
+      return ndCat;
+    }).catch(() => (ndCat = { t: 0, by: new Map(), err: 'down' })));
+  }
+  const ndItem = (id) => (ndCat && ndCat.by.get(id)) || null;
+  const ndPrice = (id) => { const x = ndItem(id); return x && x.p > 0 ? x.p : 0; };
+  const ndItemName = (id) => { const x = ndItem(id); return x ? x.n : ND_DATA[id - 1][0]; };
+  const ndPriceText = (id) => { const p = ndPrice(id); return p ? `${colNp(p)} NP` : !ndCat ? '…' : ndCat.err && !ndCat.by.size ? (ndCat.err === 'visit' ? 'itemdb?' : '?') : 'No price'; };
+  function ndWorth(ids, many) {   // (what these cost by itemdb: the priced ones added up (each copy, with many), how many have a price, how many haven't)
+    let cost = 0, priced = 0;
+    for (const id of ids) { const p = ndPrice(id); if (p) { cost += p * (many ? Math.max(1, ndHas(id)) : 1); priced++; } }
+    return { cost, priced, none: ids.length - priced, n: ids.length };
+  }
+  // ── the page: which of the NeoDeck's it is, ours in place of Neopets' own (kept under it, a click away)
+  function ndKind() {   // ('album', 'cards', 'all', 'prem', 'deck', 'scores'; 'rarepop' and 'cardpop' for Neopets' own pop-up windows; '' for anything else)
+    if (S.features.neodeck === false) return '';
+    const p = location.pathname, q = new URLSearchParams(location.search);
+    if (p === '/gamescores.phtml') return q.get('game_id') === '1329' ? 'scores' : '';
+    if (p === '/games/neodeck/spoiler.phtml') return 'all';
+    if (p === '/games/neodeck/colcardrarity.phtml') return 'rarepop';
+    if (p === '/games/neodeck/colcardlookup.phtml') return Number(q.get('colcard_id')) > 0 ? 'cardpop' : '';
+    if (p !== '/games/neodeck/index.phtml' && p !== '/games/neodeck/' && p !== '/games/neodeck') return '';
+    return { album: 'album', cards: 'cards', prem: 'prem', modify: 'deck' }[q.get('show') || 'cards'] || '';
+  }
+  function ndEarly() {   // (the very start: Neopets' own page out of sight, our look in, before anything's drawn)
+    const kind = ndKind();
+    if (!kind || !document.documentElement) return;
+    const root = document.documentElement;
+    root.classList.add('bnp-nd-page');
+    if (kind === 'rarepop' || kind === 'cardpop') root.classList.add('bnp-nd-solo');
+    try { nbPaintVars(JSON.parse(localStorage.getItem('bnp-nbtheme') || 'null')); } catch (_) { /* */ }
+    if (!document.getElementById('bnp-nd-style')) { const st = document.createElement('style'); st.id = 'bnp-nd-style'; st.textContent = ND_CSS; root.append(st); }
+    setTimeout(() => { if (!nd) root.classList.add('bnp-nd-ready'); }, 6000);   // (never kept out of sight: if ours isn't in by then, Neopets' own shows)
+  }
+  function ndPage() {   // (anything wrong while it's made over: Neopets' own page, at once)
+    ndPageGo().catch((e) => { report(e); if (!nd) document.documentElement.classList.remove('bnp-nd-page', 'bnp-nd-ready', 'bnp-nd-solo'); });
+  }
+  async function ndPageGo() {
+    const kind = ndKind();
+    if (!kind) return;
+    ndEarly();
+    const out = () => document.documentElement.classList.remove('bnp-nd-page', 'bnp-nd-ready', 'bnp-nd-solo');
+    if (kind === 'rarepop' || kind === 'cardpop') { if (!ndSolo(kind)) out(); return; }
+    const box = document.querySelector('td.content');
+    if (!box || /log\s*in/i.test(document.title)) { out(); return; }
+    const q = new URLSearchParams(location.search), me = ndAcct();
+    const owner = kind === 'scores' || kind === 'all' ? '' : reClean(q.get('owner') || '');
+    const mine = !owner || (!!me && owner.toLowerCase() === me);
+    if (kind !== 'scores' && !box.querySelector('a[href*="show=album"]')) { out(); return; }   // (no deck's menu: a page NE doesn't know, or no NeoDeck yet. Neopets' own, as it is)
+    const cards = kind === 'cards' ? ndParseCards(box) : null, album = kind === 'album' ? ndParseAlbum(box) : null, sc = kind === 'scores' ? ndParseScores(box) : null;
+    const form = kind === 'deck' ? box.querySelector('form[action*="process_neodeck"]') : null;
+    if ((kind === 'cards' && !cards) || (kind === 'album' && !album) || (kind === 'scores' && !sc) || (kind === 'deck' && (!form || !mine))) { out(); return; }
+    try { nbTheme(); } catch (e) { report(e); }
+    await ndMineLoad();
+    if (mine && cards && cards.yours) await ndKeepCards(cards);
+    if (mine && album) await ndKeepAlbum(album);
+    const P = ndP(), root = document.createElement('div'), sizes = P.size || {};
+    root.className = 'bnp-nd';
+    root.setAttribute('data-bnp', 'nd');
+    nd = {
+      kind, mine, owner, root, form, sc, album: mine ? null : album, prem: kind === 'prem' ? ndParsePrem(box) : null,
+      theirs: !mine && cards ? { t: Date.now(), have: cards.have } : null, reading: '', note: '',
+      size: ND_PX[sizes[kind]] ? sizes[kind] : kind === 'all' ? 'list' : 'm', show: 'all', sort: P.sort && P.sort !== 'count' ? P.sort : 'no', rare: new Set(), sp: '', q: '',
+      limit: Number(q.get('limit')) || 0, place: Number(q.get('place')) || 0,
+    };
+    if (kind === 'cards' && P.sort === 'count') nd.sort = 'count';
+    nd.destroy = kind === 'deck' ? [...box.querySelectorAll('input[type="button"]')].find((b) => /destroy/i.test(b.value)) || null : null;
+    if (form) form.remove();   // (Neopets' own form and Destroy button, moved into ours: they work as they always have)
+    if (nd.destroy) nd.destroy.remove();
+    const neo = document.createElement('div');   // (Neopets' own page, all of it, out of sight under ours: one click shows it again)
+    neo.className = 'bnp-nd-neobox';
+    neo.setAttribute('data-bnp', 'ndneo');
+    while (box.firstChild) neo.append(box.firstChild);
+    box.append(root, neo);
+    document.documentElement.classList.add('bnp-nd-ready');
+    ndWire(root);
+    const old = !ndMine.t || Date.now() - ndMine.t > 6 * 3600e3 || (ndMine.heard || 0) > ndMine.t;
+    if (me && old && !(mine && cards && cards.yours)) nd.reading = 'mine';
+    if (!mine && !cards) nd.reading = nd.reading || 'theirs';
+    ndPaint();
+    ndCatalogLoad(false).then(() => { ndPaint(true); if (bm && bm.kind === 'cards' && bm.win.classList.contains('open') && !bm.run) bmOpen('cards'); });
+    if (me && old && !(mine && cards && cards.yours)) {   // (what you have, read again when it's six hours old, or NE heard of a change it couldn't count)
+      ndReadMine().then(() => { nd.reading = nd.reading === 'mine' ? '' : nd.reading; ndPaint(true); })
+        .catch(() => { nd.reading = ''; nd.note = 'Your cards’ page didn’t open just now, so what you have may be out of date: Check now tries again.'; ndPaint(true); });
+    }
+    if (!mine && !cards) ndReadTheirs(owner).then((t) => { nd.theirs = t; nd.reading = ''; ndPaint(true); }).catch(() => { nd.reading = ''; nd.note = 'Their cards’ page didn’t open just now: only this album page of theirs is known.'; ndPaint(true); });
+    if (nd.place > 0 && kind === 'album') setTimeout(() => ndFlash((nd.place - 1) * 20 + 1), 200);
+  }
+  function ndFlash(id) {   // (a card brought into sight and lit for a moment: an album page Neopets' own link went to)
+    const t = nd && nd.root.querySelector(`[data-nd-id="${id}"]`);
+    if (!t) return;
+    t.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    t.classList.add('is-flash');
+    setTimeout(() => t.classList.remove('is-flash'), 2200);
+  }
+  // ── what's shown: the page's cards, then what you've chosen
+  const ndOwnerHas = (id) => (nd.mine ? ndHas(id) : nd.theirs ? Number(nd.theirs.have[id]) || 0 : nd.album && nd.album.have.includes(id) ? 1 : 0);
+  function ndBase() {   // (the cards this page is about: your (or their) cards' page only what's held; every one elsewhere)
+    const ids = [];
+    for (let id = 1; id <= ND_N; id++) if (nd.kind !== 'cards' || ndOwnerHas(id) > 0) ids.push(id);
+    return ids;
+  }
+  const ND_SHOW = { all: () => true, have: (id) => ndOwnerHas(id) > 0, miss: (id) => !(ndOwnerHas(id) > 0), dup: (id) => ndOwnerHas(id) > 1, need: (id) => ndOwnerHas(id) > 0 && !(ndHas(id) > 0) };
+  function ndShows() {   // ([key, words, how many] for the page)
+    const base = ndBase(), c = (k) => base.filter(ND_SHOW[k]).length, you = ndKnown();
+    if (nd.kind === 'cards') return nd.mine ? [['all', 'All yours', base.length], ['dup', 'Doubles', c('dup')]] : [['all', 'All theirs', base.length], ...(you ? [['need', 'You don’t have', c('need')]] : [])];
+    if (!nd.mine) return [['all', 'Every card', base.length], ['have', 'They have', c('have')], ['miss', 'They need', c('miss')], ...(you ? [['need', 'They have, you don’t', c('need')]] : [])];
+    return [['all', 'Every card', base.length], ['have', 'Yours', c('have')], ['miss', 'Missing', c('miss')]];
+  }
+  function ndVisible() {
+    const f = ND_SHOW[nd.show] || ND_SHOW.all, raw = nd.q.trim(), q = ndKey(raw), qn = /^#?\s*\d+$/.test(raw) ? Number(raw.replace(/\D/g, '')) : 0;
+    const ids = ndBase().filter((id) => {
+      const x = ND_DATA[id - 1];
+      if (!f(id) || (nd.rare.size && !nd.rare.has(x[2])) || (nd.sp !== '' && String(x[1]) !== nd.sp)) return false;
+      if (qn) return id === qn;
+      return !q || ndKey(x[0]).includes(q) || ndKey(ND_SP[x[1]]).includes(q) || ndKey(ndItemName(id)).includes(q);
+    });
+    const price = (id) => ndPrice(id) || Infinity, name = (a, b) => ND_DATA[a - 1][0].localeCompare(ND_DATA[b - 1][0], undefined, { sensitivity: 'base' });
+    const by = nd.sort;
+    return ids.sort(by === 'name' ? name : by === 'rare' ? (a, b) => ND_DATA[b - 1][2] - ND_DATA[a - 1][2] || a - b : by === 'cheap' ? (a, b) => price(a) - price(b) || a - b
+      : by === 'dear' ? (a, b) => (price(b) === Infinity ? -1 : price(b)) - (price(a) === Infinity ? -1 : price(a)) || a - b : by === 'count' ? (a, b) => ndOwnerHas(b) - ndOwnerHas(a) || a - b : (a, b) => a - b);
+  }
+  function ndRareCounts(has) { const out = ND_RARE.map(() => ({ have: 0, all: 0 })); ND_DATA.forEach((x, i) => { out[x[2]].all++; if (has(i + 1) > 0) out[x[2]].have++; }); return out; }
+  // ── drawing it
+  const ND_IC = {
+    cards: '<svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M6.5 3.5h7a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 5 15V5a1.5 1.5 0 0 1 1.5-1.5zM10 7.2l.9 1.8 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+    shop: '<svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M3.5 8.5h13M4.5 8.5l1-4.5h9l1 4.5M5 8.5v8h10v-8M8.5 16.5v-4h3v4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+    again: '<svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true"><path d="M15.5 9.5a5.5 5.5 0 1 1-1.7-4M14.5 2.8v3.4h-3.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  };
+  function ndHeadHtml() {
+    const known = nd.mine ? ndKnown() : !!(nd.theirs || nd.album);
+    const own = nd.mine ? ndCount() : nd.theirs ? ndCountOf(nd.theirs.have) : nd.album ? nd.album.n : 0;
+    const pct = Math.round((1000 * own) / ND_N) / 10, rc = ndRareCounts(nd.mine ? ndHas : ndOwnerHas);
+    const segs = known ? ND_RARE.map((r, i) => (rc[i].have ? `<i style="width:${(100 * rc[i].have) / ND_N}%;background:${r.ink}" title="${esc(`${r.c} backs: ${rc[i].have} of ${rc[i].all}`)}"></i>` : '')).join('') : '';
+    const chips = [];
+    if (nd.mine && known) {
+      const mineIds = ndBase().filter((id) => ndHas(id) > 0), missIds = ndBase().filter((id) => !(ndHas(id) > 0)), w = ndWorth(mineIds, true), g = ndWorth(missIds);
+      const extra = mineIds.reduce((s, id) => s + Math.max(0, ndHas(id) - 1), 0);
+      if (mineIds.length) chips.push(`<span class="bnp-nd-chip is-np" title="${esc(`${w.priced} of your ${w.n} cards have an itemdb price${w.none ? `; ${w.none} haven’t` : ''}. Each copy counted.`)}">${saNpIc()}Your cards: ${w.priced ? `about <b>${colNp(w.cost)} NP</b>` : ndCat ? 'no prices yet' : 'adding up…'}</span>`);
+      if (missIds.length) chips.push(`<span class="bnp-nd-chip">${missIds.length.toLocaleString()} still to get${g.priced ? ` · about ${colNp(g.cost)} NP${g.none ? ` for ${g.priced}` : ''}` : ''}</span>`);
+      if (extra) chips.push(`<span class="bnp-nd-chip" title="Copies past the first of a card: ones you could sell or trade">${extra.toLocaleString()} spare ${extra === 1 ? 'copy' : 'copies'}</span>`);
+    }
+    if (!nd.mine && known && ndKnown()) {
+      const need = ndBase().filter((id) => ndOwnerHas(id) > 0 && !(ndHas(id) > 0)).length;
+      chips.push(`<span class="bnp-nd-chip${need ? ' is-need' : ''}">${need ? `${need.toLocaleString()} of theirs you don’t have` : 'You have every card they have'}</span>`);
+      chips.push(`<span class="bnp-nd-chip">You: ${ndCount().toLocaleString()} of ${ND_N}</span>`);
+    }
+    const reading = nd.reading === 'mine' ? (ndKnown() ? 'Checking your cards…' : 'Reading your cards…') : nd.reading === 'theirs' ? 'Reading their cards…' : '';
+    if (reading) chips.push(`<span class="bnp-nd-chip is-wait">${esc(reading)}</span>`);
+    else if (nd.mine && ndMine && ndMine.acct) chips.push(`<button type="button" class="bnp-nd-chip is-btn" data-nd-check title="Read your cards’ page again now">${ND_IC.again}${ndKnown() ? `Counted ${esc(colAgo(ndMine.t))}` : 'Count your cards'}</button>`);
+    const acts = [];
+    if (nd.mine && known && ndMine.acct && own < ND_N) acts.push(`<button type="button" class="bnp-nd-btn is-go" data-nd-buy title="Buy the cards your NeoDeck still needs from users’ shops, and put them in as they’re bought">${BM_CART}<span>Buy Mode</span></button>`);
+    if (!nd.mine) acts.push(`<a class="bnp-nd-btn" href="/games/neodeck/index.phtml?show=album">${ND_IC.cards}<span>Your NeoDeck</span></a>`);
+    acts.push(`<button type="button" class="bnp-nd-btn" data-nd-rarelist aria-haspopup="dialog"><img src="${ndBack(6, true)}" width="20" height="20" alt=""><span>Rarity list</span></button>`);
+    acts.push(`<a class="bnp-nd-btn" href="/objects.phtml?type=shop&amp;obj_type=8" title="Neopets’ Collectable Card shop">${ND_IC.shop}<span>Card shop</span></a>`);
+    const who = nd.mine ? 'Your NeoDeck' : `${nd.owner}’s NeoDeck`;
+    return `<header class="bnp-nd-head">
+        <div class="bnp-nd-fan" aria-hidden="true">${[0, 6, 7].map((r, i) => `<img src="${ndBack(r)}" width="80" height="80" alt="" style="--i:${i}">`).join('')}</div>
+        <div class="bnp-nd-hcard">
+          <div class="bnp-nd-htop">
+            <span class="bnp-nd-htitle"><small>Collectable Cards</small><h1>${esc(who)}</h1></span>
+            ${known ? `<span class="bnp-nd-prog"><b class="bnp-nd-big">${own.toLocaleString()}</b><span class="bnp-nd-of">of the ${ND_N}<br>cards there are</span><b class="bnp-nd-pct">${pct}%</b></span>` : `<span class="bnp-nd-prog"><span class="bnp-nd-of">${nd.mine ? 'Not counted yet' : 'Not read yet'}</span></span>`}
+          </div>
+          <div class="bnp-nd-bar" role="img" aria-label="${esc(`${own} of ${ND_N} cards`)}">${segs}</div>
+          <div class="bnp-nd-chips">${chips.join('')}</div>
+        </div>
+        <div class="bnp-nd-acts">${acts.join('')}</div>
+      </header>${nd.note ? `<p class="bnp-nd-note">${esc(nd.note)}</p>` : ''}`;
+  }
+  function ndTabsHtml() {
+    const me = ndAcct(), o = nd.mine ? me : nd.owner, base = `/games/neodeck/index.phtml?${o ? `owner=${encodeURIComponent(o)}&` : ''}`;
+    const held = nd.mine ? (ndKnown() ? ndCount() : null) : nd.theirs ? ndCountOf(nd.theirs.have) : null;
+    const T = [['album', nd.mine ? 'Your album' : 'Their album', `${base}show=album`, ND_N], ['cards', nd.mine ? 'Your cards' : 'Their cards', `${base}show=cards`, held], ['all', 'All cards', '/games/neodeck/spoiler.phtml', null]];
+    if (nd.mine) T.push(['prem', 'Premium', `${base}show=prem`, nd.prem ? nd.prem.length : null], ['deck', 'Your deck', `${base}show=modify`, null]);
+    T.push(['scores', 'High scores', '/gamescores.phtml?game_id=1329', null]);
+    return `<nav class="bnp-nd-tabs" aria-label="The NeoDeck’s pages">${T.map(([k, l, u, n]) => `<a class="bnp-nd-tab" href="${esc(u)}"${k === nd.kind ? ' aria-current="page"' : ''}><span>${esc(l)}</span>${n != null ? `<b>${Number(n).toLocaleString()}</b>` : ''}</a>`).join('')}</nav>`;
+  }
+  function ndToolsHtml() {
+    const rc = ndRareCounts(nd.kind === 'cards' ? ndOwnerHas : nd.mine ? ndHas : ndOwnerHas), cardsPage = nd.kind === 'cards';
+    const sp = [...new Set(ndBase().map((id) => ND_DATA[id - 1][1]))].sort((a, b) => ND_SP[a].localeCompare(ND_SP[b]));
+    if (nd.sp !== '' && !sp.includes(Number(nd.sp))) nd.sp = '';
+    const sorts = ND_SORTS.filter(([k]) => k !== 'count' || cardsPage);
+    return `<section class="bnp-nd-tools" data-nd-tools>
+        <div class="bnp-nd-trow">
+          <label class="bnp-nd-find">${SA_IC.find}<input type="search" data-nd-q value="${esc(nd.q)}" placeholder="Find a card: its name, species or number" aria-label="Find a card" autocomplete="off"></label>
+          <span class="bnp-nd-seg" role="group" aria-label="Show">${ndShows().map(([k, l, n]) => `<button type="button" data-nd-show="${k}" aria-pressed="${nd.show === k}">${esc(l)}<b>${n.toLocaleString()}</b></button>`).join('')}</span>
+        </div>
+        <div class="bnp-nd-rares" role="group" aria-label="Show these backs only">${ND_RARE.map((r, i) => `<button type="button" class="bnp-nd-rchip${cardsPage ? ' is-plain' : ''}" data-nd-rare="${i}" aria-pressed="${nd.rare.has(i)}" style="${ndVars(r)}" title="${esc(`${r.c} backs: ${r.l}${cardsPage ? '' : `. ${nd.mine ? 'You have' : 'They have'} ${rc[i].have} of ${rc[i].all}`}`)}"><img src="${ndBack(i, true)}" width="20" height="20" alt=""><b>${r.c}</b><small>${cardsPage ? rc[i].have : `${rc[i].have}/${rc[i].all}`}</small>${cardsPage ? '' : `<span class="bnp-nd-rmini"><i style="width:${Math.round((100 * rc[i].have) / Math.max(1, rc[i].all))}%"></i></span>`}</button>`).join('')}</div>
+        <div class="bnp-nd-trow">
+          <label class="bnp-nd-sel"><span>Species</span><select data-nd-sp><option value="">Every species</option>${sp.map((i) => `<option value="${i}"${String(i) === nd.sp ? ' selected' : ''}>${esc(ND_SP[i])}</option>`).join('')}</select></label>
+          <label class="bnp-nd-sel"><span>Sort</span><select data-nd-sort>${sorts.map(([k, l]) => `<option value="${k}"${k === nd.sort ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+          <span class="bnp-nd-count" data-nd-count></span>
+          <span class="bnp-nd-seg is-size" role="group" aria-label="Card size">${ND_SIZES.map(([k, l]) => `<button type="button" data-nd-size="${k}" aria-pressed="${nd.size === k}" title="${esc(k === 'list' ? 'A list, with each card’s picture small' : `Each card’s picture at ${ND_PX[k]} px`)}">${l}</button>`).join('')}</span>
+        </div>
+      </section>`;
+  }
+  function ndYouHtml(id) {   // (on someone else's: whether you have it too)
+    if (nd.mine || !ndKnown()) return '';
+    return ndHas(id) > 0 ? `<i class="bnp-nd-you is-y" title="You have it too">${SA_IC.check}</i>` : '<i class="bnp-nd-you is-n" title="You don’t have it">+</i>';
+  }
+  function ndTileHtml(id) {
+    const x = ND_DATA[id - 1], r = ND_RARE[x[2]], n = ndOwnerHas(id), sz = nd.size, miss = !(n > 0);
+    const lab = `${x[0]}, No. ${id}, ${r.c} back${miss ? (nd.mine ? ', not in your NeoDeck' : ', not in their NeoDeck') : n > 1 ? `, ${n} of them` : ''}`;
+    if (sz === 'list') {
+      return `<button type="button" class="bnp-nd-row is-${r.k}${miss ? ' is-miss' : ''}" data-nd-id="${id}" style="${ndVars(r)}" aria-label="${esc(lab)}">
+          <b class="bnp-nd-no">${id}</b><span class="bnp-nd-lart"><img src="${esc(ndArt(id, 'list'))}" alt="" width="40" height="40" loading="lazy" decoding="async"></span>
+          <span class="bnp-nd-lname">${esc(x[0])}</span><span class="bnp-nd-lsp">${esc(ND_SP[x[1]])}</span><span class="bnp-nd-lr"><i></i>${r.c}</span>
+          <span class="bnp-nd-lp">${esc(ndPriceText(id))}</span><span class="bnp-nd-lyou">${miss ? '<i class="is-no">–</i>' : `${SA_IC.check}${n > 1 ? `<b>×${n}</b>` : ''}`}${ndYouHtml(id)}</span>
+        </button>`;
+    }
+    return `<button type="button" class="bnp-nd-card is-${r.k}${miss ? ' is-miss' : ''}" data-nd-id="${id}" style="${ndVars(r)}" aria-label="${esc(lab)}" title="${esc(x[0])}">
+        <span class="bnp-nd-art"><img src="${esc(ndArt(id, sz))}" alt="" width="${ND_PX[sz]}" height="${ND_PX[sz]}" loading="lazy" decoding="async"></span>
+        <span class="bnp-nd-cfoot"><b class="bnp-nd-no">${id}</b><span class="bnp-nd-cname">${esc(x[0])}</span>${n > 1 ? `<b class="bnp-nd-n" title="${esc(`${n} of them`)}"><i>×</i>${n}</b>` : ''}${ndYouHtml(id)}</span>
+        ${sz === 's' ? '' : `<span class="bnp-nd-cmeta"><span>${esc(ND_SP[x[1]])}</span><span class="is-np">${esc(ndPriceText(id))}</span></span>`}
+      </button>`;
+  }
+  function ndGridHtml() {
+    const ids = ndVisible();
+    nd.list = ids;
+    if (!ids.length) return `<div class="bnp-nd-empty"><p>${nd.kind === 'cards' && !ndBase().length ? (nd.mine ? 'No cards in your NeoDeck yet. Put a Collectable Card in from your inventory (its pop-up’s Put in NeoDeck), or let Buy Mode buy some.' : 'No cards in their NeoDeck yet.') : 'No cards match what’s chosen.'}</p>${ndBase().length ? '<button type="button" class="bnp-nd-btn is-small" data-nd-clear>Show every card</button>' : ''}</div>`;
+    const head = nd.size === 'list' ? '<div class="bnp-nd-lhead" aria-hidden="true"><span>No.</span><span></span><span>Card</span><span>Species</span><span>Back</span><span>itemdb</span><span>Held</span></div>' : '';
+    return `${head}${ids.map(ndTileHtml).join('')}`;
+  }
+  function ndCountHtml() {
+    const ids = nd.list || [], w = ndWorth(ids.filter((id) => (nd.mine ? !(ndHas(id) > 0) : true)));
+    return `<b>${ids.length.toLocaleString()}</b> ${ids.length === 1 ? 'card' : 'cards'}${nd.mine && w.priced && nd.kind !== 'cards' ? ` · the ones you need: about ${colNp(w.cost)} NP` : ''}`;
+  }
+  function ndListHtml() { return `${ndToolsHtml()}<div class="bnp-nd-grid is-${nd.size}" data-nd-grid>${ndGridHtml()}</div>`; }
+  function ndBandH(t, n, danger) { return `<h2 class="bnp-nd-bandh${danger ? ' is-danger' : ''}"><span>${esc(t)}</span>${n != null ? `<b>${Number(n).toLocaleString()}</b>` : ''}</h2>`; }
+  function ndPremHtml() {
+    const L = nd.prem || [];
+    if (!L.length) return `<section class="bnp-nd-panel">${ndBandH('Premium cards')}<p class="bnp-nd-say">No Premium cards here yet. Neopets gives them to Premium members, one for each month of membership in a row.</p></section>`;
+    return `<section class="bnp-nd-panel">${ndBandH('Your Premium cards', L.length)}<p class="bnp-nd-say">As a Premium member you’ve been given these for your months of membership in a row.</p>
+        <div class="bnp-nd-prem">${L.map((c) => `<figure class="bnp-nd-pcard"><figcaption class="bnp-nd-pwhen">${esc(c.when)}</figcaption><span class="bnp-nd-pic"><img src="${esc(c.img)}" alt="" width="150" height="150" loading="lazy"></span><b>${esc(c.name)}</b></figure>`).join('')}</div></section>`;
+  }
+  function ndDeckHtml() {
+    return `<section class="bnp-nd-panel">${ndBandH('Your deck')}<p class="bnp-nd-say">Its name and description, as Neopets keeps them with your NeoDeck.</p><div class="bnp-nd-form" data-nd-form></div></section>
+      <section class="bnp-nd-panel is-danger">${ndBandH('Destroy your NeoDeck', null, true)}<p class="bnp-nd-say">Neopets’ own button: it asks you first, then destroys your NeoDeck completely.</p><div class="bnp-nd-destroy" data-nd-destroy></div></section>`;
+  }
+  function ndScoresHtml() {
+    const sc = nd.sc, me = ndAcct(), own = ndKnown() ? ndCount() : null, TRO = ['', 'Gold', 'Silver', 'Bronze'];
+    const tiers = [1, 2, 3].map((t) => { const r = sc.rows.filter((x) => x.tr === t); return r.length ? { t, from: r[0].p, to: r[r.length - 1].p, need: r[r.length - 1].n } : null; }).filter(Boolean);
+    const togo = (n) => (own == null ? '' : own >= n ? '<em class="is-y">You’re there</em>' : `<em>${(n - own).toLocaleString()} to go</em>`);
+    const lim = nd.limit || sc.rows.length, firstOf = new Set(tiers.map((x) => x.from));
+    const rows = sc.rows.map((r) => {
+      const t = r.tr && firstOf.has(r.p) ? tiers.find((x) => x.from === r.p) : null;
+      return `<tr class="${r.u.toLowerCase() === me ? 'is-me' : ''}${t ? ' is-tierstart' : ''}"><td class="bnp-nd-spos">${r.p}</td><td><a href="/games/neodeck/index.phtml?owner=${encodeURIComponent(r.u)}&amp;show=album" title="Their NeoDeck">${esc(r.u)}</a></td><td class="bnp-nd-sn">${r.n.toLocaleString()}</td><td class="bnp-nd-stro">${t ? `<img src="${NPI}trophies/1329_${t.t}.gif" width="40" height="40" alt="${TRO[t.t]}" title="${TRO[t.t]} trophy">` : ''}</td></tr>`;
+    }).join('');
+    return `<section class="bnp-nd-panel">${ndBandH('Card Collector high scores')}
+        <p class="bnp-nd-say">The NeoDeck’s table: how many different cards each collector has. It starts again on the first of each month.</p>
+        <div class="bnp-nd-tiers">
+          <div class="bnp-nd-tier is-on"><span class="bnp-nd-tierb">${sc.min.toLocaleString()}</span><span><b>On the table</b><small>At least ${sc.min.toLocaleString()} cards</small>${togo(sc.min)}</span></div>
+          ${tiers.slice().reverse().map((x) => `<div class="bnp-nd-tier"><img src="${NPI}trophies/1329_${x.t}.gif" width="80" height="80" alt=""><span><b>${TRO[x.t]}</b><small>Places ${x.from}–${x.to} · ${x.need.toLocaleString()} cards</small>${togo(x.need)}</span></div>`).join('')}
+        </div>
+        <div class="bnp-nd-limits" role="group" aria-label="How many places">${[30, 50, 100].map((n) => `<a class="bnp-nd-btn is-small" href="/gamescores.phtml?game_id=1329&amp;limit=${n}"${n === lim ? ' aria-current="page"' : ''}>Top ${n}</a>`).join('')}</div>
+        <table class="bnp-nd-scores"><thead><tr><th>Place</th><th>Collector</th><th>Cards</th><th>Trophy</th></tr></thead><tbody>${rows}</tbody></table>
+      </section>`;
+  }
+  function ndBodyHtml() {
+    if (nd.kind === 'album' || nd.kind === 'cards' || nd.kind === 'all') return `<div class="bnp-nd-list" data-nd-list>${ndListHtml()}</div>`;
+    return nd.kind === 'prem' ? ndPremHtml() : nd.kind === 'deck' ? ndDeckHtml() : nd.kind === 'scores' ? ndScoresHtml() : '';
+  }
+  function ndFootHtml() {
+    const on = document.documentElement.classList.contains('bnp-nd-showneo');
+    return `<p class="bnp-nd-foot"><button type="button" class="bnp-nd-btn is-small" data-nd-neo aria-expanded="${on}">${on ? 'Hide Neopets’ own page' : 'Neopets’ own page'}</button></p>`;
+  }
+  function ndPaint(soft) {   // (soft: something came (prices, your cards): drawn again keeping where you are, what's typed and what's open)
+    if (!nd || nd.solo) return;
+    const f = soft && document.activeElement && nd.root.contains(document.activeElement) ? document.activeElement : null;
+    const fk = f ? ndFocusKey(f) : '', at = f && f.matches('[data-nd-q]') ? f.selectionStart : null;
+    nd.root.innerHTML = `${ndHeadHtml()}${ndTabsHtml()}${ndBodyHtml()}${ndFootHtml()}`;
+    crispIn(nd.root);   // (Neopets' NP coins in it, sharp at the size they're drawn)
+    if (nd.kind === 'deck') {
+      const a = nd.root.querySelector('[data-nd-form]'), b = nd.root.querySelector('[data-nd-destroy]');
+      if (a && nd.form) a.append(nd.form);
+      if (b && nd.destroy) b.append(nd.destroy);
+    }
+    ndCountPaint();
+    if (fk) ndRefocus(fk, at);
+    if (ndPop && ndPop.win.classList.contains('open')) ndPopPaint();
+  }
+  const ndFocusKey = (el) => (el.matches('[data-nd-q]') ? '[data-nd-q]' : el.dataset.ndShow ? `[data-nd-show="${el.dataset.ndShow}"]` : el.dataset.ndRare != null ? `[data-nd-rare="${el.dataset.ndRare}"]` : el.dataset.ndSize ? `[data-nd-size="${el.dataset.ndSize}"]` : el.matches('[data-nd-sp]') ? '[data-nd-sp]' : el.matches('[data-nd-sort]') ? '[data-nd-sort]' : el.dataset.ndId ? `[data-nd-id="${el.dataset.ndId}"]` : '');
+  function ndRefocus(fk, at) { const g = nd.root.querySelector(fk); if (!g) return; g.focus({ preventScroll: true }); if (at != null) try { g.setSelectionRange(at, at); } catch (_) { /* */ } }
+  function ndCountPaint() { const c = nd.root.querySelector('[data-nd-count]'); if (c) c.innerHTML = ndCountHtml(); }
+  function ndListPaint(from) {   // (what's chosen changed: the tools and the cards drawn again, the control pressed keeping focus)
+    const box = nd.root.querySelector('[data-nd-list]');
+    if (!box) { ndPaint(true); return; }
+    const fk = from ? ndFocusKey(from) : '';
+    box.innerHTML = ndListHtml();
+    ndCountPaint();
+    if (fk) ndRefocus(fk, null);
+  }
+  function ndGridPaint() {   // (typing in Find: the cards alone drawn again)
+    const g = nd.root.querySelector('[data-nd-grid]');
+    if (!g) return;
+    g.innerHTML = ndGridHtml();
+    ndCountPaint();
+  }
+  function ndWire(root) {
+    root.addEventListener('click', (e) => {
+      const t = e.target instanceof Element ? e.target.closest('button, a') : null;
+      if (!t || !root.contains(t) || !nd) return;
+      const d = t.dataset;
+      if (d.ndId) { e.preventDefault(); ndCardOpen(Number(d.ndId)); return; }
+      if (d.ndShow) { nd.show = d.ndShow; ndListPaint(t); return; }
+      if (d.ndRare != null) { const i = Number(d.ndRare); if (nd.rare.has(i)) nd.rare.delete(i); else nd.rare.add(i); ndListPaint(t); return; }
+      if (d.ndSize) { nd.size = d.ndSize; ndPSet('size', { ...(ndP().size || {}), [nd.kind]: nd.size }); ndListPaint(t); return; }
+      if ('ndClear' in d) { Object.assign(nd, { show: 'all', q: '', sp: '' }); nd.rare.clear(); ndListPaint(); return; }
+      if ('ndRarelist' in d) { ndRareOpen(); return; }
+      if ('ndBuy' in d) { bmOpen('cards'); return; }
+      if ('ndCheck' in d) {
+        nd.reading = 'mine';
+        nd.note = '';
+        ndPaint(true);
+        ndReadMine().then(() => { nd.reading = ''; ndPaint(true); }).catch(() => { nd.reading = ''; nd.note = 'Your cards’ page didn’t open just now: try again in a moment.'; ndPaint(true); });
+        return;
+      }
+      if ('ndNeo' in d) { document.documentElement.classList.toggle('bnp-nd-showneo'); ndPaint(true); }
+    });
+    root.addEventListener('input', (e) => { if (nd && e.target instanceof HTMLInputElement && e.target.matches('[data-nd-q]')) { nd.q = e.target.value; ndGridPaint(); } });
+    root.addEventListener('change', (e) => {
+      const t = e.target;
+      if (!nd || !(t instanceof HTMLSelectElement)) return;
+      if (t.matches('[data-nd-sp]')) { nd.sp = t.value; ndListPaint(t); }
+      if (t.matches('[data-nd-sort]')) { nd.sort = t.value; ndPSet('sort', nd.sort); ndListPaint(t); }
+    });
+  }
+  // ── a card's own page, and the rarity list: windows on the page (Neopets' were pop-up windows of their own)
+  let ndPop = null;
+  const ndDescs = () => get('nddesc', null) || {};
+  let ndDescAsk = new Map();
+  function ndDesc(id) {   // (Neopets' own words for a card, from its card page: read once, kept. null while it's coming)
+    const k = ndDescs()[id];
+    if (typeof k === 'string') return k;
+    if (!ndDescAsk.has(id)) {
+      ndDescAsk.set(id, fetch(`/games/neodeck/colcardlookup.phtml?colcard_id=${id}`, { credentials: 'include' }).then((r) => (r.ok ? r.text() : '')).then((h) => {
+        const doc = new DOMParser().parseFromString(h || '', 'text/html'), i = doc.querySelector('font[size="1"] i, i');
+        const words = reClean(i ? i.textContent : '');
+        if (words) { const all = ndDescs(); all[id] = words; set('nddesc', all); }
+        if (ndPop && ndPop.id === id) ndPopPaint();
+        return words;
+      }).catch(() => '').finally(() => { if (!ndDescs()[id]) setTimeout(() => ndDescAsk.delete(id), 60000); }));
+    }
+    return null;
+  }
+  function ndPopMake() {
+    if (ndPop) return ndPop;
+    styles();
+    const veil = document.createElement('div'), win = document.createElement('div');
+    veil.className = 'bnp-veil';
+    veil.setAttribute('data-bnp', 'ndveil');
+    win.className = 'bnp-go bnp-nd-win';
+    win.setAttribute('data-bnp', 'ndwin');
+    win.setAttribute('role', 'dialog');
+    win.setAttribute('aria-modal', 'true');
+    win.innerHTML = '<div class="popup-header__2020 bnp-hub-head"><h3 data-nd-wt></h3><button type="button" class="popup-exit button-default__2020 button-red__2020" data-nd-x title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button><div class="popup-header-pattern__2020"></div></div><div class="bnp-nd-wbody" data-nd-wbody></div><div class="bnp-nd-wfoot" data-nd-wfoot></div>';
+    document.body.append(veil, win);
+    ndPop = { veil, win, mode: '', id: 0, rm: false };
+    veil.addEventListener('click', ndPopClose);
+    win.addEventListener('click', (e) => {
+      const t = e.target instanceof Element ? e.target.closest('button, a') : null;
+      if (!t) return;
+      const d = t.dataset;
+      if ('ndX' in d) { ndPopClose(); return; }
+      if (d.ndGo) { ndCardStep(d.ndGo === 'next' ? 1 : -1); return; }
+      if ('ndRm' in d) { ndPop.rm = true; ndPopPaint(); const y = win.querySelector('[data-nd-rmyes]'); if (y) y.focus(); return; }
+      if ('ndRmno' in d) { ndPop.rm = false; ndPopPaint(); return; }
+      if ('ndRmyes' in d) { ndRemove(ndPop.id); return; }
+      if ('ndToRare' in d) { ndRareOpen(); return; }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (!ndPop || !ndPop.win.classList.contains('open')) return;
+      if (e.key === 'Escape') { e.preventDefault(); if (ndPop.rm) { ndPop.rm = false; ndPopPaint(); } else ndPopClose(); return; }
+      if (ndPop.mode === 'card' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) { e.preventDefault(); ndCardStep(e.key === 'ArrowRight' ? 1 : -1); }
+    });
+    return ndPop;
+  }
+  function ndPopShow() {
+    themeWin(ndPop.win);
+    ndPop.veil.classList.add('open');
+    ndPop.win.classList.add('open');
+    ndPopPaint();
+    const x = ndPop.win.querySelector('[data-nd-x]');
+    if (x) x.focus({ preventScroll: true });
+  }
+  function ndPopClose() {
+    if (!ndPop) return;
+    const back = ndPop.mode === 'card' && nd ? nd.root.querySelector(`[data-nd-id="${ndPop.id}"]`) : null;
+    ndPop.win.classList.remove('open');
+    ndPop.veil.classList.remove('open');
+    ndPop.rm = false;
+    if (back) back.focus({ preventScroll: true });
+  }
+  function ndCardOpen(id) {
+    ndPopMake();
+    Object.assign(ndPop, { mode: 'card', id, rm: false, list: nd && nd.list && nd.list.includes(id) ? nd.list.slice() : [id] });
+    ndPopShow();
+  }
+  function ndCardStep(dir) {
+    const L = ndPop.list || [], i = L.indexOf(ndPop.id);
+    if (L.length < 2 || i < 0) return;
+    ndPop.id = L[(i + dir + L.length) % L.length];
+    ndPop.rm = false;
+    ndPopPaint();
+  }
+  function ndRareOpen() {
+    ndPopMake();
+    Object.assign(ndPop, { mode: 'rare', rm: false });
+    ndPopShow();
+  }
+  function ndPopPaint() {
+    const P = ndPop, t = P.win.querySelector('[data-nd-wt]'), body = P.win.querySelector('[data-nd-wbody]'), foot = P.win.querySelector('[data-nd-wfoot]');
+    P.win.classList.toggle('is-rare', P.mode === 'rare');
+    if (P.mode === 'rare') {
+      t.textContent = 'Card rarity';
+      P.win.setAttribute('aria-label', 'Collectable Card rarity');
+      body.innerHTML = ndRareHtml();
+      foot.innerHTML = `<a class="bnp-nd-btn is-go" href="/objects.phtml?type=shop&amp;obj_type=8">${ND_IC.shop}<span>Buy some more cards</span></a><button type="button" class="bnp-nd-btn" data-nd-x>Close</button>`;
+      return;
+    }
+    const id = P.id, x = ND_DATA[id - 1], r = ND_RARE[x[2]];
+    t.textContent = x[0];
+    P.win.setAttribute('aria-label', `${x[0]}: card ${id}`);
+    body.innerHTML = ndCardHtml(id);
+    const L = P.list || [], i = L.indexOf(id), nm = (k) => ND_DATA[L[(i + k + L.length) % L.length] - 1][0];
+    foot.innerHTML = L.length > 1 ? `<button type="button" class="bnp-nd-btn is-step" data-nd-go="prev" title="${esc(`${nm(-1)} (←)`)}">${SA_IC.prev}<span>${esc(nm(-1))}</span></button><span class="bnp-nd-wpos">${(i + 1).toLocaleString()} of ${L.length.toLocaleString()}</span><button type="button" class="bnp-nd-btn is-step" data-nd-go="next" title="${esc(`${nm(1)} (→)`)}"><span>${esc(nm(1))}</span>${SA_IC.next}</button>` : '';
+    const btns = body.querySelector('[data-nd-btns]'), row = btns ? itRow(ndItemName(id), { page: 'neodeck' }) : null;
+    if (row) { btns.append(row); itBalance(row); }
+    P.win.style.setProperty('--r', r.ink);
+  }
+  function ndCardHtml(id) {
+    const x = ND_DATA[id - 1], r = ND_RARE[x[2]], it = ndItem(id), mineN = ndHas(id), theirN = nd && !nd.mine ? ndOwnerHas(id) : null, words = ndDesc(id);
+    const yours = !ndMine || !ndMine.acct ? '' : !ndKnown() ? '<p class="bnp-nd-cyou">Your cards haven’t been counted yet.</p>'
+      : mineN > 0 ? `<p class="bnp-nd-cyou is-y">${SA_IC.check}${mineN > 1 ? `${mineN} in your NeoDeck` : 'In your NeoDeck'}</p>` : '<p class="bnp-nd-cyou is-n">Not in your NeoDeck yet</p>';
+    const theirs = theirN == null ? '' : `<p class="bnp-nd-cyou">${theirN > 0 ? `${esc(nd.owner)} has ${theirN > 1 ? theirN : 'it'}` : `${esc(nd.owner)} doesn’t have it`}</p>`;
+    const rid = ndMine && ndMine.rid ? ndMine.rid[id] : '', canRm = nd && nd.mine && mineN > 0 && rid;
+    const rm = !canRm ? '' : ndPop && ndPop.rm ? `<div class="bnp-nd-rmask" role="group" aria-label="Remove one"><span>Take one ${esc(x[0])} out of your NeoDeck? It goes back to your inventory.</span><button type="button" class="bnp-nd-btn is-danger" data-nd-rmyes>Remove one</button><button type="button" class="bnp-nd-btn" data-nd-rmno>Keep it</button></div>` : '<button type="button" class="bnp-nd-btn is-small is-quiet" data-nd-rm>Remove one…</button>';
+    const named = it && ndKey(it.n) !== ndKey(x[0]) ? `<small>as “${esc(it.n)}”</small>` : '';
+    return `<div class="bnp-nd-cbig is-${r.k}" style="${ndVars(r)}"><img src="${esc(ndArt(id, 'l'))}" alt="${esc(x[0])}" width="300" height="300"></div>
+      <div class="bnp-nd-cinfo">
+        <button type="button" class="bnp-nd-crare" data-nd-to-rare style="${ndVars(r)}" title="All the backs, and what each means"><img src="${ndBack(x[2], true)}" width="40" height="40" alt=""><span><b>${r.c} back · ${r.l}</b><small>Neopets’ guide: ${r.est}</small></span></button>
+        <dl class="bnp-nd-cdl"><dt>Card</dt><dd>No. ${id} of ${ND_N}</dd><dt>Species</dt><dd>${esc(ND_SP[x[1]])}</dd><dt>itemdb</dt><dd class="is-np">${ndPrice(id) ? `about ${ndPrice(id).toLocaleString()} NP` : esc(ndPriceText(id))} ${named}</dd></dl>
+        ${yours}${theirs}
+        <p class="bnp-nd-cwords">${words == null ? '<span class="is-wait">Neopets’ words for it…</span>' : words ? esc(words) : '<span class="is-wait">Neopets’ card page didn’t open just now.</span>'}</p>
+        ${id === 332 ? `<p class="bnp-nd-cnote">The high score table tops out at ${ND_TOP}: no collector on it has this one.</p>` : ''}
+        <div class="bnp-nd-cbtns" data-nd-btns></div>
+        ${rm}
+      </div>`;
+  }
+  function ndRemove(id) {   // (Neopets' own "remove one", as its link does it: a fresh read of your cards next time)
+    const rid = ndMine && ndMine.rid ? ndMine.rid[id] : '';
+    if (!rid) return;
+    ndMine.heard = Date.now();
+    ndMineSave().finally(() => { location.href = `/games/neodeck/process_neodeck.phtml?type=remove_card&neodeck_card_id=${encodeURIComponent(rid)}`; });
+  }
+  function ndRareSpread(i) {   // (what most of a back's cards cost by itemdb: its middle half, low to high; '' with too few prices)
+    if (!ndCat || !ndCat.by.size) return '';
+    const ps = [];
+    ND_DATA.forEach((x, j) => { if (x[2] === i) { const p = ndPrice(j + 1); if (p) ps.push(p); } });
+    if (ps.length < 4) return '';
+    ps.sort((a, b) => a - b);
+    const lo = ps[Math.floor(ps.length * 0.25)], hi = ps[Math.floor(ps.length * 0.75)];
+    return lo === hi ? `${colNp(lo)} NP` : `${colNp(lo)}–${colNp(hi)} NP`;
+  }
+  function ndRareHtml() {
+    const known = ndKnown(), rc = ndRareCounts(ndHas);
+    return `<p class="bnp-nd-rsay">To make rare cards easy to spot, they’re colour coded by their backs. The rarer the card, the harder it is to find and the more it costs. Rare cards are normally more powerful than common ones, so they’re worth adding to your deck.</p>
+      <div class="bnp-nd-rlist">${ND_RARE.map((r, i) => {
+        const sp = ndRareSpread(i), c = rc[i];
+        return `<div class="bnp-nd-rrow" style="${ndVars(r)}"><img src="${ndBack(i)}" width="80" height="80" alt="">
+          <div><b class="bnp-nd-rname">${r.c} <span>${r.l}</span></b><p>${esc(r.says)}</p>
+          <span class="bnp-nd-rfacts"><span>Neopets’ guide <b>${r.est}</b></span>${sp ? `<span>itemdb now, most of them <b>${sp}</b></span>` : ''}</span>
+          ${known ? `<span class="bnp-nd-rhave"><span class="bnp-nd-rbar"><i style="width:${Math.round((100 * c.have) / Math.max(1, c.all))}%"></i></span><small>You have ${c.have} of ${c.all}</small></span>` : `<span class="bnp-nd-rhave"><small>${c.all} cards</small></span>`}</div></div>`;
+      }).join('')}</div>`;
+  }
+  function ndSolo(kind) {   // (Neopets' own pop-up windows, opened from elsewhere: the card, or the rarity list, as ours draws them)
+    const body = document.body;
+    if (!body) return false;
+    const box = document.createElement('div');
+    box.className = 'bnp-nd-solobox';
+    box.setAttribute('data-bnp', 'ndsolo');
+    const id = Number(new URLSearchParams(location.search).get('colcard_id'));
+    if (kind === 'cardpop' && !(id >= 1 && id <= ND_N)) return false;
+    if (kind === 'cardpop') {   // (Neopets' words for it are on this very page: kept, for its window on the NeoDeck's pages)
+      const i = body.querySelector('font[size="1"] i'), w = reClean(i ? i.textContent : '');
+      if (w) { const all = ndDescs(); if (all[id] !== w) { all[id] = w; set('nddesc', all); } }
+    }
+    const x = kind === 'cardpop' ? ND_DATA[id - 1] : null, r = x ? ND_RARE[x[2]] : null;
+    box.innerHTML = `<div class="popup-header__2020 bnp-hub-head"><h3>${x ? esc(x[0]) : 'Card rarity'}</h3><div class="popup-header-pattern__2020"></div></div>
+      <div class="bnp-nd-wbody${x ? '' : ' is-rare'}">${x ? `<div class="bnp-nd-cbig is-${r.k}" style="${ndVars(r)}"><img src="${esc(ndArt(id, 'l'))}" alt="" width="300" height="300"></div>
+        <div class="bnp-nd-cinfo"><div class="bnp-nd-crare" style="${ndVars(r)}"><img src="${ndBack(x[2], true)}" width="40" height="40" alt=""><span><b>${r.c} back · ${r.l}</b><small>Neopets’ guide: ${r.est}</small></span></div>
+        <dl class="bnp-nd-cdl"><dt>Card</dt><dd>No. ${id} of ${ND_N}</dd><dt>Species</dt><dd>${esc(ND_SP[x[1]])}</dd></dl><p class="bnp-nd-cwords">${esc(ndDescs()[id] || '')}</p></div>` : ndRareHtml()}</div>
+      <div class="bnp-nd-wfoot">${x ? '' : '<button type="button" class="bnp-nd-btn is-go" data-nd-shop>Buy some more cards</button>'}<button type="button" class="bnp-nd-btn" data-nd-close>Close</button></div>`;
+    for (const c of [...body.children]) if (c.tagName !== 'SCRIPT' && c.tagName !== 'STYLE') c.classList.add('bnp-nd-neohid');
+    body.append(box);
+    box.addEventListener('click', (e) => {
+      const t = e.target instanceof Element ? e.target.closest('button') : null;
+      if (!t) return;
+      if ('ndClose' in t.dataset) window.close();
+      if ('ndShop' in t.dataset) { try { if (window.opener) window.opener.location.href = '/objects.phtml?type=shop&obj_type=8'; else location.href = '/objects.phtml?type=shop&obj_type=8'; } catch (_) { location.href = '/objects.phtml?type=shop&obj_type=8'; } if (window.opener) window.close(); }
+    });
+    nd = { kind, solo: true };
+    document.documentElement.classList.add('bnp-nd-ready');
+    return true;
+  }
+  function ndEar(p) {   // (cards put in your NeoDeck from your SDB or your inventory, Neopets' own way: what NE keeps of it read again the next time a NeoDeck page opens)
+    if (ndEar.on || FRAME) return;
+    ndEar.on = true;
+    const read = (e) => { try { return JSON.parse(e.detail); } catch (_) { return null; } };
+    const heard = () => ndMineLoad().then(() => { if (!ndMine.acct) return null; ndMine.heard = Date.now(); return ndMineSave(); }).catch(() => {});
+    if (p === '/safetydeposit.phtml') {
+      const sent = new Set();
+      document.addEventListener('bnp-sdb-send', (e) => { const d = read(e); if (d && d.where === 'sdb' && Array.isArray(d.moves) && d.moves.some((m) => m && m.a === 'neodeck')) sent.add(d.k); });
+      document.addEventListener('bnp-sdb-done', (e) => { const d = read(e); if (!d || !sent.has(d.k)) return; sent.delete(d.k); if (d.ok || d.err === 'partial_error' || d.err === 'net') heard(); });
+    } else if (p === '/inventory.phtml') {
+      document.addEventListener('bnp-inv-acted', (e) => { const d = read(e); if (d && d.deck) heard(); });
+    }
+  }
+  // ── Buy Mode's list: the cards your NeoDeck doesn't have, as itemdb names them
+  function ndBmList() {
+    if (!ndMine || !ndMine.t) return null;
+    const rows = [];
+    for (let id = 1; id <= ND_N; id++) {
+      if (ndHas(id) > 0) continue;
+      const it = ndItem(id);
+      if (it && it.nc) continue;
+      const x = ND_DATA[id - 1];
+      rows.push({ name: it ? it.n : x[0], img: ndArt(id, 'list'), guide: it && it.p > 0 ? it.p : 0, retired: !!(it && it.gone), where: `No. ${id} · ${ND_RARE[x[2]].c} back`, ndId: id });
+    }
+    return { rows, unread: 0, partial: !ndCat || !ndCat.by.size };
+  }
+  const ND_CSS = `
+    @font-face { font-family: "Cafeteria"; src: url("https://images.neopets.com/js/fonts/cafeteria-black.otf") format("opentype"); font-display: swap; }
+    @font-face { font-family: "MuseoSansRounded500"; src: url("https://images.neopets.com/js/fonts/museosansrounded-500.woff") format("woff"); font-display: swap; }
+    @font-face { font-family: "MuseoSansRounded700"; src: url("https://images.neopets.com/js/fonts/museosansrounded-700.woff") format("woff"); font-display: swap; }
+    html.bnp-nd-page { --nb-acc: #fed123; --nb-ink: #363636; --nb-pat: none; --nb-patsz: 121px 58px; --nb-patpos: 50% -10px; --nb-frame: #faa819; --nb-panel: #fffacd; --nb-pink: #363636; --nb-rule: #faa819; --nb-pop: #faa819;
+      --nb-band: var(--nb-pat) var(--nb-patpos) / var(--nb-patsz), var(--nb-acc); --nb-tint: color-mix(in srgb, var(--nb-acc) 10%, #fff); --nb-line: color-mix(in srgb, var(--nb-frame) 30%, #fff);
+      --nb-bar: #2e72c0; --nb-bar-ink: #fff; --nb-blink: #2e72c0; --nb-bar-edge: color-mix(in srgb, var(--nb-bar) 68%, #000); --nb-muted: #5f5a4a; --nb-text: #262626;
+      --nb-by: color-mix(in srgb, var(--nb-panel) 32%, #fff); --nb-alt: color-mix(in srgb, var(--nb-bar) 8%, #fff);
+      --nb-ui: "MuseoSansRounded700", Arial, sans-serif; --nb-txt: "MuseoSansRounded500", Arial, sans-serif;
+      --nd-ring: color-mix(in srgb, var(--nb-frame) 62%, #000); }
+    html.bnp-nd-page:not(.bnp-nd-ready) td.content { visibility: hidden !important; }   /* (Neopets' own page never shows first) */
+    html.bnp-nd-solo:not(.bnp-nd-ready) body { visibility: hidden !important; }
+    html.bnp-nd-page .bnp-nd-neobox, html.bnp-nd-solo .bnp-nd-neohid { display: none !important; }
+    html.bnp-nd-page.bnp-nd-showneo .bnp-nd-neobox { display: block !important; margin-top: 18px; padding-top: 14px; border-top: 2px dashed var(--nb-line); }
+    html.bnp-nd-page .bnp-nd { display: grid; gap: 14px; margin: 6px 0 12px; color: var(--nb-text); font: 14px/1.4 var(--nb-txt); text-align: left; }
+    html.bnp-nd-page :where(.bnp-nd, .bnp-nd-win, .bnp-nd-solobox) :where(button, select, input, textarea) { font-family: inherit; }
+    html.bnp-nd-page .bnp-nd a { color: var(--nb-blink); }
+    /* buttons: Neopets' own raised pills in the theme's colours; the main one solid */
+    html.bnp-nd-page .bnp-nd-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 36px; margin: 0; padding: 0 14px; border: 2px solid var(--nb-frame); border-radius: 12px; background: linear-gradient(#fff, color-mix(in srgb, var(--nb-tint) 70%, #fff)); color: #262626 !important; box-shadow: 0 2px 0 var(--nb-frame); font: 13.5px var(--nb-ui); text-decoration: none !important; white-space: nowrap; cursor: pointer; }
+    html.bnp-nd-page .bnp-nd-btn:hover { border-color: var(--nb-bar-edge); box-shadow: 0 2px 0 var(--nb-bar-edge); }
+    html.bnp-nd-page .bnp-nd-btn:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--nb-bar-edge); }
+    html.bnp-nd-page .bnp-nd-btn:focus-visible { outline: 3px solid color-mix(in srgb, var(--nb-bar) 50%, #fff); outline-offset: 2px; }
+    html.bnp-nd-page .bnp-nd-btn img { flex: none; width: 20px; height: 20px; border-radius: 4px; }
+    html.bnp-nd-page .bnp-nd-btn svg { flex: none; }
+    html.bnp-nd-page .bnp-nd-btn.is-go { border-color: var(--nb-bar-edge); background: linear-gradient(color-mix(in srgb, var(--nb-bar) 78%, #fff), var(--nb-bar)); color: var(--nb-bar-ink) !important; box-shadow: 0 2px 0 var(--nb-bar-edge); }
+    html.bnp-nd-page .bnp-nd-btn.is-danger { border-color: #8e1f1f; background: linear-gradient(#e05252, #c23131); color: #fff !important; box-shadow: 0 2px 0 #8e1f1f; }
+    html.bnp-nd-page .bnp-nd-btn.is-small { height: 30px; padding: 0 12px; box-shadow: 0 1px 0 var(--nb-frame); font-size: 12.5px; }
+    html.bnp-nd-page .bnp-nd-btn.is-quiet { border-color: #d9c9c9; box-shadow: none; color: #8e1f1f !important; }
+    html.bnp-nd-page .bnp-nd-btn.is-quiet:hover { border-color: #c23131; }
+    html.bnp-nd-page .bnp-nd-btn.is-step span { max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
+    html.bnp-nd-page .bnp-nd-btn[aria-current] { border-color: var(--nb-bar-edge); background: var(--nb-bar); color: var(--nb-bar-ink) !important; box-shadow: 0 1px 0 var(--nb-bar-edge); }
+    /* the head: whose deck, how far it's got, and by which backs */
+    html.bnp-nd-page .bnp-nd-head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px 14px; padding: 14px 16px; border: 2px solid var(--nb-frame); border-radius: 18px; background: var(--nb-band); box-shadow: 0 3px 0 var(--nb-frame); }
+    html.bnp-nd-page .bnp-nd-fan { position: relative; width: 148px; height: 112px; }
+    html.bnp-nd-page .bnp-nd-fan img { position: absolute; top: 18px; left: calc(var(--i) * 30px + 4px); width: 80px; height: 80px; transform: rotate(calc((var(--i) - 1) * 10deg)); transform-origin: 50% 110%; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .3)); }
+    html.bnp-nd-page .bnp-nd-hcard { display: grid; gap: 9px; min-width: 0; padding: 12px 16px 13px; border-radius: 14px; background: rgba(255, 255, 255, .95); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--nb-frame) 45%, #fff); }
+    html.bnp-nd-page .bnp-nd-htop { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+    html.bnp-nd-page .bnp-nd-htitle { display: grid; min-width: 0; }
+    html.bnp-nd-page .bnp-nd-htitle small { color: var(--nb-muted); font: 12.5px/1.2 var(--nb-ui); }
+    html.bnp-nd-page .bnp-nd-htitle h1 { margin: 1px 0 0; padding: 0; overflow: hidden; border: 0; background: none; color: #262626; font: 32px/1.08 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .4pt; text-overflow: ellipsis; white-space: nowrap; }
+    html.bnp-nd-page .bnp-nd-prog { display: flex; align-items: center; gap: 9px; margin-left: auto; }
+    html.bnp-nd-page .bnp-nd-big { color: #262626; font: 40px/1 "Cafeteria", "Arial Bold", sans-serif; }
+    html.bnp-nd-page .bnp-nd-of { color: var(--nb-muted); font: 12.5px/1.2 var(--nb-ui); }
+    html.bnp-nd-page .bnp-nd-pct { margin-left: 10px; color: #262626; font: 23px "Cafeteria", "Arial Bold", sans-serif; }
+    html.bnp-nd-page .bnp-nd-bar { display: flex; height: 13px; overflow: hidden; border-radius: 99px; background: color-mix(in srgb, var(--nb-tint) 60%, #f3f3f3); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--nb-line) 80%, #cfcfcf); }
+    html.bnp-nd-page .bnp-nd-bar i { display: block; flex: none; height: 100%; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .16), inset 0 2px 0 rgba(255, 255, 255, .3); }
+    html.bnp-nd-page .bnp-nd-chips { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+    html.bnp-nd-page .bnp-nd-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; margin: 0; padding: 1px 11px; border: 1.5px solid color-mix(in srgb, var(--nb-line) 80%, #c9c9c9); border-radius: 99px; background: #fff; color: #333; font: 12.5px/1.3 var(--nb-ui); }
+    html.bnp-nd-page .bnp-nd-chip.is-np { border-color: #9bcfa2; background: #effaf0; color: #1d5a26; }
+    html.bnp-nd-page .bnp-nd-chip.is-need { border-color: #e6b660; background: #fff6e0; color: #6b4500; }
+    html.bnp-nd-page .bnp-nd-chip.is-wait { color: var(--nb-muted); font-family: var(--nb-txt); }
+    html.bnp-nd-page .bnp-nd-chip.is-btn { cursor: pointer; }
+    html.bnp-nd-page .bnp-nd-chip.is-btn:hover { border-color: var(--nb-bar); color: var(--nb-bar-edge); }
+    html.bnp-nd-page .bnp-nd-chip .bnp-sa-npic { width: 18px; height: 18px; margin-left: -4px; background: center / contain no-repeat; }
+    html.bnp-nd-page .bnp-nd-acts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    html.bnp-nd-page .bnp-nd-acts .bnp-nd-btn.is-go { margin-right: auto; }
+    html.bnp-nd-page .bnp-nd-note { margin: 0; padding: 9px 14px; border: 2px solid #e6b660; border-radius: 12px; background: #fff8e6; color: #5e4100; font: 13px var(--nb-ui); }
+    /* the NeoDeck's pages: one bar, centred, in Cafeteria; the page you're on solid */
+    html.bnp-nd-page .bnp-nd-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; padding: 8px; border: 2px solid var(--nb-frame); border-radius: 16px; background: var(--nb-band); box-shadow: 0 3px 0 var(--nb-frame); }
+    html.bnp-nd-page .bnp-nd-tab { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; border: 2px solid var(--nb-frame); border-radius: 12px; background: #fff; color: #262626 !important; box-shadow: 0 2px 0 var(--nb-frame); font: 17px/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; text-decoration: none !important; }
+    html.bnp-nd-page .bnp-nd-tab b { display: grid; place-items: center; min-width: 24px; height: 21px; padding: 0 7px; border-radius: 99px; background: var(--nb-bar); color: var(--nb-bar-ink); font: 13px/1 "Cafeteria", "Arial Bold", sans-serif; }
+    html.bnp-nd-page .bnp-nd-tab:hover { border-color: var(--nb-bar-edge); box-shadow: 0 2px 0 var(--nb-bar-edge); }
+    html.bnp-nd-page .bnp-nd-tab[aria-current] { border-color: var(--nb-bar-edge); background: var(--nb-bar); color: var(--nb-bar-ink) !important; box-shadow: 0 2px 0 var(--nb-bar-edge); }
+    html.bnp-nd-page .bnp-nd-tab[aria-current] b { background: #fff; color: var(--nb-bar-edge); }
+    /* what's shown: find, have or missing, the backs, species, sort and size */
+    html.bnp-nd-page .bnp-nd-list { display: grid; gap: 14px; }
+    html.bnp-nd-page .bnp-nd-tools { display: grid; gap: 10px; padding: 12px 14px; border: 2px solid var(--nb-frame); border-radius: 16px; background: #fff; box-shadow: 0 3px 0 var(--nb-frame); }
+    html.bnp-nd-page .bnp-nd-trow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+    html.bnp-nd-page .bnp-nd-find { flex: 1 1 230px; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 2px solid color-mix(in srgb, var(--nb-line) 85%, #c9c9c9); border-radius: 12px; background: #fff; color: var(--nb-muted); }
+    html.bnp-nd-page .bnp-nd-find:focus-within { border-color: var(--nb-bar); box-shadow: 0 0 0 3px color-mix(in srgb, var(--nb-bar) 18%, #fff); }
+    html.bnp-nd-page .bnp-nd-find input { flex: 1; min-width: 0; height: 100%; margin: 0; padding: 0; border: 0; outline: 0; background: none; color: #262626; font: 14px var(--nb-txt); }
+    html.bnp-nd-page .bnp-nd-seg { display: inline-flex; flex-wrap: wrap; gap: 3px; padding: 3px; border: 2px solid color-mix(in srgb, var(--nb-line) 85%, #c9c9c9); border-radius: 12px; background: color-mix(in srgb, var(--nb-tint) 70%, #f4f4f4); }
+    html.bnp-nd-page .bnp-nd-seg button { display: inline-flex; align-items: center; gap: 6px; height: 28px; margin: 0; padding: 0 11px; border: 0; border-radius: 9px; background: none; color: #363636; font: 13px var(--nb-ui); cursor: pointer; }
+    html.bnp-nd-page .bnp-nd-seg button:hover { background: #fff; }
+    html.bnp-nd-page .bnp-nd-seg button b { display: grid; place-items: center; min-width: 20px; height: 18px; padding: 0 6px; border-radius: 99px; background: var(--nb-bar); color: var(--nb-bar-ink); font: 12px/1 "Cafeteria", "Arial Bold", sans-serif; }
+    html.bnp-nd-page .bnp-nd-seg button[aria-pressed="true"] { background: var(--nb-bar); color: var(--nb-bar-ink); box-shadow: 0 1px 0 var(--nb-bar-edge); }
+    html.bnp-nd-page .bnp-nd-seg button[aria-pressed="true"] b { background: #fff; color: var(--nb-bar-edge); }
+    html.bnp-nd-page .bnp-nd-seg.is-size { margin-left: auto; }
+    html.bnp-nd-page .bnp-nd-rares { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+    html.bnp-nd-page .bnp-nd-rchip { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; grid-template-rows: auto 6px; align-items: center; gap: 2px 7px; margin: 0; padding: 4px 10px 6px 5px; border: 2px solid color-mix(in srgb, var(--r) 55%, #fff); border-radius: 12px; background: #fff; color: #262626; font: 12.5px var(--nb-ui); text-align: left; cursor: pointer; }
+    html.bnp-nd-page .bnp-nd-rchip.is-plain { grid-template-rows: auto; padding-bottom: 4px; }
+    html.bnp-nd-page .bnp-nd-rchip img { grid-row: 1 / -1; width: 20px; height: 20px; border-radius: 5px; }
+    html.bnp-nd-page .bnp-nd-rchip b { overflow: hidden; font: inherit; text-overflow: ellipsis; white-space: nowrap; }
+    html.bnp-nd-page .bnp-nd-rchip small { color: var(--nb-muted); font: 11.5px var(--nb-ui); }
+    html.bnp-nd-page .bnp-nd-rmini { grid-column: 2 / -1; height: 5px; overflow: hidden; border-radius: 99px; background: color-mix(in srgb, var(--r) 14%, #fff); }
+    html.bnp-nd-page .bnp-nd-rmini i { display: block; height: 100%; border-radius: 99px; background: var(--r); }
+    html.bnp-nd-page .bnp-nd-rchip[aria-pressed="true"] .bnp-nd-rmini { background: rgba(255, 255, 255, .35); }
+    html.bnp-nd-page .bnp-nd-rchip[aria-pressed="true"] .bnp-nd-rmini i { background: var(--ro); }
+    html.bnp-nd-page .bnp-nd-rchip:hover { border-color: var(--r); background: var(--rt); }
+    html.bnp-nd-page .bnp-nd-rchip[aria-pressed="true"] { border-color: var(--re); background: var(--r); color: var(--ro); box-shadow: 0 1px 0 var(--re); }
+    html.bnp-nd-page .bnp-nd-rchip[aria-pressed="true"] small { color: inherit; opacity: .85; }
+    html.bnp-nd-page .bnp-nd-sel { display: inline-flex; align-items: center; gap: 7px; color: var(--nb-muted); font: 12.5px var(--nb-ui); }
+    html.bnp-nd-page .bnp-nd-sel select { height: 32px; margin: 0; padding: 0 8px; border: 2px solid color-mix(in srgb, var(--nb-line) 85%, #c9c9c9); border-radius: 10px; background: #fff; color: #262626; font: 13px var(--nb-txt); }
+    html.bnp-nd-page .bnp-nd-count { color: var(--nb-muted); font: 12.5px var(--nb-ui); }
+    html.bnp-nd-page .bnp-nd-count b { color: #262626; }
+    /* the cards: each in its back's colour, its picture whole; one you don't have pale until you point at it */
+    html.bnp-nd-page .bnp-nd-grid { --nd-px: 150px; display: grid; grid-template-columns: repeat(auto-fill, calc(var(--nd-px) + 18px)); justify-content: center; gap: 14px; }
+    html.bnp-nd-page .bnp-nd-grid.is-s { --nd-px: 80px; gap: 10px; }
+    html.bnp-nd-page .bnp-nd-grid.is-l { --nd-px: 300px; gap: 18px; }
+    html.bnp-nd-page .bnp-nd-card { position: relative; display: grid; justify-items: center; align-content: start; min-width: 0; overflow: hidden; margin: 0; padding: 7px 7px 0; border: 2px solid var(--re); border-radius: 14px; background: linear-gradient(180deg, color-mix(in srgb, var(--r) 26%, #fff), var(--rt) 70%); color: #262626; box-shadow: 0 2px 0 var(--re), 0 4px 10px rgba(0, 0, 0, .08); font: inherit; text-align: center; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+    html.bnp-nd-page .bnp-nd-card:hover, html.bnp-nd-page .bnp-nd-card:focus-visible { z-index: 2; transform: translateY(-3px); box-shadow: 0 5px 0 var(--re), 0 12px 20px rgba(0, 0, 0, .18); outline: none; }
+    html.bnp-nd-page .bnp-nd-card:focus-visible { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--nb-bar), 0 12px 20px rgba(0, 0, 0, .18); }
+    html.bnp-nd-page .bnp-nd-art { display: block; width: var(--nd-px); height: var(--nd-px); overflow: hidden; border: 2px solid var(--re); border-radius: 9px; background: #fff; }
+    html.bnp-nd-page .bnp-nd-art img { display: block; width: 100%; height: 100%; }
+    html.bnp-nd-page .bnp-nd-cfoot { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 34px; padding: 5px 1px 3px; }
+    html.bnp-nd-page .bnp-nd-no { flex: none; display: grid; place-items: center; min-width: 27px; height: 22px; padding: 0 6px; border-radius: 99px; background: var(--r); color: var(--ro); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .2), 0 0 0 1.5px var(--re); font: 13px/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-nd-page .bnp-nd-cname { flex: 1; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font: 13px/1.2 var(--nb-ui); text-align: left; overflow-wrap: break-word; word-break: normal; }
+    html.bnp-nd-page .bnp-nd-n i { margin-right: 1px; font: 11px/1 var(--nb-ui); font-style: normal; }
+    html.bnp-nd-page .bnp-nd-n { flex: none; display: flex; align-items: center; height: 22px; padding: 0 7px; border-radius: 99px; background: #2f8a3a; color: #fff; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .2); font: 13px/1 "Cafeteria", "Arial Bold", sans-serif; }
+    html.bnp-nd-page .bnp-nd-you { flex: none; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font: 15px/1 var(--nb-ui); font-style: normal; }
+    html.bnp-nd-page .bnp-nd-you.is-y { background: #2f8a3a; color: #fff; }
+    html.bnp-nd-page .bnp-nd-you.is-n { background: #f2b33a; color: #4a3000; }
+    html.bnp-nd-page .bnp-nd-cmeta { display: flex; justify-content: space-between; gap: 6px; width: 100%; padding: 0 2px 8px; color: color-mix(in srgb, var(--re) 55%, #555); font: 11.5px/1.2 var(--nb-ui); }
+    html.bnp-nd-page .bnp-nd-cmeta span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html.bnp-nd-page .bnp-nd-cmeta .is-np { flex: none; color: #1d5a26; }
+    html.bnp-nd-page .bnp-nd-grid.is-s .bnp-nd-cfoot { flex-wrap: wrap; justify-content: center; gap: 3px 4px; min-height: 0; padding: 5px 0 7px; }
+    html.bnp-nd-page .bnp-nd-grid.is-s .bnp-nd-cname { flex: 1 0 100%; order: 3; min-height: 2.3em; font-size: 11px; line-height: 1.15; text-align: center; }
+    html.bnp-nd-page .bnp-nd-grid.is-s .bnp-nd-no { min-width: 24px; height: 19px; padding: 0 5px; font-size: 12px; }
+    html.bnp-nd-page .bnp-nd-grid.is-l .bnp-nd-card { padding: 9px 9px 0; border-radius: 18px; }
+    html.bnp-nd-page .bnp-nd-grid.is-l .bnp-nd-art { border-radius: 12px; }
+    html.bnp-nd-page .bnp-nd-grid.is-l .bnp-nd-cname { font-size: 16px; -webkit-line-clamp: 1; }
+    html.bnp-nd-page .bnp-nd-grid.is-l .bnp-nd-no { min-width: 32px; height: 26px; font-size: 15px; }
+    html.bnp-nd-page .bnp-nd-grid.is-l .bnp-nd-cmeta { font-size: 13px; }
+    html.bnp-nd-page .bnp-nd-card.is-gold { background: linear-gradient(160deg, #fff6cf, #ffe385 46%, #f6c64a); }
+    html.bnp-nd-page .bnp-nd-card.is-holo { background: linear-gradient(135deg, #ffd9f1, #d8e9ff 26%, #d6fbe6 50%, #fff6c6 74%, #eedcff); }
+    html.bnp-nd-page .bnp-nd-card.is-black { background: linear-gradient(180deg, #dcdce0, #f1f1f3 70%); }
+    html.bnp-nd-page .bnp-nd-card.is-miss { border-style: dashed; background: #fff; box-shadow: none; }
+    html.bnp-nd-page .bnp-nd-card.is-miss .bnp-nd-art { border-color: color-mix(in srgb, var(--r) 45%, #fff); }
+    html.bnp-nd-page .bnp-nd-card.is-miss .bnp-nd-art img, html.bnp-nd-page .bnp-nd-row.is-miss .bnp-nd-lart img { filter: grayscale(.85) contrast(.9); opacity: .42; transition: filter .2s, opacity .2s; }
+    html.bnp-nd-page .bnp-nd-card.is-miss:hover .bnp-nd-art img, html.bnp-nd-page .bnp-nd-card.is-miss:focus-visible .bnp-nd-art img, html.bnp-nd-page .bnp-nd-row.is-miss:hover .bnp-nd-lart img { filter: none; opacity: 1; }
+    html.bnp-nd-page .bnp-nd-card.is-miss .bnp-nd-no, html.bnp-nd-page .bnp-nd-row.is-miss .bnp-nd-no { background: #fff; color: var(--re); box-shadow: inset 0 0 0 2px var(--r); }
+    html.bnp-nd-page .bnp-nd-card.is-miss .bnp-nd-cname { color: #555; }
+    html.bnp-nd-page .bnp-nd-card.is-flash { animation: bnp-nd-flash 1s ease-in-out 2; }
+    @keyframes bnp-nd-flash { 50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--r) 55%, #fff); } }
+    @media (prefers-reduced-motion: reduce) { html.bnp-nd-page .bnp-nd-card { transition: none; } html.bnp-nd-page .bnp-nd-card:hover { transform: none; } }
+    /* the list: a row each, its picture small */
+    html.bnp-nd-page .bnp-nd-grid.is-list { display: block; overflow: hidden; border: 2px solid var(--nb-frame); border-radius: 16px; background: #fff; box-shadow: 0 3px 0 var(--nb-frame); }
+    html.bnp-nd-page :where(.bnp-nd-lhead, .bnp-nd-row) { display: grid; grid-template-columns: 40px 46px minmax(0, 1.7fr) minmax(0, 1fr) 82px 80px 64px; align-items: center; gap: 10px; width: 100%; padding: 5px 14px; box-sizing: border-box; }
+    html.bnp-nd-page .bnp-nd-lhead { padding-top: 8px; padding-bottom: 8px; border-bottom: 2px solid var(--nb-frame); background: var(--nb-band); color: #262626; font: 12.5px var(--nb-ui); }
+    html.bnp-nd-page .bnp-nd-row { margin: 0; border: 0; border-top: 1px solid color-mix(in srgb, var(--nb-line) 70%, #e2e2e2); background: #fff; color: #262626; font: 13.5px/1.25 var(--nb-txt); text-align: left; cursor: pointer; }
+    html.bnp-nd-page .bnp-nd-lhead + .bnp-nd-row { border-top: 0; }
+    html.bnp-nd-page .bnp-nd-row:nth-of-type(even) { background: color-mix(in srgb, var(--nb-tint) 45%, #fff); }
+    html.bnp-nd-page .bnp-nd-row:hover, html.bnp-nd-page .bnp-nd-row:focus-visible { background: color-mix(in srgb, var(--r) 12%, #fff); outline: none; }
+    html.bnp-nd-page .bnp-nd-row:focus-visible { box-shadow: inset 0 0 0 3px var(--nb-bar); }
+    html.bnp-nd-page .bnp-nd-lart { display: block; width: 40px; height: 40px; overflow: hidden; border: 2px solid var(--re); border-radius: 8px; }
+    html.bnp-nd-page .bnp-nd-lart img { display: block; width: 40px; height: 40px; }
+    html.bnp-nd-page .bnp-nd-lname { overflow: hidden; font-family: var(--nb-ui); text-overflow: ellipsis; white-space: nowrap; }
+    html.bnp-nd-page .bnp-nd-lsp { overflow: hidden; color: var(--nb-muted); text-overflow: ellipsis; white-space: nowrap; }
+    html.bnp-nd-page .bnp-nd-lr { display: inline-flex; align-items: center; gap: 6px; font: 12.5px var(--nb-ui); }
+    html.bnp-nd-page .bnp-nd-lr i { width: 12px; height: 12px; border-radius: 50%; background: var(--r); box-shadow: 0 0 0 1.5px var(--re); }
+    html.bnp-nd-page .bnp-nd-lp { color: #1d5a26; font: 12.5px var(--nb-ui); }
+    html.bnp-nd-page .bnp-nd-lyou { display: inline-flex; align-items: center; gap: 4px; color: #2f8a3a; font: 12.5px var(--nb-ui); }
+    html.bnp-nd-page .bnp-nd-lyou .is-no { color: #9a9a9a; font-style: normal; }
+    html.bnp-nd-page .bnp-nd-empty { display: grid; justify-items: center; gap: 10px; padding: 26px 18px; border: 2px dashed var(--nb-line); border-radius: 16px; background: #fff; color: var(--nb-muted); font: 14px var(--nb-ui); text-align: center; }
+    html.bnp-nd-page .bnp-nd-empty p { margin: 0; max-width: 480px; }
+    /* panels: Premium, your deck, the high scores; a full bar across each, its title in the middle */
+    html.bnp-nd-page .bnp-nd-panel { display: grid; gap: 12px; padding: 0 0 16px; overflow: hidden; border: 2px solid var(--nb-frame); border-radius: 16px; background: #fff; box-shadow: 0 3px 0 var(--nb-frame); }
+    html.bnp-nd-page .bnp-nd-panel > :not(.bnp-nd-bandh) { margin-left: 16px; margin-right: 16px; }
+    html.bnp-nd-page .bnp-nd-bandh { display: flex; align-items: center; justify-content: center; gap: 9px; margin: 0; padding: 9px 14px; border: 0; border-bottom: 2px solid var(--nb-frame); background: var(--nb-band); color: #fff; font: 22px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .5pt;
+      text-shadow: 2px 0 var(--nd-ring), 1.85px .77px var(--nd-ring), 1.41px 1.41px var(--nd-ring), .77px 1.85px var(--nd-ring), 0 2px var(--nd-ring), -.77px 1.85px var(--nd-ring), -1.41px 1.41px var(--nd-ring), -1.85px .77px var(--nd-ring), -2px 0 var(--nd-ring), -1.85px -.77px var(--nd-ring), -1.41px -1.41px var(--nd-ring), -.77px -1.85px var(--nd-ring), 0 -2px var(--nd-ring), .77px -1.85px var(--nd-ring), 1.41px -1.41px var(--nd-ring), 1.85px -.77px var(--nd-ring); }
+    html.bnp-nd-page .bnp-nd-bandh b { display: grid; place-items: center; min-width: 26px; height: 24px; padding: 0 8px; border-radius: 99px; background: var(--nb-bar); color: var(--nb-bar-ink); text-shadow: none; font: 14px/1 "Cafeteria", "Arial Bold", sans-serif; }
+    html.bnp-nd-page .bnp-nd-bandh.is-danger { --nd-ring: #6e1414; border-bottom-color: #8e1f1f; background: linear-gradient(#e06060, #c23131); }
+    html.bnp-nd-page .bnp-nd-panel.is-danger { border-color: #c98a8a; box-shadow: 0 3px 0 #c98a8a; }
+    html.bnp-nd-page .bnp-nd-say { margin: 0; color: var(--nb-muted); font: 13.5px/1.45 var(--nb-txt); text-align: center; }
+    html.bnp-nd-page .bnp-nd-prem { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 14px; }
+    html.bnp-nd-page .bnp-nd-pcard { display: grid; justify-items: center; gap: 7px; margin: 0; padding: 9px 9px 11px; border: 2px solid #6a4fb0; border-radius: 16px; background: linear-gradient(160deg, #f3edff, #e2d6fb); box-shadow: 0 2px 0 #6a4fb0; }
+    html.bnp-nd-page .bnp-nd-pwhen { padding: 2px 12px; border-radius: 99px; background: #6a4fb0; color: #fff; font: 14px/1.3 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-nd-page .bnp-nd-pic { display: block; width: 150px; height: 150px; overflow: hidden; border: 2px solid #6a4fb0; border-radius: 10px; background: #fff; }
+    html.bnp-nd-page .bnp-nd-pic img { display: block; width: 150px; height: 150px; }
+    html.bnp-nd-page .bnp-nd-pcard b { font: 13.5px/1.25 var(--nb-ui); text-align: center; }
+    html.bnp-nd-page .bnp-nd-form form { display: grid; gap: 10px; margin: 0; }
+    html.bnp-nd-page .bnp-nd-form table { width: 100%; margin: 0 !important; border-collapse: separate; border-spacing: 0 10px; }
+    html.bnp-nd-page .bnp-nd-form tr, html.bnp-nd-page .bnp-nd-form td { background: none !important; }
+    html.bnp-nd-page .bnp-nd-form td { padding: 0 6px; color: #262626; font: 13.5px var(--nb-ui); vertical-align: top; }
+    html.bnp-nd-page .bnp-nd-form td:first-child { width: 130px; padding-top: 9px; }
+    html.bnp-nd-page .bnp-nd-form :is(input[type="text"], textarea) { width: 100%; box-sizing: border-box; margin: 0; padding: 8px 11px; border: 2px solid color-mix(in srgb, var(--nb-line) 85%, #c9c9c9); border-radius: 11px; background: #fff; color: #262626; font: 14px/1.4 var(--nb-txt); }
+    html.bnp-nd-page .bnp-nd-form :is(input[type="text"], textarea):focus { border-color: var(--nb-bar); outline: 0; box-shadow: 0 0 0 3px color-mix(in srgb, var(--nb-bar) 18%, #fff); }
+    html.bnp-nd-page .bnp-nd-form td[colspan] { padding-top: 4px; text-align: center; }
+    html.bnp-nd-page :is(.bnp-nd-form input[type="submit"], .bnp-nd-destroy input) { height: 38px; margin: 0; padding: 0 22px; border: 2px solid #c08400; border-radius: 12px; background: linear-gradient(#ffe066, #fcc515); color: #262626; box-shadow: 0 2px 0 #c08400; font: 17px/1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; cursor: pointer; }
+    html.bnp-nd-page .bnp-nd-destroy { display: flex; justify-content: center; }
+    html.bnp-nd-page .bnp-nd-destroy input { border-color: #8e1f1f; background: linear-gradient(#e05252, #c23131); color: #fff; box-shadow: 0 2px 0 #8e1f1f; }
+    html.bnp-nd-page .bnp-nd-tiers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    html.bnp-nd-page .bnp-nd-tier { display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 8px; border: 2px solid var(--nb-line); border-radius: 14px; background: color-mix(in srgb, var(--nb-tint) 50%, #fff); }
+    html.bnp-nd-page .bnp-nd-tier > span { display: grid; gap: 1px; }
+    html.bnp-nd-page .bnp-nd-tier b { font: 18px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-nd-page .bnp-nd-tier small { color: var(--nb-muted); font: 12px var(--nb-ui); }
+    html.bnp-nd-page .bnp-nd-tier em { color: #8a5600; font: 12.5px var(--nb-ui); font-style: normal; }
+    html.bnp-nd-page .bnp-nd-tier em.is-y { color: #2f8a3a; }
+    html.bnp-nd-page .bnp-nd-tierb { flex: none; display: grid; place-items: center; width: 64px; height: 64px; margin: 8px; border-radius: 50%; background: var(--nb-bar); color: var(--nb-bar-ink); box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .2); font: 22px/1 "Cafeteria", "Arial Bold", sans-serif; }
+    html.bnp-nd-page .bnp-nd-limits { display: flex; justify-content: center; gap: 8px; }
+    html.bnp-nd-page .bnp-nd-scores { width: calc(100% - 32px); border-collapse: separate; border-spacing: 0; overflow: hidden; border: 2px solid var(--nb-line); border-radius: 12px; font: 13.5px var(--nb-txt); }
+    html.bnp-nd-page .bnp-nd-scores th { padding: 7px 10px; background: var(--nb-band); color: #262626; font: 12.5px var(--nb-ui); text-align: left; }
+    html.bnp-nd-page .bnp-nd-scores td { height: 30px; padding: 3px 10px; border-top: 1px solid color-mix(in srgb, var(--nb-line) 70%, #e2e2e2); }
+    html.bnp-nd-page .bnp-nd-scores tr:nth-child(even) td { background: color-mix(in srgb, var(--nb-tint) 45%, #fff); }
+    html.bnp-nd-page .bnp-nd-scores tr.is-tierstart td { border-top: 2px solid var(--nb-frame); }
+    html.bnp-nd-page .bnp-nd-scores tr.is-me td { background: color-mix(in srgb, var(--nb-bar) 14%, #fff); font-family: var(--nb-ui); }
+    html.bnp-nd-page .bnp-nd-scores a { font-family: var(--nb-ui); text-decoration: none; }
+    html.bnp-nd-page .bnp-nd-spos, html.bnp-nd-page .bnp-nd-sn { font-family: var(--nb-ui); }
+    html.bnp-nd-page .bnp-nd-stro { width: 52px; padding: 2px 6px !important; }
+    html.bnp-nd-page .bnp-nd-stro img { display: block; }
+    html.bnp-nd-page .bnp-nd-foot { margin: 0; text-align: center; }
+    /* windows: a card's own page, and the rarity list */
+    .bnp-go.bnp-nd-win { width: min(740px, calc(100vw - 24px)); max-height: min(660px, 92vh); top: 5vh; }
+    .bnp-go.bnp-nd-win.is-rare { width: min(780px, calc(100vw - 24px)); }
+    :where(.bnp-nd-win, .bnp-nd-solobox) .bnp-nd-wbody { display: grid; grid-template-columns: 320px minmax(0, 1fr); align-items: start; gap: 18px; min-height: 0; padding: 16px 18px; overflow: auto; color: #262626; font: 14px/1.45 "MuseoSansRounded500", Arial, sans-serif; text-align: left; }
+    :where(.bnp-nd-win.is-rare, .bnp-nd-solobox) .bnp-nd-wbody.is-rare, .bnp-nd-win.is-rare .bnp-nd-wbody { display: block; }
+    :where(.bnp-nd-win, .bnp-nd-solobox) .bnp-nd-wfoot:empty { display: none; }
+    :where(.bnp-nd-win, .bnp-nd-solobox) .bnp-nd-wfoot { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px 16px; border-top: 2px solid color-mix(in srgb, var(--nb-line, #f4d9a0) 80%, #ddd); background: color-mix(in srgb, var(--nb-tint, #fffbea) 60%, #fff); }
+    .bnp-nd-wpos { min-width: 80px; color: #666; font: 12.5px "MuseoSansRounded700", Arial, sans-serif; text-align: center; }
+    .bnp-nd-cbig { padding: 8px; border: 3px solid var(--re); border-radius: 18px; background: linear-gradient(180deg, color-mix(in srgb, var(--r) 30%, #fff), var(--rt)); box-shadow: 0 3px 0 var(--re); }
+    .bnp-nd-cbig.is-gold { background: linear-gradient(160deg, #fff6cf, #ffe385 46%, #f6c64a); }
+    .bnp-nd-cbig.is-holo { background: linear-gradient(135deg, #ffd9f1, #d8e9ff 26%, #d6fbe6 50%, #fff6c6 74%, #eedcff); }
+    .bnp-nd-cbig img { display: block; width: 300px; height: 300px; border: 2px solid var(--re); border-radius: 12px; background: #fff; box-sizing: content-box; }
+    .bnp-nd-cinfo { display: grid; align-content: start; gap: 10px; min-width: 0; }
+    .bnp-nd-crare { display: flex; align-items: center; gap: 10px; width: 100%; margin: 0; padding: 6px 12px 6px 6px; border: 2px solid var(--r); border-radius: 14px; background: var(--rt); color: #262626; font: inherit; text-align: left; cursor: pointer; }
+    button.bnp-nd-crare:hover { border-color: var(--re); }
+    .bnp-nd-crare img { flex: none; width: 40px; height: 40px; border-radius: 6px; }
+    .bnp-nd-crare span { display: grid; }
+    .bnp-nd-crare b { font: 14px/1.25 "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-nd-crare small { color: #555; font: 12.5px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-nd-cdl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 14px; margin: 0; font-size: 13.5px; }
+    .bnp-nd-cdl dt { color: #6a6a6a; font-family: "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-nd-cdl dd { margin: 0; }
+    .bnp-nd-cdl dd.is-np { color: #1d5a26; font-family: "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-nd-cdl dd small { color: #6a6a6a; font-family: "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-nd-cyou { display: flex; align-items: center; gap: 6px; margin: 0; padding: 6px 12px; border-radius: 11px; background: #f3f3f3; font: 13.5px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-nd-cyou.is-y { background: #e7f5e9; color: #1d5a26; }
+    .bnp-nd-cyou.is-n { background: #fff3dc; color: #6b4500; }
+    .bnp-nd-cwords { margin: 0; padding: 10px 13px; border-left: 4px solid var(--r); border-radius: 4px 11px 11px 4px; background: #fafafa; color: #333; font-style: italic; }
+    .bnp-nd-cwords .is-wait { color: #8a8a8a; font-style: normal; }
+    .bnp-nd-cnote { margin: 0; color: #6a6a6a; font-size: 12.5px; }
+    .bnp-nd-cbtns:empty { display: none; }
+    .bnp-nd-rmask { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 9px 12px; border: 2px solid #e2a3a3; border-radius: 12px; background: #fff1f1; color: #6e1414; font: 13px "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-nd-rmask span { flex: 1 1 100%; }
+    .bnp-nd-cinfo > .bnp-nd-btn.is-small { justify-self: start; }
+    .bnp-nd-rsay { margin: 0 0 14px; color: #555; text-align: center; }
+    .bnp-nd-rlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .bnp-nd-rrow { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px 10px 10px; border: 2px solid var(--r); border-radius: 15px; background: linear-gradient(180deg, var(--rt), #fff 75%); }
+    .bnp-nd-rrow > img { flex: none; width: 80px; height: 80px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .25)); }
+    .bnp-nd-rrow > div { display: grid; gap: 5px; min-width: 0; }
+    .bnp-nd-rname { color: var(--re); font: 19px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    .bnp-nd-rname span { color: #262626; font: 13px "MuseoSansRounded700", Arial, sans-serif; letter-spacing: 0; }
+    .bnp-nd-rrow p { margin: 0; color: #444; font-size: 12.5px; line-height: 1.4; }
+    .bnp-nd-rfacts { display: flex; flex-wrap: wrap; gap: 4px 12px; color: #555; font: 12px "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-nd-rfacts b { color: #262626; font-family: "MuseoSansRounded700", Arial, sans-serif; }
+    .bnp-nd-rhave { display: flex; align-items: center; gap: 8px; }
+    .bnp-nd-rhave small { color: #555; font: 12px "MuseoSansRounded700", Arial, sans-serif; white-space: nowrap; }
+    .bnp-nd-rbar { flex: 1; height: 8px; overflow: hidden; border-radius: 99px; background: #fff; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--r) 45%, #fff); }
+    .bnp-nd-rbar i { display: block; height: 100%; background: var(--r); }
+    html.bnp-nd-solo body { margin: 0; background: #fff; }
+    .bnp-nd-solobox { display: flex; flex-direction: column; min-height: 100vh; }
+    .bnp-nd-solobox .popup-header__2020 { position: relative; display: flex; align-items: center; justify-content: center; min-height: 46px; background: var(--nb-band, #fed123); }
+    .bnp-nd-solobox .popup-header__2020 h3 { margin: 0; color: #262626; font: 22px "Cafeteria", "Arial Bold", sans-serif; }
+    .bnp-nd-solobox .bnp-nd-wbody { flex: 1; grid-template-columns: 1fr; justify-items: center; }
+    @media (max-width: 760px) { :where(.bnp-nd-win) .bnp-nd-wbody { grid-template-columns: 1fr; justify-items: center; } .bnp-nd-rlist { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) { html.bnp-nd-page .bnp-nd-head { grid-template-columns: minmax(0, 1fr); } html.bnp-nd-page .bnp-nd-fan { display: none; } html.bnp-nd-page :where(.bnp-nd-lhead, .bnp-nd-row) { grid-template-columns: 34px 46px minmax(0, 1fr) 70px 60px; } html.bnp-nd-page :where(.bnp-nd-lhead, .bnp-nd-row) > :nth-child(4), html.bnp-nd-page :where(.bnp-nd-lhead, .bnp-nd-row) > :nth-child(5) { display: none; } }
   `;
   // ═══════════════════════════════════════════════════════════════════════════
   // The NC Mall, made over: the whole Mall as one shop floor. Neopets' own Mall app stays on its page out of sight and does what it
@@ -36000,10 +37125,12 @@
   const bmAt = (ms) => { const n = nstOf(ms); return `${n.h % 12 || 12}:${String(n.mi).padStart(2, '0')} ${n.h < 12 ? 'am' : 'pm'} NST`; };   // (a time with its minutes, always: 3:00 pm, 3:02 pm)   // (the next top of the hour: the wizards' breaks end then; Neopian time's hours start with UTC's)
   function bmWhat(kind, pet) {
     if (kind === 'stamps') return { title: 'Stamps your album still needs', none: 'Your album’s read pages have every stamp' };
+    if (kind === 'cards') return { title: 'Cards your NeoDeck still needs', none: 'Your NeoDeck has every card' };
     const k = COL_KINDS[kind];
     return { title: `${k.label === 'Books' ? 'Books' : k.what.charAt(0).toUpperCase() + k.what.slice(1)} ${pet} hasn’t ${k.did}`, none: `${pet} has ${k.did} every one NE knows of` };
   }
   function bmList(kind) {   // (the rows: what's still needed, NP items only, as { name, img, guide (itemdb's price), retired, where })
+    if (kind === 'cards') return ndBmList();
     if (kind === 'stamps') {
       const out = [], seen = new Set();
       let unread = 0;
@@ -36049,7 +37176,7 @@
     }
     if (!(bm.run && (!bm.run.over || bm.unseen))) {   // (a run under way, or done while it was closed: the window as it is)
       const L = bmList(kind);
-      Object.assign(bm, { kind, pet: kind === 'stamps' ? '' : (col && col.pet) || '', q: '', only: '', note: '', run: null, show: BM_PAGE, unread: L ? L.unread : 0, partial: !!(L && L.partial), missing: !L });
+      Object.assign(bm, { kind, pet: kind === 'stamps' || kind === 'cards' ? '' : (col && col.pet) || '', q: '', only: '', note: '', run: null, show: BM_PAGE, unread: L ? L.unread : 0, partial: !!(L && L.partial), missing: !L });
       bm.rows = (L ? L.rows : []).map((r, i) => ({ ...r, i, on: false, st: '', why: '', paid: 0 })).sort((a, b) => ((a.guide || Infinity) - (b.guide || Infinity)) || a.name.localeCompare(b.name));
       bm.rows.forEach((r, i) => { r.i = i; });
     }
@@ -36324,13 +37451,14 @@
     bt: BM_READ,
     food: { pick: (o, pet) => o.v.toLowerCase() === `feed to ${pet}`.toLowerCase(), doing: 'Feeding', to: (pet) => ` to ${pet}`, done: (pet) => `fed to ${pet}`, offer: (pet) => `Feed to ${pet}`, sw: (pet) => `Feed them to ${pet} as they’re bought`, now: (n, pet) => `Feed the ${n} bought to ${pet}`, full: 'Feed them', note: ' A pet that’s full won’t eat more: the rest stay in your inventory.' },
     stamps: { pick: (o) => /album/i.test(`${o.v} ${o.l}`) && !/tcg|trading card/i.test(`${o.v} ${o.l}`), doing: 'Putting', to: () => ' in your album', done: () => 'put in your album', offer: () => 'Put in your album', sw: () => 'Put them in your album as they’re bought', now: (n) => `Put the ${n} bought in your album`, full: 'Put them in your album' },
+    cards: { pick: (o) => /neo\s*deck/i.test(`${o.v} ${o.l}`), doing: 'Putting', to: () => ' in your NeoDeck', done: () => 'put in your NeoDeck', offer: () => 'Put in NeoDeck', sw: () => 'Put them in your NeoDeck as they’re bought', now: (n) => `Put the ${n} bought in your NeoDeck`, full: 'Put them in your NeoDeck' },
   };
-  const bmUse = () => (bm && (bm.kind === 'stamps' || bm.pet) && BM_USE[bm.kind]) || null;
+  const bmUse = () => (bm && (bm.kind === 'stamps' || bm.kind === 'cards' || bm.pet) && BM_USE[bm.kind]) || null;
   const bmReads = () => !!bmUse();   // (the lists whose items are used as they're bought)
   const bmUnread = () => (bmReads() ? bm.rows.filter((r) => r.st === 'got' && !r.read && !r.readWhy && !r.sdb) : []);
   const bmNameKey = (s) => reClean(String(s || '')).toLowerCase().replace(/[‘’`´]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim();   // (an item's name as matched between itemdb, your inventory, Quick Stock and your SDB: apostrophes and spaces as one)
   const bmInInv = () => bm.rows.filter((r) => r.st === 'got' && !r.read && !r.sdb && !r.gone);   // (what's bought, or was there already, and still in your inventory: for your SDB when it's full)
-  const BM_SDB_CAT = { books: '6', bt: '6', food: '18', stamps: '15' };   // (each kind's own category in your SDB: Books, Food, Album Item)
+  const BM_SDB_CAT = { books: '6', bt: '6', food: '18', stamps: '15', cards: '14' };   // (each kind's own category in your SDB: Books, Food, Album Item)
   const BM_SDB = { doing: 'Putting', to: () => ' in your SDB' };   // (its words while Quick Stock puts them in your SDB)
   async function bmInv() {   // (your inventory's page, opened afresh unseen, as a refresh would (its list is up to date only after that): its NP items' cards once drawn, and how many items. null when it didn't come)
     const page = '/inventory.phtml';
@@ -36436,7 +37564,12 @@
     } finally { wwwShut(page); run.reading = 0; run.use = null; bmSumPaint(); }
     if (read) {
       if (bm.kind === 'books' || bm.kind === 'bt') document.dispatchEvent(new CustomEvent('bnp-col-read', { detail: JSON.stringify({ pet }) }));   // (its kept lists and the marks: read again)
-      if (bm.kind !== 'stamps' && col && col.pet === pet && col.kind === bm.kind) { for (const r of bm.rows) if (r.read && r.file && !col.had.has(colImgKey(r.file))) col.had.set(colImgKey(r.file), [col.had.size + 1, r.name, r.file, '']); colPaint(); }   // (this page shows them read, or eaten)
+      if (bm.kind !== 'stamps' && bm.kind !== 'cards' && col && col.pet === pet && col.kind === bm.kind) { for (const r of bm.rows) if (r.read && r.file && !col.had.has(colImgKey(r.file))) col.had.set(colImgKey(r.file), [col.had.size + 1, r.name, r.file, '']); colPaint(); }   // (this page shows them read, or eaten)
+      if (bm.kind === 'cards') {   // (your NeoDeck: the cards put in, counted in at once)
+        const put = bm.rows.filter((r) => r.read && !r.counted && r.ndId);
+        for (const r of put) r.counted = true;
+        await ndDecked(put.map((r) => r.ndId));
+      }
       if (bm.kind === 'stamps') {   // (your album: the stamps put in, counted in at once)
         const put = bm.rows.filter((r) => r.read && !r.counted);
         for (const r of put) r.counted = true;
@@ -49088,6 +50221,9 @@
         ${sw('stampMarks', 'Mark the stamps your album still needs', 'Wherever items show (the Post Office Kiosk and other shops, your inventory, SDB, Quick Stock, the Trading Post, Auctions…) a stamp your album doesn’t have yet gets a little mark with its page, a click from its place there. It knows the pages you’ve opened, and the rest once you press Read on your album’s front page.')}
         ${saSetHtml()}
       </div>`],
+      ['otherpages', () => `<div class="bnp-card"><h4>NeoDeck</h4>
+        ${sw('neodeck', 'The NeoDeck, made over', 'Every NeoDeck page (your album, your cards, all 366, Premium, your deck, and the Card Collector high scores) shows the cards by their art, each framed in its back’s colour, at 40, 80, 150 or 300 px: what you have, what you still need and what itemdb says they cost, found and filtered by back, species and name. A card’s own page and the rarity list open on the page, and Buy Mode buys the cards you don’t have and puts them in your NeoDeck. Off: Neopets’ own pages.')}
+      </div>`],
       ['otherpages', `<div class="bnp-card"><h4>Your Closet</h4>
         ${sw('closet2', 'Your Closet, made over', 'All of it at once (read 90 to a page, a moment apart, and kept while Neopets counts it the same), found as you type, sorted (newest, name, rarest, priciest, NC value, most copies, zone) and filtered (Neopoints or Neocash, Paint Brush sets, doubles, zone, kind), each item’s worth from itemdb or the NC value guides, and what your pets are wearing (Neopets’ closet leaves it out; Customise shows it to NE as you use it). Choose several (every copy, one, or all but one of each) and Neopets’ own window confirms moving them to your inventory, with your PIN if you’ve set one. Click an item for Neopets’ own window, as before.')}
         ${sw('hidePinAd', 'Hide Neopets’ “Add a PIN” notice', 'The “Need some extra security? Add a PIN for use in this area!” box over your Closet and Safety Deposit Box, out of sight. Your PIN itself is untouched: set one in Neopets’ Preferences whenever you like.')}
@@ -55055,6 +56191,14 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.5.7', '2026-11-21', [
+      'NeoDeck: every NeoDeck page made over: your album, your cards, all 366, Premium, your deck and the Card Collector high scores',
+      'NeoDeck: each card shows its art, framed in its back’s colour, as a list or at Small, Half or Full size; ones you don’t have faded until you point at them',
+      'NeoDeck: find a card, show what you have or still need, by back and species, sorted by number, name, rarity or itemdb’s price; what your cards are worth and what’s still to get',
+      'NeoDeck: a card’s own window (its full art, Neopets’ words for it, its item buttons, Remove one) and the Rarity List open on the page',
+      'NeoDeck: Buy Mode buys the cards you don’t have and puts them in your NeoDeck as they’re bought',
+      'NeoChat: its speech bubble under each poster’s avatar on the boards, and by each lot’s owner on the Trading Post, opens NeoChat on them',
+    ]],
     ['5.5.6', '2026-11-21', [
       'Smilies: Neopets’ 34 new smilies, in the Neoboards and NeoChat pickers and wherever NE shows smilies',
       'Safety Deposit Box: Discard cheap items: what itemdb prices under your line, as many as you choose, each one to tick, with a warning before anything goes',
@@ -55734,7 +56878,7 @@
     if (document.documentElement) { fn(); return; }
     const o = new MutationObserver(() => { if (document.documentElement) { o.disconnect(); fn(); } });
     o.observe(document, { childList: true });
-  })(() => { for (const f of [barLook, boxEarly, nclPinEarly, pinRowsEarly, tpEarly, tpSalesEar, invEar, sdbEar, qsAllEar, pageEar, dailyFormEar, quietEar, kpopEar, cocoEarly, fishEarly, myEarly, tabsMark, dockMark, shopMin, bankBig, srEarly, nbEarly, stEarly, nmEarly, nmSentEarly, smEarly, cuEarly, colEarly, saEarly, cloEarly, galEarly, shopEarly, mallEarly, pinAdEarly, pageWait, waitStyle, navEarly]) { try { f(); } catch (e) { report(e); } } });
+  })(() => { for (const f of [barLook, boxEarly, nclPinEarly, pinRowsEarly, tpEarly, tpSalesEar, invEar, sdbEar, qsAllEar, pageEar, dailyFormEar, quietEar, kpopEar, cocoEarly, fishEarly, myEarly, tabsMark, dockMark, shopMin, bankBig, srEarly, nbEarly, stEarly, nmEarly, nmSentEarly, smEarly, cuEarly, colEarly, saEarly, ndEarly, cloEarly, galEarly, shopEarly, mallEarly, pinAdEarly, pageWait, waitStyle, navEarly]) { try { f(); } catch (e) { report(e); } } });
   // ═══════════════════════════════════════════════════════════════════════════
   // The page at its very start
   // ═══════════════════════════════════════════════════════════════════════════
@@ -58089,7 +59233,7 @@
     setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 4000 + Math.random() * 12000);   // (the Turmaculus' due hours, if they're needed: a moment after the page, not at once)
     document.addEventListener('visibilitychange', () => { if (document.hidden) return; clearTimeout(turmacRead.t); turmacRead.t = setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 3000 + Math.random() * 6000); });
     try { startKeep(); } catch (e) { report(e); }
-    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, sdrBoot, salBoot, sddBoot, labPage, soupBoot, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, kpopPage, kadPage, kadCheckBoot, kadLookupRead, kadFeedPage, bdHelper, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, bfPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
+    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, sdrBoot, salBoot, sddBoot, labPage, soupBoot, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, kpopPage, kadPage, kadCheckBoot, kadLookupRead, kadFeedPage, bdHelper, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, bfPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, ndPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, nclMailTp, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
     themeAfter(themeChanged);   // (an old page, its theme's sheets still coming: everything of ours dressed again once they're in)
     whenLoaded(() => { setTimeout(() => { try { boxFootNote(); } catch (e) { report(e); } }, 900); try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } setTimeout(() => { updCheck(false).catch(report); try { updSeen(); } catch (e) { report(e); } }, 1500); try { const w = myWorn(), sw = w && themeData().sw[myLive(w).base]; if (w && (!sw || sw.v !== 7)) themeSwatches(); } catch (e) { report(e); } });   // (a theme of yours: its base's sheet read, if it hasn't been yet)   // (a random event Neopets adds a moment later; theme pictures for the tab)
     if (document.getElementById('navtop__2020') || document.getElementById('navbottom__2020')) startOnce();

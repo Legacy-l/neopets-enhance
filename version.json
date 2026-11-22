@@ -1,10 +1,9 @@
 {
- "version": "5.5.6",
+ "version": "5.5.7",
  "date": "2026-11-21",
  "notes": [
-  "Smilies: the 34 new ones",
-  "SDB: Discard cheap items",
-  "itemdb: page prices always load",
-  "Counts carry on where they stopped"
+  "NeoDeck made over",
+  "Buy Mode for cards",
+  "NeoChat by people on the boards and Trading Post"
  ]
 }
