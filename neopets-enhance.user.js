@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      5.6.1
+// @version      5.7
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -1968,7 +1968,7 @@
     profile: true, profileName: 'Profile', profileIcon: 'profile', pets: true, pinBtn: true, pinned: false, sideQr: true, sideAv: true, sideAvSw: true, sideNoBar: true, tillLog: true, tpSales: true, auSales: true,
     scopes: true, search: true, scope: 'np', edit: true, ticks: true, friends: true, social: true, recent: true, recentN: 8, petsInfo: false, petsHunger: true,
     oldBeta: true, oldBtns: true, oldLookups: false, oldUserLookups: false, oldPetLookups: false, oldGuilds: false, oldGalleries: false, oldShops: false, oldOwnerLook: 'own', qr: true, clockZone: 'nst', clock24: false, clockSecs: true, gear: true, lookup9999: true, npLog: true,
-    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, kpopPlay: true, kadHelp: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclMail: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trBg: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, bdHelp: true, bdAgain: true, bdSet: true, bdAuto: false, bdBg: true, bdLook: 'neo', bdLookMatch: false, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, neodeck: true, tcg: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, bargains: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, bankBig: true, dailyFill: true, soupLog: true, fcHelp: true, fcHist: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
+    updNote: true, updNew: true, dailyBtn: true, dailyRunAuto: true, questDot: false, quietWheels: true, quietKpop: true, kpopPlay: true, kadHelp: true, dailyVisit: false, dailyTab: false, dailyRun: true, dailyNum: true, dailyNumOff: '', reLog: true, reMark: true, reTell: true, tabs: true, tabCaps: true, tabLookup: 'pet', hubFoot: 'pop', hubPal: true, boardPal: true, winBlur: true, nclXFold: false, nclOutFold: true, nclMail: true, nclPin: false, nclPinSide: 'right', nclDim: '', nclHide: ['theme'], nclVol: 100, avIcon: 'worn', avPicksAt: 'end', goto: true, shopDock: true, shopMin: false, avatars: true, fquest: true, searchPage: true, poundPages: true, items: true, nb2: true, set2: true, scView: true, ssAvail: true, hpLevel: true, trainer: true, trHours: false, trFrom: '09:00', trTo: '21:00', trWait: '5', trBuy: true, trSdb: true, trBg: true, trMaxTan: 15000, trMaxRed: 75000, trMaxDay: 2000000, bdHelp: true, bdAgain: true, bdSet: true, bdAuto: false, bdBg: true, bdLook: 'neo', bdLookMatch: false, cu2: true, col: true, colMarks: true, stamps: true, stampMarks: true, neodeck: true, tcg: true, archive: true, closet2: true, gal2: true, shop2: true, shopSales: true, shopPm: true, bargains: true, ncMall: true, ncMallSlim: false, ncMallTags: true, ncMallNewFill: true, hidePinAd: true, nm2: true, nmPopup: true, nmSent: true, stocks: true, stockSell: 60, stockRule: 'gain', stockGain: 300, stockTicker: false, fillAll: true, bankBig: true, dailyFill: true, soupLog: true, fcHelp: true, fcHist: true, fcBettors: 'Shrmsh, Egoyan, coldblackwind, boochi_target, Innocent', fcAmt: 'cap', fcNext: true, worth: true, questGo: true, tpFit: true, tpAll: true, tpBig: true, tpIb: true, tpMulti: true, tpCancel: true, tpUnder: '1', fqSw: true, ncl: true, nclEvery: '5', nclAlways: false, nclSay: true, nclPop: false, nclDesk: false, nclSound: '', nclEnter: 'enter', nclMenu: 'win',
   };
   const REM_DEFAULT = {   // (Reminders: how they come, and which)
     on: true, popup: true, sound: true, tone: '', vol: 100, desktop: true, quiet: false, quietFrom: 23, quietTo: 8,   // (tone: '' each its own, or one of the sounds for all; vol: how loud, 5 to 100)
@@ -4932,6 +4932,7 @@
     ['stamps', 'Stamp Album (its pages, and what it still needs)', IT_STD, IT_STD],
     ['neodeck', 'NeoDeck (a card’s own window)', IT_STD, IT_STD],
     ['tcg', 'Trading Card album (a card’s own window)', IT_STD, IT_STD],
+    ['archive', 'Archived Book Collection (a book’s own window)', IT_STD, IT_STD],
   ];
   const IT_PAGE = new Map(IT_PAGES.map((p) => [p[0], p]));
   const IT_PRICED = ['auctions', 'moneytree', 'search'];   // (pages with itemdb's price on from the start: where it decides what you do)
@@ -4990,7 +4991,7 @@
     name = reClean(name).replace(/\s*\(\s*(?:no trade|wearable)\s*\)\s*$/i, '');
     const set = itSettings(), page = set.pages[o.page || itHere];
     if (!name) return null;
-    const cm = o.page === 'collect' || o.page === 'stamps' || o.page === 'neodeck' || o.page === 'tcg' ? null : itMarks(name);   // (a book or gourmet food a pet you track hasn't had yet, a stamp your album still needs: marked)
+    const cm = o.page === 'collect' || o.page === 'stamps' || o.page === 'neodeck' || o.page === 'tcg' || o.page === 'archive' ? null : itMarks(name);   // (a book or gourmet food a pet you track hasn't had yet, a stamp your album still needs: marked)
     if (!page || !page.on || !S.features.items) return cm ? itMarksOnly(name, cm) : null;
     const cash = !!o.cash, trade = o.trade !== false, wear = !!o.wear, path = location.pathname;
     const fits = { ssw: !cash && trade && itPremium(), sw: !cash && trade, tp: !cash && trade, au: !cash && trade, sdb: !/safetydeposit/.test(path), closet: wear && !/closet\.phtml/.test(path), dti: wear || cash, jn: true, idb: true, bp: /^\/dome\//.test(path) };
@@ -21756,6 +21757,7 @@
       if (err) note.insertAdjacentHTML('beforeend', `<p class="is-err">The first error on the page: ${esc(err.slice(0, 220))}</p>`);
       note.insertAdjacentHTML('beforeend', '<button type="button" class="button-default__2020 button-yellow__2020" data-arch-again>Try again</button>');
       note.querySelector('[data-arch-again]').addEventListener('click', () => location.reload());
+      if (ab) { note.insertAdjacentHTML('beforeend', '<button type="button" class="button-default__2020 button-yellow__2020" data-arch-list>See your collection as a checklist</button>'); note.querySelector('[data-arch-list]').addEventListener('click', () => abView('list')); }   // (NE's checklist reads it without the game)
       if (!document.getElementById('bnp-arch-style')) {
         const st = document.createElement('style');
         st.id = 'bnp-arch-style';
@@ -25731,6 +25733,384 @@
     html.bnp-tc-solo body { margin: 0; padding: 14px; background: radial-gradient(circle at 50% 30%, #fff, #e9e4f5); }
     html.bnp-tc-solo body img { display: block; margin: 0 auto; border-radius: 14px; box-shadow: 0 6px 20px rgba(0, 0, 0, .3); }
     @media (max-width: 760px) { .bnp-tc-win .bnp-nd-wbody { grid-template-columns: 1fr; justify-items: center; } }
+  `;
+  // ═══════════════════════════════════════════════════════════════════════════
+  // The Archived Book Collection (the user, 2026-11-22: "We still need to do archived bookshelf in the same type of style"; "We still want
+  // to keep the existing archive bookshelf stuff, we just want to add a better checklist and ability to observe everything"; "there's also
+  // trophies for completing sets that upgrades and an avatar for completing at least one set"). Neopets' own shelf, a game that draws
+  // itself, stays as it is; a switch in the title shows NE's checklist in its place: every Archive Book set, yours in colour and the rest
+  // greyed, where each book comes from, which of yours are on the shelf, the trophy's levels and the avatars, and the shelf's decorations.
+  // Read as the game reads them, with its own asks of /servicesneo/bookshelf.php (getCollections, getBookshelfDisplayData,
+  // getInventoryItems): nothing is sent that changes anything
+  // ═══════════════════════════════════════════════════════════════════════════
+  const AB_API = '/servicesneo/bookshelf.php', AB_KEY = 'bnp-ab', AB_VIEW = 'bnp-ab-view';
+  const AB_TROPHY = (n) => `${NPI}bookshelf/images/trophies/bs-trophy-0${n}.gif`;   // (its 7 levels: one set complete on your shelf, two, …)
+  const AB_TNAME = ['Bronze', 'Silver'];   // (the first two levels, the only ones seen given so far (Jellyneo, Sunnyneo, November 2026))
+  const AB_AVA = [1, 3, 5, 7, 10, 15, 20];   // (sets complete for each avatar, as Neopets' FAQ has it)
+  const AB_AVA1 = ['Archive Books - Collector', `${NPI}neoboards/avatars/ava_rbookshelf_collector.gif`];
+  const AB_WHERE = {   // (where each book first came from, by name: Jellyneo's and Sunnyneo's guides, November 2026. Not listed: not known yet)
+    'a snowballs chance': ['Taelia’s quests', '/winter/snowfaerie.phtml'],
+    'braving blizzards in new lands': ['Tales of Dacardia (the app): its bonus chest', ''],
+    'chilling tales from frostbitten forest': ['The Haunted Woods Hunt', ''],
+    'keep warm while questing': ['The Quest Log’s weekly prize', '/questlog/'],
+    '10 years to bloom': ['The Wheel of Monotony', '/prehistoric/monotony/monotony.phtml'],
+    'a catalogue of fish caught in spring': ['Ye Olde Fishing Vortex', '/water/fishing.phtml'],
+    'an earth faerie guide to gardening': ['The Altador Cup XX prize shop', ''],
+    'faerieland in blossom': ['The Faerie Caverns', '/faerieland/caverns/index.phtml'],
+    'growing gardens with music': ['After a Tyrannian Concert Hall concert', ''],
+    'searing heat and settling soot': ['The Petpet Lab Ray', '/petpetlab.phtml'],
+    'summer punch out': ['Beating Punchbag Bob in the Battledome', '/dome/'],
+    'treasures in sandy oases': ['Coltzan’s Shrine', '/desert/shrine.phtml'],
+  };
+  const AB_IC = {
+    shelf: '<svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M3.5 2.5v15M16.5 2.5v15M3.5 7.5h13M3.5 12.5h13M3.5 17.5h13M6 7.5V4.2M8.2 7.5V4.8M11.5 12.5V9.2l2.2-.6.9 3.9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    list: '<svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M3 5.2l1.6 1.6L7.3 4M3 11l1.6 1.6L7.3 9.8M9.8 5.8h7.2M9.8 11.5h7.2M9.8 16.8h7.2M3.6 16.8h2.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    bag: '<svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M4.5 6.5h11l-1 11h-9zM7.2 6.5V5a2.8 2.8 0 0 1 5.6 0v1.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    ext: '<svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M11.5 3.5h5v5M16.5 3.5 9.5 10.5M14.5 12v4.5h-11v-11H8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  };
+  let ab = null, abPop = null;
+  function abHere() {   // (your own collection: someone else's (?user=their name) shows theirs, which NE can't read)
+    if (location.pathname !== '/bookshelf/archive-bookshelf.phtml' || S.features.archive === false) return false;
+    const u = reClean(new URLSearchParams(location.search).get('user') || '').toLowerCase(), me = nclMe();
+    return !u || (!!me && u === me);
+  }
+  async function abPost(body) {   // (one of the game's own asks, as it sends it)
+    const r = await fetch(AB_API, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => null);
+    if (!r.ok || !j || !j.success || !j.data) throw new Error(`bookshelf ${r.status}${j && j.message ? `: ${j.message}` : ''}`);
+    return j.data;
+  }
+  async function abRead() {   // (your sets, your shelf and what's in its own inventory, as one; kept for next time)
+    const [c, d] = await Promise.all([abPost({ action: 'getCollections' }), abPost({ action: 'getBookshelfDisplayData' })]);
+    const shelves = Array.isArray(d.bookshelves) ? d.bookshelves : [], shelf = shelves.find((x) => x && x.isOwner) || shelves[0] || null;
+    const inv = [];
+    let invOk = false;
+    if (shelf && shelf.bookshelfId) {
+      try {
+        for (let page = 1; page <= 10; page++) {   // (50 a page, as the game asks)
+          if (page > 1) await new Promise((ok) => setTimeout(ok, 500 + Math.random() * 600));
+          const v = await abPost({ action: 'getInventoryItems', bookshelfId: shelf.bookshelfId, page, limit: 50, sortBy: 'acquired_at', sortOrder: 'desc' });
+          for (const it of Array.isArray(v.items) ? v.items : []) inv.push({ n: reClean(it.name || ''), img: (it.images || [])[0] || '', total: Number(it.totalQuantity) || 0, eq: Number(it.equipped) || 0, cat: ((it.categories || [])[0] || {}).name || '' });
+          invOk = true;
+          if (!(v.pagination && v.pagination.hasNextPage)) break;
+        }
+      } catch (_) { /* (the shelf's own inventory didn't come: which books are on the shelf isn't known this time) */ }
+    }
+    const items = shelf && shelf.customization && Array.isArray(shelf.customization.items) ? shelf.customization.items : [];
+    const cols = (Array.isArray(c.collections) ? c.collections : []).map((x) => ({ id: x.id, name: reClean(x.name || ''), books: (Array.isArray(x.books) ? x.books : []).map((b) => ({ id: b.itemInfoId, name: reClean(b.name || ''), img: Array.isArray(b.images) ? b.images : [], r: b.rarity, own: !!b.owned })) }));
+    const D = { v: 1, t: Date.now(), cols, inv: invOk ? inv : null, on: items.map((x) => reClean((x && x.name) || '').toLowerCase()).filter(Boolean), pub: shelf ? shelf.isPublic !== false : true };
+    for (const col of cols) for (const b of col.books) archAdd(b.name);   // (every Archive Book known by name: never offered to read to a pet)
+    nbJsonSet(acctKey(AB_KEY), D);
+    return D;
+  }
+  function abState(D) {   // (each book: yours or not, on the shelf (true, false, or null when it isn't known); each set's count; the trophy's level)
+    const inv = new Map((D.inv || []).map((x) => [x.n.toLowerCase(), x])), on = new Set(D.on || []);
+    const placed = (b) => { const k = b.name.toLowerCase(); if (on.has(k)) return true; const x = inv.get(k); return x ? x.eq > 0 : null; };
+    let have = 0, all = 0, done = 0, shelved = 0, off = 0, sure = true;
+    const cols = D.cols.map((c) => {
+      const books = c.books.map((b) => { const p = b.own ? placed(b) : null; if (b.own && p === null) sure = false; if (b.own && p === false) off++; return { ...b, on: p }; });
+      const got = books.filter((b) => b.own).length, full = got === books.length && books.length > 0, onAll = full && books.every((b) => b.on === true);
+      have += got; all += books.length;
+      if (full) done++;
+      if (onAll) shelved++;
+      return { ...c, books, got, full, onAll };
+    });
+    return { cols, have, all, done, shelved, off, sure, trophy: Math.min(7, sure ? shelved : done) };   // (the trophy: sets whose books are all on the shelf; not knowing, sets complete)
+  }
+  function abPage() {
+    if (!abHere() || ab) return;
+    const title = document.querySelector('.archivebook-title-container'), wrap = document.querySelector('.unity-wrapper');
+    if (!title || !wrap) return;
+    const root = document.documentElement;
+    root.classList.add('bnp-nd-page', 'bnp-ab-page', 'bnp-nd-ready');
+    try { nbPaintVars(JSON.parse(localStorage.getItem('bnp-nbtheme') || 'null')); } catch (_) { /* */ }
+    for (const [id, css] of [['bnp-nd-style', ND_CSS], ['bnp-ab-style', AB_CSS]]) if (!document.getElementById(id)) { const st = document.createElement('style'); st.id = id; st.textContent = css; root.append(st); }
+    try { nbTheme(); } catch (e) { report(e); }
+    const sw = document.createElement('span');
+    sw.className = 'bnp-nd-seg bnp-ab-switch';
+    sw.setAttribute('role', 'group');
+    sw.setAttribute('aria-label', 'How to see your collection');
+    sw.setAttribute('data-bnp', 'abswitch');
+    title.insertBefore(sw, title.querySelector('.faq-button'));
+    const box = document.createElement('div');
+    box.className = 'bnp-nd bnp-ab';
+    box.setAttribute('data-bnp', 'ab');
+    wrap.before(box);
+    let D = nbJson(acctKey(AB_KEY), null);
+    if (!D || D.v !== 1 || !Array.isArray(D.cols)) D = null;
+    ab = { root: box, sw, D, show: 'all', busy: false, err: '', np: {}, asked: new Set(), view: 'shelf' };
+    const click = (e) => {
+      const t = e.target instanceof Element ? e.target.closest('button') : null;
+      if (!t) return;
+      const d = t.dataset;
+      if (d.abView) { abView(d.abView); return; }
+      if (d.abShow) { ab.show = d.abShow; abPaint(); const b = ab.root.querySelector(`[data-ab-show="${d.abShow}"]`); if (b) b.focus(); return; }
+      if (d.abBook) { abBookOpen(d.abBook); return; }
+      if (d.abTrophy) { abTrophyOpen(Number(d.abTrophy)); return; }
+      if ('abDec' in d) {   // (the decorations folded or opened, in place; kept so)
+        const sec = t.closest('.bnp-ab-decor'), shut = !sec.classList.contains('is-shut');
+        sec.classList.toggle('is-shut', shut);
+        t.setAttribute('aria-expanded', String(!shut));
+        try { localStorage.setItem('bnp-ab-dec', shut ? '0' : '1'); } catch (_) { /* */ }
+        return;
+      }
+      if ('abAgain' in d) abLoad();
+    };
+    box.addEventListener('click', click);
+    sw.addEventListener('click', click);
+    let v = 'shelf';
+    try { v = localStorage.getItem(AB_VIEW) === 'list' ? 'list' : 'shelf'; } catch (_) { /* */ }
+    abView(v, true);
+    if (!D || Date.now() - D.t > 10 * 60e3 || v === 'list') setTimeout(abLoad, 1200);   // (read a moment after the game starts; kept from the last 10 minutes, the switch's count is that)
+  }
+  function abView(v, first) {   // ('shelf': Neopets' own game; 'list': NE's checklist, the game kept going out of sight so it's back as it was)
+    if (!ab) return;
+    ab.view = v === 'list' ? 'list' : 'shelf';
+    document.documentElement.classList.toggle('bnp-ab-list', ab.view === 'list');
+    if (!first) try { localStorage.setItem(AB_VIEW, ab.view); } catch (_) { /* */ }
+    abSwitchPaint();
+    if (ab.view === 'list') { abPaint(); if (!first && !ab.busy && (!ab.D || Date.now() - ab.D.t > 30000)) abLoad(); }   // (back to it after changing your shelf: read again)
+  }
+  async function abLoad() {
+    if (!ab || ab.busy) return;
+    ab.busy = true;
+    ab.err = '';
+    abSwitchPaint();
+    abPaint();
+    try { ab.D = await abRead(); } catch (e) { ab.err = /\b(401|403)\b|log\s*in/i.test(String((e && e.message) || '')) ? 'Log in to Neopets to see your collection.' : 'Neopets didn’t answer just now: try again in a moment.'; }
+    ab.busy = false;
+    abSwitchPaint();
+    abPaint();
+  }
+  function abSwitchPaint() {
+    const st = ab.D ? abState(ab.D) : null;
+    ab.sw.innerHTML = `<button type="button" data-ab-view="shelf" aria-pressed="${ab.view === 'shelf'}" title="Neopets’ own bookshelf">${AB_IC.shelf}<span>Bookshelf</span></button><button type="button" data-ab-view="list" aria-pressed="${ab.view === 'list'}" title="Every Archive Book, which you have, the trophy and the avatars">${AB_IC.list}<span>Checklist</span>${st ? `<b>${st.have}/${st.all}</b>` : ''}</button>`;
+  }
+  const abNpText = (name) => { const r = ab.np[name]; return !r || r.err || r.visit ? '' : r.p ? `about ${r.p.toLocaleString()} NP` : 'No price'; };
+  function abPaint() {
+    if (!ab || ab.view !== 'list') return;
+    if (!ab.D) { ab.root.innerHTML = `<div class="bnp-nd-empty bnp-ab-wait"><p>${ab.err ? esc(ab.err) : 'Reading your collection…'}</p>${ab.err ? '<button type="button" class="bnp-nd-btn" data-ab-again>Try again</button>' : ''}</div>`; return; }
+    const st = abState(ab.D);
+    ab.root.innerHTML = `${abHeadHtml(st)}${abRewardsHtml(st)}${abToolsHtml(st)}${st.cols.map(abColHtml).join('')}${abDecorHtml(ab.D)}<p class="bnp-ab-foot">Read from Neopets at ${esc(bmAt(ab.D.t))}. Where each book comes from: Jellyneo’s and Sunnyneo’s guides. Neopets gives the trophy once all of a set’s books are on your shelf, and each set more upgrades it; an avatar comes with your 1st, 3rd, 5th, 7th, 10th, 15th and 20th set complete.</p>`;
+    crispIn(ab.root);
+    for (const c of st.cols) for (const b of c.books) {   // (itemdb's prices, as a page asks for them)
+      if (ab.asked.has(b.name)) continue;
+      ab.asked.add(b.name);
+      itPriceAsk(b.name, (res) => { ab.np[b.name] = res; for (const el of ab.root.querySelectorAll('[data-ab-np]')) if (el.dataset.abNp === b.name) el.textContent = abNpText(b.name); });
+    }
+  }
+  function abHeadHtml(st) {
+    const lvl = st.trophy, chips = [`<span class="bnp-nd-chip">${st.done} of ${st.cols.length} set${st.cols.length === 1 ? '' : 's'} complete</span>`];
+    if (st.off) chips.push(`<span class="bnp-nd-chip is-need" title="Neopets gives the trophy for a set once all its books are on your shelf: Customise My Bookshelf puts them there">${st.off} added but not on your shelf</span>`);
+    if (ab.D.pub === false) chips.push('<span class="bnp-nd-chip">Your shelf is private</span>');
+    if (ab.busy) chips.push('<span class="bnp-nd-chip is-wait">Reading it again…</span>');
+    else if (ab.err) chips.push(`<span class="bnp-nd-chip is-need">${esc(ab.err)}</span>`);
+    return `<header class="bnp-nd-head bnp-ab-head">
+        <button type="button" class="bnp-ab-trophy${lvl ? '' : ' is-none'}" data-ab-trophy="${Math.max(1, lvl)}" title="${esc(`${lvl ? `Your trophy: ${AB_TNAME[lvl - 1] || `level ${lvl}`}, ${lvl} of 7` : 'The trophy is yours once a whole set is on your shelf'}. See every level`)}"><img src="${esc(AB_TROPHY(Math.max(1, lvl)))}" alt="" width="80" height="80"></button>
+        <div class="bnp-nd-hcard">
+          <div class="bnp-nd-htop"><span class="bnp-nd-htitle"><small>Archived Book Collection</small><h1>Your Archive Books</h1></span>
+            <span class="bnp-nd-prog"><b class="bnp-nd-big">${st.have}</b><span class="bnp-nd-of">of the ${st.all}<br>books there are</span><b class="bnp-nd-pct">${Math.round((1000 * st.have) / Math.max(1, st.all)) / 10}%</b></span></div>
+          <div class="bnp-nd-bar"><i style="width:${Math.min(100, (100 * st.have) / Math.max(1, st.all))}%;background:var(--nb-bar)"></i></div>
+          <div class="bnp-nd-chips">${chips.join('')}</div>
+        </div>
+        <div class="bnp-nd-acts"><button type="button" class="bnp-nd-btn" data-ab-again${ab.busy ? ' disabled' : ''}>${ND_IC.again}<span>Read it again</span></button><a class="bnp-nd-btn" href="/inventory.phtml" title="Archive Books go in your collection from your inventory">${AB_IC.bag}<span>Your inventory</span></a><a class="bnp-nd-btn" href="https://items.jellyneo.net/search/?scat[]=402" target="_blank" rel="noopener" title="Every Archive Book in Jellyneo’s Item Database">${AB_IC.ext}<span>Archive Books on Jellyneo</span></a></div>
+      </header>`;
+  }
+  function abRewardsHtml(st) {
+    const T = st.trophy, A = st.done, sets = st.cols.length, s = (n) => `${n} set${n === 1 ? '' : 's'}`;
+    const tro = Array.from({ length: 7 }, (_, i) => {
+      const n = i + 1, got = n <= T, next = n === T + 1;
+      return `<li class="bnp-ab-rw${got ? ' is-got' : next ? ' is-next' : ''}"><button type="button" class="bnp-ab-rwb" data-ab-trophy="${n}" title="${esc(`${AB_TNAME[i] || `Level ${n}`}: ${s(n)} complete on your shelf${n > 2 ? ' (not seen given yet)' : ''}${n > sets ? `. There are ${s(sets)} so far` : ''}. See every level`)}"><img src="${esc(AB_TROPHY(n))}" alt="" width="56" height="56" loading="lazy"><b>${s(n)}</b></button>${got ? `<i>${SA_IC.check}</i>` : ''}</li>`;
+    }).join('');
+    const nextA = AB_AVA.find((n) => n > A);
+    const ava = AB_AVA.map((n, i) => {
+      const got = n <= A, next = n === nextA;
+      return `<li class="bnp-ab-rw is-ava${got ? ' is-got' : next ? ' is-next' : ''}" title="${esc(`${i === 0 ? AB_AVA1[0] : 'An avatar'}: ${s(n)} complete${i ? ' (its name and picture aren’t known yet)' : ''}${n > sets ? `. There are ${s(sets)} so far` : ''}`)}">${i === 0 ? `<img src="${esc(AB_AVA1[1])}" alt="" width="50" height="50" loading="lazy">` : '<span class="bnp-ab-avq" aria-hidden="true">?</span>'}<b>${s(n)}</b>${got ? `<i>${SA_IC.check}</i>` : ''}</li>`;
+    }).join('');
+    const tSay = T >= 7 ? 'Its top level: yours' : `${T ? `${AB_TNAME[T - 1] || `Level ${T}`} is yours. ` : ''}${T ? 'One more set' : 'A whole set'} on your shelf for ${T ? 'the next level' : 'the first'}${!st.sure ? ' (NE can’t tell which of your books are on the shelf, so this counts complete sets)' : ''}`;
+    const aSay = nextA ? `${A ? `${s(A)} complete. ` : ''}The next at ${s(nextA)}${nextA > sets ? `: there are ${s(sets)} so far` : ''}` : 'Every one: yours';
+    return `<section class="bnp-nd-panel bnp-ab-rewards">
+        <h2 class="bnp-nd-bandh"><span>The trophy and avatars</span></h2>
+        <div class="bnp-ab-rwrow"><span class="bnp-ab-rwh"><b>The trophy</b><small>${esc(tSay)}</small></span><ol class="bnp-ab-rwl">${tro}</ol></div>
+        <div class="bnp-ab-rwrow"><span class="bnp-ab-rwh"><b>Avatars</b><small>${esc(aSay)}</small></span><ol class="bnp-ab-rwl">${ava}</ol></div>
+      </section>`;
+  }
+  function abToolsHtml(st) {
+    return `<div class="bnp-ab-tools"><span class="bnp-nd-seg" role="group" aria-label="Show">${[['all', 'Every book', st.all], ['have', 'In your collection', st.have], ['miss', 'Missing', st.all - st.have]].map(([k, l, c]) => `<button type="button" data-ab-show="${k}" aria-pressed="${ab.show === k}">${esc(l)}<b>${c}</b></button>`).join('')}</span></div>`;
+  }
+  function abColHtml(c) {
+    const books = c.books.filter((b) => ab.show === 'all' || (ab.show === 'have' ? b.own : !b.own));
+    if (!books.length) return '';
+    return `<section class="bnp-nd-panel bnp-ab-col${c.full ? ' is-full' : ''}">
+        <h2 class="bnp-nd-bandh"><span>${esc(c.name)}</span><b>${c.got} of ${c.books.length}</b>${c.onAll ? '<em class="bnp-ab-done">On your shelf, complete</em>' : c.full ? '<em class="bnp-ab-done is-half" title="Neopets gives the trophy once all its books are on your shelf">Complete</em>' : ''}</h2>
+        <div class="bnp-ab-grid">${books.map(abBookHtml).join('')}</div>
+      </section>`;
+  }
+  function abBookHtml(b) {
+    const w = AB_WHERE[b.name.toLowerCase()], pic = b.img[1] || b.img[0] || '';
+    const st = b.own ? (b.on === true ? ['is-on', 'On your shelf'] : b.on === false ? ['is-off', 'Not on your shelf yet'] : ['is-own', 'In your collection']) : ['is-miss', w ? w[0] : 'Where it comes from isn’t known yet'];
+    return `<button type="button" class="bnp-ab-book${b.own ? ' is-have' : ' is-miss'}" data-ab-book="${esc(String(b.id))}" title="${esc(b.name)}">
+        <span class="bnp-ab-pic"><img src="${esc(pic)}" alt="" width="120" height="120" loading="lazy" decoding="async"></span>
+        <b class="bnp-ab-bname">${esc(b.name)}</b>
+        <span class="bnp-ab-st ${st[0]}">${esc(st[1])}</span>
+        <span class="bnp-ab-np" data-ab-np="${esc(b.name)}">${esc(abNpText(b.name))}</span>
+      </button>`;
+  }
+  function abDecorHtml(D) {   // (everything else in the shelf's own inventory: what the Mall's kits put there)
+    if (!D.inv) return '';
+    const books = new Set(D.cols.flatMap((c) => c.books.map((b) => b.name.toLowerCase())));
+    const L = D.inv.filter((x) => x.n && !books.has(x.n.toLowerCase())).sort((a, b) => a.cat.localeCompare(b.cat) || a.n.localeCompare(b.n));
+    if (!L.length) return '';
+    let open = true;
+    try { open = localStorage.getItem('bnp-ab-dec') !== '0'; } catch (_) { /* */ }
+    return `<section class="bnp-nd-panel bnp-ab-decor${open ? '' : ' is-shut'}">
+        <h2 class="bnp-nd-bandh"><button type="button" class="bnp-ab-fold" data-ab-dec aria-expanded="${open}" title="Fold or open your decorations"><span>Your bookshelf’s decorations</span><b>${L.length}</b><svg class="bnp-ab-chev" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="m5 7.5 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></h2>
+        <p class="bnp-ab-say">Everything in your bookshelf’s own inventory, from the kits in the NC Mall. Customise My Bookshelf puts them on it.</p>
+        <div class="bnp-ab-dgrid">${L.map((x) => `<span class="bnp-ab-dec${x.eq ? ' is-on' : ''}" title="${esc(`${x.n}${x.cat ? ` · ${x.cat}` : ''}`)}"><img src="${esc(x.img)}" alt="" width="60" height="60" loading="lazy"><b>${esc(x.n)}</b><small>${x.eq ? (x.total > 1 ? `${x.eq} of ${x.total} on your shelf` : 'On your shelf') : x.total > 1 ? `${x.total}, put away` : 'Put away'}</small></span>`).join('')}</div>
+      </section>`;
+  }
+  function abPopGet() {   // (the checklist's one window: a book's, or the trophy's levels)
+    styles();
+    if (!abPop) {
+      const veil = document.createElement('div'), win = document.createElement('div');
+      veil.className = 'bnp-veil';
+      win.className = 'bnp-go bnp-nd-win bnp-ab-win';
+      win.setAttribute('role', 'dialog');
+      win.setAttribute('aria-modal', 'true');
+      win.innerHTML = '<div class="popup-header__2020 bnp-hub-head"><h3 data-ab-wt></h3><button type="button" class="popup-exit button-default__2020 button-red__2020" data-ab-x title="Close" aria-label="Close"><div class="popup-exit-icon"></div></button><div class="popup-header-pattern__2020"></div></div><div class="bnp-nd-wbody" data-ab-wbody></div>';
+      document.body.append(veil, win);
+      abPop = { veil, win };
+      const close = () => { win.classList.remove('open'); veil.classList.remove('open'); };
+      veil.addEventListener('click', close);
+      win.addEventListener('click', (e) => { if (e.target instanceof Element && e.target.closest('[data-ab-x]')) close(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && win.classList.contains('open')) { e.preventDefault(); close(); } });
+    }
+    return abPop;
+  }
+  function abPopShow() { themeWin(abPop.win); abPop.veil.classList.add('open'); abPop.win.classList.add('open'); }
+  function abTrophyOpen(at) {   // (every level of the trophy at once, in colour at its own size: yours marked, the next one's need said, the one pressed ringed)
+    const st = abState(ab.D), T = st.trophy, sets = st.cols.length, s = (n) => `${n} set${n === 1 ? '' : 's'}`;
+    const P = abPopGet();
+    P.win.classList.add('is-trophies');
+    P.win.querySelector('[data-ab-wt]').textContent = 'The Archive Books trophy';
+    P.win.querySelector('[data-ab-wbody]').innerHTML = `<ol class="bnp-ab-tl">${Array.from({ length: 7 }, (_, i) => {
+      const n = i + 1, got = n <= T, next = n === T + 1;
+      return `<li class="bnp-ab-tc${got ? ' is-got' : next ? ' is-next' : ''}${n === at ? ' is-at' : ''}"><img src="${esc(AB_TROPHY(n))}" alt="${esc(AB_TNAME[i] || `Level ${n}`)}" width="80" height="80"><b>${esc(AB_TNAME[i] || `Level ${n}`)}</b><small>${s(n)} complete on your shelf</small><em>${got ? `${SA_IC.check}Yours` : next ? (T ? 'Next: one more set' : 'Next: a whole set') : n > 2 ? 'Not seen given yet' : ''}</em></li>`;
+    }).join('')}</ol>
+      <p class="bnp-ab-tsay">Neopets gives the trophy once a set is complete and all its books are on your shelf, and each set more upgrades it. ${T ? `Yours is ${esc(AB_TNAME[T - 1] || `level ${T}`)}, ${T} of 7.` : 'You don’t have it yet.'} There ${sets === 1 ? 'is 1 set' : `are ${sets} sets`} so far; the levels past Silver haven’t been seen given yet.${!st.sure ? ' NE can’t tell which of your books are on the shelf, so this counts complete sets.' : ''}</p>`;
+    abPopShow();
+  }
+  function abBookOpen(id) {   // (a book's own window: the big picture, its set, rarity, where it comes from, whether it's yours and on the shelf, itemdb's price and its buttons)
+    const st = abState(ab.D);
+    let b = null, col = null;
+    for (const c of st.cols) for (const x of c.books) if (String(x.id) === String(id)) { b = x; col = c; }
+    if (!b) return;
+    abPopGet().win.classList.remove('is-trophies');
+    const w = AB_WHERE[b.name.toLowerCase()], big = b.img[3] || b.img[2] || b.img[1] || b.img[0] || '';
+    const you = b.own ? (b.on === true ? `${SA_IC.check}In your collection, on your shelf` : b.on === false ? `${SA_IC.check}In your collection, not on your shelf yet: the trophy needs it there` : `${SA_IC.check}In your collection`) : 'Not in your collection yet. Once you have one, add it from your inventory: it can’t come back out.';
+    abPop.win.querySelector('[data-ab-wt]').textContent = b.name;
+    const body = abPop.win.querySelector('[data-ab-wbody]');
+    body.innerHTML = `<div class="bnp-ab-big${b.own ? '' : ' is-miss'}"><img src="${esc(big)}" alt="${esc(b.name)}" width="280" height="280"></div>
+      <div class="bnp-nd-cinfo">
+        <dl class="bnp-nd-cdl"><dt>Set</dt><dd>${esc(col.name)}</dd>${b.r != null ? `<dt>Rarity</dt><dd>r${esc(String(b.r))}</dd>` : ''}<dt>Comes from</dt><dd>${w ? (w[1] ? `<a href="${esc(w[1])}">${esc(w[0])}</a>` : esc(w[0])) : 'Not known yet'}</dd><dt>itemdb</dt><dd class="is-np">${esc(abNpText(b.name) || '…')}</dd></dl>
+        <p class="bnp-nd-cyou ${b.own && b.on !== false ? 'is-y' : 'is-n'}">${you}</p>
+        <div class="bnp-nd-cbtns" data-ab-btns></div>
+      </div>`;
+    const row = itRow(b.name, { page: 'archive' });
+    if (row) { body.querySelector('[data-ab-btns]').append(row); itBalance(row); }
+    abPopShow();
+  }
+  const AB_CSS = `
+    html.bnp-ab-page .archivebook-title-container { flex-wrap: wrap; gap: 6px 14px; }
+    html.bnp-ab-page .bnp-ab-switch { flex: none; position: relative; z-index: 1; background: rgba(255, 255, 255, .92); }
+    html.bnp-ab-page .bnp-ab-switch button { height: 30px; font-size: 13.5px; }
+    html.bnp-ab-page .bnp-ab-switch svg { flex: none; }
+    html.bnp-ab-page .bnp-ab { display: none; width: min(1080px, 100%); margin: 8px auto 18px; box-sizing: border-box; }
+    html.bnp-ab-list .bnp-ab { display: grid; }
+    html.bnp-ab-list .unity-wrapper { position: absolute !important; top: 0 !important; left: -300vw !important; width: 1080px !important; pointer-events: none !important; }   /* (Neopets' game kept going out of sight: back at once, as it was) */
+    html.bnp-ab-page .bnp-ab-wait { display: grid; justify-items: center; gap: 10px; padding: 40px 16px; color: var(--nb-muted); font: 15px var(--nb-ui); text-align: center; }
+    html.bnp-ab-page .bnp-ab-wait p { margin: 0; }
+    html.bnp-ab-page .bnp-ab .bnp-nd-htitle { flex: 1 1 auto; }   /* (the title takes the room its line has: on the live page it was held to less than its words and cut short) */
+    html.bnp-ab-page .bnp-ab .bnp-nd-htitle h1, html.bnp-ab-page #container__2020 .bnp-ab .bnp-nd-htitle h1 { overflow: visible; text-overflow: clip; white-space: normal; margin: 1px 0 0 !important; padding: 0 !important; position: static !important; text-align: left !important; text-indent: 0 !important; justify-self: start !important; transform: none !important; }   /* (the page's own sheet dresses every heading, firmly: centred, set in) */
+    html.bnp-ab-page #container__2020 .bnp-ab .bnp-nd-htitle h1::before, html.bnp-ab-page #container__2020 .bnp-ab .bnp-nd-htitle h1::after { content: none !important; display: none !important; }
+    html.bnp-ab-page .bnp-ab-trophy { display: grid; place-items: center; width: 104px; height: 104px; margin: 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer; transition: transform .15s; background: radial-gradient(circle, #fff 56%, color-mix(in srgb, var(--nb-acc) 45%, #fff)); box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .85), 0 2px 0 var(--nb-frame); }
+    html.bnp-ab-page .bnp-ab-trophy:is(:hover, :focus-visible) { transform: translateY(-2px); outline: none; }
+    html.bnp-ab-page .bnp-ab-trophy img { display: block; width: 80px; height: 80px; }
+    html.bnp-ab-page .bnp-ab-trophy.is-none img { filter: grayscale(1); opacity: .35; }
+    html.bnp-ab-page .bnp-ab-rwrow { display: grid; grid-template-columns: 200px minmax(0, 1fr); align-items: center; gap: 8px 16px; }
+    html.bnp-ab-page .bnp-ab-rwrow + .bnp-ab-rwrow { padding-top: 12px; border-top: 2px dashed var(--nb-line); }
+    html.bnp-ab-page .bnp-ab-rwh { display: grid; gap: 3px; }
+    html.bnp-ab-page .bnp-ab-rwh b { font: 17px/1.1 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    html.bnp-ab-page .bnp-ab-rwh small { color: var(--nb-muted); font: 12.5px/1.35 var(--nb-txt); }
+    html.bnp-ab-page .bnp-ab-rwl { display: flex; flex-wrap: wrap; gap: 9px; margin: 0; padding: 0; list-style: none; }
+    html.bnp-ab-page .bnp-ab-rw { position: relative; display: grid; justify-items: center; gap: 3px; width: 74px; padding: 6px 4px 5px; border: 2px dashed var(--nb-line); border-radius: 12px; background: #fff; box-sizing: border-box; }
+    html.bnp-ab-page .bnp-ab-rwb { display: grid; justify-items: center; gap: 3px; width: 100%; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+    html.bnp-ab-page .bnp-ab-rw:has(> .bnp-ab-rwb) { transition: transform .15s; }
+    html.bnp-ab-page .bnp-ab-rw:has(> .bnp-ab-rwb:is(:hover, :focus-visible)) { transform: translateY(-2px); border-color: var(--nb-bar); }
+    html.bnp-ab-page .bnp-ab-rwb:focus-visible { outline: none; }
+    html.bnp-ab-page .bnp-ab-rw img { display: block; width: 56px; height: 56px; filter: grayscale(1); opacity: .38; }
+    html.bnp-ab-page .bnp-ab-rw.is-ava img { width: 50px; height: 50px; margin: 3px 0; border-radius: 8px; }
+    html.bnp-ab-page .bnp-ab-rw b { color: var(--nb-muted); font: 11.5px/1.2 var(--nb-ui); }
+    html.bnp-ab-page .bnp-ab-rw.is-next { border-color: var(--nb-bar); }
+    html.bnp-ab-page .bnp-ab-rw.is-next img { filter: grayscale(.45); opacity: .75; }
+    html.bnp-ab-page .bnp-ab-rw.is-got { border-style: solid; border-color: var(--nb-frame); background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--nb-tint) 80%, #fff)); box-shadow: 0 2px 0 var(--nb-frame); }
+    html.bnp-ab-page .bnp-ab-rw.is-got img { filter: none; opacity: 1; }
+    html.bnp-ab-page .bnp-ab-rw.is-got b { color: #262626; }
+    html.bnp-ab-page .bnp-ab-rw i { position: absolute; top: -8px; right: -8px; display: grid; place-items: center; width: 21px; height: 21px; border: 2px solid #fff; border-radius: 50%; background: #2f9e2a; color: #fff; box-sizing: border-box; }
+    html.bnp-ab-page .bnp-ab-rw i svg { width: 11px; height: 11px; }
+    html.bnp-ab-page .bnp-ab-avq { display: grid; place-items: center; width: 50px; height: 50px; margin: 3px 0; border-radius: 8px; background: color-mix(in srgb, var(--nb-tint) 70%, #eee); color: var(--nb-muted); font: 24px/1 "Cafeteria", "Arial Bold", sans-serif; }
+    html.bnp-ab-page .bnp-ab-tools { display: flex; justify-content: center; }
+    html.bnp-ab-page .bnp-ab-col .bnp-nd-bandh em { padding: 2px 10px; border-radius: 99px; background: #fff; color: #1d5a26; text-shadow: none; font: 12.5px/1.4 var(--nb-ui); font-style: normal; }
+    html.bnp-ab-page .bnp-ab-col .bnp-nd-bandh em.is-half { color: #6b4500; }
+    html.bnp-ab-page .bnp-ab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 12px; }
+    html.bnp-ab-page .bnp-ab-book { display: grid; justify-items: center; align-content: start; gap: 5px; min-width: 0; margin: 0; padding: 10px 8px 9px; border: 2px solid var(--nb-frame); border-radius: 14px; background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--nb-tint) 70%, #fff)); color: #262626; box-shadow: 0 2px 0 var(--nb-frame); font: inherit; text-align: center; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+    html.bnp-ab-page .bnp-ab-book:hover, html.bnp-ab-page .bnp-ab-book:focus-visible { transform: translateY(-3px); box-shadow: 0 5px 0 var(--nb-frame), 0 10px 18px rgba(0, 0, 0, .16); outline: none; }
+    html.bnp-ab-page .bnp-ab-pic { display: grid; place-items: center; width: 120px; height: 120px; }
+    html.bnp-ab-page .bnp-ab-pic img { display: block; width: 120px; height: 120px; object-fit: contain; }
+    html.bnp-ab-page .bnp-ab-bname { display: -webkit-box; min-height: 2.4em; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font: 14px/1.2 var(--nb-ui); overflow-wrap: break-word; }
+    html.bnp-ab-page .bnp-ab-st { max-width: 100%; padding: 1px 9px; border-radius: 99px; font: 12px/1.5 var(--nb-ui); }
+    html.bnp-ab-page .bnp-ab-st.is-on { background: #e7f5e9; color: #1d5a26; }
+    html.bnp-ab-page .bnp-ab-st.is-off { background: #fff3dc; color: #6b4500; }
+    html.bnp-ab-page .bnp-ab-st.is-own { background: #eaf1fb; color: #1f4f8f; }
+    html.bnp-ab-page .bnp-ab-st.is-miss { padding: 0 4px; color: var(--nb-muted); font: 12px/1.35 var(--nb-txt); }
+    html.bnp-ab-page .bnp-ab-np { min-height: 1.3em; color: #1d5a26; font: 12px/1.3 var(--nb-ui); }
+    html.bnp-ab-page .bnp-ab-book.is-miss { border-style: dashed; background: #fff; box-shadow: none; }
+    html.bnp-ab-page .bnp-ab-book.is-miss .bnp-ab-pic img { filter: grayscale(.9) contrast(.9); opacity: .42; transition: filter .2s, opacity .2s; }
+    html.bnp-ab-page .bnp-ab-book.is-miss:is(:hover, :focus-visible) .bnp-ab-pic img { filter: none; opacity: 1; }
+    html.bnp-ab-page .bnp-ab-book.is-miss .bnp-ab-bname { color: #666; }
+    html.bnp-ab-page .bnp-ab-fold { display: inline-flex; align-items: center; justify-content: center; gap: 9px; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-shadow: inherit; cursor: pointer; }
+    html.bnp-ab-page .bnp-ab-chev { flex: none; filter: drop-shadow(0 1px 0 var(--nd-ring)); transition: transform .2s; }
+    html.bnp-ab-page .bnp-ab-decor.is-shut { gap: 0; padding-bottom: 0; }
+    html.bnp-ab-page .bnp-ab-decor.is-shut .bnp-nd-bandh { border-bottom: 0; }
+    html.bnp-ab-page .bnp-ab-decor.is-shut > :not(.bnp-nd-bandh) { display: none; }
+    html.bnp-ab-page .bnp-ab-decor.is-shut .bnp-ab-chev { transform: rotate(-90deg); }
+    html.bnp-ab-page .bnp-ab-say { margin: 0; color: var(--nb-muted); font: 13px/1.4 var(--nb-txt); text-align: center; }
+    html.bnp-ab-page .bnp-ab-dgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    html.bnp-ab-page .bnp-ab-dec { display: grid; justify-items: center; align-content: start; gap: 3px; padding: 8px 6px; border: 1.5px solid color-mix(in srgb, var(--nb-line) 80%, #d8d8d8); border-radius: 12px; background: #fff; text-align: center; }
+    html.bnp-ab-page .bnp-ab-dec img { display: block; width: 60px; height: 60px; object-fit: contain; }
+    html.bnp-ab-page .bnp-ab-dec b { font: 12.5px/1.2 var(--nb-ui); }
+    html.bnp-ab-page .bnp-ab-dec small { color: var(--nb-muted); font: 11.5px/1.3 var(--nb-txt); }
+    html.bnp-ab-page .bnp-ab-dec.is-on small { color: #1d5a26; }
+    html.bnp-ab-page .bnp-ab-foot { margin: 0; color: var(--nb-muted); font: 12.5px/1.45 var(--nb-txt); text-align: center; }
+    .bnp-ab-win .bnp-nd-wbody { grid-template-columns: 300px minmax(0, 1fr); }
+    .bnp-go.bnp-ab-win.is-trophies { width: min(860px, calc(100vw - 24px)); }
+    .bnp-ab-win.is-trophies .bnp-nd-wbody { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+    .bnp-ab-tl { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+    .bnp-ab-tc { display: grid; justify-items: center; align-content: start; gap: 3px; padding: 10px 6px 9px; border: 2px solid #e8dcc0; border-radius: 14px; background: linear-gradient(180deg, #fff, #fbf6ea); text-align: center; }
+    .bnp-ab-tc img { display: block; width: 80px; height: 80px; }
+    .bnp-ab-tc b { font: 16px/1.15 "Cafeteria", "Arial Bold", sans-serif; letter-spacing: .3pt; }
+    .bnp-ab-tc small { color: #6a6a6a; font: 12px/1.3 "MuseoSansRounded500", Arial, sans-serif; }
+    .bnp-ab-tc em { display: inline-flex; align-items: center; gap: 4px; min-height: 20px; color: #6a6a6a; font: 12px/1.3 "MuseoSansRounded700", Arial, sans-serif; font-style: normal; }
+    .bnp-ab-tc.is-got { border-color: var(--bnp-accent, #faa819); box-shadow: 0 2px 0 var(--bnp-accent, #faa819); }
+    .bnp-ab-tc.is-got em { padding: 0 8px; border-radius: 99px; background: #e7f5e9; color: #1d5a26; }
+    .bnp-ab-tc.is-next em { color: #6b4500; }
+    .bnp-ab-tc.is-at { outline: 3px solid color-mix(in srgb, var(--bnp-accent, #faa819) 55%, #fff); outline-offset: 2px; }
+    .bnp-ab-tsay { margin: 0; color: #4a4a4a; font: 13px/1.45 "MuseoSansRounded500", Arial, sans-serif; text-align: center; }
+    .bnp-ab-big { display: grid; place-items: center; padding: 8px; border: 3px solid var(--bnp-accent, #faa819); border-radius: 16px; background: #fff; }
+    .bnp-ab-big img { display: block; width: 280px; height: 280px; object-fit: contain; }
+    .bnp-ab-big.is-miss img { filter: grayscale(.85); opacity: .55; transition: filter .2s, opacity .2s; }
+    .bnp-ab-big.is-miss:hover img { filter: none; opacity: 1; }   /* (a book not in your collection: in colour while you point at it) */
+    @media (max-width: 760px) { html.bnp-ab-page .bnp-ab-rwrow { grid-template-columns: minmax(0, 1fr); } .bnp-ab-win .bnp-nd-wbody { grid-template-columns: 1fr; justify-items: center; } }
   `;
   // ═══════════════════════════════════════════════════════════════════════════
   // The NC Mall, made over: the whole Mall as one shop floor. Neopets' own Mall app stays on its page out of sight and does what it
@@ -50681,6 +51061,9 @@
       ['otherpages', () => `<div class="bnp-card"><h4>NeoDeck</h4>
         ${sw('neodeck', 'The NeoDeck, made over', 'Every NeoDeck page (your album, your cards, all 366, Premium, your deck, and the Card Collector high scores) shows the cards by their art, each framed in its back’s colour, at 40, 80, 150 or 300 px: what you have, what you still need and what itemdb says they cost, found and filtered by back, species and name. A card’s own page and the rarity list open on the page, and Buy Mode buys the cards you don’t have and puts them in your NeoDeck. Off: Neopets’ own pages.')}
       </div>`],
+      ['otherpages', () => `<div class="bnp-card"><h4>Archived Book Collection</h4>
+        ${sw('archive', 'A checklist beside your Archived Book Collection', 'A switch in its title between Neopets’ own bookshelf and NE’s checklist: every Archive Book set with yours in colour and the rest greyed, where each book comes from, which of yours are on your shelf, the trophy’s levels and the avatars, and your shelf’s decorations. A book’s own window shows it big, with its price and buttons. Off: Neopets’ own page alone.')}
+      </div>`],
       ['otherpages', () => `<div class="bnp-card"><h4>Trading Card album</h4>
         ${sw('tcg', 'The Trading Card album, made over', 'Its 11 sets as tiles (each one’s logo, or a fan of its cards) with how many you have; the set you pick shown whole, every place as its card: yours in colour, the ones you don’t have greyed, found by name, at three sizes. Which card goes where comes from itemdb’s Trading Card list and from album pages seen. A card’s own window shows it big, with its price and buttons. Off: Neopets’ own pages.')}
       </div>`],
@@ -56651,6 +57034,13 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['5.7', '2026-11-22', [
+      'Archived Book Collection: a Checklist beside Neopets’ own bookshelf, by a switch in its title; the bookshelf itself stays as it is',
+      'Archived Book Collection: every Archive Book set at once, yours in colour and the missing greyed, with where each comes from and its price',
+      'Archived Book Collection: which of your books are on your shelf (the trophy needs a whole set there), and your shelf’s decorations, folding away',
+      'Archived Book Collection: the trophy’s 7 levels and the 7 avatars, yours marked; any trophy opens every level in colour',
+      'Archived Book Collection: a book’s own window with its big picture, rarity, where it comes from and its buttons; the checklist works even when the bookshelf can’t draw',
+    ]],
     ['5.6.1', '2026-11-22', [
       'Neofriends page: requests you’ve sent show again, in a section of their own above your Neofriends, each waiting for them to accept with its Remove box',
       'NeoChat: knows the requests you’ve sent from Neopets’ own pages too, showing them as sent and saying when one is taken up',
@@ -59706,7 +60096,7 @@
     setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 4000 + Math.random() * 12000);   // (the Turmaculus' due hours, if they're needed: a moment after the page, not at once)
     document.addEventListener('visibilitychange', () => { if (document.hidden) return; clearTimeout(turmacRead.t); turmacRead.t = setTimeout(() => { try { turmacRead(); } catch (e) { report(e); } }, 3000 + Math.random() * 6000); });
     try { startKeep(); } catch (e) { report(e); }
-    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, sdrBoot, salBoot, sddBoot, labPage, soupBoot, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, kpopPage, kadPage, kadCheckBoot, kadLookupRead, kadFeedPage, bdHelper, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, bfPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, ndPage, tcPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, nclMailTp, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
+    for (const fn of [oldBtnsLast, mallStart, stkWantCheck, sdbNav, sdbLayout, sdrBoot, salBoot, sddBoot, labPage, soupBoot, petpetLabPage, appleBob, transferPopup, turmacPage, meteorPage, buriedFront, buriedTreasure, deadlyDice, kpopPage, kadPage, kadCheckBoot, kadLookupRead, kadFeedPage, bdHelper, diceRoo, cheeseRace, thriftShoppe, dyeworksPage, crossword, cocoFront, iglooPaint, cocoPage, fishPage, trainDone, jokeTools, trainNav, trainPage, trainHome, trainCourses, trainerPage, scratchPage, questPaneGo, finishOld, acctCheck, lookup9999, nplNote, npbNote, footPals, reScan, betterQR, tabsApply, noteVisit, notePageDaily, dailyRunBar, noteTraining, noteGuild, guildMaybeFind, noteBoards, notePets, captureChrome, remSchedule, soundReady, paintDock, avSettingsPage, gamePage, fqRead, swQuest, paintFq, searchPage, searchItemPage, searchNone, poundPage, galPage, shopPage, itemsPage, bfPage, wtPage, nbPage, stPage, tpPage, scPage, ssPage, hpLevel, nmSentBoot, nmPage, nfNote, nfReqNote, nfLook, smPage, cuPage, colPage, archivePage, colMarksBoot, saPage, ndPage, tcPage, abPage, saMarksBoot, cloStart, sswHash, fillAll, tillPage, tpSaleAlertsWatch, tpAucPage, nclMailTp, dailyFill, fcPage, lodgePage, mbBar, invBanner, questGo, nclBoot]) { try { fn(); } catch (e) { report(e); } }
     themeAfter(themeChanged);   // (an old page, its theme's sheets still coming: everything of ours dressed again once they're in)
     whenLoaded(() => { setTimeout(() => { try { boxFootNote(); } catch (e) { report(e); } }, 900); try { reScan(true); } catch (e) { report(e); } try { tabsApply(true); tabRemember(); } catch (e) { report(e); } setTimeout(() => { updCheck(false).catch(report); try { updSeen(); } catch (e) { report(e); } }, 1500); try { const w = myWorn(), sw = w && themeData().sw[myLive(w).base]; if (w && (!sw || sw.v !== 7)) themeSwatches(); } catch (e) { report(e); } });   // (a theme of yours: its base's sheet read, if it hasn't been yet)   // (a random event Neopets adds a moment later; theme pictures for the tab)
     if (document.getElementById('navtop__2020') || document.getElementById('navbottom__2020')) startOnce();
