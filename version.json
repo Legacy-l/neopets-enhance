@@ -1,9 +1,9 @@
 {
- "version": "5.8",
+ "version": "5.8.1",
  "date": "2026-11-22",
  "notes": [
-  "Quest helper on the quest pages",
-  "Quests in a row and a questing log",
-  "Your Lutari Talisman, drawn again"
+  "Quest helper: your SDB first",
+  "The Lutari Talisman at full size",
+  "Training reminders fixed, Ninja school included"
  ]
 }
