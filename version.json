@@ -1,9 +1,8 @@
 {
- "version": "6.0",
+ "version": "6.0.1",
  "date": "2026-11-23",
  "notes": [
-  "Settings made over: larger, clearer, every page on the left",
-  "Cards you still need, marked (NeoDeck, Trading Cards)",
-  "Quest helper and reminder fixes"
+  "Trading Card album: prices and Buy Mode",
+  "Stamp Album: Show more of the newest stamps"
  ]
 }

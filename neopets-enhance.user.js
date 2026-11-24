@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Neopets Enhance
 // @namespace    neopets
-// @version      6.0
+// @version      6.0.1
 // @author       Sasuke
 // @description  Neopets, your way, in your own theme: menus you can change, a Dailies board with reminders, Neoboards and Neomail made over, item buttons and prices, a random event log, a fitting tab icon for every page, Go to any page (Ctrl+K), a Restock Dock, a better QuickRef, search anywhere, clocks in any time zone, and old pages in the beta look
 // @homepageURL  https://github.com/Legacy-l/neopets-enhance
@@ -6613,13 +6613,14 @@
           if (k) document.dispatchEvent(new CustomEvent('bnp-sdb-send', { detail: JSON.stringify({ k, where: 'inv', obj: q.get('obj_id') || '', nc: /process_cash_object/.test(u) }) }));
           const read = /useobject\.phtml/.test(u) && q && /^Read to /i.test(q.get('action') || '') ? q.get('action') : '';   // (a book read to a pet: which pet, for its lists)
           const opt = document.querySelector('#iteminfo_select_action option:checked'), how = `${(q && q.get('action')) || ''} ${opt ? opt.textContent : ''}`;
-          const albNow = /useobject\.phtml/.test(u) && !!q && /album/i.test(how) && !/tcg|trading card|neodeck/i.test(how), im = albNow ? document.querySelector(`.item-img[data-objid="${String(q.get('obj_id') || '').replace(/[^\w-]/g, '')}"]`) : null;
+          const inNow = /useobject\.phtml/.test(u) && !!q && /album|tcg/i.test(how) && !/neodeck/i.test(how), im = inNow ? document.querySelector(`.item-img[data-objid="${String(q.get('obj_id') || '').replace(/[^\w-]/g, '')}"]`) : null;
+          const inName = (im && im.getAttribute('data-itemname')) || '', tcgNow = inNow && (/tcg|trading card/i.test(how) || /\(TCG\)\s*$/i.test(inName)), albNow = inNow && !tcgNow;   // (a Trading Card, into its own album; anything else, the Stamp Album)
           const deckNow = /useobject\.phtml/.test(u) && !!q && /neo\s*deck/i.test(how);   // (a Collectable Card put in your NeoDeck)
           const alb = albNow ? { n: (im && im.getAttribute('data-itemname')) || '', img: (im && im.getAttribute('data-image')) || '' } : null;   // (a stamp, coin or shell put in your album: its name and picture from its card, before the grid changes)
           this.addEventListener('loadend', () => {
             let said = '';
-            if (alb) try { said = String(this.responseText || '').slice(0, 4000); } catch (_) { said = ''; }
-            document.dispatchEvent(new CustomEvent('bnp-inv-acted', { detail: JSON.stringify({ u, status: this.status, act: read, alb, said, deck: deckNow }) }));
+            if (alb || tcgNow) try { said = String(this.responseText || '').slice(0, 4000); } catch (_) { said = ''; }
+            document.dispatchEvent(new CustomEvent('bnp-inv-acted', { detail: JSON.stringify({ u, status: this.status, act: read, alb, said, deck: deckNow, tcg: tcgNow ? { n: inName } : null }) }));
             if (k) document.dispatchEvent(new CustomEvent('bnp-sdb-done', { detail: JSON.stringify({ k, ok: this.status === 200 }) }));
           });
         }
@@ -10652,10 +10653,11 @@
     for (const m of where.matchAll(/(?:https?:)?\/\/images\.neopets\.com\/neoboards\/avatars\/[\w.-]+\.(?:gif|png|jpe?g)/gi)) avGot(fullUrl(m[0].replace(/^\/\//, 'https://')));
   }
   function sdbEar() {   // (the very start of the SDB, Quick Stock and the Inventory: what goes into or out of your SDB heard, so its counted worth follows without counting again; and what goes in your album from the SDB or the Inventory, counted in)
-    const p = location.pathname, worth = S.features.worth !== false, album = S.features.stamps !== false && p !== '/quickstock.phtml', deck = S.features.neodeck !== false && p !== '/quickstock.phtml';
-    if (FRAME || !['/safetydeposit.phtml', '/quickstock.phtml', '/inventory.phtml'].includes(p) || (!worth && !album && !deck)) return;
+    const p = location.pathname, worth = S.features.worth !== false, album = S.features.stamps !== false && p !== '/quickstock.phtml', deck = S.features.neodeck !== false && p !== '/quickstock.phtml', tcg = S.features.tcg !== false && p !== '/quickstock.phtml';
+    if (FRAME || !['/safetydeposit.phtml', '/quickstock.phtml', '/inventory.phtml'].includes(p) || (!worth && !album && !deck && !tcg)) return;
     if (album) saEar(p);   // (stamps put in your album from here, Neopets' own way or NE's)
     if (deck) ndEar(p);   // (cards put in your NeoDeck from here)
+    if (tcg) tcEar(p);   // (cards put in your Trading Card album from here)
     if (p !== '/inventory.phtml' && !document.getElementById('bnp-sdb-ear')) {   // (the Inventory's own ear tells of what's put in from there)
       const sc = document.createElement('script');
       sc.id = 'bnp-sdb-ear';
@@ -22863,7 +22865,7 @@
     const v = nwKept('stamp');
     if (saIdbBusy || !v || itBlocked()) return;
     const kept = get(SA_IDB, null) || {}, now = Date.now();
-    const todo = v.list.filter((x) => { if (!x || !x.n || saPlace(x.n, x.img)) return false; const k = kept[x.n.toLowerCase()]; return !k || (!(k.p > 0) && now - (k.at || 0) > (force ? 60e3 : k.fail ? 30 * 60e3 : 6 * 3600e3)); }).slice(0, 12);   // (one with no answer last time (fail): half an hour)
+    const todo = saNewAll().filter((x) => { if (!x || !x.n || saPlace(x.n, x.img)) return false; const k = kept[x.n.toLowerCase()]; return !k || (!(k.p > 0) && now - (k.at || 0) > (force ? 60e3 : k.fail ? 30 * 60e3 : 6 * 3600e3)); }).slice(0, 12);   // (one with no answer last time (fail): half an hour)
     if (!todo.length) return;
     saIdbBusy = true;
     let learnt = 0;
@@ -23372,7 +23374,7 @@
       saCountsFetch().then(() => saPaint()).catch((e) => { sa.note = e.message; saPaint(); });
     }
     if (kind === 'hub' || kind === 'theirs') saBoard().then(() => saPaint(true)).catch(() => {});
-    if (kind === 'hub' && mine) nwFetch('stamp', false, (ok) => { if (ok) saPaint(true); saIdbPlaces(false); });   // (what's newest for the album, every 6 hours at most; then where itemdb puts the ones NE can't place)
+    if (kind === 'hub' && mine) saNewFetch(false, (ok) => { if (ok) saPaint(true); saIdbPlaces(false); });   // (what's newest for the album, every 6 hours at most; then where itemdb puts the ones NE can't place)
     if (kind === 'scores') {   // (the table as it is now: kept for the front pages, and what each trophy takes; your count, if it's old, read again)
       saTopKeep(sc);
       sa.board = saBoardOf(sc);
@@ -23384,7 +23386,7 @@
   function saPaint(soft) {   // (soft: prices came: drawn again keeping where you are, what's typed and what's open)
     if (!sa) return;
     const f = soft && document.activeElement && sa.root.contains(document.activeElement) ? document.activeElement : null;
-    const fk = f && (f.dataset.saQ != null ? '[data-sa-q]' : f.dataset.saBudget != null ? '[data-sa-budget]' : f.dataset.saI != null ? `[data-sa-i="${f.dataset.saI}"]` : '');
+    const fk = f && (f.dataset.saQ != null ? '[data-sa-q]' : f.dataset.saBudget != null ? '[data-sa-budget]' : f.dataset.saI != null ? `[data-sa-i="${f.dataset.saI}"]` : f.dataset.saNewmore != null ? '[data-sa-newmore]' : f.dataset.saNewcheck != null ? '[data-sa-newcheck]' : '');
     const at = fk && f.selectionStart != null ? f.selectionStart : null;
     sa.root.innerHTML = sa.kind === 'page' ? saPageHtml() : sa.kind === 'theirs' ? saTheirsHtml() : sa.kind === 'scores' ? saScoresHtml() : saHubHtml();
     crispIn(sa.root);   // (Neopets' pictures in it, sharp at the size they're drawn)
@@ -23620,8 +23622,43 @@
     for (let i = at.length - 1, next = Date.now(); i >= 0; i--) { if (at[i]) next = at[i]; else at[i] = next; }
     return list.map((x, i) => ({ x, i, t: at[i] })).sort((a, b) => b.t - a.t || a.i - b.i).map((o) => o.x);
   }
-  function saNewHtml() {   // (the newest things for the album, from itemdb (cat:Stamp), newest out first: two full rows of them at any width (saNewFit), each with the page it goes on when that's known, and whether it's in yours (the user, 2026-11-08))
-    const v = nwKept('stamp'), list = v ? saNewOrder(v.list) : [], busy = !!nwBusy.stamp;
+  const SA_NEWMORE = 'bnp-sa-newmore', SA_NEWN = 30;   // (New for your album past the thirty NE keeps: what Show more asked for, thirty older ones a time; this tab's, six hours)
+  let saNewM = null;
+  function saNewOlder() {   // ({ at, list, page: how many of itemdb's pages are in, done: it has no more, busy, err })
+    if (saNewM) return saNewM;
+    let k = null;
+    try { k = JSON.parse(sessionStorage.getItem(SA_NEWMORE) || 'null'); } catch (_) { k = null; }
+    return (saNewM = k && Array.isArray(k.list) && Date.now() - k.at < 6 * 3600e3 ? { at: k.at, list: k.list, page: Number(k.page) || 1, done: !!k.done, busy: false, err: '' } : { at: Date.now(), list: [], page: 1, done: false, busy: false, err: '' });
+  }
+  function saNewSave() { const M = saNewOlder(); try { sessionStorage.setItem(SA_NEWMORE, JSON.stringify({ at: M.at, list: M.list, page: M.page, done: M.done })); } catch (_) { /* */ } }
+  function saNewAll() {   // (the thirty newest, then the older ones asked for; each once)
+    const v = nwKept('stamp'), seen = new Set();
+    return [...(v ? v.list : []), ...saNewOlder().list].filter((x) => { const k = x && x.n ? x.n.toLowerCase() : ''; if (!k || seen.has(k)) return false; seen.add(k); return true; });
+  }
+  const saNewCan = () => { const v = nwKept('stamp'); return !!v && v.list.length > SA_NEWN - 10 && !saNewOlder().done; };   // (older ones at itemdb still to ask for)
+  function saNewFetch(force, done) {   // (its thirty newest, asked for as ever. Newer ones in: the ones they pushed out stay among the older ones showing)
+    const was = nwKept('stamp');
+    nwFetch('stamp', force, (ok, asked) => { if (ok && asked && was && saNewOlder().list.length) { saNewOlder().list.unshift(...was.list); saNewSave(); } done(ok); });
+  }
+  function saNewAsk() {   // (Show more, past what's in: thirty older ones, one ask of itemdb)
+    const M = saNewOlder(), fin = (err) => { M.busy = false; M.err = err || ''; saNewSave(); saPaint(true); if (!err) saIdbPlaces(false); };
+    if (M.busy || !saNewCan()) return;
+    if (itBlocked()) { M.err = itBlockedBusy() ? 'busy' : 'visit'; saNewFit(); return; }
+    M.busy = true;
+    M.err = '';
+    idbAsk({ url: `https://itemdb.com.br/api/v1/search?s=${encodeURIComponent(NW_Q.stamp)}&sortBy=added&sortDir=desc&limit=${SA_NEWN}&page=${M.page + 1}&skipStats=true`, expect: SA_NEWN }).then((r) => {
+      if (r.status === 401 || r.status === 429 || r.status === 'wait') { fin(r.status === 401 ? 'visit' : 'busy'); return; }
+      const j = r.status === 200 ? r.json : null, got = j && Array.isArray(j.content) ? j.content : null;
+      if (!got) { fin('no'); return; }
+      const have = new Set(saNewAll().map((x) => x.n.toLowerCase())), list = got.map(nwRow).filter(Boolean), fresh = list.filter((x) => !have.has(x.n.toLowerCase()));
+      M.page++;
+      M.list.push(...fresh);
+      M.done = got.length < SA_NEWN || (!fresh.length && M.page > 3);
+      fin('');
+    }, () => fin('no'));
+  }
+  function saNewHtml() {   // (the newest things for the album, from itemdb (cat:Stamp), newest out first: two full rows of them at any width, more by Show more (saNewFit), each with the page it goes on when that's known, and whether it's in yours (the user, 2026-11-08; Show more, 2026-11-23))
+    const v = nwKept('stamp'), list = v ? saNewOrder(saNewAll()) : [], busy = !!nwBusy.stamp;
     const tile = (x) => {
       const at = saPlace(x.n, x.img) || saIdbAt(x.n), st = at ? saState(at[0]) : null, have = !!(st && st.have && st.have.has(at[1]));
       return `<div class="bnp-sa-newit${have ? ' is-have' : ''}"><img src="${esc(x.img)}" alt="" width="80" height="80" loading="lazy"><b title="${esc(x.n)}">${esc(x.n)}</b><small>${x.at ? `Out ${esc(saWhen(x.at).replace(/ at .*/, ''))}` : 'Just out'}${x.p ? ` · ${saNp(x.p)} NP` : ''}</small>${at ? `<a class="bnp-sa-btn is-small" href="/stamps.phtml?type=album&amp;page_id=${at[0]}"${have ? ' title="In your album"' : ''}>${have ? `<i class="bnp-sa-havedot" aria-hidden="true">${SA_IC.check}</i>` : ''}Page ${at[0]}</a>` : '<small class="bnp-sa-newq">Its page isn’t known yet</small>'}</div>`;
@@ -23631,14 +23668,25 @@
     let fold = true;   // (folded unless you've opened it: the albums come first on this page)
     try { fold = localStorage.getItem('bnp-sa-newfold') !== '0'; } catch (_) { fold = true; }
     const saIc = tabIconOf('side:/stamps.phtml?type=album') || `${NPI}themes/h5/basic/images/v3/stamps-icon.svg`;   // (your theme's own stamp, as the side menu's Stamps has it, kept from a beta page when the album's is an old one (the user, 2026-11-02))
-    return `<section class="bnp-sa-new${fold ? ' is-folded' : ''}"><div class="bnp-sa-newhead"><h3><button type="button" class="bnp-sa-newfold" data-sa-newfold aria-expanded="${!fold}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>${saIc ? `<span class="bnp-sa-newic" style="background-image:url('${esc(cssUrl(saIc))}')" aria-hidden="true"></span>` : ''}New for your album${list.length ? '<span class="bnp-sa-newcount" data-sa-newcount></span>' : ''}</button></h3><small>${when} · NE asks itemdb as your album opens, every 6 hours at most</small><button type="button" class="bnp-sa-btn is-small" data-sa-newcheck${busy ? ' disabled' : ''}>Check now</button></div>${list.length ? `<div class="bnp-sa-newrow">${list.map(tile).join('')}</div>` : `<p class="bnp-sa-fine">${esc(err || (busy || !v ? 'Asking itemdb…' : 'Nothing yet.'))}</p>`}</section>`;
+    return `<section class="bnp-sa-new${fold ? ' is-folded' : ''}"><div class="bnp-sa-newhead"><h3><button type="button" class="bnp-sa-newfold" data-sa-newfold aria-expanded="${!fold}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>${saIc ? `<span class="bnp-sa-newic" style="background-image:url('${esc(cssUrl(saIc))}')" aria-hidden="true"></span>` : ''}New for your album${list.length ? '<span class="bnp-sa-newcount" data-sa-newcount></span>' : ''}</button></h3><small>${when} · NE asks itemdb as your album opens, every 6 hours at most</small><button type="button" class="bnp-sa-btn is-small" data-sa-newcheck${busy ? ' disabled' : ''}>Check now</button></div>${list.length ? `<div class="bnp-sa-newrow">${list.map(tile).join('')}</div><div class="bnp-sa-newmore" data-sa-newmorebox><button type="button" class="bnp-sa-btn" data-sa-newmore>Show more</button><button type="button" class="bnp-sa-btn" data-sa-newless>Show fewer</button><small data-sa-newerr></small></div>` : `<p class="bnp-sa-fine">${esc(err || (busy || !v ? 'Asking itemdb…' : 'Nothing yet.'))}</p>`}</section>`;
   }
-  function saNewFit() {   // (New for your album: two full rows of the newest, as many as fit across at this width; its count is of the ones shown)
+  const saNewCols = (sec) => { const cs = getComputedStyle(sec), w = sec.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0); return Math.max(1, Math.floor((w + 10) / (124 + 10))); };   // (the row's own columns: 124 px at the least, 10 px apart)
+  function saNewFit() {   // (New for your album: two full rows of the newest, as many as fit across at this width, and two more with each Show more; its count is of the ones shown)
     const sec = sa && sa.root.querySelector('.bnp-sa-new'), row = sec && sec.querySelector('.bnp-sa-newrow');
     if (!row) return;
-    const cs = getComputedStyle(sec), w = sec.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
-    const tiles = [...row.children], n = Math.min(tiles.length, 2 * Math.max(1, Math.floor((w + 10) / (124 + 10))));   // (the row's own columns: 124 px at the least, 10 px apart)
+    const cols = saNewCols(sec), tiles = [...row.children], n = Math.min(tiles.length, Math.max(2, sa.newRows || 2) * cols);
     tiles.forEach((t, i) => { if (t.hidden !== i >= n) t.hidden = i >= n; });
+    const M = saNewOlder(), more = sec.querySelector('[data-sa-newmore]'), less = sec.querySelector('[data-sa-newless]'), err = sec.querySelector('[data-sa-newerr]');
+    if (more) {
+      const had = document.activeElement === more;
+      more.hidden = !(n < tiles.length || saNewCan());
+      more.textContent = M.busy ? 'Asking itemdb…' : 'Show more';
+      more.setAttribute('aria-busy', String(!!M.busy));
+      less.hidden = n <= 2 * cols;
+      err.textContent = M.err === 'visit' ? 'itemdb wants a visit first: open itemdb.com.br once in this browser.' : M.err === 'busy' ? idbRestSay() : M.err ? 'itemdb couldn’t be reached just now.' : '';
+      more.parentElement.hidden = more.hidden && less.hidden && !err.textContent;
+      if (had && more.hidden && !less.hidden) less.focus({ preventScroll: true });
+    }
     const out = sec.querySelector('[data-sa-newcount]');
     if (!out) return;
     const need = tiles.slice(0, n).filter((t) => !t.classList.contains('is-have')).length;
@@ -23902,7 +23950,17 @@
       const b = t.closest('button');
       if (!b || !root.contains(b)) return;
       const d = b.dataset;
-      if ('saNewcheck' in d) { nwFetch('stamp', true, () => { saPaint(true); saIdbPlaces(true); }); saPaint(true); return; }
+      if ('saNewcheck' in d) { saNewFetch(true, () => { saPaint(true); saIdbPlaces(true); }); saPaint(true); return; }
+      if ('saNewmore' in d) {   // (two more rows; past what's in, thirty older ones asked for)
+        const sec = b.closest('.bnp-sa-new'), tiles = sec.querySelectorAll('.bnp-sa-newit').length, cols = saNewCols(sec);
+        if (saNewOlder().busy) return;
+        saNewOlder().err = '';
+        sa.newRows = Math.min(Math.max(2, sa.newRows || 2), Math.max(2, Math.ceil(tiles / cols))) + 2;
+        if (tiles < sa.newRows * cols) saNewAsk();
+        saNewFit();
+        return;
+      }
+      if ('saNewless' in d) { const sec = b.closest('.bnp-sa-new'); sa.newRows = 2; saNewFit(); if (sec.getBoundingClientRect().top < 0) sec.scrollIntoView({ block: 'start' }); const f = sec.querySelector('[data-sa-newmore]'); if (f) f.focus({ preventScroll: true }); return; }
       if ('saNewfold' in d) { const sec = b.closest('.bnp-sa-new'), fold = !sec.classList.contains('is-folded'); sec.classList.toggle('is-folded', fold); b.setAttribute('aria-expanded', String(!fold)); try { localStorage.setItem('bnp-sa-newfold', fold ? '1' : '0'); } catch (_) { /* */ } return; }   // (New for your album: folded or open, as you left it)
       if ('saPick' in d) {
         sa.pick = !sa.pick;
@@ -24083,12 +24141,15 @@
     html.bnp-sa-page .bnp-sa-newn { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 7px; box-sizing: border-box; border-radius: 999px; background: var(--nb-frame, #b07d1e); color: #fff; font: 15px/1 "Cafeteria", Arial, sans-serif; letter-spacing: .3pt; }   /* (how many are still to get: solid, white Cafeteria) */
     html.bnp-sa-page .bnp-sa-newhead small.bnp-sa-newall { margin: 0; color: var(--nb-muted); font: 12.5px var(--nb-ui); }
     html.bnp-sa-page .bnp-sa-new.is-folded .bnp-sa-newhead { margin-bottom: 0; }
-    html.bnp-sa-page .bnp-sa-new.is-folded :is(.bnp-sa-newrow, .bnp-sa-fine) { display: none; }
+    html.bnp-sa-page .bnp-sa-new.is-folded :is(.bnp-sa-newrow, .bnp-sa-newmore, .bnp-sa-fine) { display: none; }
+    html.bnp-sa-page .bnp-sa-newmore { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; }
+    html.bnp-sa-page .bnp-sa-newmore:is([hidden]), html.bnp-sa-page .bnp-sa-newmore .bnp-sa-btn[hidden], html.bnp-sa-page .bnp-sa-newmore small:empty { display: none; }
+    html.bnp-sa-page .bnp-sa-newmore small { color: var(--nb-muted); font: 12.5px var(--nb-txt); }
     html.bnp-sa-page .bnp-sa-newrow { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 10px; }
     html.bnp-sa-page .bnp-sa-newit { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; padding: 8px 6px; border: 1px solid var(--nb-line); border-radius: 12px; background: var(--nb-by, #fff); text-align: center; }
     html.bnp-sa-page .bnp-sa-newit.is-have { border-color: #9cd38f; background: #f3fbef; }
     html.bnp-sa-page .bnp-sa-newit img { width: 80px; height: 80px; }
-    html.bnp-sa-page .bnp-sa-newit[hidden] { display: none; }   /* (past the second row) */
+    html.bnp-sa-page .bnp-sa-newit[hidden] { display: none; }   /* (past the rows showing) */
     html.bnp-sa-page .bnp-sa-newcount { display: inline-flex; align-items: center; }
     html.bnp-sa-page .bnp-sa-newcount:empty { display: none; }
     html.bnp-sa-page .bnp-sa-havedot { display: inline-grid; place-items: center; flex: none; width: 18px; height: 18px; margin-left: -4px; border-radius: 50%; background: #3f9b4a; color: #fff; box-shadow: 0 1px 1.5px rgba(0, 0, 0, .22); }   /* (in your album: a green circle with a white tick (the user, 2026-11-08)) */
@@ -24730,7 +24791,7 @@
     if (nd.mine && known) {
       const mineIds = ndBase().filter((id) => ndHas(id) > 0), missIds = ndBase().filter((id) => !(ndHas(id) > 0)), w = ndWorth(mineIds, true), g = ndWorth(missIds);
       const extra = mineIds.reduce((s, id) => s + Math.max(0, ndHas(id) - 1), 0);
-      if (mineIds.length) chips.push(`<span class="bnp-nd-chip is-np" title="${esc(`${w.priced} of your ${w.n} cards have an itemdb price${w.none ? `; ${w.none} haven’t` : ''}. Each copy counted.`)}">${saNpIc()}Your cards: ${w.priced ? `about <b>${colNp(w.cost)} NP</b>` : ndCat ? 'no prices yet' : 'adding up…'}</span>`);
+      if (mineIds.length) chips.push(`<span class="bnp-nd-chip is-np" title="${esc(`${w.priced} of your ${w.n} cards have an itemdb price${w.none ? `; ${w.none} haven’t` : ''}. Each copy counted.`)}">${saNpIc()}<span>Your cards: ${w.priced ? `about <b>${colNp(w.cost)} NP</b>` : ndCat ? 'no prices yet' : 'adding up…'}</span></span>`);
       if (missIds.length) chips.push(`<span class="bnp-nd-chip">${missIds.length.toLocaleString()} still to get${g.priced ? ` · about ${colNp(g.cost)} NP${g.none ? ` for ${g.priced}` : ''}` : ''}</span>`);
       if (extra) chips.push(`<span class="bnp-nd-chip" title="Copies past the first of a card: ones you could sell or trade">${extra.toLocaleString()} spare ${extra === 1 ? 'copy' : 'copies'}</span>`);
     }
@@ -25427,6 +25488,7 @@
   const tcAcct = () => nclMe() || '';
   const tcP = () => saJson('bnp-tc', {});
   const tcPSet = (k, v) => { try { localStorage.setItem('bnp-tc', JSON.stringify({ ...tcP(), [k]: v })); } catch (_) { /* */ } };
+  const TC_SORTS = [['no', 'By number'], ['name', 'By name'], ['cheap', 'Cheapest first'], ['dear', 'Dearest first']];
   let tc = null, tcCat = null;
   // ── which card goes where: itemdb's list, and album pages seen (anyone's: a filled place's picture is that place's card)
   const tcLearned = () => get('tclearn', null) || {};
@@ -25454,14 +25516,14 @@
   }
   async function tcCatalogLoad(force) {   // (itemdb's Trading Card list, for prices alone: asked for as a page's are, not held back as a big job's)
     if (!tcCat) tcCat = { t: 0, by: tcFromData(), err: '', part: null, priced: 0 };
-    const c = await colCatalog('tcg', force).catch(() => null), price = new Map();
-    for (const it of (c && Array.isArray(c.items) ? c.items : [])) price.set(String(it[1]).toLowerCase(), it[3] > 0 ? it[3] : 0);
-    for (const at of tcCat.by.values()) for (const list of at.values()) for (const x of list) if (price.has(x.full.toLowerCase())) x.p = price.get(x.full.toLowerCase());
-    Object.assign(tcCat, { t: c && c.t, err: (c && c.err) || '', part: (c && (c.partial || c.part)) || null, priced: price.size });
+    const c = await colCatalog('tcg', force).catch(() => null), got = new Map();
+    for (const it of (c && Array.isArray(c.items) ? c.items : [])) got.set(String(it[1]).toLowerCase(), it);
+    for (const at of tcCat.by.values()) for (const list of at.values()) for (const x of list) { const it = got.get(x.full.toLowerCase()); if (it) { x.p = it[3] > 0 ? it[3] : 0; x.gone = !!it[7]; x.in = true; } }
+    Object.assign(tcCat, { t: c && c.t, err: c ? c.err || '' : 'down', part: (c && (c.partial || c.part)) || null, priced: got.size, done: true });
     if (tcCat.part && !tcCatalogLoad.later) {   // (the rest of the prices, asked for by itself once itemdb lets it)
       const at = idbWait(COL_PAGE), ms = Math.min(31 * 60e3, Math.max(5000, (at ? at - Date.now() : 0) + 3000));
       tcCat.next = Date.now() + ms;
-      tcCatalogLoad.later = setTimeout(() => { tcCatalogLoad.later = 0; tcCatalogLoad(true).then(() => { if (tc && tc.root) tcPaint(true); }); }, ms);
+      tcCatalogLoad.later = setTimeout(() => { tcCatalogLoad.later = 0; tcCatalogLoad(true).then(tcPriced); }, ms);
     }
     return tcCat;
   }
@@ -25519,16 +25581,108 @@
   function tcKeep(M, ed, d, off) {   // (a page of yours, just seen: every set's count, which of this set's pages have cards, and this page's places)
     Object.assign(M.counts, d.counts);
     if (d.pages.length) M.red[ed] = d.pages.filter((p) => p.red).map((p) => p.off);
-    (M.pages[ed] || (M.pages[ed] = {}))[off] = { t: Date.now(), cells: d.cells };
+    else if (tcTotal(ed) <= 9) M.red[ed] = [];   // (one page: Neopets shows no page numbers)
+    if (Array.isArray(M.red[ed]) && d.cells.some(Boolean) && !M.red[ed].includes(off)) M.red[ed].push(off);
+    (M.pages[ed] || (M.pages[ed] = {}))[off] = { t: Date.now(), n: Number(d.counts[ed]) || 0, cells: d.cells };   // (n: how many Neopets counted in the set then)
     M.t = Date.now();
   }
-  function tcHave(A, ed) {   // ({ known: whether every place is known, has: Set of places (from 1) with a card }) for an album's set
-    const n = Number(A.counts[ed]) || 0, has = new Set(), pg = A.pages[ed] || {};
-    for (const [off, p] of Object.entries(pg)) p.cells.forEach((src, i) => { if (src) has.add(Number(off) + i + 1); });
-    if (!n) return { known: true, has: new Set(), n: 0 };
-    const red = A.red[ed];
-    const known = has.size >= n || (Array.isArray(red) && red.every((off) => pg[off]));
-    return { known, has, n, left: Array.isArray(red) ? red.filter((off) => !pg[off]) : null };
+  function tcHave(A, ed) {   // ({ known: whether every place is known, has: Set of places (from 1) with a card, n: Neopets' count, left: its pages with cards still to be read }) for an album's set
+    const n = Number(A.counts[ed]) || 0, has = new Set(), pg = A.pages[ed] || {}, red = A.red[ed];
+    if (!n) return { known: true, has, n: 0, left: [] };
+    for (const [off, p] of Object.entries(pg)) if (!Array.isArray(red) || red.includes(Number(off))) p.cells.forEach((src, i) => { if (src) has.add(Number(off) + i + 1); });
+    const left = Array.isArray(red) ? red.filter((off) => !pg[off] || (has.size !== n && pg[off].n !== n)) : null;   // (a page read while Neopets counted another number in the set may have changed since. All of them read at the same count: the rest are cards its album doesn't show)
+    return has.size === n || (left && !left.length) ? { known: true, has, n, left: [] } : { known: false, has, n, left };
+  }
+  const tcUnk = (H, k) => !H.known && !H.has.has(k) && (!H.left || H.left.some((off) => k > off && k <= off + 9));   // (a place NE can't tell: its page not read yet, or changed since)
+  function tcPlaces(A, ed) {   // (a set's places, as far as an album's pages have been read: { has: [[set, place]…], miss: [[set, place]…], unknown: how many can't be told })
+    const all = tcTotal(ed), H = tcHave(A, ed), has = [], miss = [];
+    let unknown = 0;
+    for (let k = 1; k <= all; k++) { if (H.has.has(k)) has.push([ed, k]); else if (tcUnk(H, k)) unknown++; else miss.push([ed, k]); }
+    return { has, miss, unknown, known: H.known };
+  }
+  function tcUnread(A) {   // (an album's pages with cards that haven't been read, or have changed since: [[set, offset]…]. A set with cards whose page numbers haven't been seen: its first page)
+    const out = [];
+    for (const T of TC_SETS) { const H = tcHave(A, T.ed); if (H.known) continue; for (const off of H.left || [0]) out.push([T.ed, off]); }
+    return out;
+  }
+  // ── what its cards cost, by itemdb
+  const tcCard = (ed, k) => { const at = tcCat && tcCat.by.get(ed), L = at && at.get(k); return (L && L[0]) || null; };   // (a place's card, by NE's own list)
+  const tcPrice = (ed, k) => { const c = tcCard(ed, k); return c && !c.noItem && c.p > 0 ? c.p : 0; };
+  function tcPriceText(ed, k) {
+    const c = tcCard(ed, k);
+    if (!c) return '';
+    return c.noItem ? 'Never an item' : c.p > 0 ? `${colNp(c.p)} NP` : !tcCat.done || (tcCat.part && !c.in) ? '…' : tcCat.err && !tcCat.priced ? (tcCat.err === 'visit' ? 'itemdb?' : '?') : 'No price';   // (its part of itemdb's list still to come: …)
+  }
+  function tcWorth(list) {   // (what these places' cards come to: the priced ones added up, how many have a price, how many haven't)
+    let cost = 0, priced = 0;
+    for (const [ed, k] of list) { const p = tcPrice(ed, k); if (p) { cost += p; priced++; } }
+    return { cost, priced, none: list.length - priced, n: list.length };
+  }
+  // ── cards put in your album (by Buy Mode, or heard from your SDB or Inventory): counted in what NE keeps, so your album, its marks and Buy Mode know at once
+  let tcNames = null;
+  function tcByName(n) {   // (an item's name → [set, place])
+    if (!tcNames) { tcNames = new Map(); for (const T of TC_SETS) (TC_DATA[T.ed] || []).forEach((x, i) => { if (x && !x[2]) tcNames.set(`${x[0]} (TCG)`.toLowerCase(), [T.ed, i + 1]); }); }
+    return tcNames.get(reClean(n).toLowerCase()) || null;
+  }
+  function tcPutIn(A, ed, k) {
+    if (A.counts[ed] == null || k > tcTotal(ed)) return;   // (a set whose count NE hasn't seen, or a card its album doesn't show: your album says, the next time it opens)
+    const H = tcHave(A, ed), off = Math.floor((k - 1) / 9) * 9, pg = A.pages[ed] || (A.pages[ed] = {}), was = H.n;
+    if (H.has.has(k)) return;   // (a second copy: Neopets' own count says, the next time your album opens)
+    const red = Array.isArray(A.red[ed]) ? A.red[ed] : was ? null : (A.red[ed] = []);
+    A.counts[ed] = was + 1;
+    if (!pg[off] && (!was || (red && !red.includes(off)))) pg[off] = { t: Date.now(), n: was, cells: Array(9).fill('') };   // (a page with no cards till now: the other eight places are empty)
+    if (pg[off]) {
+      if (red && !red.includes(off)) { pg[off].cells = Array(9).fill(''); pg[off].n = was; red.push(off); }
+      pg[off].cells[(k - 1) % 9] = 'in';   // (in: its picture not seen there yet)
+      for (const p of Object.values(pg)) if (p.n === was) p.n = was + 1;   // (what was right at the old count is right at the new)
+    }
+  }
+  async function tcAlbumed(list) {   // ([[set, place]…])
+    if (!tcAcct() || !list.length) return;
+    const A = await tcMineLoad();
+    for (const [ed, k] of list) tcPutIn(A, ed, k);
+    await tcMineSave(A);
+    if (tc && tc.mine && tc.root) { tc.A = A; tcPaint(true); }
+    tcNeed = null;
+    if (tcMarksOn() && document.querySelector('.bnp-it-col.is-tcg')) { for (const m of document.querySelectorAll('.bnp-it-col.is-tcg')) m.remove(); await tcMarksLoad(); cardMarkAll(); }
+  }
+  function tcEar(p) {   // (Trading Cards put in your album from your SDB (its Put in TCG Album, one or several) or your Inventory (its pop-up's): counted in as Neopets answers)
+    if (tcEar.on || FRAME) return;
+    tcEar.on = true;
+    const read = (e) => { try { return JSON.parse(e.detail); } catch (_) { return null; } }, put = (names) => tcAlbumed(names.map(tcByName).filter(Boolean)).catch(report);
+    if (p === '/safetydeposit.phtml') {
+      const sent = new Map();
+      document.addEventListener('bnp-sdb-send', (e) => { const d = read(e), list = d && d.where === 'sdb' && Array.isArray(d.moves) ? d.moves.filter((m) => m && m.a === 'tcg_album') : []; if (list.length) sent.set(d.k, sdbMoving(list).map((x) => x.n)); });
+      document.addEventListener('bnp-sdb-done', (e) => { const d = read(e), list = d && sent.get(d.k); if (!list) return; sent.delete(d.k); if (d.ok) put(list); });   // (some of them, or no answer: your album's own counts say, the next time it opens)
+    } else if (p === '/inventory.phtml') {
+      document.addEventListener('bnp-inv-acted', (e) => {
+        const d = read(e);
+        if (!d || !d.tcg) return;
+        const words = d.status === 200 ? sdrWords(d.said) : '';
+        if (words && !/already|can.?t|cannot|unable|not able|isn.?t able|error|sorry|don.?t have|do not have|not yours|no longer|try again/i.test(words)) put([d.tcg.n]);
+      });
+    }
+  }
+  // ── Buy Mode's list: the cards your album doesn't have, where that's known
+  function tcBmList() {
+    if (!tc || !tc.mine || !tc.A || !Object.keys(tc.A.counts).length) return null;
+    const rows = [];
+    for (const T of TC_SETS) for (const [ed, k] of tcPlaces(tc.A, T.ed).miss) {
+      const c = tcCard(ed, k);
+      if (c && !c.noItem) rows.push({ name: c.full, img: `${NPI}items/${c.f}`, guide: c.p > 0 ? c.p : 0, retired: !!c.gone, where: `${T.n} No. ${k}`, ed, k, grp: String(ed) });
+    }
+    return { rows, unread: tcUnread(tc.A).length, partial: !tcCat || !tcCat.done || !!tcCat.part || !tcCat.priced, groups: TC_SETS.map((T) => [String(T.ed), T.n]) };
+  }
+  function tcPriced() {   // (prices came: this page drawn again, and Buy Mode's list when it's open and not at work, its ticks kept)
+    if (!tc || !tc.root) return;
+    tcPaint(true);
+    if (!bm || bm.kind !== 'tcg' || !bm.win.classList.contains('open') || bm.run) return;
+    const on = new Set(bm.rows.filter((r) => r.on).map((r) => r.name)), grp = bm.grp, q = bm.q;
+    bmOpen('tcg');
+    bm.grp = grp;
+    bm.q = q;
+    for (const r of bm.rows) r.on = on.has(r.name);
+    bmPaint();
   }
   // ── the page
   function tcKind() {
@@ -25572,7 +25726,7 @@
     root.className = 'bnp-nd bnp-tc';
     root.setAttribute('data-bnp', 'tc');
     const P = tcP();
-    tc = { kind, mine, owner: mine ? '' : ownerQ, ed, off, A, root, show: 'all', q: '', size: ['s', 'm', 'l'].includes(P.size) ? P.size : 'm', reading: null, note: '', invite: d ? d.invite : '' };
+    tc = { kind, mine, owner: mine ? '' : ownerQ, ed, off, A, root, show: 'all', q: '', size: ['s', 'm', 'l'].includes(P.size) ? P.size : 'm', sort: TC_SORTS.some(([k]) => k === P.sort) ? P.sort : 'no', list: [], reading: null, note: '', invite: d ? d.invite : '' };
     const neo = document.createElement('div');
     neo.className = 'bnp-nd-neobox';
     neo.setAttribute('data-bnp', 'tcneo');
@@ -25582,7 +25736,12 @@
     tcWire(root);
     if (!tcCat) tcCat = { t: 0, by: tcFromData(), err: '', part: null, priced: 0 };   // (the cards at once; prices as itemdb sends them)
     tcPaint();
-    tcCatalogLoad(false).then(() => tcPaint(true)).catch(() => {});
+    tcCatalogLoad(false).then(tcPriced).catch(() => {});
+    document.addEventListener('visibilitychange', () => {   // (back on this tab: itemdb opened meanwhile, so its prices; cards put in your album from another tab)
+      if (document.hidden || !tc || !tc.root) return;
+      if (tcCat && tcCat.err === 'visit' && !itBlocked()) tcCatalogLoad(true).then(tcPriced).catch(() => {});
+      if (tc.mine && !tc.reading) tcMineLoad().then((M) => { if (M.t && JSON.stringify(M) !== JSON.stringify(tc.A)) { tc.A = M; tcPaint(true); } }).catch(() => {});
+    });
     if (off && kind === 'album') setTimeout(() => { const t = root.querySelector(`[data-tc-k="${off + 1}"]`); if (t) t.scrollIntoView({ block: 'center' }); }, 300);
   }
   // ── drawing it
@@ -25602,10 +25761,12 @@
   function tcSetsHtml() {
     return `<nav class="bnp-tc-sets" aria-label="The album’s sets">${TC_SETS.map((S) => {
       const n = Number(tc.A && tc.A.counts[S.ed]) || 0, all = tcTotal(S.ed), pct = Math.min(100, Math.round((100 * n) / Math.max(1, all)));
+      const P = tc.mine && tc.A && tc.A.counts[S.ed] != null ? tcPlaces(tc.A, S.ed) : null, w = P ? tcWorth(P.miss) : null;   // (what's still to get, by itemdb)
+      const cost = !P ? '' : n >= all ? ['Complete', ''] : !w.n && P.unknown ? ['Not read yet', 'Its pages with cards of yours haven’t been read yet'] : w.priced ? [`<b>${colNp(w.cost)} NP</b>${w.none || P.unknown ? ' or more' : ''} to finish`, `${w.priced.toLocaleString()} of the ${w.n.toLocaleString()} you need${P.unknown ? ' (as far as your pages have been read)' : ''} have a price on itemdb: ${w.cost.toLocaleString()} NP together.${w.none ? ` ${w.none.toLocaleString()} ${w.none === 1 ? 'has' : 'have'} none.` : ''}`] : !tcCat || !tcCat.done ? ['…', ''] : tcCat.err && !tcCat.priced ? ['&nbsp;', ''] : ['No prices on itemdb', ''];
       return `<a class="bnp-tc-set${S.ed === tc.ed && tc.kind === 'album' ? ' is-here' : ''}${n >= all && n ? ' is-done' : ''}" href="${esc(tcAlbumUrl(S.ed))}"${S.ed === tc.ed && tc.kind === 'album' ? ' aria-current="page"' : ''}>
           <span class="bnp-tc-art${S.logo ? ' is-logo' : ''}${/^press\//.test(S.logo) ? ' is-press' : ''}">${S.logo ? `<img src="${esc(/^data:/.test(S.logo) ? S.logo : NPI + S.logo)}" alt="" loading="lazy">` : tcFan(S.ed)}</span>
           <b class="bnp-tc-setn">${esc(S.n)}</b>
-          <span class="bnp-tc-setc"><span><b>${n.toLocaleString()}</b> of ${all.toLocaleString()}</span><span class="bnp-tc-bar"><i style="width:${pct}%"></i></span></span>
+          <span class="bnp-tc-setc"><span><b>${n.toLocaleString()}</b> of ${all.toLocaleString()}</span><span class="bnp-tc-bar"><i style="width:${pct}%"></i></span>${cost ? `<span class="bnp-tc-setp${w.priced || n >= all ? '' : ' is-q'}"${cost[1] ? ` title="${esc(cost[1])}"` : ''}>${cost[0]}</span>` : ''}</span>
         </a>`;
     }).join('')}</nav>`;
   }
@@ -25613,67 +25774,98 @@
     const C = (tc.A && tc.A.counts) || {}, total = Object.values(C).reduce((s, v) => s + (Number(v) || 0), 0), all = TC_SETS.reduce((s, x) => s + tcTotal(x.ed), 0);
     const known = Object.keys(C).length > 0, done = TC_SETS.filter((x) => (Number(C[x.ed]) || 0) >= tcTotal(x.ed) && C[x.ed]).length;
     const who = tc.mine ? 'Your Trading Card Album' : `${tc.owner}’s Trading Card Album`;
-    const acts = [];
+    const acts = [], chips = [];
+    if (tc.mine && known && tcAcct()) {
+      const P = TC_SETS.map((x) => tcPlaces(tc.A, x.ed)), has = P.flatMap((x) => x.has), miss = P.flatMap((x) => x.miss), w = tcWorth(has), g = tcWorth(miss), left = Math.max(0, all - total);
+      const unread = tcUnread(tc.A), more = unread.length, other = unread.some((x) => tc.kind !== 'album' || x[0] !== tc.ed);
+      if (total) chips.push(`<span class="bnp-nd-chip is-np" title="${esc(`${w.priced.toLocaleString()} of the ${w.n.toLocaleString()} cards of yours ${more ? 'NE has read ' : ''}have an itemdb price${w.none ? `; ${w.none.toLocaleString()} ${w.none === 1 ? 'hasn’t' : 'haven’t'}` : ''}. itemdb’s prices, approximate.`)}">${saNpIc()}<span>Your cards: ${w.priced ? `about <b>${colNp(w.cost)} NP</b>${more ? ' so far' : ''}` : !tcCat || !tcCat.done ? 'adding up…' : more ? 'not read yet' : 'no prices yet'}</span></span>`);
+      if (left) chips.push(`<span class="bnp-nd-chip" title="${esc(`${g.priced.toLocaleString()} of the ${g.n.toLocaleString()} NE knows you need have an itemdb price: ${g.cost.toLocaleString()} NP together.${g.none ? ` ${g.none.toLocaleString()} ${g.none === 1 ? 'has' : 'have'} none.` : ''}`)}">${left.toLocaleString()} still to get${g.priced ? ` · about ${colNp(g.cost)} NP${g.none ? ` for ${g.priced.toLocaleString()}` : ''}` : !tcCat || !tcCat.done ? ' · prices coming…' : ''}</span>`);
+      if (tc.reading) chips.push(`<span class="bnp-nd-chip is-wait" role="status">${esc(tc.reading)}</span><button type="button" class="bnp-nd-chip is-btn" data-tc-stop>Stop</button>`);
+      else if (other) chips.push(`<button type="button" class="bnp-nd-chip is-btn" data-tc-readall title="Your album’s pages with cards that NE hasn’t read, or that have changed since, one at a time as you’d turn to them (only while this tab’s in front)">${ND_IC.again}Read the pages not read yet</button>`);
+      if (miss.length) acts.push(`<button type="button" class="bnp-nd-btn is-go" data-tc-buy title="Buy the cards your album still needs from users’ shops, and put them in as they’re bought">${BM_CART}<span>Buy Mode</span></button>`);
+    }
     if (!tc.mine) acts.push(`<a class="bnp-nd-btn" href="/tcg/album.phtml">${ND_IC.cards}<span>Your album</span></a>`);
     if (tc.mine && tc.invite) acts.push(`<button type="button" class="bnp-nd-btn" data-tc-copy title="Your album’s address, to send to a friend">${ND_IC.again.replace('M15.5 9.5a5.5 5.5 0 1 1-1.7-4M14.5 2.8v3.4h-3.4', 'M7 7h8v10H7zM5 13H4V3h8v1')}<span>Copy your album’s address</span></button>`);
-    acts.push(`<a class="bnp-nd-btn" href="/objects.phtml?type=shop&amp;obj_type=8" title="Neopets’ Collectable Card shop">${ND_IC.shop}<span>Card shop</span></a>`);
+    const e = tcCat && tcCat.done && tcCat.err && !tcCat.priced ? tcCat.err : '';   // (no prices came: why)
+    const why = e === 'visit' ? 'itemdb gives its prices to scripts like this one once you’ve opened itemdb today; then they come by themselves. <a class="bnp-nd-btn is-small" href="https://itemdb.com.br/" target="_blank" rel="noopener">Open itemdb</a>' : e === 'busy' ? `${esc(idbRestSay())}` : e ? 'itemdb couldn’t be reached just now, so there are no prices. <button type="button" class="bnp-nd-btn is-small" data-tc-again>Try again</button>' : '';
     return `<header class="bnp-nd-head bnp-tc-head">
         <div class="bnp-tc-logo" aria-hidden="true"><img src="${NPI}tcg/album/back.gif" width="63" height="88" alt=""><img src="${NPI}tcg/album/back.gif" width="63" height="88" alt=""></div>
         <div class="bnp-nd-hcard">
           <div class="bnp-nd-htop"><span class="bnp-nd-htitle"><small>Neopets Trading Card Game</small><h1>${esc(who)}</h1></span>
             ${known ? `<span class="bnp-nd-prog"><b class="bnp-nd-big">${total.toLocaleString()}</b><span class="bnp-nd-of">of the ${all.toLocaleString()}<br>cards there are</span><b class="bnp-nd-pct">${Math.round((1000 * total) / Math.max(1, all)) / 10}%</b></span>` : ''}</div>
           <div class="bnp-nd-bar"><i style="width:${Math.min(100, (100 * total) / Math.max(1, all))}%;background:var(--nb-bar)"></i></div>
-          <div class="bnp-nd-chips"><span class="bnp-nd-chip">${done ? `${done} of 11 sets complete` : '11 sets'}</span>${tc.mine && tcAcct() ? cardMarkSw(S.features.tcMarks === true, 'data-tc-marks', 'Trading Card your album') : ''}${tcCat && tcCat.part ? `<span class="bnp-nd-chip is-wait" title="itemdb’s prices for the Trading Cards come in two asks">itemdb’s prices: ${Number(tcCat.part.got || tcCat.priced).toLocaleString()} of ${Number(tcCat.part.total).toLocaleString()} cards so far · the rest at about ${esc(bmAt(tcCat.next))}</span>` : ''}</div>
+          <div class="bnp-nd-chips"><span class="bnp-nd-chip">${done ? `${done} of 11 sets complete` : '11 sets'}</span>${chips.join('')}${tc.mine && tcAcct() ? cardMarkSw(S.features.tcMarks === true, 'data-tc-marks', 'Trading Card your album') : ''}${tcCat && tcCat.part ? `<span class="bnp-nd-chip is-wait" title="itemdb’s prices for the Trading Cards come in two asks">itemdb’s prices: ${Number(tcCat.part.got || tcCat.priced).toLocaleString()} of ${Number(tcCat.part.total).toLocaleString()} cards so far · the rest at about ${esc(bmAt(tcCat.next))}</span>` : ''}</div>
         </div>
-        <div class="bnp-nd-acts">${acts.join('')}</div>
-      </header>${tc.note ? `<p class="bnp-nd-note">${esc(tc.note)}</p>` : ''}`;
+        ${acts.length ? `<div class="bnp-nd-acts">${acts.join('')}</div>` : ''}
+      </header>${why ? `<p class="bnp-tc-read">${why}</p>` : ''}${tc.note ? `<p class="bnp-nd-note">${esc(tc.note)}</p>` : ''}`;
   }
   function tcSlotsHtml() {
     const ed = tc.ed, all = tcTotal(ed), H = tcHave(tc.A, ed), q = ndKey(tc.q), out = [];
     const at = tcCat && tcCat.by.get(ed), past = at ? [...at.keys()].filter((k) => k > all).sort((a, b) => a - b) : [];
-    for (const k of [...Array.from({ length: all }, (_, i) => i + 1), ...past]) {
-      if (k === past[0] && tc.show !== 'have') out.push(`<p class="bnp-tc-past">Numbered past ${tc.mine ? 'your' : 'the'} album’s ${all} places: Neopets counts ${past.length === 1 ? 'this one' : 'these'} in the set, but its album doesn’t show ${past.length === 1 ? 'it' : 'them'}, so NE can’t tell ${tc.mine ? 'whether you have them' : 'whether they’re in this album'}.</p>`);
-      const s = tcSlot(ed, k), have = H.has.has(k), unknown = k > all || (!have && !H.known && Array.isArray(H.left) && H.left.some((off) => k > off && k <= off + 9));
+    const keys = [...Array.from({ length: all }, (_, i) => i + 1), ...past], price = (k) => tcPrice(ed, k), nm = (k) => { const c = tcCard(ed, k); return c ? c.n : '\uffff'; };
+    if (tc.sort === 'name') keys.sort((a, b) => nm(a).localeCompare(nm(b), undefined, { sensitivity: 'base' }) || a - b);
+    else if (tc.sort === 'cheap') keys.sort((a, b) => (price(a) || Infinity) - (price(b) || Infinity) || a - b);
+    else if (tc.sort === 'dear') keys.sort((a, b) => price(b) - price(a) || a - b);
+    tc.list = [];
+    for (const k of keys) {
+      if (k === past[0] && tc.show !== 'have' && tc.sort === 'no') out.push(`<p class="bnp-tc-past">Numbered past ${tc.mine ? 'your' : 'the'} album’s ${all} places: Neopets counts ${past.length === 1 ? 'this one' : 'these'} in the set, but its album doesn’t show ${past.length === 1 ? 'it' : 'them'}, so NE can’t tell ${tc.mine ? 'whether you have them' : 'whether they’re in this album'}.</p>`);
+      const s = tcSlot(ed, k), have = H.has.has(k), unknown = k > all || tcUnk(H, k);
       if (tc.show === 'have' && !have) continue;
       if (tc.show === 'miss' && (have || unknown)) continue;
       const name = s.names[0] || '';
       if (q && !ndKey(name).includes(q) && String(k) !== tc.q.trim()) continue;
       const pg = Math.floor((k - 1) / 9) * 9;
-      const mine = have ? ((tc.A.pages[ed] || {})[pg] || { cells: [] }).cells[(k - 1) % 9] : '';
+      const cell = have ? ((tc.A.pages[ed] || {})[pg] || { cells: [] }).cells[(k - 1) % 9] : '', mine = /^https?:/.test(cell || '') ? cell : '';   // (put in since its page was read: the picture NE has for it)
+      tc.list.push(k);
       let pairs = mine ? [[mine, s.names[0] || '']] : s.tries.map((t, j) => [t, s.names[j] || '']);
       if (tc.size === 'l') pairs = (mine ? [[tcBigOf(mine), s.names[0] || '']] : s.big.map((b, j) => [b, s.names[j] || '']).filter((x) => x[0])).concat(pairs).filter((x, j, all) => all.findIndex((y) => y[0] === x[0]) === j);   // (Big: the big card first, its album picture if that isn't there)
       const src = (pairs[0] || [TC_BACK])[0], rest = pairs.slice(1);
-      out.push(`<button type="button" class="bnp-tc-card${have ? ' is-have' : unknown ? ' is-unknown' : ' is-miss'}" data-tc-k="${k}" title="${esc(`${name || 'Card'} · No. ${k}${have ? '' : unknown ? ' · its page not read yet' : ' · not in the album'}`)}">
+      out.push(`<button type="button" class="bnp-tc-card${have ? ' is-have' : unknown ? ' is-unknown' : ' is-miss'}" data-tc-k="${k}" title="${esc(`${name || 'Card'} · No. ${k}${have ? '' : k > all ? ' · past the album’s places' : unknown ? ' · its page not read yet' : ' · not in the album'}${price(k) ? ` · itemdb ≈ ${price(k).toLocaleString()} NP` : ''}`)}">
           <span class="bnp-tc-pic"><img src="${esc(src)}" data-tc-try="${esc(JSON.stringify(rest.map((x) => x[0])))}" data-tc-names="${esc(JSON.stringify(rest.map((x) => x[1])))}" alt="" loading="lazy" decoding="async"></span>
           <span class="bnp-tc-cfoot"><b class="bnp-tc-no">${k}</b><span class="bnp-tc-cname">${esc(name || (s.tries.length ? '' : 'Not known yet'))}</span></span>
+          ${tc.size === 's' ? '' : (() => { const t = tcPriceText(ed, k); return t ? `<span class="bnp-tc-cmeta${tcPrice(ed, k) ? ' is-np' : ''}">${esc(t)}</span>` : ''; })()}
         </button>`);
     }
     return out.length ? out.join('') : `<div class="bnp-nd-empty"><p>${tc.show === 'have' ? 'No cards from this set in the album yet.' : 'No cards match.'}</p></div>`;
   }
+  function tcCountHtml() {   // (how many cards show, and what the ones you need come to by itemdb)
+    const L = tc.list || [], H = tcHave(tc.A, tc.ed), need = tc.mine ? L.filter((k) => k <= tcTotal(tc.ed) && !H.has.has(k) && !tcUnk(H, k)) : L, w = tcWorth((need.length ? need : L).map((k) => [tc.ed, k]));
+    return `<b>${L.length.toLocaleString()}</b> ${L.length === 1 ? 'card' : 'cards'}${w.priced ? ` · ${tc.mine && need.length ? 'the ones you need: ' : ''}about ${colNp(w.cost)} NP${w.none ? ` for ${w.priced.toLocaleString()}` : ''}` : ''}`;
+  }
   function tcSetHtml() {
     const ed = tc.ed, S = TC_SET.get(ed), H = tcHave(tc.A, ed), all = tcTotal(ed), n = H.n;
     const left = H.left && H.left.length ? H.left : [];
-    const note = !H.known && left.length ? `<p class="bnp-tc-read">${left.length === 1 ? 'One page' : `${left.length} pages`} of this set with cards ${tc.mine ? 'of yours ' : ''}${left.length === 1 ? 'hasn’t' : 'haven’t'} been read yet, so ${left.length === 1 ? 'its' : 'their'} cards show faded. <button type="button" class="bnp-nd-btn is-small" data-tc-read${tc.reading ? ' disabled' : ''}>${tc.reading ? esc(tc.reading) : `Read ${left.length === 1 ? 'it' : `the ${left.length}`}`}</button></p>` : '';
+    const again = left.length > 0 && left.every((off) => (tc.A.pages[ed] || {})[off]);   // (all of them read before, and changed since)
+    const note = !H.known && left.length ? `<p class="bnp-tc-read">${left.length === 1 ? 'One page' : `${left.length} pages`} of this set with cards ${tc.mine ? 'of yours ' : ''}${again ? (left.length === 1 ? 'may have changed since it was read' : 'may have changed since they were read') : left.length === 1 ? 'hasn’t been read yet' : 'haven’t been read yet'}, so ${left.length === 1 ? 'its' : 'their'} cards ${again ? 'aren’t certain' : 'show faded'}. ${tc.reading ? `<span role="status">${esc(tc.reading)}</span>${tc.mine ? '' : ' <button type="button" class="bnp-nd-btn is-small" data-tc-stop>Stop</button>'}` : `<button type="button" class="bnp-nd-btn is-small" data-tc-read>Read ${left.length === 1 ? 'it' : `the ${left.length}`}</button>`}</p>` : '';
     return `<section class="bnp-nd-panel bnp-tc-panel">
         <h2 class="bnp-nd-bandh"><span>${esc(S.n)}</span><b>${n.toLocaleString()} of ${all.toLocaleString()}</b></h2>
         <div class="bnp-tc-tools">
-          <label class="bnp-nd-find">${SA_IC.find}<input type="search" data-tc-q value="${esc(tc.q)}" placeholder="Find a card in this set" aria-label="Find a card" autocomplete="off"></label>
-          <span class="bnp-nd-seg" role="group" aria-label="Show">${[['all', 'Every card', all], ['have', tc.mine ? 'In your album' : 'In their album', H.has.size], ['miss', 'Missing', Math.max(0, all - n)]].map(([k, l, c]) => `<button type="button" data-tc-show="${k}" aria-pressed="${tc.show === k}">${esc(l)}<b>${Number(c).toLocaleString()}</b></button>`).join('')}</span>
-          <span class="bnp-nd-seg is-size" role="group" aria-label="Card size">${[['s', 'Small'], ['m', 'Album'], ['l', 'Big']].map(([k, l]) => `<button type="button" data-tc-size="${k}" aria-pressed="${tc.size === k}">${l}</button>`).join('')}</span>
+          <div class="bnp-nd-trow">
+            <label class="bnp-nd-find">${SA_IC.find}<input type="search" data-tc-q value="${esc(tc.q)}" placeholder="Find a card in this set" aria-label="Find a card" autocomplete="off"></label>
+            <span class="bnp-nd-seg" role="group" aria-label="Show">${[['all', 'Every card', all], ['have', tc.mine ? 'In your album' : 'In their album', H.has.size], ['miss', 'Missing', Math.max(0, all - n)]].map(([k, l, c]) => `<button type="button" data-tc-show="${k}" aria-pressed="${tc.show === k}">${esc(l)}<b>${Number(c).toLocaleString()}</b></button>`).join('')}</span>
+          </div>
+          <div class="bnp-nd-trow">
+            <label class="bnp-nd-sel"><span>Sort</span><select data-tc-sort>${TC_SORTS.map(([k, l]) => `<option value="${k}"${k === tc.sort ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+            <span class="bnp-nd-count" data-tc-count></span>
+            <span class="bnp-nd-seg is-size" role="group" aria-label="Card size">${[['s', 'Small'], ['m', 'Album'], ['l', 'Big']].map(([k, l]) => `<button type="button" data-tc-size="${k}" aria-pressed="${tc.size === k}">${l}</button>`).join('')}</span>
+          </div>
         </div>
         ${note}
         ${tcCat && !(tcCat.by.get(ed) && tcCat.by.get(ed).size) && !Object.keys((tcLearned()[ed] || {}).at || {}).length ? `<p class="bnp-tc-read">itemdb has none of this set’s cards, and no album NE has seen has one, so which card goes in each place isn’t known: they show as backs.</p>` : ''}
         <div class="bnp-tc-grid is-${tc.size}" data-tc-grid>${tcSlotsHtml()}</div>
       </section>`;
   }
-  function tcPaint(soft) {
+  const tcFocusKey = (el) => { for (const k of ['tc-q', 'tc-sort', 'tc-show', 'tc-size', 'tc-k', 'tc-buy', 'tc-marks', 'tc-read', 'tc-readall', 'tc-stop']) if (el.hasAttribute(`data-${k}`)) return `[data-${k}${el.getAttribute(`data-${k}`) ? `="${el.getAttribute(`data-${k}`)}"` : ''}]`; return ''; };
+  function tcPaint(soft) {   // (soft: something came (prices, a page read): drawn again, the control you're on keeping the keys)
     if (!tc || !tc.root) return;
-    const f = soft && document.activeElement && tc.root.contains(document.activeElement) && document.activeElement.matches('[data-tc-q]') ? document.activeElement : null, at = f ? f.selectionStart : null;
+    const f = soft && document.activeElement && tc.root.contains(document.activeElement) ? document.activeElement : null, fk = f ? tcFocusKey(f) : '', at = f && f.matches('[data-tc-q]') ? f.selectionStart : null;
     tc.root.innerHTML = `${tcHeadHtml()}${tcSetsHtml()}${tc.kind === 'album' ? tcSetHtml() : '<p class="bnp-tc-hubsay">Pick a set to see its cards: the ones in your album in colour, the rest greyed.</p>'}${ndFootHtml().replace('data-nd-neo', 'data-tc-neo')}`;
     crispIn(tc.root);
-    if (f) { const g = tc.root.querySelector('[data-tc-q]'); if (g) { g.focus({ preventScroll: true }); try { g.setSelectionRange(at, at); } catch (_) { /* */ } } }
+    tcCountPaint();
+    if (fk) { const g = tc.root.querySelector(fk); if (g) { g.focus({ preventScroll: true }); if (at != null) try { g.setSelectionRange(at, at); } catch (_) { /* */ } } }
   }
-  function tcGridPaint() { const g = tc.root.querySelector('[data-tc-grid]'); if (g) g.innerHTML = tcSlotsHtml(); }
+  function tcCountPaint() { const c = tc.root.querySelector('[data-tc-count]'); if (c) c.innerHTML = tcCountHtml(); }
+  function tcGridPaint() { const g = tc.root.querySelector('[data-tc-grid]'); if (g) { g.innerHTML = tcSlotsHtml(); tcCountPaint(); } }
   function tcWire(root) {
     root.addEventListener('load', (e) => { if (e.target instanceof HTMLImageElement) tcSideKeep(e.target.src, true); }, true);
     root.addEventListener('error', (e) => {   // (a picture that isn't there: the next likeliest; none left, the card's back)
@@ -25697,29 +25889,43 @@
       if (d.tcK) { e.preventDefault(); tcCardOpen(Number(d.tcK), t.querySelector('img')); return; }
       if (d.tcShow) { tc.show = d.tcShow; tcPaint(); const b = root.querySelector(`[data-tc-show="${d.tcShow}"]`); if (b) b.focus(); return; }
       if (d.tcSize) { tc.size = d.tcSize; tcPSet('size', tc.size); tcPaint(); const b = root.querySelector(`[data-tc-size="${d.tcSize}"]`); if (b) b.focus(); return; }
-      if ('tcRead' in d) { tcReadLeft(); return; }
+      if ('tcRead' in d) { tcReadLeft(tc.ed).catch(report); return; }
+      if ('tcReadall' in d) { tcReadLeft(null).catch(report); return; }
+      if ('tcStop' in d) { tc.stop = true; return; }
+      if ('tcBuy' in d) { bmOpen('tcg'); return; }
+      if ('tcAgain' in d) { tcCat.done = false; tcCat.err = ''; tcPaint(); tcCatalogLoad(true).then(tcPriced).catch(() => {}); return; }
       if ('tcMarks' in d) { S.features.tcMarks = S.features.tcMarks !== true; saveNow(); tcNeed = null; tcPaint(true); return; }
       if ('tcNeo' in d) { document.documentElement.classList.toggle('bnp-nd-showneo'); tcPaint(); return; }
       if ('tcCopy' in d) { const u = `https://www.neopets.com/tcg/album.phtml?owner=${tc.invite}`; try { navigator.clipboard.writeText(u).then(() => toast('Your album’s address is copied')); } catch (_) { prompt('Your album’s address', u); } }
     });
     root.addEventListener('input', (e) => { if (e.target instanceof HTMLInputElement && e.target.matches('[data-tc-q]')) { tc.q = e.target.value; tcGridPaint(); } });
+    root.addEventListener('change', (e) => { if (e.target instanceof HTMLSelectElement && e.target.matches('[data-tc-sort]')) { tc.sort = e.target.value; tcPSet('sort', tc.sort); tcGridPaint(); } });
   }
-  async function tcReadLeft() {   // (this set's pages with cards that haven't been read: one at a time, as you'd turn to them)
-    const H = tcHave(tc.A, tc.ed), left = (H.left || []).slice();
-    if (!left.length || tc.reading) return;
-    for (let i = 0; i < left.length; i++) {
-      tc.reading = `Reading ${i + 1} of ${left.length}…`;
-      tcPaint();
-      if (i) await new Promise((ok) => setTimeout(ok, 2200 + Math.random() * 2600));
-      const html = await pageRead(`/tcg/album.phtml?edition=${tc.ed}&offset=${left[i]}${tc.mine ? '' : `&owner=${encodeURIComponent(tc.owner)}`}`).catch(() => '');
+  async function tcReadLeft(ed) {   // (pages with cards that haven't been read, or have changed since (one set's; null: every set's): one at a time, as you'd turn to them, only while this tab's in front)
+    if (tc.reading) return;
+    const tried = new Set(), todo = () => tcUnread(tc.A).filter((x) => (ed == null || x[0] === ed) && !tried.has(x.join(':')));
+    let i = 0;
+    tc.stop = false;
+    tc.note = '';
+    for (let L = todo(); L.length && !tc.stop; L = todo()) {
+      tc.reading = `Reading page ${i + 1} of ${i + L.length}…`;   // (a set not opened yet counts as one till its page numbers are seen)
+      tcPaint(true);
+      if (i) for (const until = Date.now() + 2200 + Math.random() * 2600; Date.now() < until && !tc.stop;) await new Promise((ok) => setTimeout(ok, 150));
+      while (document.hidden && !tc.stop) await new Promise((ok) => setTimeout(ok, 500));
+      if (tc.stop) break;
+      const [e, off] = L[0];
+      tried.add(L[0].join(':'));
+      i++;
+      const html = await pageRead(`/tcg/album.phtml?edition=${e}&offset=${off}${tc.mine ? '' : `&owner=${encodeURIComponent(tc.owner)}`}`).catch(() => '');
       const doc = html ? new DOMParser().parseFromString(html, 'text/html') : null, d = doc && tcParse(doc.querySelector('td.content') || doc.body);
       if (!d) { tc.note = 'An album page didn’t open just now: try again in a moment.'; break; }
-      tcLearn(tc.ed, d.cells.map((src, j) => [left[i] + j, src]).filter((x) => x[1]));
-      tcKeep(tc.A, tc.ed, d, left[i]);
-      if (tc.mine) await tcMineSave(tc.A); else try { sessionStorage.setItem(`bnp-tc-their:${tc.owner.toLowerCase()}`, JSON.stringify(tc.A)); } catch (_) { /* */ }
+      tcLearn(e, d.cells.map((src, j) => [off + j, src]).filter((x) => x[1]));
+      if (tc.mine) { const A = await tcMineLoad(); tcKeep(A, e, d, off); await tcMineSave(A); tc.A = A; }   // (what's kept, read again first: another tab may have counted cards in)
+      else { tcKeep(tc.A, e, d, off); try { sessionStorage.setItem(`bnp-tc-their:${tc.owner.toLowerCase()}`, JSON.stringify(tc.A)); } catch (_) { /* */ } }
     }
     tc.reading = null;
-    tcPaint();
+    tcNeed = null;
+    tcPaint(true);
   }
   // ── a card's own window: the big card, its name, whether it's in the album, itemdb's price and its buttons
   // marks wherever items show: the Trading Cards your album doesn't have yet (off to start: the tcMarks switch, on your album and in Settings)
@@ -25733,11 +25939,10 @@
       if (A.t) for (const T of TC_SETS) {   // (your album seen at least once: a place only where it's known to be empty)
         const L = TC_DATA[T.ed];
         if (!L || A.counts[T.ed] == null) continue;
-        const H = tcHave(A, T.ed), pg = A.pages[T.ed] || {}, red = A.red[T.ed], none = !(Number(A.counts[T.ed]) > 0);
+        const H = tcHave(A, T.ed), all = tcTotal(T.ed), none = !H.n;
         L.forEach((x, i) => {
           if (!x || x[2] || H.has.has(i + 1)) return;   // (never an item, or yours)
-          const off = Math.floor(i / 9) * 9;
-          if (none || pg[off] || (Array.isArray(red) && !red.includes(off))) need.set(`${x[0]} (TCG)`.toLowerCase(), [T.ed, i + 1]);   // (its page read, or a page Neopets shows without cards)
+          if (i >= all ? none : !tcUnk(H, i + 1)) need.set(`${x[0]} (TCG)`.toLowerCase(), [T.ed, i + 1]);   // (its page read, or a page Neopets shows without cards; past the album's places, only while the set has none)
         });
       }
       tcNeed = need;
@@ -25832,7 +26037,11 @@
     html.bnp-tc-page .bnp-tc-bar { display: block; height: 6px; overflow: hidden; border-radius: 99px; background: color-mix(in srgb, var(--nb-tint) 70%, #eee); }
     html.bnp-tc-page .bnp-tc-bar i { display: block; height: 100%; border-radius: 99px; background: var(--nb-bar); }
     html.bnp-tc-page .bnp-tc-set.is-done .bnp-tc-bar i { background: #e2a50f; }
-    html.bnp-tc-page .bnp-tc-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+    html.bnp-tc-page .bnp-tc-setp { margin-top: 1px; color: #1d5a26; font: 12px/1.25 var(--nb-ui); }
+    html.bnp-tc-page .bnp-tc-setp.is-q { color: var(--nb-muted); }
+    html.bnp-tc-page .bnp-tc-setp b { color: inherit; }
+    html.bnp-tc-page .bnp-tc-set.is-done .bnp-tc-setp { color: #7a5500; }
+    html.bnp-tc-page .bnp-tc-tools { display: grid; gap: 10px; }
     html.bnp-tc-page .bnp-tc-read { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; margin: 0; padding: 8px 12px; border: 2px solid #e6b660; border-radius: 12px; background: #fff8e6; color: #5e4100; font: 13px var(--nb-ui); }
     html.bnp-tc-page .bnp-tc-grid { --tc-w: 126px; --tc-h: 175px; display: grid; grid-template-columns: repeat(auto-fill, calc(var(--tc-w) + 14px)); justify-content: center; gap: 14px; }
     html.bnp-tc-page .bnp-tc-grid.is-s { --tc-w: 63px; --tc-h: 88px; gap: 10px; }
@@ -25846,6 +26055,9 @@
     html.bnp-tc-page .bnp-tc-cfoot { display: flex; align-items: center; gap: 5px; width: 100%; min-height: 32px; padding: 4px 1px 4px; }
     html.bnp-tc-page .bnp-tc-no { flex: none; display: grid; place-items: center; min-width: 24px; height: 20px; padding: 0 5px; border-radius: 99px; background: var(--nb-bar); color: var(--nb-bar-ink); font: 12px/1 "Cafeteria", "Arial Bold", sans-serif; }
     html.bnp-tc-page .bnp-tc-cname { flex: 1; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font: 11.5px/1.15 var(--nb-ui); text-align: left; overflow-wrap: break-word; }
+    html.bnp-tc-page .bnp-tc-cmeta { width: 100%; box-sizing: border-box; padding: 0 2px 7px; color: var(--nb-muted); font: 11.5px/1.2 var(--nb-ui); text-align: right; }
+    html.bnp-tc-page .bnp-tc-cmeta.is-np { color: #1d5a26; }
+    html.bnp-tc-page .bnp-tc-grid.is-l .bnp-tc-cmeta { font-size: 14px; }
     html.bnp-tc-page .bnp-tc-grid.is-s .bnp-tc-cfoot { flex-wrap: wrap; justify-content: center; }
     html.bnp-tc-page .bnp-tc-grid.is-s .bnp-tc-cname { display: none; }
     html.bnp-tc-page .bnp-tc-grid.is-l .bnp-tc-cname { font-size: 15px; }
@@ -39213,12 +39425,14 @@
   function bmWhat(kind, pet) {
     if (kind === 'stamps') return { title: 'Stamps your album still needs', none: 'Your album’s read pages have every stamp' };
     if (kind === 'cards') return { title: 'Cards your NeoDeck still needs', none: 'Your NeoDeck has every card' };
+    if (kind === 'tcg') return { title: 'Trading Cards your album still needs', none: 'Your album’s read pages have every card that can be bought' };
     if (kind === 'beads') return { title: 'Beads your talisman still needs', none: 'Your talisman has every bead a shop can sell (Tongi beads are on the Trading Post only)' };
     const k = COL_KINDS[kind];
     return { title: `${k.label === 'Books' ? 'Books' : k.what.charAt(0).toUpperCase() + k.what.slice(1)} ${pet} hasn’t ${k.did}`, none: `${pet} has ${k.did} every one NE knows of` };
   }
   function bmList(kind) {   // (the rows: what's still needed, NP items only, as { name, img, guide (itemdb's price), retired, where })
     if (kind === 'cards') return ndBmList();
+    if (kind === 'tcg') return tcBmList();
     if (kind === 'beads') return tlBmList();
     if (kind === 'stamps') {
       const out = [], seen = new Set();
@@ -39239,6 +39453,7 @@
     if (!col || col.kind !== kind || !col.cat || !Array.isArray(col.cat.items)) return null;
     return { rows: col.cat.items.filter((it) => !it[6] && !col.had.has(colImgKey(it[0])) && !((kind === 'books' || kind === 'bt') && archIs(it[1]))).map((it) => ({ name: it[1], img: `${NPI}items/${it[0]}`, file: it[0], guide: it[3] > 0 ? it[3] : 0, retired: !!it[7], where: '' })), unread: 0, partial: !!col.cat.partial };
   }
+  const BM_NOPET = new Set(['stamps', 'cards', 'tcg', 'beads']);   // (lists of yours, not a pet's)
   function bmOpen(kind) {
     styles();
     if (!bm) {
@@ -39265,7 +39480,7 @@
     }
     if (!(bm.run && (!bm.run.over || bm.unseen))) {   // (a run under way, or done while it was closed: the window as it is)
       const L = bmList(kind);
-      Object.assign(bm, { kind, pet: kind === 'stamps' || kind === 'cards' || kind === 'beads' ? '' : (col && col.pet) || '', q: '', only: '', note: '', run: null, show: BM_PAGE, unread: L ? L.unread : 0, partial: !!(L && L.partial), missing: !L });
+      Object.assign(bm, { kind, pet: BM_NOPET.has(kind) ? '' : (col && col.pet) || '', q: '', grp: '', groups: (L && L.groups) || null, only: '', note: '', run: null, show: BM_PAGE, unread: L ? L.unread : 0, partial: !!(L && L.partial), missing: !L });
       bm.rows = (L ? L.rows : []).map((r, i) => ({ ...r, i, on: false, st: '', why: '', paid: 0 })).sort((a, b) => ((a.guide || Infinity) - (b.guide || Infinity)) || a.name.localeCompare(b.name));
       bm.rows.forEach((r, i) => { r.i = i; });
     }
@@ -39316,10 +39531,11 @@
     if (!T.length) return '';
     return `<span class="bnp-bm-tally" role="group" aria-label="What became of each one">${T.map((t) => `<button type="button" class="bnp-bm-t" data-bmonly="${t.k}" aria-pressed="${bm.only === t.k}" title="${esc(bm.only === t.k ? 'Show them all again' : `Show only ${t.n === 1 ? 'this one' : `these ${t.n.toLocaleString()}`} in the list`)}"><b class="is-${t.c}">${t.n.toLocaleString()}</b>${esc(t.l)}</button>`).join('')}</span>`;
   }
-  const bmMatch = (r) => { const q = String(bm.q || '').trim().toLowerCase(); return (!q || r.name.toLowerCase().includes(q)) && (!bm.only || bmOutOf(r, bm.run) === bm.only); };
+  const bmSeen = (r) => { const q = String(bm.q || '').trim().toLowerCase(); return (!q || r.name.toLowerCase().includes(q)) && (!bm.grp || r.grp === bm.grp); };   // (in sight: by Find, and by the set chosen)
+  const bmMatch = (r) => bmSeen(r) && (!bm.only || bmOutOf(r, bm.run) === bm.only);
   function bmListHtml(busy) {   // (the rows Find lets through, the first bm.show of them, then a button for more)
     const vis = bm.rows.filter(bmMatch), n = Math.min(vis.length, bm.show || BM_PAGE), left = vis.length - n;
-    return `${vis.slice(0, n).map((r) => bmRowHtml(r, busy)).join('')}${left > 0 ? `<p class="bnp-bm-more"><button type="button" class="bnp-sdr-lb" data-bm="more">Show ${Math.min(BM_PAGE, left).toLocaleString()} more</button><span>${left.toLocaleString()} more ${bm.q || bm.only ? 'that match' : 'below these'}</span></p>` : ''}${bm.q && !vis.length ? '<p class="bnp-bm-more"><span>None by that name</span></p>' : ''}`;
+    return `${vis.slice(0, n).map((r) => bmRowHtml(r, busy)).join('')}${left > 0 ? `<p class="bnp-bm-more"><button type="button" class="bnp-sdr-lb" data-bm="more">Show ${Math.min(BM_PAGE, left).toLocaleString()} more</button><span>${left.toLocaleString()} more ${bm.q || bm.only || bm.grp ? 'that match' : 'below these'}</span></p>` : ''}${bm.q && !vis.length ? '<p class="bnp-bm-more"><span>None by that name</span></p>' : ''}`;
   }
   function bmListPaint() {   // (only the list drawn again: Find's box keeps your typing, the list its place)
     const l = bm.win.querySelector('.bnp-sdr-list');
@@ -39331,7 +39547,7 @@
   function bmRowHtml(r, busy) {
     const m = bmMark[r.st], small = r.st === 'got' && (r.paid || r.mine) ? `<small>${r.mine ? 'In your inventory already' : `Bought for ${esc(bmNp(r.paid))}`}${r.read && bmUse() ? ` · ${esc(bmUse().done(bm.pet))}` : r.sdb ? ' · put in your SDB' : r.readWhy ? ` · <span class="bnp-sdr-why">${esc(r.readWhy)}</span>` : ''}</small>`
       : r.why ? `<small class="${r.st === 'no' ? 'bnp-sdr-why' : ''}">${esc(r.why)}</small>`
-      : `<small>${r.guide ? `itemdb ≈ ${esc(bmNp(r.guide))}` : 'No itemdb price'}${r.retired ? ' · retired' : ''}${r.where ? ` · ${esc(r.where)}` : ''}</small>`;
+      : `<small>${r.guide ? `itemdb ≈ ${esc(bmNp(r.guide))}` : 'No itemdb price'}${r.retired ? ' · retired' : ''}${r.where ? ` · ${esc(r.where)}` : ''}${r.guide > 999999 ? ' · more than a shop can ask' : ''}</small>`;
     return `<label class="bnp-sdr-row${r.on ? '' : ' is-off'}${m ? ` is-${m[0]}` : ''}" data-bmr="${r.i}"><input type="checkbox" data-bmrow="${r.i}"${r.on ? ' checked' : ''}${busy || r.st === 'got' ? ' disabled' : ''}><span class="bnp-sdr-bk"><img src="${esc(r.img)}" alt="" width="40" height="40" loading="lazy"></span><span class="bnp-sdr-nm"><b>${esc(r.name)}</b>${small}</span>${m ? `<i class="bnp-sdr-st is-${m[0]}" title="${esc(m[2])}">${m[1]}</i>` : ''}</label>`;
   }
   function bmPaint() {
@@ -39352,7 +39568,7 @@
         <label class="bnp-bm-chk"><input type="checkbox" data-bmwait${P.wait ? ' checked' : ''}><span>If the ${esc(wiz)} asks for a break, carry on after the top of the hour<small>A moment in its first five minutes, when it lets you search again. Off: Buy Mode pauses till you press Resume.</small></span></label>
       </div>`;
     const banP = ban ? `<p class="bnp-bm-ban" role="status"><b>The ${esc(wiz)} has asked for a break this hour.</b> It lets you search again at ${esc(bmAt(ban))}. ${busy && run.waitUntil ? `Buy Mode carries on at about ${esc(bmAt(run.waitUntil))}.` : busy && run.pause ? 'Press Resume once it’s past.' : P.wait ? 'Start any time: Buy Mode waits till then, then carries on.' : 'Buy Mode doesn’t search till then.'}</p>` : '';
-    const notes = `${bm.unread ? `<p class="bnp-sdr-note">${bm.unread.toLocaleString()} album ${bm.unread === 1 ? 'page hasn’t' : 'pages haven’t'} been read yet, or changed since: their stamps aren’t listed. Read them on your album’s front page.</p>` : ''}${bm.partial ? '<p class="bnp-sdr-note">Only part of itemdb’s list is in so far: the rest comes on this page by itself.</p>' : ''}`;
+    const notes = bm.kind === 'tcg' ? `${bm.unread ? '<p class="bnp-sdr-note">Some pages of your album with cards haven’t been read yet, or changed since: the cards that go on them aren’t listed. Read them on your album.</p>' : ''}${bm.partial ? '<p class="bnp-sdr-note">itemdb’s prices aren’t all in: what’s missing comes on this page by itself.</p>' : ''}` : `${bm.unread ? `<p class="bnp-sdr-note">${bm.unread.toLocaleString()} album ${bm.unread === 1 ? 'page hasn’t' : 'pages haven’t'} been read yet, or changed since: their stamps aren’t listed. Read them on your album’s front page.</p>` : ''}${bm.partial ? '<p class="bnp-sdr-note">Only part of itemdb’s list is in so far: the rest comes on this page by itself.</p>' : ''}`;
     let main = '';
     if (bm.missing) main = '<p class="bnp-sdr-note is-err">NE doesn’t have the list for this page yet. Once it’s in, open Buy Mode again.</p>';
     else if (!bm.rows.length) main = `<div class="bnp-sdr-sum is-done"><b>${esc(what.none)}</b></div>`;
@@ -39363,7 +39579,8 @@
     bmFootPaint();
   }
   function bmToolsHtml(busy) {   // (Find, All, None and Up to: before a run, and after it to tick more)
-    return `<span class="bnp-sdr-tick"><input type="search" class="bnp-bm-find" data-bmfind placeholder="Find…" aria-label="Find one by name" value="${esc(bm.q)}"${busy ? ' disabled' : ''}><button type="button" class="bnp-sdr-lb" data-bm="all">All</button><button type="button" class="bnp-sdr-lb" data-bm="none">None</button><span class="bnp-upto" title="Ticks the ones itemdb prices at or under this, and unticks the rest (of those in sight). Only a guide: Buy Mode goes by the shops’ prices, never over your most"><label><span>Up to</span><input type="text" inputmode="numeric" autocomplete="off" data-bmupto value="${esc((bmNumOk(saJson(BM_KEY, {}).upto, 0) || bmP().max).toLocaleString())}"${busy ? ' disabled' : ''} aria-label="Tick the ones up to this many Neopoints">NP</label><button type="button" class="bnp-sdr-lb" data-bm="upto"${busy ? ' disabled' : ''}>Tick</button></span></span>`;
+    const G = bm.groups ? bm.groups.map(([k, l]) => [k, l, bm.rows.filter((r) => r.grp === k).length]).filter((x) => x[2]) : [];   // (Trading Cards: one set's, or every set's)
+    return `<span class="bnp-sdr-tick">${G.length > 1 ? `<select class="bnp-bm-grp" data-bmgrp aria-label="Which set"${busy ? ' disabled' : ''}><option value="">Every set (${bm.rows.length.toLocaleString()})</option>${G.map(([k, l, n]) => `<option value="${esc(k)}"${k === bm.grp ? ' selected' : ''}>${esc(l)} (${n.toLocaleString()})</option>`).join('')}</select>` : ''}<input type="search" class="bnp-bm-find" data-bmfind placeholder="Find…" aria-label="Find one by name" value="${esc(bm.q)}"${busy ? ' disabled' : ''}><button type="button" class="bnp-sdr-lb" data-bm="all">All</button><button type="button" class="bnp-sdr-lb" data-bm="none">None</button><span class="bnp-upto" title="Ticks the ones itemdb prices at or under this, and unticks the rest (of those in sight). Only a guide: Buy Mode goes by the shops’ prices, never over your most"><label><span>Up to</span><input type="text" inputmode="numeric" autocomplete="off" data-bmupto value="${esc((bmNumOk(saJson(BM_KEY, {}).upto, 0) || bmP().max).toLocaleString())}"${busy ? ' disabled' : ''} aria-label="Tick the ones up to this many Neopoints">NP</label><button type="button" class="bnp-sdr-lb" data-bm="upto"${busy ? ' disabled' : ''}>Tick</button></span></span>`;
   }
   function bmGuideText(on, stop) {   // ("1,160 ticked, about 3,612,400 NP by itemdb’s guide · it stops after 300 bought, about 934,900 NP · 12 have no itemdb price": every ticked one, then the limit's first ones, in the order it buys)
     const sum = (list) => list.reduce((n, r) => n + (r.guide > 0 ? r.guide : 0), 0), all = sum(on), none = on.filter((r) => !(r.guide > 0)).length;
@@ -39413,13 +39630,13 @@
     if (ov) { bm.only = bm.only === ov.dataset.bmonly ? '' : ov.dataset.bmonly; bm.show = BM_PAGE; bmSumPaint(); bmListPaint(); const l = bm.win.querySelector('.bnp-sdr-list'); if (l) l.scrollTop = 0; return; }   // (a count pressed: only those in the list; again, every one)
     const t = el.closest('[data-bm]');
     if (!t) return;
-    const a = t.dataset.bm, run = bm.run, vis = (r) => { const q = String(bm.q || '').trim().toLowerCase(); return !q || r.name.toLowerCase().includes(q); };
+    const a = t.dataset.bm, run = bm.run;
     if (a === 'x') bmClose();
     else if (a === 'start') bmRun().catch((e2) => { report(e2); if (bm && bm.run) { bm.run.over = true; bm.run.why = 'Something went wrong: what’s bought stays bought.'; for (const r of bm.rows) if (r.st === 'now') r.st = ''; if (!bm.win.classList.contains('open')) bm.unseen = true; bmPaint(); } });
     else if (a === 'stop') { if (run) { run.stop = true; run.pause = false; bmFootPaint(); } }
     else if (a === 'readnow') bmReadNow().catch(report);
     else if (a === 'pause' || a === 'resume') { if (run && !run.over) { run.pause = a === 'pause'; if (!run.pause && run.why === 'ban') run.why = ''; bmSumPaint(); } }
-    else if (a === 'all' || a === 'none') { for (const r of bm.rows) if (vis(r) && r.st !== 'got') r.on = a === 'all'; bmPaint(); }
+    else if (a === 'all' || a === 'none') { for (const r of bm.rows) if (bmSeen(r) && r.st !== 'got') r.on = a === 'all'; bmPaint(); }
     else if (a === 'upto') bmUpTo();
     else if (a === 'more') { bm.show = (bm.show || BM_PAGE) + BM_PAGE; bmListPaint(); }
   }
@@ -39431,11 +39648,11 @@
     bmPaint();
   }
   function bmUpTo() {   // (the ones itemdb prices at or under the price written ticked, the rest not: those in sight)
-    const i = bm.win.querySelector('[data-bmupto]'), v = i ? bmParse(i.value) : 0, q = String(bm.q || '').trim().toLowerCase();
+    const i = bm.win.querySelector('[data-bmupto]'), v = i ? bmParse(i.value) : 0;
     if (!v) { bm.note = 'Write a number of Neopoints: 5000, 5,000 or 5k.'; bmPaint(); return; }
     bmPSet('upto', v);
     bm.note = '';
-    for (const r of bm.rows) if ((!q || r.name.toLowerCase().includes(q)) && r.st !== 'got') r.on = r.guide > 0 && r.guide <= v;
+    for (const r of bm.rows) if (bmSeen(r) && r.st !== 'got') r.on = r.guide > 0 && r.guide <= v;
     bmPaint();
     const n = bm.win.querySelector('[data-bmupto]');
     if (n) n.focus();
@@ -39443,6 +39660,7 @@
   const bmLater = (f) => { if (bm && bm.down) bm.later = f; else f(); };
   function bmChange(e) {
     const t = e.target;
+    if (bm && t instanceof HTMLSelectElement && t.matches('[data-bmgrp]')) { bm.grp = t.value; bm.show = BM_PAGE; bmListPaint(); const l = bm.win.querySelector('.bnp-sdr-list'); if (l) l.scrollTop = 0; return; }   // (a set chosen: its rows alone; what's ticked stays ticked)
     if (!(t instanceof HTMLInputElement) || !bm) return;
     if (t.dataset.bmrow != null) { const r = bm.rows[Number(t.dataset.bmrow)]; if (r) { r.on = t.checked; const row = t.closest('.bnp-sdr-row'); if (row) row.classList.toggle('is-off', !t.checked); bmSumPaint(); } return; }
     if (t.matches('[data-bmupto]')) return;
@@ -39543,14 +39761,15 @@
     food: { pick: (o, pet) => o.v.toLowerCase() === `feed to ${pet}`.toLowerCase(), doing: 'Feeding', to: (pet) => ` to ${pet}`, done: (pet) => `fed to ${pet}`, offer: (pet) => `Feed to ${pet}`, sw: (pet) => `Feed them to ${pet} as they’re bought`, now: (n, pet) => `Feed the ${n} bought to ${pet}`, full: 'Feed them', note: ' A pet that’s full won’t eat more: the rest stay in your inventory.' },
     stamps: { pick: (o) => /album/i.test(`${o.v} ${o.l}`) && !/tcg|trading card/i.test(`${o.v} ${o.l}`), doing: 'Putting', to: () => ' in your album', done: () => 'put in your album', offer: () => 'Put in your album', sw: () => 'Put them in your album as they’re bought', now: (n) => `Put the ${n} bought in your album`, full: 'Put them in your album' },
     cards: { pick: (o) => /neo\s*deck/i.test(`${o.v} ${o.l}`), doing: 'Putting', to: () => ' in your NeoDeck', done: () => 'put in your NeoDeck', offer: () => 'Put in NeoDeck', sw: () => 'Put them in your NeoDeck as they’re bought', now: (n) => `Put the ${n} bought in your NeoDeck`, full: 'Put them in your NeoDeck' },
+    tcg: { pick: (o) => /tcg|trading\s*card|album/i.test(`${o.v} ${o.l}`) && !/neo\s*deck|trading\s*post|auction/i.test(`${o.v} ${o.l}`), doing: 'Putting', to: () => ' in your album', done: () => 'put in your album', offer: () => 'Put in TCG Album', sw: () => 'Put them in your Trading Card album as they’re bought', now: (n) => `Put the ${n} bought in your album`, full: 'Put them in your album' },   // (the only album a Trading Card goes in)
     beads: { pick: (o) => /talisman/i.test(`${o.v} ${o.l}`), doing: 'Putting', to: () => ' on your talisman', done: () => 'put on your talisman', offer: () => 'Put on your talisman', sw: () => 'Put them on your talisman as they’re bought (once on, a bead can’t come off)', now: (n) => `Put the ${n} bought on your talisman`, full: 'Put them on your talisman' },   // (the inventory's own "Put into your Talisman")
   };
-  const bmUse = () => (bm && (bm.kind === 'stamps' || bm.kind === 'cards' || bm.kind === 'beads' || bm.pet) && BM_USE[bm.kind]) || null;
+  const bmUse = () => (bm && (BM_NOPET.has(bm.kind) || bm.pet) && BM_USE[bm.kind]) || null;
   const bmReads = () => !!bmUse();   // (the lists whose items are used as they're bought)
   const bmUnread = () => (bmReads() ? bm.rows.filter((r) => r.st === 'got' && !r.read && !r.readWhy && !r.sdb) : []);
   const bmNameKey = (s) => reClean(String(s || '')).toLowerCase().replace(/[‘’`´]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim();   // (an item's name as matched between itemdb, your inventory, Quick Stock and your SDB: apostrophes and spaces as one)
   const bmInInv = () => bm.rows.filter((r) => r.st === 'got' && !r.read && !r.sdb && !r.gone);   // (what's bought, or was there already, and still in your inventory: for your SDB when it's full)
-  const BM_SDB_CAT = { books: '6', bt: '6', food: '18', stamps: '15', cards: '14' };   // (each kind's own category in your SDB: Books, Food, Album Item)
+  const BM_SDB_CAT = { books: '6', bt: '6', food: '18', stamps: '15', cards: '14', tcg: '16' };   // (each kind's own category in your SDB: Books, Food, Album Item, Collectable Card, Trading Card)
   const BM_SDB = { doing: 'Putting', to: () => ' in your SDB' };   // (its words while Quick Stock puts them in your SDB)
   async function bmInv() {   // (your inventory's page, opened afresh unseen, as a refresh would (its list is up to date only after that): its NP items' cards once drawn, and how many items. null when it didn't come)
     const page = '/inventory.phtml';
@@ -39656,11 +39875,16 @@
     } finally { wwwShut(page); run.reading = 0; run.use = null; bmSumPaint(); }
     if (read) {
       if (bm.kind === 'books' || bm.kind === 'bt') document.dispatchEvent(new CustomEvent('bnp-col-read', { detail: JSON.stringify({ pet }) }));   // (its kept lists and the marks: read again)
-      if (bm.kind !== 'stamps' && bm.kind !== 'cards' && col && col.pet === pet && col.kind === bm.kind) { for (const r of bm.rows) if (r.read && r.file && !col.had.has(colImgKey(r.file))) col.had.set(colImgKey(r.file), [col.had.size + 1, r.name, r.file, '']); colPaint(); }   // (this page shows them read, or eaten)
+      if (!BM_NOPET.has(bm.kind) && col && col.pet === pet && col.kind === bm.kind) { for (const r of bm.rows) if (r.read && r.file && !col.had.has(colImgKey(r.file))) col.had.set(colImgKey(r.file), [col.had.size + 1, r.name, r.file, '']); colPaint(); }   // (this page shows them read, or eaten)
       if (bm.kind === 'cards') {   // (your NeoDeck: the cards put in, counted in at once)
         const put = bm.rows.filter((r) => r.read && !r.counted && r.ndId);
         for (const r of put) r.counted = true;
         await ndDecked(put.map((r) => r.ndId));
+      }
+      if (bm.kind === 'tcg') {   // (your Trading Card album: the cards put in, counted in at once)
+        const put = bm.rows.filter((r) => r.read && !r.counted && r.ed);
+        for (const r of put) r.counted = true;
+        await tcAlbumed(put.map((r) => [r.ed, r.k]));
       }
       if (bm.kind === 'beads') tlBmPut();   // (your talisman: the beads put on, drawn on it at once)
       if (bm.kind === 'stamps') {   // (your album: the stamps put in, counted in at once)
@@ -52633,7 +52857,7 @@
         ${sw('ndMarks', 'Mark the NeoDeck cards you still need', 'Off to start. Wherever items show (shops, your inventory, SDB, Quick Stock, the Trading Post, Auctions…) a Collectable Card your NeoDeck doesn’t have yet gets a little mark with its number, a click from its album page. Your NeoDeck is read each time you open it; also switched on and off there.')}
       </div>`],
       ['collections', () => `<div class="bnp-card"><h4>Trading Card album</h4>
-        ${sw('tcg', 'The Trading Card album, made over', 'Its 11 sets as tiles (each one’s logo, or a fan of its cards) with how many you have; the set you pick shown whole, every place as its card: yours in colour, the ones you don’t have greyed, found by name, at three sizes. Which card goes where comes from itemdb’s Trading Card list and from album pages seen. A card’s own window shows it big, with its price and buttons. Off: Neopets’ own pages.')}
+        ${sw('tcg', 'The Trading Card album, made over', 'Its 11 sets as tiles (each one’s logo, or a fan of its cards) with how many you have; the set you pick shown whole, every place as its card: yours in colour, the ones you don’t have greyed, found by name, at three sizes, priced by itemdb and sorted by it, with what your cards are worth, what each set takes to finish, and Buy Mode for the ones you still need. Which card goes where comes from itemdb’s Trading Card list and from album pages seen. A card’s own window shows it big, with its price and buttons. Off: Neopets’ own pages.')}
         ${sw('tcMarks', 'Mark the Trading Cards you still need', 'Off to start. Wherever items show, a Trading Card your album doesn’t have yet gets a little mark with its set, a click from its page there: only where NE knows (a page of your album it has read, or one Neopets shows without cards). Also switched on and off on your album.')}
       </div>`],
       ['collections', () => `<div class="bnp-card"><h4>Archived Book Collection</h4>
@@ -55815,6 +56039,7 @@
     .bnp-bm-ban { flex: none; margin: 0; padding: 8px 12px; border: 2px solid #e0a400; border-radius: 12px; background: #fff8e1; color: #3f3a26; font-size: 12.5px; line-height: 1.4; }
     .bnp-bm-ban b { color: #5c4300; }
     .bnp-bm-find { width: 130px; height: 26px; margin: 0; padding: 0 10px; border: 1.5px solid #ddd6c2; border-radius: 999px; background: #fff; color: #222; font: 12.5px "MuseoSansRounded500", Arial, sans-serif; outline: none; }
+    .bnp-bm-grp { max-width: 210px; height: 26px; margin: 0; padding: 0 8px; border: 1.5px solid #ddd6c2; border-radius: 999px; background: #fff; color: #222; font: 12.5px "MuseoSansRounded500", Arial, sans-serif; }
     .bnp-bm-find:focus { border-color: color-mix(in srgb, var(--bnp-accent) 70%, #000 12%); }
     .bnp-bm .bnp-sdr-row[hidden] { display: none; }
     .bnp-bm .bnp-sdr-row.is-off { opacity: 1; }   /* (here most aren't ticked: the ticked ones stand out instead of the rest fading) */
@@ -58941,6 +59166,13 @@
   `;
   // Every version's notes, newest first: what changed, by area (a version newer than this copy's shows from GitHub's note instead)
   const RELEASES = [
+    ['6.0.1', '2026-11-23', [
+      'Trading Card album: itemdb’s prices on its cards, what yours are worth, what each set takes to finish, and sorting by price',
+      'Trading Card album: Buy Mode for the cards you still need, from every set or just one, put in your album as they’re bought',
+      'Trading Card album: cards you put in from your SDB or Inventory are counted, and the Card shop link is gone (that shop is the NeoDeck’s)',
+      'Stamp Album: Show more of the newest stamps, past the first two rows',
+      'Buy Mode: says when something costs more than a shop can ask',
+    ]],
     ['6.0', '2026-11-23', [
       'Settings: made over in your theme’s colours, larger and easier to read and use, with each switch at the right of its row',
       'Settings: every page has its own line on the left, in groups you can fold, instead of buttons across the top of shared pages',
@@ -59639,7 +59871,7 @@
       for (const k of ['fquest', 'fqfold']) GM_addValueChangeListener(KEY + k, (n, o, v, remote) => { if (remote) paintFq(); });   // (your faerie quest, changed in another tab)
     } catch (_) { /* */ }
   }
-  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { pageRead, kadCheckRun, tabFlash, kadSwap, kadNextLook, kadPlan, lottoDrawn: () => lottoDrawnFn && lottoDrawnFn(), wwwAsk: (u, o) => fetch(u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }), (e) => ({ err: String(e && e.message) })), fromAsk: (p, u, o) => (p === 'html' ? fromPageHtml(u).then((t) => ({ text: t.slice(0, 300) })) : fromPage(p, u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }))).catch((e) => ({ err: String(e && e.message) })), wwwShut, nmSendNow, ncValue, remSoundOnce, sa: () => sa, saKnown, saState, saMarksLoad, ndMarksLoad, tcMarksLoad, cardMarkAll, idbSet, saMark, saMineLoad, saAlbumed, saMineNow: () => saMine, saPlace, itSsw, sswPanel, mark: (id, how) => dailyMark(id, how || { full: true }), dstate: (id) => { const d = dailyById(id); return d ? dailyState(d) : null; }, dlogNow: () => dlog(), dproof: DAILY_PROOF, remEvents: (a, b, c) => remEvents(a, b, c).map((e) => ({ key: e.key, at: e.at, kind: e.kind, title: e.title, text: e.textNow ? e.textNow() : e.text })), remSchedule, tpLimState: (t) => { const x = tpLimState(t); return x && !x.off ? { T0: x.T0, cap: x.cap, rec0: x.rec0, now: x.now, over: x.over, rows: x.rows.map((r) => ({ at: r.at, np: r.np, lump: !!r.lump, since: !!r.since, from: r.from || 0, left: x.left(r.at) })) } : x; }, tpLimWhen, tpLimOpen, avWearSave, stFormEntries, stUrlenc, toggleAvs, sideAvNow, remFiredNow: () => remFired(), remPerOn: (id) => remPerOn(dailyById(id)), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbLivePill, pageSay, nbSay, toast, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, themeChanged, nclUnhold: () => new Promise((r) => { if (nclHoldEnd) { nclHoldEnd(); setTimeout(r, 80); } else r(); }), nclOpen, nclMin, nclTell, nclFold, nclSentList, nmSentGo, myMainColour, myColouriseShift, myColoursNow, myAll: () => S.myThemes, myTurnNow: () => myTurn, soundDraw, nclGlance, captureChrome, acctCheck, dlog, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
+  try { if (localStorage.getItem('bnp-debug') === '1') PAGE.__bnp = { pageRead, kadCheckRun, tabFlash, kadSwap, kadNextLook, kadPlan, lottoDrawn: () => lottoDrawnFn && lottoDrawnFn(), wwwAsk: (u, o) => fetch(u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }), (e) => ({ err: String(e && e.message) })), fromAsk: (p, u, o) => (p === 'html' ? fromPageHtml(u).then((t) => ({ text: t.slice(0, 300) })) : fromPage(p, u, o).then(async (r) => ({ ok: r.ok, status: r.status, url: r.url, text: (await r.text()).slice(0, 300) }))).catch((e) => ({ err: String(e && e.message) })), wwwShut, nmSendNow, ncValue, remSoundOnce, sa: () => sa, saKnown, saState, saMarksLoad, ndMarksLoad, tcMarksLoad, tcMineLoad, tcAlbumed, tcPlaces, tcUnread, cardMarkAll, idbSet, saMark, saMineLoad, saAlbumed, saMineNow: () => saMine, saPlace, itSsw, sswPanel, mark: (id, how) => dailyMark(id, how || { full: true }), dstate: (id) => { const d = dailyById(id); return d ? dailyState(d) : null; }, dlogNow: () => dlog(), dproof: DAILY_PROOF, remEvents: (a, b, c) => remEvents(a, b, c).map((e) => ({ key: e.key, at: e.at, kind: e.kind, title: e.title, text: e.textNow ? e.textNow() : e.text })), remSchedule, tpLimState: (t) => { const x = tpLimState(t); return x && !x.off ? { T0: x.T0, cap: x.cap, rec0: x.rec0, now: x.now, over: x.over, rows: x.rows.map((r) => ({ at: r.at, np: r.np, lump: !!r.lump, since: !!r.since, from: r.from || 0, left: x.left(r.at) })) } : x; }, tpLimWhen, tpLimOpen, avWearSave, stFormEntries, stUrlenc, toggleAvs, sideAvNow, remFiredNow: () => remFired(), remPerOn: (id) => remPerOn(dailyById(id)), dock, applyAll, settings: () => S, tabWant, tabNow: () => tabNow, goIndex, goFind, openHub, openBoard, avData, avItem, searchPage, feats: () => S.features, itPageKey, itRow, itScan: IT_SCAN, itSettings, remEvents, remPopup, remFire, themeForm, themePick, themeNowId, themeData, nbMineAdd, nbMarks, nbHere: () => nbHere, nbLivePill, pageSay, nbSay, toast, nbPostWho, nbMe, nbPens, nbRender, nbPostSrc, scSort, scInject, nclCheck, themeChanged, nclUnhold: () => new Promise((r) => { if (nclHoldEnd) { nclHoldEnd(); setTimeout(r, 80); } else r(); }), nclOpen, nclMin, nclTell, nclFold, nclSentList, nmSentGo, myMainColour, myColouriseShift, myColoursNow, myAll: () => S.myThemes, myTurnNow: () => myTurn, soundDraw, nclGlance, captureChrome, acctCheck, dlog, scState: () => ({ obs: !!scObs, raf: scRaf, held: !!scHeld }) }; } catch (_) { /* (testing only) */ }
   if (FRAME) { lookFrame(); return; }   // (the "Your look" window's page: Neoboard Settings alone, in the boards' look)
   // A page this makes over is never seen first as it was: the top bar is made over as soon as it's all there (Neopets puts it, the side
   // menu and their drop-downs before the page's own box, so that's before anything is drawn), and a page whose own layout changes much
